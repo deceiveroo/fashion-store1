@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Создаем пользователя
     const newUser = {
-      id: `user-${Date.now()}`,
+      id: crypto.randomUUID(), // используем более надежный способ генерации ID
       email,
       password: passwordHash,
       name: `${firstName} ${lastName}`,
