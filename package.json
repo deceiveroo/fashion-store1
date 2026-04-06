@@ -15,6 +15,7 @@
     "seed:staff": "dotenv -e .env.local -e .env -- tsx ./lib/seed-staff.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.50",
     "@auth/core": "^0.37.0",
     "@auth/drizzle-adapter": "^1.11.1",
     "@hookform/resolvers": "^5.2.2",
@@ -23,6 +24,7 @@
     "@supabase/supabase-js": "^2.101.1",
     "@types/pg": "^8.20.0",
     "@vercel/speed-insights": "^2.0.0",
+    "ai": "^6.0.146",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",

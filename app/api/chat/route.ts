@@ -2,6 +2,8 @@
 import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 
 const fallbackResponses: Record<string, string> = {
   'доставка': "Мы предлагаем несколько вариантов доставки:\n\n Курьерская доставка - 1-3 дня (бесплатно от 5000₽)\n Почта России - 5-10 дней (от 300₽)\n Самовывоз из магазина - бесплатно",
@@ -52,6 +54,7 @@ export async function POST(request: NextRequest) {
 
     await saveMessage(sessionId, message, 'user', null);
 
+    // Check if admin has taken over
     try {
       const session = await db.select().from(supportChatSessions).where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
       if (session[0]?.aiDisabled) {
@@ -64,29 +67,49 @@ export async function POST(request: NextRequest) {
     let aiMessage = '';
     let aiModel = 'fallback';
 
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (openaiKey) {
+    // Try Vercel AI Gateway first
+    const gatewayKey = process.env.VERCEL_AI_GATEWAY_KEY;
+    if (gatewayKey) {
       try {
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaiKey },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: 'Ты AI-ассистент магазина ELEVATE. Отвечай кратко на русском.' },
-              { role: 'user', content: message }
-            ],
-            temperature: 0.7, max_tokens: 300,
-          }),
+        const openai = createOpenAI({
+          baseURL: 'https://ai-gateway.vercel.sh/v1',
+          apiKey: gatewayKey,
         });
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) { aiMessage = content; aiModel = 'openai'; }
+
+        const result = await generateText({
+          model: openai('gpt-4o-mini'),
+          system: 'Ты AI-ассистент магазина одежды ELEVATE. Отвечай кратко и дружелюбно на русском языке. Помогай с вопросами о доставке, возврате, размерах, оплате и товарах.',
+          prompt: message,
+          maxTokens: 300,
+        });
+
+        if (result.text) {
+          aiMessage = result.text;
+          aiModel = 'vercel-gateway-gpt4o-mini';
         }
-      } catch { console.log('[CHAT] OpenAI error'); }
+      } catch (error: any) {
+        console.log('[CHAT] Vercel AI Gateway error:', error.message);
+      }
     }
 
+    // Fallback to direct OpenAI
+    if (!aiMessage) {
+      const openaiKey = process.env.OPENAI_API_KEY;
+      if (openaiKey) {
+        try {
+          const openai = createOpenAI({ apiKey: openaiKey });
+          const result = await generateText({
+            model: openai('gpt-4o-mini'),
+            system: 'Ты AI-ассистент магазина одежды ELEVATE. Отвечай кратко на русском.',
+            prompt: message,
+            maxTokens: 300,
+          });
+          if (result.text) { aiMessage = result.text; aiModel = 'openai'; }
+        } catch { console.log('[CHAT] OpenAI error'); }
+      }
+    }
+
+    // Keyword fallback
     if (!aiMessage) {
       const fallback = findBestResponse(message);
       if (fallback) { aiMessage = fallback; aiModel = 'fallback'; }
