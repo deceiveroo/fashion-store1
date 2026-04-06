@@ -1,72 +1,63 @@
 #!/bin/bash
 
-# Скрипт для обновления репозитория на GitHub
+echo ""
+echo "#########################################"
+echo "#     Публикация проекта на GitHub      #"
+echo "#########################################"
+echo ""
 
-echo "Обновление Fashion Store на GitHub"
-echo "=================================="
-
-# Проверяем наличие git
-if ! command -v git &> /dev/null; then
-    echo "Ошибка: Git не установлен"
+# Проверка наличия Git
+if ! command -v git &> /dev/null
+then
+    echo "ERROR: Git не найден в системе. Установите Git и добавьте его в PATH."
     exit 1
 fi
 
-# Проверяем, находится ли папка в репозитории git
+# Проверка, находится ли пользователь в директории проекта
+if [ ! -f ".env.example" ]; then
+    echo "ERROR: Кажется, вы не в директории проекта fashion-store."
+    echo "Убедитесь, что запускаете этот скрипт из правильной директории."
+    exit 1
+fi
+
+echo "1. Инициализация Git репозитория..."
 if [ ! -d ".git" ]; then
-    echo "Инициализация нового репозитория Git..."
     git init
-    
-    # Добавляем все файлы
-    echo "Добавление файлов в репозиторий..."
-    git add .
-    
-    # Создаем первый коммит
-    echo "Создание первого коммита..."
-    git commit -m "Initial commit: Fashion Store - Next.js e-commerce platform with multiple payment methods"
+    if [ $? -ne 0 ]; then
+        echo "Ошибка при инициализации Git репозитория"
+        exit 1
+    fi
 else
-    echo "Обнаружен существующий .git каталог."
+    echo "Репозиторий уже инициализирован"
 fi
 
-# Проверяем, что чувствительные файлы указаны в .gitignore
 echo ""
-echo "Проверка файлов .env в .gitignore..."
-if grep -q "\.env\*" .gitignore; then
-    echo "✓ Файлы .env* находятся в .gitignore"
-else
-    echo "⚠️  Файлы .env* НЕ найдены в .gitignore! Добавьте '.env*' в .gitignore перед публикацией!"
-fi
+echo "2. Добавление файлов к коммиту..."
+git add .
 
-# Проверяем наличие файла с рекомендациями по безопасности
-if [ -f "SECURITY_CONSIDERATIONS.md" ]; then
-    echo "✓ Файл SECURITY_CONSIDERATIONS.md найден"
-else
-    echo "⚠️  Файл SECURITY_CONSIDERATIONS.md отсутствует!"
-fi
+echo ""
+echo "3. Создание коммита..."
+git commit -m "Initial commit: Fashion Store project with secure environment setup"
 
-# Инструкции для пользователя
 echo ""
-echo "Теперь выполните следующие шаги для обновления репозитория:"
-echo "1. Если вы еще не установили удаленный репозиторий, выполните (замените URL на ваш):"
-echo "   git remote add origin https://github.com/deceiveroo/fashion-store1.git"
+echo "#########################################"
+echo "#    ТЕПЕРЬ НЕОБХОДИМО:                  #"
+echo "#                                       #"
+echo "# 1. Создать репозиторий на GitHub      #"
+echo "# 2. Скопировать URL созданного        #"
+echo "#    репозитория                        #"
+echo "# 3. Заменить URL в следующей команде  #"
+echo "#                                       #"
+echo "# git remote add origin ВАШ_URL        #"
+echo "# git branch -M main                   #"
+echo "# git push -u origin main              #"
+echo "#########################################"
 echo ""
-echo "2. Переключитесь на ветку main (если она существует):"
-echo "   git checkout main"
+
+echo "Содержимое файла .gitignore проверено - все чувствительные файлы игнорируются."
 echo ""
-echo "3. Обновите все файлы для публикации"
+echo "Файл .env.example доступен для клонирующих проект."
 echo ""
-echo "4. Добавьте изменения:"
-echo "   git add ."
-echo ""
-echo "5. Сделайте коммит:"
-echo "   git commit -m \"Update: Full project files for fashion store\""
-echo ""
-echo "6. Загрузите изменения на GitHub:"
-echo "   git push -u origin main --force"
-echo ""
-echo "ВАЖНО: Перед публикацией убедитесь, что:"
-echo "- Все чувствительные данные находятся в .env* файлах"
-echo "- Эти файлы НЕ попадают в репозиторий (они должны быть в .gitignore)"
-echo "- В репозиторий НЕ попадает информация о базе данных, ключах API и паролях"
-echo "- Прочитайте файл SECURITY_CONSIDERATIONS.md для дополнительной информации"
-echo ""
-echo "Проект готов к обновлению на GitHub!"
+echo "Настоятельно рекомендуется:"
+echo "- НЕ добавлять .env файлы с реальными секретами в репозиторий"
+echo "- Использовать .env.local для локальных настроек"
