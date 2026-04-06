@@ -54,6 +54,15 @@ export const getSession = cache(async () => {
   }
 });
 
+// New function to require authentication
+export async function requireUser(): Promise<{ id: string; email: string; name: string; role: string; image?: string }> {
+  const session = await getSession();
+  if (!session?.user) {
+    throw new Error('User not authenticated');
+  }
+  return session.user;
+}
+
 export async function isStaff(): Promise<boolean> {
   const s = await getSession();
   return isStaffRole(s?.user?.role);
