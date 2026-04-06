@@ -5,60 +5,77 @@ import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, R
 import { toast } from 'sonner';
 import AdminLayout from '@/components/AdminLayout';
 
-interface ChatMessage { id: string; sessionId: string; message: string; sender: 'user' | 'ai' | 'admin'; aiModel: string | null; createdAt: string; }
-interface ChatSession { id: string; sessionId: string; userEmail: string | null; userName: string | null; status: 'active' | 'resolved' | 'archived'; messageCount: number | null; firstMessage: string | null; lastMessageAt: string | null; aiDisabled: boolean | null; createdAt: string; }
+interface Msg { id: string; sessionId: string; message: string; sender: 'user'|'ai'|'admin'; createdAt: string; }
+interface Session { id: string; sessionId: string; userEmail: string|null; userName: string|null; status: 'active'|'resolved'|'archived'; messageCount: number|null; firstMessage: string|null; lastMessageAt: string|null; aiDisabled: boolean|null; createdAt: string; }
 
 function SupportChatsPage() {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [sel, setSel] = useState<ChatSession | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sel, setSel] = useState<Session|null>(null);
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState<'all'|'active'|'resolved'>('all');
   const endRef = useRef<HTMLDivElement>(null);
-  const selRef = useRef<ChatSession | null>(null);
+  const selRef = useRef<Session|null>(null);
+  const msgEsRef = useRef<EventSource|null>(null);
   const taken = sel?.aiDisabled === true;
 
   useEffect(() => { selRef.current = sel; }, [sel]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  const fetchSessions = useCallback(async () => {
+  // Load sessions with polling
+  const loadSessions = useCallback(async (silent=false) => {
     try {
       const r = await fetch('/api/admin/support-chats');
       if (!r.ok) return;
       const d = await r.json();
-      setSessions(d.sessions || []);
-      setLoading(false);
+      const list: Session[] = d.sessions || [];
+      setSessions(list);
+      if (!silent) setLoading(false);
       if (selRef.current) {
-        const u = (d.sessions || []).find((s: ChatSession) => s.sessionId === selRef.current!.sessionId);
+        const u = list.find(s => s.sessionId === selRef.current!.sessionId);
         if (u) setSel(u);
       }
     } catch {}
   }, []);
 
-  const fetchMessages = useCallback(async (sid: string) => {
-    try {
-      const r = await fetch('/api/admin/support-chats/' + sid);
-      if (r.ok) { const d = await r.json(); setMessages(d.messages || []); }
-    } catch {}
-  }, []);
-
   useEffect(() => {
-    fetchSessions();
-    const t = setInterval(fetchSessions, 3000);
+    loadSessions();
+    const t = setInterval(() => loadSessions(true), 3000);
     return () => clearInterval(t);
-  }, [fetchSessions]);
+  }, [loadSessions]);
 
+  // SSE for messages  instant delivery
   useEffect(() => {
+    if (msgEsRef.current) { msgEsRef.current.close(); msgEsRef.current = null; }
     if (!sel) { setMessages([]); return; }
-    fetchMessages(sel.sessionId);
-    const t = setInterval(() => { if (selRef.current) fetchMessages(selRef.current.sessionId); }, 2000);
-    return () => clearInterval(t);
-  }, [sel?.sessionId, fetchMessages]);
+
+    const es = new EventSource(`/api/chat/stream?sessionId=${sel.sessionId}`);
+    msgEsRef.current = es;
+
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'init') {
+          setMessages(data.messages || []);
+        } else if (data.type === 'new') {
+          setMessages(prev => {
+            const ids = new Set(prev.map(m => m.id));
+            const fresh = (data.messages || []).filter((m: Msg) => !ids.has(m.id));
+            return fresh.length > 0 ? [...prev, ...fresh] : prev;
+          });
+        }
+      } catch {}
+    };
+
+    return () => { es.close(); };
+  }, [sel?.sessionId]);
 
   const takeover = async (sid: string) => {
-    const r = await fetch('/api/admin/support-chats/takeover', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }) });
+    const r = await fetch('/api/admin/support-chats/takeover', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }),
+    });
     if (r.ok) { toast.success('Чат перехвачен!'); setSel(p => p ? { ...p, aiDisabled: true } : p); }
     else toast.error('Ошибка');
   };
@@ -66,21 +83,27 @@ function SupportChatsPage() {
   const sendMsg = async () => {
     if (!input.trim() || !sel || sending || !taken) return;
     const msg = input.trim(); setInput(''); setSending(true);
-    const r = await fetch('/api/admin/support-chats/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sel.sessionId, message: msg }) });
+    const r = await fetch('/api/admin/support-chats/send', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: sel.sessionId, message: msg }),
+    });
     if (!r.ok) { setInput(msg); toast.error('Ошибка отправки'); }
-    else await fetchMessages(sel.sessionId);
     setSending(false);
   };
 
   const setStatus = async (sid: string, status: string) => {
-    await fetch('/api/admin/support-chats', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid, status }) });
+    await fetch('/api/admin/support-chats', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid, status }),
+    });
     toast.success('Обновлено'); setSel(p => p ? { ...p, status: status as any } : p);
   };
 
   const del = async (sid: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Удалить?')) return;
-    const r = await fetch('/api/admin/support-chats/delete', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }) });
+    if (!confirm('Удалить чат?')) return;
+    const r = await fetch('/api/admin/support-chats/delete', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }),
+    });
     if (r.ok) { toast.success('Удалено'); if (sel?.sessionId === sid) { setSel(null); setMessages([]); } }
     else toast.error('Ошибка');
   };
@@ -93,15 +116,17 @@ function SupportChatsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Чаты поддержки</h1>
-            <p className="text-sm text-gray-500">Всего: {sessions.length}  обновление каждые 2-3 сек</p>
+            <p className="text-sm text-gray-500">Всего: {sessions.length}  <span className="text-green-500"> Live</span></p>
           </div>
-          <button onClick={fetchSessions} className="p-2 text-gray-500 hover:text-purple-600 rounded-lg hover:bg-gray-100"><RefreshCw className="h-5 w-5" /></button>
+          <button onClick={() => loadSessions()} className="p-2 text-gray-500 hover:text-purple-600 rounded-lg hover:bg-gray-100"><RefreshCw className="h-5 w-5"/></button>
         </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
+          {/* Sessions */}
           <div className="lg:col-span-1 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
             <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex gap-2">
               {(['all','active','resolved'] as const).map(f => (
-                <button key={f} onClick={() => setFilter(f)} className={'px-3 py-1 rounded-lg text-xs font-medium ' + (filter===f?'bg-purple-600 text-white':'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400')}>
+                <button key={f} onClick={() => setFilter(f)} className={'px-3 py-1 rounded-lg text-xs font-medium '+(filter===f?'bg-purple-600 text-white':'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400')}>
                   {f==='all'?'Все':f==='active'?'Активные':'Решенные'}
                 </button>
               ))}
@@ -132,10 +157,11 @@ function SupportChatsPage() {
             </div>
           </div>
 
+          {/* Chat */}
           <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
             {sel ? (
               <>
-                <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-semibold text-sm text-gray-900 dark:text-white">{sel.userName||sel.userEmail||'Гость'}</p>
@@ -152,6 +178,7 @@ function SupportChatsPage() {
                     <button onClick={()=>setStatus(sel.sessionId,'archived')} className="px-3 py-1.5 bg-gray-500 text-white rounded-lg text-xs font-medium flex items-center gap-1"><Archive className="h-3.5 w-3.5"/> Архив</button>
                   </div>
                 </div>
+
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-800/50">
                   {messages.length===0
                     ? <div className="flex items-center justify-center h-full text-gray-400 text-sm">Нет сообщений</div>
@@ -169,7 +196,8 @@ function SupportChatsPage() {
                   }
                   <div ref={endRef}/>
                 </div>
-                <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+
+                <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
                   {!taken && <p className="text-xs text-center text-gray-400 mb-2">Перехватите чат чтобы писать</p>}
                   <div className="flex gap-2">
                     <input type="text" value={input} onChange={e=>setInput(e.target.value)}
