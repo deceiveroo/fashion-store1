@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* Настройка темной темы для ручного управления через класс .dark */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    /* Light theme colors */
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --surface: #f8fafc;
+    --surface-hover: #f1f5f9;
+    --border: #e2e8f0;
+    --text-secondary: #64748b;
+    
+    /* Primary colors */
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  }
+
+  .dark {
+    /* Dark theme colors - идеальные тона */
+    --background: #0a0a0f;
+    --foreground: #f1f5f9;
+    --surface: #1a1a24;
+    --surface-hover: #252532;
+    --border: #2d2d3d;
+    --text-secondary: #94a3b8;
+    
+    /* Primary colors для темной темы */
+    --primary: #818cf8;
+    --primary-hover: #a5b4fc;
+    
+    /* Shadows для темной темы */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+}
+
+@layer components {
+  /* Glass effect для toast */
+  .glass-toast {
+    position: relative;
+  }
+
+  .glass-toast::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.1) 100%
+    );
+    border-radius: inherit;
+  }
+
+  .dark .glass-toast::before {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+
+  .glass-toast:hover {
+    transform: translateY(-0.125rem);
+    transition: all 0.3s;
+    box-shadow: 
+      0 20px 40px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .dark .glass-toast:hover {
+    box-shadow: 
+      0 20px 40px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+@layer utilities {
+  /* Анимация появления */
+  @keyframes glassSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(100%) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  [data-sonner-toast] {
+    animation: glassSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}

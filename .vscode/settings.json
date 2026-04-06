@@ -1,0 +1,8 @@
+{
+    "Lingma.DisplayLanguage": "English",
+    "Lingma.PreferredLanguage for AI Chat": "English",
+    "Lingma.PreferredLanguage forCommitMessage": "English",
+    "Lingma.aI Chat.mcpToolsInAgentMode": true,
+    "Lingma.cloudModelAutoTriggerGenerateLength": "long",
+    "Lingma.cloudModelManualTriggerGenerateLength": "long"
+}
