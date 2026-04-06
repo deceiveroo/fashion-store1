@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Send, X, CheckCircle, Archive, User, Bot, Shield } from 'lucide-react';
+import { MessageCircle, Send, X, CheckCircle, Archive, User, Bot, Shield, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/AdminLayout';
 
@@ -113,6 +113,21 @@ function SupportChatsPage() {
     } catch { toast.error('Ошибка обновления статуса'); }
   };
 
+  const handleDeleteChat = async (sessionId: string) => {
+    if (!confirm('Удалить этот чат и все сообщения?')) return;
+    try {
+      const res = await fetch('/api/admin/support-chats/delete', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (res.ok) {
+        toast.success('Чат удалён');
+        if (selectedSession?.sessionId === sessionId) setSelectedSession(null);
+        loadSessions();
+      } else toast.error('Не удалось удалить чат');
+    } catch { toast.error('Ошибка удаления'); }
+  };
+
   const filteredSessions = sessions.filter(s => filter === 'all' || s.status === filter);
 
   return (
@@ -138,23 +153,32 @@ function SupportChatsPage() {
               ) : filteredSessions.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400"><MessageCircle className="mx-auto h-12 w-12 mb-2" /><p>Нет чатов</p></div>
               ) : filteredSessions.map(session => (
-                <button key={session.id} onClick={() => setSelectedSession(session)}
-                  className={'w-full p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left ' + (selectedSession?.id === session.id ? 'bg-purple-50 dark:bg-purple-900/20' : '')}>
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4 text-purple-600" />
-                      <span className="font-medium text-sm text-gray-900 dark:text-white">{session.userName || session.userEmail || 'Гость'}</span>
+                <div key={session.id} className={'border-b border-gray-200 dark:border-gray-700 ' + (selectedSession?.id === session.id ? 'bg-purple-50 dark:bg-purple-900/20' : '')}>
+                  <button onClick={() => setSelectedSession(session)} className="w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4 text-purple-600" />
+                        <span className="font-medium text-sm text-gray-900 dark:text-white">{session.userName || session.userEmail || 'Гость'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {session.aiDisabled && <Shield className="h-4 w-4 text-green-600" />}
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDeleteChat(session.sessionId); }}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    {session.aiDisabled && <Shield className="h-4 w-4 text-green-600" />}
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">{session.firstMessage || 'Нет сообщений'}</p>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={'px-2 py-0.5 rounded-full ' + (session.status === 'active' ? 'bg-green-100 text-green-800' : session.status === 'resolved' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800')}>
-                      {session.status}
-                    </span>
-                    <span className="text-gray-500">{session.messageCount || 0} сообщ.</span>
-                  </div>
-                </button>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">{session.firstMessage || 'Нет сообщений'}</p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={'px-2 py-0.5 rounded-full ' + (session.status === 'active' ? 'bg-green-100 text-green-800' : session.status === 'resolved' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800')}>
+                        {session.status}
+                      </span>
+                      <span className="text-gray-500">{session.messageCount || 0} сообщ.</span>
+                    </div>
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -168,7 +192,13 @@ function SupportChatsPage() {
                       <h3 className="font-semibold text-gray-900 dark:text-white">{selectedSession.userName || selectedSession.userEmail || 'Гость'}</h3>
                       <p className="text-xs text-gray-500">{selectedSession.userEmail || 'Анонимный'}</p>
                     </div>
-                    <button onClick={() => setSelectedSession(null)} className="lg:hidden text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleDeleteChat(selectedSession.sessionId)}
+                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => setSelectedSession(null)} className="lg:hidden text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     {!selectedSession.aiDisabled && (
