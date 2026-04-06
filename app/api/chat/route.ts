@@ -2,8 +2,6 @@
 import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
 
 const fallbackResponses: Record<string, string> = {
   'доставка': "Мы предлагаем несколько вариантов доставки:\n\n Курьерская доставка - 1-3 дня (бесплатно от 5000₽)\n Почта России - 5-10 дней (от 300₽)\n Самовывоз из магазина - бесплатно",
@@ -45,6 +43,46 @@ async function saveMessage(sessionId: string, message: string, sender: 'user' | 
   }
 }
 
+async function callCloudflareAI(message: string): Promise<string | null> {
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  if (!token || !accountId) return null;
+
+  try {
+    const res = await fetch(
+      'https://api.cloudflare.com/client/v4/accounts/' + accountId + '/ai/run/@cf/meta/llama-3.1-8b-instruct',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'Ты AI-ассистент магазина одежды ELEVATE. Отвечай кратко и дружелюбно на русском языке. Помогай с вопросами о доставке, возврате, размерах, оплате и товарах. Не отвечай на темы не связанные с магазином.',
+            },
+            { role: 'user', content: message },
+          ],
+          max_tokens: 300,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      console.error('[CHAT] Cloudflare AI error:', res.status, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    return data?.result?.response || null;
+  } catch (error: any) {
+    console.error('[CHAT] Cloudflare AI exception:', error.message);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { message, sessionId } = await request.json();
@@ -67,53 +105,20 @@ export async function POST(request: NextRequest) {
     let aiMessage = '';
     let aiModel = 'fallback';
 
-    // Try Vercel AI Gateway first
-    const gatewayKey = process.env.VERCEL_AI_GATEWAY_KEY;
-    if (gatewayKey) {
-      try {
-        const openai = createOpenAI({
-          baseURL: 'https://ai-gateway.vercel.sh/v1',
-          apiKey: gatewayKey,
-        });
-
-        const result = await generateText({
-          model: openai('gpt-4o-mini'),
-          system: 'Ты AI-ассистент магазина одежды ELEVATE. Отвечай кратко и дружелюбно на русском языке. Помогай с вопросами о доставке, возврате, размерах, оплате и товарах.',
-          prompt: message,
-          maxTokens: 300,
-        });
-
-        if (result.text) {
-          aiMessage = result.text;
-          aiModel = 'vercel-gateway-gpt4o-mini';
-        }
-      } catch (error: any) {
-        console.log('[CHAT] Vercel AI Gateway error:', error.message);
-      }
+    // Cloudflare Workers AI
+    const cfResponse = await callCloudflareAI(message);
+    if (cfResponse) {
+      aiMessage = cfResponse;
+      aiModel = 'cloudflare-llama-3.1-8b';
     }
 
-    // Fallback to direct OpenAI
-    if (!aiMessage) {
-      const openaiKey = process.env.OPENAI_API_KEY;
-      if (openaiKey) {
-        try {
-          const openai = createOpenAI({ apiKey: openaiKey });
-          const result = await generateText({
-            model: openai('gpt-4o-mini'),
-            system: 'Ты AI-ассистент магазина одежды ELEVATE. Отвечай кратко на русском.',
-            prompt: message,
-            maxTokens: 300,
-          });
-          if (result.text) { aiMessage = result.text; aiModel = 'openai'; }
-        } catch { console.log('[CHAT] OpenAI error'); }
-      }
-    }
-
-    // Keyword fallback
+    // Keyword fallback if CF failed
     if (!aiMessage) {
       const fallback = findBestResponse(message);
-      if (fallback) { aiMessage = fallback; aiModel = 'fallback'; }
-      else {
+      if (fallback) {
+        aiMessage = fallback;
+        aiModel = 'fallback';
+      } else {
         aiMessage = "Спасибо за вопрос! \n\nЯ могу помочь с:\n Доставкой\n Возвратом\n Оплатой\n Размерами\n Скидками\n\nИли свяжитесь:\n support@elevate.com\n +7 (800) 123-45-67";
         aiModel = 'fallback';
       }
