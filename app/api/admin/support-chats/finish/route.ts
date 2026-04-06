@@ -2,12 +2,12 @@ import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatSessions } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { requireAdmin } from '@/lib/server-auth';
+import { isAdmin } from '@/lib/server-auth';
 
 export async function POST(req: NextRequest) {
   try {
     // Check if user is admin
-    const admin = await requireAdmin();
+    const admin = await isAdmin();
     if (!admin) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }

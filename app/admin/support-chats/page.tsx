@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Upload, Star } from 'lucide-react';
 import { toast } from 'sonner';
-import AdminLayout from '@/components\AdminLayout';
+import AdminLayout from '@/components/AdminLayout';
 
 interface Msg { id: string; sessionId: string; message: string; imageUrl?: string | null; sender: 'user'|'ai'|'admin'; createdAt: string; }
 interface Session { id: string; sessionId: string; userEmail: string|null; userName: string|null; status: 'active'|'resolved'|'archived'; messageCount: number|null; firstMessage: string|null; lastMessageAt: string|null; aiDisabled: boolean|null; operatorRating?: number | null; createdAt: string; }
