@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatSessions, supportChatMessages } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
@@ -84,10 +84,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to process webhook' }, { status: 500 });
   }
 }
-
-// We need to disable Next.js default body parsing since Telegram sends JSON
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
