@@ -108,6 +108,14 @@ export default function AdminLoginPage() {
         <p className="mt-6 text-center text-xs text-zinc-500">
           Роли: <strong>admin</strong>, <strong>manager</strong>, <strong>support</strong>
         </p>
+        <div className="mt-4 border-t border-zinc-200 dark:border-zinc-700 pt-4">
+          <a
+            href="/auth/signin"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-700 py-2.5 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition"
+          >
+            Войти через основной аккаунт
+          </a>
+        </div>
       </div>
     </div>
   );
