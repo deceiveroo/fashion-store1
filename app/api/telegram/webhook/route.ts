@@ -100,3 +100,48 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to process webhook' }, { status: 500 });
   }
 }
+
+// GET ?action=register — register webhook with Telegram
+// GET ?action=info — get webhook info
+export async function GET(request: NextRequest) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    return NextResponse.json({ error: 'TELEGRAM_BOT_TOKEN not set' }, { status: 500 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const action = searchParams.get('action');
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fashion-store1-seven.vercel.app';
+
+  if (action === 'register') {
+    const webhookUrl = `${appUrl}/api/telegram/webhook`;
+    const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: webhookUrl, allowed_updates: ['message', 'callback_query'] }),
+    });
+    const data = await res.json();
+    return NextResponse.json({ webhookUrl, result: data });
+  }
+
+  if (action === 'info') {
+    const res = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+    const data = await res.json();
+    return NextResponse.json(data);
+  }
+
+  if (action === 'delete') {
+    const res = await fetch(`https://api.telegram.org/bot${token}/deleteWebhook`);
+    const data = await res.json();
+    return NextResponse.json(data);
+  }
+
+  return NextResponse.json({ 
+    message: 'Telegram Webhook Manager',
+    actions: {
+      register: '?action=register',
+      info: '?action=info', 
+      delete: '?action=delete',
+    }
+  });
+}
