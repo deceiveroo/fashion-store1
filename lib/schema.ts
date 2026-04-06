@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, decimal, timestamp, boolean, json, varchar, uniqueIndex, index } from 'drizzle-orm/pg-core';
+﻿import { pgTable, serial, text, integer, decimal, timestamp, boolean, json, varchar, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // Enum types for PostgreSQL
@@ -164,6 +164,13 @@ export const orders = pgTable('orders', {
   deliveryPrice: decimal('delivery_price', { precision: 10, scale: 2 }).default('0'),
   deliveryMethod: text('delivery_method').default('courier'),
   paymentMethod: text('payment_method').default('card'),
+  paymentStatus: text('payment_status', { enum: paymentStatusEnum }).default('pending'),
+  paymentIntentId: text('payment_intent_id'), // Stripe payment intent ID
+  transactionId: text('transaction_id'), // External transaction ID
+  cryptoCurrency: text('crypto_currency'), // Cryptocurrency used for payment
+  cryptoAddress: text('crypto_address'), // Address to which payment was sent
+  cryptoTxId: text('crypto_tx_id'), // Transaction ID for crypto payment
+  cryptoAmount: decimal('crypto_amount', { precision: 20, scale: 8 }), // Amount in cryptocurrency
   recipient: json('recipient'), // {firstName, lastName, phone, email, address}
   comment: text('comment'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
@@ -172,6 +179,7 @@ export const orders = pgTable('orders', {
   return {
     userIdx: index('orders_user_idx').on(table.userId),
     statusIdx: index('orders_status_idx').on(table.status),
+    paymentStatusIdx: index('orders_payment_status_idx').on(table.paymentStatus),
     createdAtIdx: index('orders_created_at_idx').on(table.createdAt),
   };
 });
@@ -387,6 +395,44 @@ export const productCategoryRelations = relations(productCategory, ({ one }) => 
   category: one(categories, { fields: [productCategory.categoryId], references: [categories.id] }),
 }));
 
+// Support Chat Schema
+export const chatSessions = pgTable('chat_sessions', {
+  id: serial('id').primaryKey(),
+  telegramUserId: integer('telegram_user_id'),
+  username: text('username'),
+  status: varchar('status', { length: 20 }).default('ai').notNull(), // ai | waiting | human | closed
+  operatorId: integer('operator_id'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_telegram_user_id').on(t.telegramUserId),
+  index('idx_status').on(t.status),
+]);
+
+export const messages = pgTable('messages', {
+  id: serial('id').primaryKey(),
+  sessionId: integer('session_id').references(() => chatSessions.id).notNull(),
+  role: varchar('role', { length: 10 }).notNull(), // user | ai | operator
+  content: text('content').notNull(),
+  meta: json('meta'), // { confidence?: number, fallback?: boolean, messageId?: number, ragChunks?: string[] }
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const operators = pgTable('operators', {
+  id: serial('id').primaryKey(),
+  telegramUserId: integer('telegram_user_id').unique().notNull(),
+  name: text('name'),
+  status: varchar('status', { length: 10 }).default('offline'), // online | busy | offline
+  lastActiveAt: timestamp('last_active_at').defaultNow(),
+});
+
+export const chatSessionsRelations = relations(chatSessions, ({ many }) => ({
+  messages: many(messages),
+}));
+export const messagesRelations = relations(messages, ({ one }) => ({
+  session: one(chatSessions, { fields: [messages.sessionId], references: [chatSessions.id] }),
+}));
+
 // Support Chat Messages table
 export const supportChatMessages = pgTable('support_chat_messages', {
   id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
@@ -447,4 +493,40 @@ export const supportChatSessionsRelations = relations(supportChatSessions, ({ on
   user: one(users, { fields: [supportChatSessions.userId], references: [users.id] }),
   resolvedByUser: one(users, { fields: [supportChatSessions.resolvedBy], references: [users.id] }),
   messages: many(supportChatMessages),
+}));
+
+// Contact Messages table
+export const contactMessages = pgTable('contact_messages', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }), // Reference to user if logged in
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  email: text('email').notNull(),
+  subject: text('subject').notNull(),
+  message: text('message').notNull(),
+  category: text('category', { enum: ['general', 'order', 'return', 'complaint', 'cooperation', 'other'] }).default('general'),
+  status: text('status', { enum: ['new', 'in_progress', 'resolved', 'closed'] }).default('new'),
+  priority: text('priority', { enum: ['low', 'normal', 'high', 'urgent'] }).default('normal'),
+  assignedTo: text('assigned_to').references(() => users.id, { onDelete: 'set null' }), // Staff member assigned
+  repliedAt: timestamp('replied_at', { mode: 'date' }),
+  resolvedAt: timestamp('resolved_at', { mode: 'date' }),
+  resolutionNotes: text('resolution_notes'),
+  userAgent: text('user_agent'), // Browser info
+  ipAddress: text('ip_address'), // User IP
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: index('contact_messages_user_idx').on(table.userId),
+    emailIdx: index('contact_messages_email_idx').on(table.email),
+    statusIdx: index('contact_messages_status_idx').on(table.status),
+    categoryIdx: index('contact_messages_category_idx').on(table.category),
+    createdAtIdx: index('contact_messages_created_at_idx').on(table.createdAt),
+  };
+});
+
+// Relations for contact messages
+export const contactMessagesRelations = relations(contactMessages, ({ one }) => ({
+  user: one(users, { fields: [contactMessages.userId], references: [users.id] }),
+  assignedStaff: one(users, { fields: [contactMessages.assignedTo], references: [users.id] }),
 }));

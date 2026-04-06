@@ -15,7 +15,7 @@ const navigation = [
   { name: 'Коллекции', href: '/collections' },
   { name: 'Мужское', href: '/men' },
   { name: 'Женское', href: '/women' },
-  { name: 'О Нас', href: '/about' },
+  { name: 'О нас', href: '/company/about' },
 ];
 
 export default function Header() {
@@ -320,27 +320,24 @@ export default function Header() {
                   {user ? (
                     <>
                       <div className="border-t border-gray-200 pt-3 mt-2">
-                        <Link
-                          href="/profile"
-                          className="block py-2 text-gray-700 hover:text-purple-600 font-medium"
-                          onClick={closeMobileMenu}
-                        >
-                          Мой профиль
-                        </Link>
-                        <Link
-                          href="/orders"
-                          className="block py-2 text-gray-700 hover:text-purple-600 font-medium"
-                          onClick={closeMobileMenu}
-                        >
-                          Мои заказы
-                        </Link>
-                        <Link
-                          href="/favorites"
-                          className="block py-2 text-gray-700 hover:text-purple-600 font-medium"
-                          onClick={closeMobileMenu}
-                        >
-                          Избранное
-                        </Link>
+                        {/* Mobile profile avatar */}
+                        <div className="flex items-center gap-3 py-2 mb-2">
+                          {(user.avatar || user.image) ? (
+                            <img src={user.avatar || user.image} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
+                              {user?.name?.[0] || user?.email?.[0] || 'U'}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium text-gray-900 text-sm">{user?.name || user?.email}</p>
+                            <p className="text-xs text-gray-500">{user?.email}</p>
+                          </div>
+                        </div>
+                        <Link href="/profile" className="block py-2 text-gray-700 hover:text-purple-600 font-medium" onClick={closeMobileMenu}>Мой профиль</Link>
+                        <Link href="/orders" className="block py-2 text-gray-700 hover:text-purple-600 font-medium" onClick={closeMobileMenu}>Мои заказы</Link>
+                        <Link href="/favorites" className="block py-2 text-gray-700 hover:text-purple-600 font-medium" onClick={closeMobileMenu}>Избранное</Link>
+                        <button onClick={() => { logout(); closeMobileMenu(); }} className="block w-full text-left py-2 text-red-600 hover:text-red-700 font-medium">Выйти</button>
                       </div>
                       
                       {/* Mobile Admin Link */}

@@ -7,31 +7,36 @@ import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
 import { getSession, isAdmin } from '@/lib/server-auth';
 
-// Helper function with retry logic for Supabase pooler
-async function queryWithRetry<T>(queryFn: () => Promise<T>, maxRetries = 3): Promise<T> {
+// Функция с повторными попытками для надежной работы с базой данных
+async function queryWithRetry<T>(queryFn: () => Promise<T>): Promise<T> {
+  const maxRetries = 3;
   let lastError: any;
-  
+
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await queryFn();
     } catch (error: any) {
       lastError = error;
       const isConnectionError = 
-        error.message?.includes('Connection terminated') ||
-        error.message?.includes('ECONNRESET') ||
-        error.message?.includes('Pool is draining and cannot accept new connections') ||
-        error.code === 'ECONNRESET';
-      
+        error.message?.includes('Connection terminated') || 
+        error.message?.includes('timeout') || 
+        error.message?.includes('Connection pool is closed') ||
+        error.code === 'ETIMEDOUT' ||
+        error.code === 'ECONNRESET' ||
+        error.code === 'ENOTFOUND';
+
       if (isConnectionError && i < maxRetries - 1) {
-        console.warn(`Query failed (attempt ${i + 1}), retrying...`, error.message);
-        // Wait before retry (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+        console.log(`Database connection attempt ${i + 1} failed, retrying in ${Math.pow(2, i)} seconds...`);
+        // Ждем перед повторной попыткой (экспоненциальная задержка)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
         continue;
+      } else {
+        // Если это не ошибка подключения или это последняя попытка
+        throw error;
       }
-      throw error;
     }
   }
-  
+
   throw lastError;
 }
 
@@ -264,158 +269,74 @@ async function authenticateToken(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await authenticateToken(request);
-  if (!user) {
-    return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
-  }
-
   try {
-    const orderData: OrderData = await request.json();
-    console.log('Received order data:', JSON.stringify(orderData, null, 2));
+    const session = await getServerSession(authOptions);
     
-    // Проверяем обязательные поля
-    if (!orderData.deliveryMethod) {
-      return NextResponse.json(
-        { message: 'Метод доставки обязателен' },
-        { status: 400 }
-      );
-    }
-    
-    if (!orderData.paymentMethod) {
-      return NextResponse.json(
-        { message: 'Метод оплаты обязателен' },
-        { status: 400 }
-      );
-    }
-    
-    if (!orderData.recipient) {
-      return NextResponse.json(
-        { message: 'Информация о получателе обязательна' },
-        { status: 400 }
-      );
-    }
-    
-    // Проверяем, что все обязательные поля получателя заполнены
-    if (!orderData.recipient.firstName || !orderData.recipient.lastName || 
-        !orderData.recipient.phone || !orderData.recipient.email) {
-      return NextResponse.json(
-        { 
-          message: 'Все поля получателя обязательны для заполнения',
-          details: {
-            firstName: !!orderData.recipient.firstName,
-            lastName: !!orderData.recipient.lastName,
-            phone: !!orderData.recipient.phone,
-            email: !!orderData.recipient.email
-          }
-        },
-        { status: 400 }
-      );
-    }
-    
-    if (!orderData.items || orderData.items.length === 0) {
-      return NextResponse.json(
-        { message: 'Заказ должен содержать хотя бы один товар' },
-        { status: 400 }
-      );
-    }
-    
-    // Проверяем элементы заказа
-    for (const item of orderData.items) {
-      if (!item.id || !item.name || item.price === undefined || !item.quantity) {
-        return NextResponse.json(
-          { message: 'Каждый товар должен содержать id, name, price и quantity' },
-          { status: 400 }
-        );
-      }
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Валидация заказа
-    if (orderData.total <= 0) {
-      return NextResponse.json(
-        { message: 'Сумма заказа должна быть положительной' },
-        { status: 400 }
-      );
+    const { items, total, discount, deliveryPrice, deliveryMethod, paymentMethod, recipient, comment } = await request.json();
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'Items are required' }, { status: 400 });
     }
 
-    // Создаем заказ
-    const [newOrder] = await queryWithRetry(() =>
-      db.insert(orders).values({
-        id: randomUUID(),
-        userId: user.userId,
-        total: orderData.total.toString(),
-        discount: (orderData.discount || 0).toString(),
-        deliveryPrice: (orderData.deliveryPrice || 0).toString(),
-        deliveryMethod: orderData.deliveryMethod,
-        paymentMethod: orderData.paymentMethod,
-        status: 'processing',
-        recipient: orderData.recipient,
-        comment: orderData.comment || null,
-        createdAt: new Date(),
-      }).returning()
-    );
-    
-    console.log('Заказ создан:', newOrder);
+    if (!recipient || !recipient.firstName || !recipient.lastName || !recipient.phone || !recipient.email) {
+      return NextResponse.json({ error: 'Recipient information is incomplete' }, { status: 400 });
+    }
 
-    // Создаем элементы заказа
-    const orderItemsData = orderData.items.map((item) => ({
-      id: randomUUID(),
-      orderId: newOrder.id,
-      productId: item.id,
-      name: item.name,
-      price: item.price.toString(),
-      quantity: item.quantity,
-      image: item.image || '',
-      size: item.size || null,
-      color: item.color || null,
-      createdAt: new Date()
-    }));
-    
-    console.log('Order items data:', orderItemsData);
+    // Create order transaction with retry logic
+    const newOrder = await queryWithRetry(async () => {
+      return await db.transaction(async (trx) => {
+        // Create the order
+        const [order] = await trx.insert(orders).values({
+          userId: session.user.id,
+          total,
+          discount,
+          deliveryPrice,
+          deliveryMethod,
+          paymentMethod,
+          status: 'processing', // Changed from 'pending' to 'processing'
+          recipient,
+          comment
+        }).returning();
 
-    await queryWithRetry(() =>
-      db.insert(orderItems).values(orderItemsData)
-    );
+        // Add items to the order
+        for (const item of items) {
+          await trx.insert(orderItems).values({
+            orderId: order.id,
+            productId: item.id,
+            variantId: item.variantId || null,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image,
+            size: item.size || null,
+            color: item.color || null
+          });
+        }
 
-    // Получаем полный заказ с элементами
-    const orderItemsList = await queryWithRetry(() =>
-      db
-        .select()
-        .from(orderItems)
-        .where(eq(orderItems.orderId, newOrder.id))
-    );
+        return order;
+      });
+    });
 
-    const fullOrder = {
-      id: newOrder.id,
-      items: orderItemsList.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: Number(item.price),
-        quantity: item.quantity,
-        image: item.image,
-        size: item.size || '',
-        color: item.color || ''
-      })),
-      total: Number(newOrder.total),
-      discount: Number(newOrder.discount || 0),
-      deliveryPrice: Number(newOrder.deliveryPrice || 0),
-      deliveryMethod: newOrder.deliveryMethod,
-      paymentMethod: newOrder.paymentMethod,
-      status: newOrder.status as 'processing' | 'shipped' | 'delivered' | 'cancelled',
-      createdAt: newOrder.createdAt?.toString() || new Date().toISOString(),
-      recipient: typeof newOrder.recipient === 'string' 
-        ? JSON.parse(newOrder.recipient) 
-        : newOrder.recipient,
-      comment: newOrder.comment
-    };
-
-    return NextResponse.json(fullOrder);
-  } catch (error) {
+    return NextResponse.json(newOrder, { status: 201 });
+  } catch (error: any) {
     console.error('Create order error:', error);
+    
+    // Определение типа ошибки и предоставление соответствующего сообщения
+    if (error.message?.includes('Connection terminated') || 
+        error.message?.includes('timeout') || 
+        error.message?.includes('Connection pool is closed')) {
+      return NextResponse.json(
+        { error: 'Database connection error. Please try again later.' }, 
+        { status: 503 }
+      );
+    }
+    
     return NextResponse.json(
-      { 
-        message: 'Ошибка при создании заказа', 
-        error: error instanceof Error ? error.message : String(error)
-      },
+      { error: error.message || 'Failed to create order' }, 
       { status: 500 }
     );
   }

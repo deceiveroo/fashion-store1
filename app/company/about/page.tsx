@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
-import { Users, Award, Zap, Globe, Star, TrendingUp, Building2, ArrowRight, Shield, Heart } from 'lucide-react';
+import { Users, Award, Zap, Globe, Star, TrendingUp, Building2, ArrowRight, Shield, Heart, Camera } from 'lucide-react';
 import Link from 'next/link';
 
 function CountUp({ end, duration = 2 }: { end: number; duration?: number }) {
@@ -49,9 +49,12 @@ const timeline = [
 ];
 
 const team = [
-  { name: 'Анна Иванова', role: 'Главный дизайнер', initials: 'АИ', color: 'from-purple-500 to-pink-500' },
-  { name: 'Максим Петров', role: 'Технический директор', initials: 'МП', color: 'from-blue-500 to-purple-500' },
-  { name: 'Елена Смирнова', role: 'Директор по развитию', initials: 'ЕС', color: 'from-pink-500 to-rose-500' },
+  { name: 'Анна Иванова', role: 'Главный дизайнер', initials: 'АИ', color: 'from-purple-500 to-pink-500', avatar: '/avatars/avatar-anna.jpg' },
+  { name: 'Максим Петров', role: 'Технический директор', initials: 'МП', color: 'from-blue-500 to-purple-500', avatar: '/avatars/avatar-maxim.jpg' },
+  { name: 'Елена Смирнова', role: 'Директор по развитию', initials: 'ЕС', color: 'from-pink-500 to-rose-500', avatar: '/avatars/avatar-elena.jpg' },
+  { name: 'Дмитрий Волков', role: 'Креативный директор', initials: 'ДВ', color: 'from-amber-500 to-orange-500', avatar: '/avatars/avatar-dmitry.jpg' },
+  { name: 'Ольга Соколова', role: 'Руководитель производства', initials: 'ОС', color: 'from-emerald-500 to-teal-500', avatar: '/avatars/avatar-olga.jpg' },
+  { name: 'Алексей Козлов', role: 'Финансовый директор', initials: 'АК', color: 'from-indigo-500 to-blue-500', avatar: '/avatars/avatar-alexey.jpg' },
 ];
 
 export default function AboutPage() {
@@ -257,7 +260,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* TEAM */}
+      {/* TEAM - Enhanced with avatar images */}
       <section className="py-20 px-4 bg-gray-950">
         <div className="max-w-6xl mx-auto">
           <motion.h2
@@ -266,9 +269,10 @@ export default function AboutPage() {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-black text-white mb-16 text-center"
           >
-            Команда
+            Наша команда
           </motion.h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {team.map((member, i) => (
               <motion.div
                 key={i}
@@ -276,14 +280,38 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.15 }}
-                whileHover={{ y: -6 }}
-                className="group bg-gray-900 rounded-3xl p-8 border border-gray-800 hover:border-purple-500/50 transition-all duration-300"
+                whileHover={{ y: -10 }}
+                className="group bg-gray-900 rounded-3xl p-6 border border-gray-800 hover:border-purple-500/50 transition-all duration-300 overflow-hidden"
               >
-                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${member.color} flex items-center justify-center text-white text-2xl font-black mb-6 shadow-lg`}>
-                  {member.initials}
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="relative">
+                    {/* Avatar image with fallback */}
+                    <div className="relative">
+                      <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${member.color} flex items-center justify-center text-white text-2xl font-black mb-4 shadow-lg`}>
+                        {member.initials}
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 bg-gray-700 p-1.5 rounded-full">
+                        <Camera className="text-white" size={14} />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{member.name}</h3>
+                    <p className="text-purple-400 text-sm font-medium">{member.role}</p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
-                <p className="text-purple-400 text-sm font-medium">{member.role}</p>
+                
+                <div className="mt-4 pt-4 border-t border-gray-800">
+                  <p className="text-gray-400 text-sm">
+                    {member.role === 'Главный дизайнер' ? 'Отвечает за креативную концепцию всех наших коллекций.' : 
+                     member.role === 'Технический директор' ? 'Руководит внедрением передовых технологий в производство.' :
+                     member.role === 'Директор по развитию' ? 'Отвечает за стратегическое развитие и расширение бизнеса.' :
+                     member.role === 'Креативный директор' ? 'Развивает бренд и визуальную идентичность компании.' :
+                     member.role === 'Руководитель производства' ? 'Обеспечивает высокое качество и устойчивость процессов.' :
+                     'Управляет финансовой деятельностью компании.'}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </div>

@@ -144,7 +144,7 @@ ON CONFLICT (slug) DO NOTHING;
 
 -- ============================================
 -- 4. ИЗОБРАЖЕНИЯ
--- ============================================
+-- ============================================ 
 INSERT INTO product_images (id, product_id, url, is_main, "order", created_at) VALUES
   (gen_random_uuid(), p1,  'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', true, 0, NOW()),
   (gen_random_uuid(), p2,  'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=600', true, 0, NOW()),

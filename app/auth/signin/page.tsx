@@ -55,10 +55,16 @@ export default function SignIn() {
     } catch (error: any) {
       console.error('Login error:', error);
       // Проверяем, является ли ошибка сетевой
-      if (error.message.includes('Failed to fetch') || error.message.includes('сети') || error.message.includes('connection')) {
+      if (error.message.includes('Failed to fetch') || 
+          error.message.includes('сети') || 
+          error.message.includes('connection') ||
+          error.message.includes('timeout') ||
+          error.message.includes('Время ожидания запроса истекло')) {
         toast.error('Ошибка подключения. Проверьте интернет-соединение и повторите попытку.');
+      } else if (error.message.includes('401')) {
+        toast.error('Неверный email или пароль');
       } else {
-        toast.error(error.message || 'Неверные учетные данные');
+        toast.error(error.message || 'Ошибка при входе в систему');
       }
     } finally {
       setIsLoading(false);

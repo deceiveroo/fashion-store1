@@ -1,0 +1,525 @@
+Цель: реализовать бесшовную систему поддержки, где бот обрабатывает запросы через LLM, а при низкой уверенности или по запросу пользователя диалог передаётся живому оператору через Telegram или веб-админку.
+📋 1. Требования к функционалу
+4.1. Уведомления
+При новом диалоге или переходе в статус waiting_operator отправлять уведомление в личку админа/оператора или в Telegram-канал/топик.
+Формат: 🔔 Новый запрос #ID | 👤 @username | 💬 "текст" | 🤖 уверенность: низкая | [👨‍💼 Взять] [📋 В очередь].
+Кнопки — inline callback_query, обработка через вебхук.
+Дедупликация: если диалог уже взят — не спамить.
+4.2. Перехват диалога (Human-in-the-Loop)
+Статусы диалога: ai → waiting_operator → human → closed.
+Переключение возможно:
+Из Telegram: оператор жмёт [Взять] в уведомлении → бот меняет статус и привязывает operator_id.
+Из админ-панели: кнопка "Взять" в списке чатов.
+Программно: при confidence < 2 или ключевых словах ("оператор", "человек", "помогите").
+При статусе human все сообщения пользователя пересылаются оператору, ответы оператора (через reply в ТГ или форму в админке) идут пользователю.
+4.3. Кнопка «Позвать оператора» в чате
+Персистентная inline-кнопка в интерфейсе чата (или появляется после 2 неудачных ответов бота).
+Логика: нажатие → статус waiting → бот: ⏳ Передаю специалисту... → уведомление операторам → кулдаун 10 мин для пользователя → авто-возврат в ai через 15 мин, если не взяли.
+4.4. Качество ответов и fallback
+Системный промпт: чёткая роль, ограничения, инструкция: «Если не уверен или вопрос требует доступа к аккаунту/оплате → отвечай шаблоном и предлагай оператора».
+База знаний (RAG): документы → чанки → эмбеддинги (Supabase/pgvector или Qdrant) → поиск топ-3 → промпт с контекстом → LLM.
+Оценка уверенности:
+попросить LLM оценить 1-5 в JSON-блоке ответа,
+эвристики (ключевые слова, длина, повтор),
+низкий ранг поиска в RAG = низкая уверенность.
+Fallback: при confidence <= 2 → статус waiting + шаблон: Не хочу вводить в заблуждение. Передаю вопрос специалисту.
+🗄️ 2. Схема БД (Drizzle ORM, PostgreSQL)
+lib/db/schema/support.ts
+import { pgTable, serial, text, timestamp, json, index, varchar, integer } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+
+export const chatSessions = pgTable('chat_sessions', {
+  id: serial('id').primaryKey(),
+  telegramUserId: integer('telegram_user_id').notNull(),
+  username: text('username'),
+  status: varchar('status', { length: 20 }).default('ai').notNull(), // ai | waiting | human | closed
+  operatorId: integer('operator_id'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_telegram_user_id').on(t.telegramUserId),
+  index('idx_status').on(t.status),
+]);
+
+export const messages = pgTable('messages', {
+  id: serial('id').primaryKey(),
+  sessionId: integer('session_id').references(() => chatSessions.id).notNull(),
+  role: varchar('role', { length: 10 }).notNull(), // user | ai | operator
+  content: text('content').notNull(),
+  meta: json('meta'), // { confidence?: number, fallback?: boolean, messageId?: number, ragChunks?: string[] }
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const operators = pgTable('operators', {
+  id: serial('id').primaryKey(),
+  telegramUserId: integer('telegram_user_id').unique().notNull(),
+  name: text('name'),
+  status: varchar('status', { length: 10 }).default('offline'), // online | busy | offline
+  lastActiveAt: timestamp('last_active_at').defaultNow(),
+});
+
+export const sessionsRelations = relations(chatSessions, ({ many }) => ({
+  messages: many(messages),
+}));
+export const messagesRelations = relations(messages, ({ one }) => ({
+  session: one(chatSessions, { fields: [messages.sessionId], references: [chatSessions.id] }),
+}));
+ 3. Telegram-бот (grammy + Next.js App Router webhook)
+app/api/telegram/webhook/route.ts
+ts
+import { Bot, InlineKeyboard, webhookCallback } from 'grammy';
+import { NextRequest } from 'next/server';
+import { db } from '@/lib/db';
+import { chatSessions, messages, operators } from '@/lib/db/schema/support';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { processAIResponse } from '@/lib/ai/support-processor';
+
+export const runtime = 'nodejs';
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
+if (!BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN not set');
+
+const bot = new Bot(BOT_TOKEN);
+
+// Вспомогательные функции
+async function getOrCreateSession(tgId: number, username?: string) {
+  let [session] = await db.select().from(chatSessions).where(eq(chatSessions.telegramUserId, tgId)).limit(1);
+  if (!session || session.status === 'closed') {
+    [session] = await db.insert(chatSessions).values({ telegramUserId: tgId, username, status: 'ai' }).returning();
+  }
+  return session;
+}
+async function updateSessionStatus(tgId: number, status: string) {
+  await db.update(chatSessions).set({ status, updatedAt: new Date() }).where(eq(chatSessions.telegramUserId, tgId));
+}
+async function notifyOperators(userId: number, username: string, chatId: number, lastMessage: string) {
+  const onlineOps = await db.select().from(operators).where(eq(operators.status, 'online'));
+  const keyboard = new InlineKeyboard().text('👨‍💼 Взять', `take_chat:${userId}`);
+  for (const op of onlineOps) {
+    await bot.api.sendMessage(op.telegramUserId, 
+      `🔔 Новый запрос #${userId} от @${username}\n💬 "${lastMessage.slice(0, 200)}"${lastMessage.length>200?'...':''}\n🕒 ${new Date().toLocaleTimeString('ru-RU')}`, 
+      { reply_markup: keyboard }
+    );
+  }
+}
+
+// Команды и обработчики
+bot.command('start', async (ctx) => {
+  await getOrCreateSession(ctx.from!.id, ctx.from!.username);
+  await ctx.reply('👋 Привет! Я помощник магазина. Чем могу помочь?', {
+    reply_markup: new InlineKeyboard()
+      .text('🤖 Спросить бота', 'ai_mode')
+      .text('👨‍💼 Позвать оператора', 'request_operator')
+  });
+});
+
+bot.callbackQuery('ai_mode', async (ctx) => {
+  await updateSessionStatus(ctx.from!.id, 'ai');
+  await ctx.editMessageText('✅ Режим бота активен. Задавайте вопросы!');
+});
+
+bot.callbackQuery('request_operator', async (ctx) => {
+  const userId = ctx.from!.id;
+  await updateSessionStatus(userId, 'waiting');
+  await ctx.editMessageText('⏳ Передаю специалисту. Обычно отвечаем за 2–5 минут.');
+  await notifyOperators(userId, ctx.from!.username || 'anon', ctx.chat.id, 'Запрос оператора через кнопку');
+});
+
+bot.callbackQuery(/^take_chat:(\d+)$/, async (ctx) => {
+  const targetUserId = Number(ctx.match[1]);
+  const operatorId = ctx.from!.id;
+  
+  // Проверка: есть ли оператор в БД
+  let [op] = await db.select().from(operators).where(eq(operators.telegramUserId, operatorId));
+  if (!op) {
+    await db.insert(operators).values({ telegramUserId: operatorId, name: ctx.from!.first_name, status: 'online' }).returning();
+  }
+  
+  await db.update(chatSessions)
+    .set({ status: 'human', operatorId: op?.id || null, updatedAt: new Date() })
+    .where(eq(chatSessions.telegramUserId, targetUserId));
+    
+  await ctx.answerCallbackQuery('✅ Диалог взят');
+  await bot.api.sendMessage(targetUserId, '👋 Оператор подключился. Пишите, отвечу в реальном времени.');
+});
+
+// Входящие сообщения от пользователя
+bot.on('message:text', async (ctx) => {
+  const text = ctx.message.text;
+  const userId = ctx.from!.id;
+  const username = ctx.from!.username;
+  const session = await getOrCreateSession(userId, username);
+  
+  // Сохраняем сообщение пользователя
+  await db.insert(messages).values({ sessionId: session.id, role: 'user', content: text });
+
+  if (session.status === 'human') {
+    // Пересылаем оператору
+    const [op] = await db.select().from(operators).where(eq(operators.id, session.operatorId!));
+    if (op) {
+      await bot.api.sendMessage(op.telegramUserId, `💬 Клиент #${session.id} (@${username}):\n${text}`, {
+        reply_parameters: { message_id: ctx.message.message_id }
+      });
+    }
+  } 
+  else if (session.status === 'ai') {
+    // AI-обработка
+    const aiResult = await processAIResponse(text, session.id);
+    await ctx.reply(aiResult.text);
+    await db.insert(messages).values({ 
+      sessionId: session.id, role: 'ai', content: aiResult.text, 
+      meta: { confidence: aiResult.confidence, fallback: aiResult.fallback } 
+    });
+
+    // Авто-fallback при низкой уверенности
+    if (aiResult.fallback) {
+      await updateSessionStatus(userId, 'waiting');
+      await notifyOperators(userId, username || 'anon', ctx.chat.id, text);
+    }
+  }
+  else if (session.status === 'waiting') {
+    await ctx.reply('⏳ Ваш запрос уже в очереди. Ожидайте подключения оператора.');
+  }
+});
+
+// Ответ оператора (через reply на сообщение пользователя в ТГ)
+bot.on('message:text').filter((ctx) => ctx.message.reply_to_message?.from?.is_bot === true, async (ctx) => {
+  const originalMsg = ctx.message.reply_to_message;
+  if (!originalMsg?.forward_from?.id && !originalMsg?.text?.includes('Клиент #')) return;
+  
+  // Парсим ID пользователя из текста пересланного сообщения или forward_from
+  const targetUserId = originalMsg.forward_from?.id || Number(originalMsg.text?.match(/Клиент #(\d+)/)?.[1]);
+  if (!targetUserId) return;
+  
+  const [session] = await db.select().from(chatSessions)
+    .where(and(eq(chatSessions.telegramUserId, targetUserId), eq(chatSessions.status, 'human'))).limit(1);
+  
+  if (session && ctx.message.text) {
+    await bot.api.sendMessage(session.telegramUserId, ctx.message.text);
+    await db.insert(messages).values({ sessionId: session.id, role: 'operator', content: ctx.message.text });
+  }
+});
+
+export const POST = webhookCallback(bot, 'std/http');
+4. AI-процессор с fallback (lib/ai/support-processor.ts)
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+import { db } from '@/lib/db';
+import { chatSessions } from '@/lib/db/schema/support';
+import { eq } from 'drizzle-orm';
+
+const SYSTEM_PROMPT = `Ты — помощник техподдержки интернет-магазина одежды "Fashion Store".
+Правила:
+1. Отвечай кратко, по делу, на русском языке.
+2. Не выдумывай информацию: если нет данных в контексте — говори об этом.
+3. Если вопрос касается: оплаты, возврата, личных данных, статуса заказа, доступа к аккаунту — сразу предлагай оператора.
+4. В конце ответа добавь блок: \`\`\`json\n{"confidence": 1-5}\n\`\`\` где 1 = совсем не уверен, 5 = полностью уверен.
+5. Если уверенность <= 2 — в тексте ответа напиши: "Передаю вопрос специалисту."`;
+
+export async function processAIResponse(userMessage: string, sessionId: number) {
+  // Опционально: загрузить контекст из истории (последние 5 сообщений)
+  const history = await db.query.messages.findMany({
+    where: eq(chatSessions.id, sessionId),
+    orderBy: (m, { desc }) => [desc(m.createdAt)],
+    limit: 5,
+    columns: { role: true, content: true }
+  }).then(rows => rows.reverse().map(r => `${r.role}: ${r.content}`).join('\n'));
+
+  const result = await generateText({
+    model: openai('gpt-4o-mini'),
+    system: SYSTEM_PROMPT,
+    prompt: `История диалога:\n${history || 'Нет истории'}\n\nПользователь: ${userMessage}`,
+    temperature: 0.3,
+    maxTokens: 500,
+  });
+
+  // Парсим confidence из JSON-блока
+  const jsonMatch = result.text.match(/```json\n([\s\S]*?)\n```/);
+  let confidence = 5;
+  let cleanText = result.text;
+  
+  if (jsonMatch) {
+    try {
+      const meta = JSON.parse(jsonMatch[1]);
+      confidence = typeof meta.confidence === 'number' ? Math.max(1, Math.min(5, meta.confidence)) : 5;
+      cleanText = result.text.replace(jsonMatch[0], '').trim();
+    } catch (e) {
+      console.warn('Failed to parse confidence JSON', e);
+    }
+  }
+
+  // Эвристики для понижения уверенности
+  if (
+    /(не знаю|не уверен|не могу|извините|не нашёл|нет информации)/i.test(cleanText) ||
+    cleanText.length < 10 ||
+    /(оплата|возврат|заказ|аккаунт|пароль|личный кабинет)/i.test(userMessage)
+  ) {
+    confidence = Math.min(confidence, 2);
+  }
+
+  return {
+    text: cleanText || result.text,
+    confidence,
+    fallback: confidence <= 2
+  };
+}
+. Админ-панель оператора (Next.js + Server Actions + Zustand)
+5.1. Zustand store (lib/store/support.ts)
+import { create } from 'zustand';
+
+export type ChatSession = {
+  id: number;
+  telegramUserId: number;
+  username: string | null;
+  status: 'ai' | 'waiting' | 'human' | 'closed';
+  operatorId: number | null;
+  lastMessage: string;
+  updatedAt: Date;
+};
+
+interface SupportStore {
+  chats: ChatSession[];
+  selectedChatId: number | null;
+  setChats: (chats: ChatSession[]) => void;
+  setSelectedChat: (id: number | null) => void;
+  updateChat: (id: number, updates: Partial<ChatSession>) => void;
+}
+
+export const useSupportStore = create<SupportStore>((set) => ({
+  chats: [],
+  selectedChatId: null,
+  setChats: (chats) => set({ chats }),
+  setSelectedChat: (id) => set({ selectedChatId: id }),
+  updateChat: (id, updates) => set((state) => ({
+    chats: state.chats.map(c => c.id === id ? { ...c, ...updates } : c)
+  })),
+}));
+5.2. Server Actions (app/actions/support.ts)
+'use server';
+import { db } from '@/lib/db';
+import { chatSessions, messages, operators } from '@/lib/db/schema/support';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+
+export async function getActiveChats() {
+  const rows = await db.select({
+    id: chatSessions.id,
+    telegramUserId: chatSessions.telegramUserId,
+    username: chatSessions.username,
+    status: chatSessions.status,
+    operatorId: chatSessions.operatorId,
+    updatedAt: chatSessions.updatedAt,
+    lastMessage: messages.content,
+  })
+  .from(chatSessions)
+  .leftJoin(messages, eq(messages.sessionId, chatSessions.id))
+  .where(eq(chatSessions.status, 'waiting'))
+  .orderBy(desc(chatSessions.updatedAt))
+  .limit(50);
+  
+  return rows;
+}
+
+export async function takeChat(sessionId: number, operatorTelegramId: number) {
+  // Находим или создаём оператора
+  let [op] = await db.select().from(operators).where(eq(operators.telegramUserId, operatorTelegramId));
+  if (!op) {
+    [op] = await db.insert(operators).values({ telegramUserId: operatorTelegramId, status: 'online' }).returning();
+  }
+  
+  await db.update(chatSessions)
+    .set({ status: 'human', operatorId: op.id, updatedAt: new Date() })
+    .where(eq(chatSessions.id, sessionId));
+    
+  revalidatePath('/admin/support');
+}
+
+export async function sendOperatorReply(sessionId: number, text: string, operatorTelegramId: number) {
+  const [session] = await db.select().from(chatSessions).where(eq(chatSessions.id, sessionId));
+  if (!session || session.status !== 'human') throw new Error('Invalid session');
+  
+  // Отправка через бота
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (botToken && session.telegramUserId) {
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: session.telegramUserId, text })
+    });
+  }
+  
+  // Сохранение в БД
+  await db.insert(messages).values({ sessionId, role: 'operator', content: text });
+  await db.update(chatSessions).set({ updatedAt: new Date() }).where(eq(chatSessions.id, sessionId));
+}
+
+export async function returnToBot(sessionId: number) {
+  await db.update(chatSessions)
+    .set({ status: 'ai', operatorId: null, updatedAt: new Date() })
+    .where(eq(chatSessions.id, sessionId));
+  revalidatePath('/admin/support');
+}
+5.3. Страница админки (app/admin/support/page.tsx)
+'use client';
+import { useEffect, useState } from 'react';
+import { useSupportStore } from '@/lib/store/support';
+import { getActiveChats, takeChat, sendOperatorReply, returnToBot } from '@/app/actions/support';
+import { toast } from 'sonner';
+
+export default function AdminSupportPage() {
+  const { chats, setChats, selectedChatId, setSelectedChat } = useSupportStore();
+  const [replyText, setReplyText] = useState('');
+  const [operatorId, setOperatorId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchChats = async () => {
+      const data = await getActiveChats();
+      setChats(data);
+    };
+    fetchChats();
+    const interval = setInterval(fetchChats, 10000); // polling 10s для MVP
+    return () => clearInterval(interval);
+  }, [setChats]);
+
+  const handleTake = async (sessionId: number) => {
+    if (!operatorId) {
+      toast.error('Сначала авторизуйтесь как оператор');
+      return;
+    }
+    await takeChat(sessionId, operatorId);
+    toast.success('Диалог взят');
+    setSelectedChat(sessionId);
+  };
+
+  const handleSend = async () => {
+    if (!selectedChatId || !replyText.trim()) return;
+    await sendOperatorReply(selectedChatId, replyText, operatorId!);
+    setReplyText('');
+    toast.success('Ответ отправлен');
+  };
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">🎧 Поддержка</h1>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Список чатов */}
+        <div className="lg:col-span-1 space-y-3">
+          {chats.map(chat => (
+            <button
+              key={chat.id}
+              onClick={() => setSelectedChat(chat.id)}
+              className={`w-full p-4 rounded-lg border text-left transition ${
+                selectedChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex justify-between items-start">
+                <span className="font-medium">@{chat.username || chat.telegramUserId}</span>
+                <span className={`text-xs px-2 py-1 rounded ${
+                  chat.status === 'waiting' ? 'bg-yellow-100 text-yellow-800' :
+                  chat.status === 'human' ? 'bg-green-100 text-green-800' : 'bg-gray-100'
+                }`}>
+                  {chat.status}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{chat.lastMessage}</p>
+              <div className="mt-2 flex gap-2">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleTake(chat.id); }}
+                  className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                >
+                  Взять
+                </button>
+              </div>
+            </button>
+          ))}
+          {chats.length === 0 && <p className="text-gray-400">Нет активных запросов</p>}
+        </div>
+
+        {/* Окно чата */}
+        <div className="lg:col-span-2 border rounded-lg p-4">
+          {selectedChatId ? (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Чат #{selectedChatId}</h3>
+                <button 
+                  onClick={() => returnToBot(selectedChatId)}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  🤖 Вернуть боту
+                </button>
+              </div>
+              
+              <div className="h-96 overflow-y-auto border rounded p-3 mb-4 bg-gray-50">
+                {/* Здесь можно загрузить историю сообщений через отдельный action */}
+                <p className="text-gray-400 text-sm">История сообщений (загрузка...)</p>
+              </div>
+              
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Напишите ответ..."
+                  className="flex-1 border rounded px-3 py-2"
+                />
+                <button 
+                  onClick={handleSend}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Отправить
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="text-gray-400">Выберите чат слева</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+ 6. Настройка и деплой
+6.1. Переменные окружения (.env.local)
+# Telegram
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+BOT_USERNAME=fashion_support_bot
+
+# Database
+DATABASE_URL=postgres://user:pass@host:5432/fashion_store
+
+# AI
+OPENAI_API_KEY=sk-...
+
+# Auth (для защиты /admin)
+AUTH_SECRET=your-nextauth-secret
+6.2. Регистрация вебхука (один раз)
+
+curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://your-domain.vercel.app/api/telegram/webhook", "allowed_updates": ["message", "callback_query"]}'
+  6.3. Добавление операторов в БД
+  INSERT INTO operators (telegram_user_id, name, status) 
+VALUES (123456789, 'Никита', 'online');
+-- telegram_user_id можно узнать через бота: отправьте /start и посмотрите логи или используйте @userinfobot
+7. Тестовый сценарий (E2E)
+Пользователь пишет боту /start → видит кнопки.
+Нажимает «Позвать оператора» → статус waiting, бот: ⏳ Передаю....
+Оператор получает уведомление в ТГ с кнопкой [Взять].
+Оператор жмёт [Взять] → статус human, пользователю: 👋 Оператор подключился.
+Пользователь пишет вопрос → оператор видит в ТГ (или в админке).
+Оператор отвечает (reply в ТГ или форма в админке) → пользователь получает ответ.
+Оператор жмёт 🤖 Вернуть боту → статус ai, бот снова обрабатывает запросы.
+⚠️ 8. Критичные нюансы и решения
+Проблема
+Решение
+Холодный старт серверлесс-функций
+runtime: 'nodejs' в webhook-роуте; для продакшена — Vercel Pro + cron keep-warm
+Дубли сообщений при retry от Telegram
+Хранить message_id + UNIQUE индекс в БД; grammy частично обрабатывает дедуп
+Оператор не в сети
+Статус online/offline в таблице operators; бот проверяет перед отправкой уведомлений
+Потеря контекста при переключении
+Сохранять всю историю в messages; при возврате в ai передавать последние 5 сообщений в промпт
+RAG в будущем
+Использовать @supabase/supabase-js + pgvector; добавить поле embedding в таблицу knowledge_chunks

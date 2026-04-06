@@ -5,7 +5,7 @@ import AdminLayout from '@/components/AdminLayout';
 import {
   Search, Package, Clock, CheckCircle, XCircle, Truck,
   Download, Eye, ChevronDown, RefreshCw, ShoppingBag,
-  TrendingUp, AlertCircle, Filter
+  TrendingUp, AlertCircle, Filter, Edit2, Trash2, X, Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -16,10 +16,13 @@ interface Order {
   total: number;
   status: string;
   createdAt: string;
+  comment?: string;
+  deliveryMethod?: string;
+  paymentMethod?: string;
   userEmail?: string;
   userName?: string;
-  recipient?: { firstName: string; lastName: string; email: string; phone: string };
-  items?: Array<{ id: string; name: string; quantity: number; price: number }>;
+  recipient?: { firstName: string; lastName: string; email: string; phone: string; address?: string };
+  items?: Array<{ id: string; name: string; quantity: number; price: number; image?: string }>;
 }
 
 const STATUS = {
@@ -36,13 +39,15 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => { loadOrders(); }, []);
 
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/orders', { credentials: 'include' });
+      const res = await fetch('/api/admin/orders', { credentials: 'include' });
       if (res.ok) setOrders(await res.json());
       else toast.error('Не удалось загрузить заказы');
     } catch { toast.error('Ошибка загрузки'); }
@@ -62,6 +67,44 @@ export default function AdminOrdersPage() {
         toast.success('Статус обновлён');
       } else toast.error('Ошибка обновления статуса');
     } catch { toast.error('Ошибка соединения'); }
+  };
+
+  const deleteOrder = async (id: string) => {
+    if (!confirm('Удалить заказ? Это действие необратимо.')) return;
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'DELETE', credentials: 'include',
+      });
+      if (res.ok) {
+        setOrders(prev => prev.filter(o => o.id !== id));
+        toast.success('Заказ удалён');
+      } else toast.error('Ошибка удаления');
+    } catch { toast.error('Ошибка соединения'); }
+  };
+
+  const saveOrder = async () => {
+    if (!editingOrder) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${editingOrder.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          status: editingOrder.status,
+          recipient: editingOrder.recipient,
+          comment: editingOrder.comment,
+          deliveryMethod: editingOrder.deliveryMethod,
+          paymentMethod: editingOrder.paymentMethod,
+        }),
+      });
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === editingOrder.id ? editingOrder : o));
+        setEditingOrder(null);
+        toast.success('Заказ сохранён');
+      } else toast.error('Ошибка сохранения');
+    } catch { toast.error('Ошибка соединения'); }
+    finally { setIsSaving(false); }
   };
 
   const exportCSV = () => {
@@ -250,13 +293,27 @@ export default function AdminOrdersPage() {
                             <span className="font-bold text-zinc-900 dark:text-zinc-100">{Number(order.total).toLocaleString('ru-RU')} ₽</span>
                           </td>
                           <td className="px-5 py-4 text-center">
-                            <button
-                              onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                              className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                              {isExpanded ? 'Скрыть' : 'Детали'}
-                            </button>
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                                className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                {isExpanded ? 'Скрыть' : 'Детали'}
+                              </button>
+                              <button
+                                onClick={() => setEditingOrder({ ...order })}
+                                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => deleteOrder(order.id)}
+                                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                         {isExpanded && (
@@ -304,6 +361,144 @@ export default function AdminOrdersPage() {
           )}
         </div>
       </div>
+
+      {/* Edit Order Modal */}
+      {editingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
+              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                Редактировать заказ #{editingOrder.id.slice(0, 8).toUpperCase()}
+              </h2>
+              <button onClick={() => setEditingOrder(null)} className="text-zinc-400 hover:text-zinc-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-5">
+              {/* Status */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-2">Статус</label>
+                <select
+                  value={editingOrder.status}
+                  onChange={e => setEditingOrder({ ...editingOrder, status: e.target.value })}
+                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  {Object.entries(STATUS).map(([k, v]) => (
+                    <option key={k} value={k}>{v.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Delivery & Payment */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-500 uppercase mb-2">Доставка</label>
+                  <select
+                    value={editingOrder.deliveryMethod || 'courier'}
+                    onChange={e => setEditingOrder({ ...editingOrder, deliveryMethod: e.target.value })}
+                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    <option value="courier">Курьер</option>
+                    <option value="pickup">Самовывоз</option>
+                    <option value="post">Почта</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-500 uppercase mb-2">Оплата</label>
+                  <select
+                    value={editingOrder.paymentMethod || 'card'}
+                    onChange={e => setEditingOrder({ ...editingOrder, paymentMethod: e.target.value })}
+                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    <option value="card">Карта</option>
+                    <option value="cash">Наличные</option>
+                    <option value="online">Онлайн</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Recipient */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-2">Получатель</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(['firstName', 'lastName', 'email', 'phone'] as const).map(field => (
+                    <input
+                      key={field}
+                      type="text"
+                      placeholder={field === 'firstName' ? 'Имя' : field === 'lastName' ? 'Фамилия' : field === 'email' ? 'Email' : 'Телефон'}
+                      value={editingOrder.recipient?.[field] || ''}
+                      onChange={e => setEditingOrder({
+                        ...editingOrder,
+                        recipient: { ...editingOrder.recipient!, [field]: e.target.value }
+                      })}
+                      className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    />
+                  ))}
+                  <input
+                    type="text"
+                    placeholder="Адрес доставки"
+                    value={editingOrder.recipient?.address || ''}
+                    onChange={e => setEditingOrder({
+                      ...editingOrder,
+                      recipient: { ...editingOrder.recipient!, address: e.target.value }
+                    })}
+                    className="col-span-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                </div>
+              </div>
+
+              {/* Comment */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-500 uppercase mb-2">Комментарий</label>
+                <textarea
+                  value={editingOrder.comment || ''}
+                  onChange={e => setEditingOrder({ ...editingOrder, comment: e.target.value })}
+                  rows={3}
+                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                />
+              </div>
+
+              {/* Items (read-only) */}
+              {editingOrder.items && editingOrder.items.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-500 uppercase mb-2">Товары</label>
+                  <div className="space-y-2">
+                    {editingOrder.items.map(item => (
+                      <div key={item.id} className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                        {item.image && <img src={item.image} alt={item.name} className="w-10 h-10 rounded object-cover" />}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{item.name}</p>
+                          <p className="text-xs text-zinc-500">× {item.quantity}</p>
+                        </div>
+                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                          {(Number(item.price) * item.quantity).toLocaleString('ru-RU')} ₽
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 p-6 border-t border-zinc-200 dark:border-zinc-800">
+              <button
+                onClick={saveOrder}
+                disabled={isSaving}
+                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
+              >
+                <Save className="h-4 w-4" />
+                {isSaving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button
+                onClick={() => deleteOrder(editingOrder.id)}
+                className="flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

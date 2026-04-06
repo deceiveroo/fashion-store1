@@ -34,3 +34,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Payment Methods
+
+The store supports multiple payment methods including:
+
+- Bank cards (Visa, Mastercard, МИР) via Stripe
+- Fast Payment System (SBP) - Russian payment system
+- Cryptocurrency payments (LTC, USDT TRC-20, TON, NOT)
+- Online banking (СБП, Qiwi, ЮMoney)
+- Cash on delivery
+- Installments
+
+To use Stripe payments, you need to configure your credentials in the environment variables (see [.env.example](./.env.example)).
+
+For cryptocurrency payments, the system generates unique addresses for each order and monitors payments via blockchain monitoring services.

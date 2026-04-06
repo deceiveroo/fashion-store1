@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx ./lib/seed.ts",
-    "seed:staff": "dotenv -e .env.local -e .env -- tsx ./lib/seed-staff.ts"
+    "seed:staff": "dotenv -e .env.local -e .env -- tsx ./lib/seed-staff.ts",
+    "test-fk-wallet": "tsx test-fk-wallet.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.50",
@@ -26,6 +27,7 @@
     "@vercel/speed-insights": "^2.0.0",
     "ai": "^6.0.146",
     "bcryptjs": "^3.0.3",
+    "canvas": "^3.2.3",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

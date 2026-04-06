@@ -1,4 +1,4 @@
-// context/AuthContext.tsx
+﻿// context/AuthContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -60,7 +60,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/** Относительный `/api` — всегда тот же хост и порт, что и у страницы (иначе при dev на :3001 ломается fetch на :3000). */
+/** Относительный `/api` — всегда тот же хост и порт, что и у страницы (иначе при dev на :3001 ломается fetch). */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд таймаут
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // Увеличен таймаут до 15 секунд
 
       const response = await fetch(`${API_URL}/auth/me`, {
         method: 'GET',
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Auth check failed:', error);
       // Не удаляем токен при сетевых ошибках - возможно сервер временно недоступен
       if (error.name === 'AbortError') {
-        console.warn('Auth check timeout (30s)');
+        console.warn('Auth check timeout (5s)');
       }
     } finally {
       setIsLoading(false);
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд таймаут
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // Увеличен таймаут до 15 секунд
 
       const response = await fetch(`${API_URL}/auth/me`, {
         method: 'GET',
@@ -171,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<void> => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд таймаут
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // Уменьшен таймаут до 8 секунд
 
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
@@ -185,8 +185,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
-        throw new Error(errorData.message || 'Login failed');
+        // Получаем текст ошибки
+        let errorMessage = 'Login failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || 'Login failed';
+        } catch (e) {
+          // Если не удалось распарсить JSON, используем статус
+          errorMessage = `Login failed with status: ${response.status}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const { user: userData, token } = await response.json();
@@ -197,6 +206,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error.name === 'AbortError') {
         throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
       }
+      // Если ошибка уже имеет сообщение, просто пробрасываем её
+      if (error.message) {
+        throw error;
+      }
       throw new Error(error instanceof Error ? error.message : 'Ошибка подключения к серверу');
     }
   };
@@ -204,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (userData: { email: string; password: string; firstName: string; lastName: string }): Promise<void> => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд таймаут
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // Уменьшен таймаут до 8 секунд
 
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
@@ -218,8 +231,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Registration failed' }));
-        throw new Error(errorData.message || 'Registration failed');
+        // Получаем текст ошибки
+        let errorMessage = 'Registration failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || 'Registration failed';
+        } catch (e) {
+          // Если не удалось распарсить JSON, используем статус
+          errorMessage = `Registration failed with status: ${response.status}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const { user: newUser, token } = await response.json();
@@ -229,6 +251,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
+      }
+      // Если ошибка уже имеет сообщение, просто пробрасываем её
+      if (error.message) {
+        throw error;
       }
       throw new Error(error instanceof Error ? error.message : 'Ошибка подключения к серверу');
     }
@@ -242,7 +268,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд таймаут
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // Уменьшен таймаут до 8 секунд
 
       const response = await fetch(`${API_URL}/auth/change-password`, {
         method: 'POST',
@@ -257,12 +283,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to change password' }));
-        throw new Error(errorData.message || 'Failed to change password');
+        // Получаем текст ошибки
+        let errorMessage = 'Failed to change password';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || 'Failed to change password';
+        } catch (e) {
+          // Если не удалось распарсить JSON, используем статус
+          errorMessage = `Failed to change password with status: ${response.status}`;
+        }
+        
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
+      }
+      // Если ошибка уже имеет сообщение, просто пробрасываем её
+      if (error.message) {
+        throw error;
       }
       throw new Error(error instanceof Error ? error.message : 'Failed to change password');
     }
@@ -281,7 +320,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд таймаут
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // Увеличен таймаут до 15 секунд
 
       // Добавляем валидацию данных заказа перед отправкой
       if (!order.items || order.items.length === 0) {
@@ -310,24 +349,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Response headers:', [...response.headers.entries()]);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error text:', errorText);
-        
-        let errorData;
+        // Получаем текст ошибки
+        let errorText = 'Failed to create order';
         try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: 'Failed to create order' };
+          const errorData = await response.json();
+          errorText = errorData.message || 'Failed to create order';
+        } catch (e) {
+          // Если не удалось распарсить JSON, используем статус
+          errorText = `Failed to create order with status: ${response.status}`;
         }
         
-        // Добавляем более детальное логирование ошибок
-        console.error('Failed to create order:', {
-          error: errorData,
-          message: errorData.message || 'Unknown error',
-          details: errorData.details || undefined
-        });
+        console.error('Failed to create order:', errorText);
         
-        throw new Error(errorData.message || 'Failed to create order');
+        throw new Error(errorText);
       }
 
       const newOrder = await response.json();
@@ -344,7 +378,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error.name === 'AbortError') {
         throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
       }
-      console.error('Failed to create order:', error);
+      // Если ошибка уже имеет сообщение, просто пробрасываем её
+      if (error.message) {
+        throw error;
+      }
       throw new Error(error instanceof Error ? error.message : 'Failed to create order');
     }
   };
@@ -357,7 +394,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд таймаут
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // Увеличен таймаут до 15 секунд
 
       const response = await fetch(`${API_URL}/orders/${orderId}`, {
         method: 'PUT',
@@ -372,8 +409,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to update order status' }));
-        throw new Error(errorData.message || 'Failed to update order status');
+        // Получаем текст ошибки
+        let errorMessage = 'Failed to update order status';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || 'Failed to update order status';
+        } catch (e) {
+          // Если не удалось распарсить JSON, используем статус
+          errorMessage = `Failed to update order status with status: ${response.status}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const updatedOrder = await response.json();
@@ -389,7 +435,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error.name === 'AbortError') {
         throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
       }
-      console.error('Failed to update order status:', error);
+      // Если ошибка уже имеет сообщение, просто пробрасываем её
+      if (error.message) {
+        throw error;
+      }
       throw new Error(error instanceof Error ? error.message : 'Failed to update order status');
     }
   };

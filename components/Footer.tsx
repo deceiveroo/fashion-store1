@@ -65,16 +65,16 @@ const footerSections = [
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-br from-gray-900 to-black dark:from-gray-950 dark:to-black text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <footer className="bg-gradient-to-br from-gray-900 to-black dark:from-gray-950 dark:to-black text-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12">
           {/* Brand Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="lg:col-span-1"
+            className="col-span-2 sm:col-span-2 lg:col-span-1"
           >
             <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 dark:from-purple-300 dark:to-pink-300 bg-clip-text text-transparent mb-4">
               ELEVATE
@@ -137,7 +137,7 @@ export default function Footer() {
           transition={{ duration: 0.8 }}
           className="border-t border-gray-800 dark:border-gray-900 pt-8"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left">
             <div className="flex items-center justify-center md:justify-start space-x-3">
               <MapPin size={20} className="text-purple-400 dark:text-purple-300" />
               <span className="text-gray-400 dark:text-gray-500">Москва, ул. Модная, 123</span>
@@ -158,12 +158,12 @@ export default function Footer() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="border-t border-gray-800 dark:border-gray-900 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center"
+          className="border-t border-gray-800 dark:border-gray-900 mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4"
         >
-          <p className="text-gray-400 dark:text-gray-500 text-sm mb-4 md:mb-0">
+          <p className="text-gray-400 dark:text-gray-500 text-sm text-center sm:text-left">
             © 2025 ELEVATE. Все права защищены.
           </p>
-          <div className="flex space-x-6 text-sm text-gray-400 dark:text-gray-500">
+          <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400 dark:text-gray-500">
             <Link href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Политика конфиденциальности</Link>
             <Link href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Условия использования</Link>
             <Link href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Cookies</Link>

@@ -7,11 +7,11 @@ import { Toaster } from '@/components/Toaster';
 
 const DynamicHeader = dynamic(() => import('@/components/Header'), {
   ssr: false,
-  loading: () => <div className="h-16 bg-gray-200 animate-pulse" />,
+  loading: () => <div className="h-16" />,
 });
 const DynamicFooter = dynamic(() => import('@/components/Footer'), {
   ssr: false,
-  loading: () => <div className="h-32 bg-gray-200 animate-pulse" />,
+  loading: () => null,
 });
 
 interface ClientLayoutWrapperProps {

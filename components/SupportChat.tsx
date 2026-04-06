@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, MessageCircle, Sparkles, Bot, User, Shield } from 'lucide-react';
+import { X, Send, MessageCircle, Sparkles, Bot, User, Shield, Headset } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -14,12 +14,60 @@ interface Message {
 // Generate unique session ID for this chat (client-only)
 function getSessionId() {
   if (typeof window === 'undefined') return '';
-  let sessionId = localStorage.getItem('chat_session_id');
-  if (!sessionId) {
-    sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    localStorage.setItem('chat_session_id', sessionId);
+  
+  try {
+    // Check for existing session
+    const storedSession = localStorage.getItem('chat_session');
+    
+    if (storedSession) {
+      try {
+        const sessionData = JSON.parse(storedSession);
+        // Check if session is still valid (e.g., less than 24 hours old)
+        const sessionAge = Date.now() - new Date(sessionData.createdAt).getTime();
+        const isSessionValid = sessionAge < 24 * 60 * 60 * 1000; // 24 hours
+        
+        if (isSessionValid) {
+          return sessionData.id;
+        }
+      } catch (error) {
+        console.error('Failed to parse stored session:', error);
+        localStorage.removeItem('chat_session');
+      }
+    }
+    
+    // Create new session if no valid session exists
+    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const newSessionData = {
+      id: newSessionId,
+      createdAt: new Date().toISOString(),
+      lastUsed: new Date().toISOString()
+    };
+    
+    localStorage.setItem('chat_session', JSON.stringify(newSessionData));
+    return newSessionId;
+  } catch (error) {
+    console.error('Failed to get session ID:', error);
+    // Fallback to in-memory session if localStorage is not available
+    return `session_inmemory_${Math.random().toString(36).substring(2, 11)}`;
   }
-  return sessionId;
+}
+
+// Update session timestamp when used
+function updateSessionUsage(sessionId: string) {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const storedSession = localStorage.getItem('chat_session');
+    if (storedSession) {
+      const sessionData = JSON.parse(storedSession);
+      if (sessionData.id === sessionId) {
+        sessionData.lastUsed = new Date().toISOString();
+        localStorage.setItem('chat_session', JSON.stringify(sessionData));
+      }
+    }
+  } catch (error) {
+    console.error('Failed to update session usage:', error);
+  }
 }
 
 export default function SupportChat() {
@@ -35,6 +83,26 @@ export default function SupportChat() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(() => getSessionId());
+  
+  // Update session usage timestamp whenever the chat is active
+  useEffect(() => {
+    if (sessionId) {
+      updateSessionUsage(sessionId);
+    }
+  }, [sessionId, messages]);
+  
+  // Clean up session data when component unmounts
+  useEffect(() => {
+    return () => {
+      // Optionally clear session data on component unmount
+      // This can be removed if we want to persist chat history longer
+      try {
+        localStorage.removeItem('chat_session');
+      } catch (error) {
+        console.error('Failed to clean up session data:', error);
+      }
+    };
+  }, []);
   const [waitingForAdmin, setWaitingForAdmin] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -113,33 +181,50 @@ export default function SupportChat() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          message: inputValue,
-          sessionId: sessionId 
-        }),
-      });
-
-      const data = await response.json();
-
-      // Check if admin has taken over
-      if (data.takenOver) {
+      // Check if user wants to talk to an operator
+      const lowerInput = inputValue.toLowerCase();
+      if (lowerInput.includes('оператор') || lowerInput.includes('человек') || lowerInput.includes('помогите')) {
         setWaitingForAdmin(true);
-      }
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: 'Передаю ваш запрос специалисту. Ожидайте ответа в течение нескольких минут.',
+          sender: 'ai',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      } else {
+        // Call AI processing API
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            message: inputValue,
+            sessionId: sessionId 
+          }),
+        });
+        
+        // Update session usage after successful API call
+        updateSessionUsage(sessionId);
 
-      // Always show the message, even if there was an error
-      // The API now returns friendly messages instead of errors
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: data.message || 'Извините, произошла ошибка. Попробуйте позже.',
-        sender: data.takenOver ? 'ai' : 'ai',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
+        const data = await response.json();
+
+        // Check if admin has taken over
+        if (data.takenOver) {
+          setWaitingForAdmin(true);
+        }
+
+        // Always show the message, even if there was an error
+        // The API now returns friendly messages instead of errors
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: data.message || 'Извините, произошла ошибка. Попробуйте позже.',
+          sender: data.takenOver ? 'ai' : 'ai',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      }
     } catch (error) {
       console.error('[CHAT] Error:', error);
       const errorMessage: Message = {
@@ -158,6 +243,34 @@ export default function SupportChat() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleCallOperator = async () => {
+    setWaitingForAdmin(true);
+    const aiMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      text: '⏳ Запрос передан оператору. Ожидайте ответа...',
+      sender: 'ai',
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, aiMessage]);
+    
+    // Send Telegram notification to admin
+    try {
+      const lastUserMsg = messages.filter(m => m.sender === 'user').slice(-1)[0];
+      await fetch('/api/telegram/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          sessionId,
+          userMessage: lastUserMsg?.text || 'Пользователь запросил оператора',
+          userName: null,
+          userEmail: null,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to notify operators:', error);
     }
   };
 
@@ -213,7 +326,7 @@ export default function SupportChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.8 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-6 right-6 z-50 w-[400px] h-[600px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700"
+            className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-[400px] h-[100dvh] sm:h-[600px] bg-white dark:bg-gray-900 sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden border-0 sm:border border-gray-200 dark:border-gray-700"
           >
             {/* Header */}
             <div className="relative bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 p-4 flex items-center justify-between">
@@ -343,6 +456,22 @@ export default function SupportChat() {
               )}
 
               <div ref={messagesEndRef} />
+            </div>
+
+            {/* Operator button */}
+            <div className="p-3 bg-gray-100 dark:bg-gray-800/40 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={handleCallOperator}
+                disabled={waitingForAdmin}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg ${
+                  waitingForAdmin 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:opacity-90'
+                }`}
+              >
+                <Headset className="w-4 h-4" />
+                Позвать оператора
+              </button>
             </div>
 
             {/* Input */}
