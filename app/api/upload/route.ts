@@ -28,6 +28,17 @@ async function getUserId(request: NextRequest): Promise<string | null> {
   return null;
 }
 
+// Extract storage path from public URL
+function extractStoragePath(url: string): string | null {
+  try {
+    // URL format: https://xxx.supabase.co/storage/v1/object/public/uploads/products/file.jpg
+    const match = url.match(/\/storage\/v1\/object\/public\/uploads\/(.+)$/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserId(request);
@@ -37,6 +48,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const oldUrl = formData.get('oldUrl') as string | null;
 
     if (!file) {
       return NextResponse.json({ error: 'Файл не предоставлен' }, { status: 400 });
@@ -49,6 +61,14 @@ export async function POST(request: NextRequest) {
 
     if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json({ error: 'Файл слишком большой. Максимум: 5MB' }, { status: 400 });
+    }
+
+    // Delete old file if provided
+    if (oldUrl) {
+      const oldPath = extractStoragePath(oldUrl);
+      if (oldPath) {
+        await supabase.storage.from('uploads').remove([oldPath]);
+      }
     }
 
     const ext = path.extname(file.name) || '.jpg';

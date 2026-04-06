@@ -137,6 +137,8 @@ export default function CustomersPage() {
     try {
       const fd = new FormData();
       fd.append('file', file);
+      // Pass old avatar URL so server can delete it
+      if (editingUser.avatar) fd.append('oldUrl', editingUser.avatar);
       const res = await fetch('/api/upload', { 
         method: 'POST', 
         body: fd,

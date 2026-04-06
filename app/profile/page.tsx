@@ -74,6 +74,9 @@ export default function ProfilePage() {
     try {
       const fd = new FormData();
       fd.append('file', file);
+      // Pass old avatar URL so server can delete it from storage
+      const oldAvatar = formData.avatar || user?.image;
+      if (oldAvatar && oldAvatar.includes('supabase')) fd.append('oldUrl', oldAvatar);
       const token = localStorage.getItem('auth-token');
       const res = await fetch('/api/upload', { 
         method: 'POST', 

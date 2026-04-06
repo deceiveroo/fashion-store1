@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const userData = await db
+    const userData = await safeQuery(() => db
       .select({
         id: users.id,
         email: users.email,
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       .from(users)
       .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
       .where(eq(users.id, userId))
-      .limit(1);
+      .limit(1));
 
     if (userData.length === 0) {
       return NextResponse.json({ message: 'Пользователь не найден' }, { status: 404 });
