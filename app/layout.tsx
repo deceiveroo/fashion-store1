@@ -6,6 +6,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import ClientLayoutWrapper from '@/components/ClientLayoutWrapper';
 import { Providers } from '@/components/providers/Providers';
 import SupportChat from '@/components/SupportChat';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -52,6 +53,7 @@ export default function RootLayout({
             </CartProvider>
           </AuthProvider>
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );
