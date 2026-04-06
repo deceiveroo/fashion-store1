@@ -7,7 +7,7 @@ import { auth } from '@/lib/auth';
 export async function DELETE(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'admin') { // Only admin can delete completely
+    if (!session?.user || !['admin', 'manager', 'support'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,13 +16,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    // Begin transaction to ensure both tables are updated
-    await db.transaction(async (tx) => {
-      // Delete messages first (due to FK constraint)
-      await tx.delete(supportChatMessages).where(eq(supportChatMessages.sessionId, sessionId));
-      // Then delete the session
-      await tx.delete(supportChatSessions).where(eq(supportChatSessions.sessionId, sessionId));
-    });
+    // Delete messages first (FK constraint), then session
+    await db.delete(supportChatMessages).where(eq(supportChatMessages.sessionId, sessionId));
+    await db.delete(supportChatSessions).where(eq(supportChatSessions.sessionId, sessionId));
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
