@@ -51,15 +51,31 @@ export async function POST(request: NextRequest) {
       if (callbackData?.startsWith('takeover:')) {
         const sessionId = callbackData.split(':')[1];
         if (sessionId) {
-          // Update session to mark as taken by this admin
-          await db
-            .update(supportChatSessions)
-            .set({
-              takenOverBy: callbackQuery.from.id.toString(),
-              takenOverAt: new Date(),
-              status: 'active',
-            })
-            .where(eq(supportChatSessions.sessionId, sessionId));
+          await db.update(supportChatSessions).set({
+            aiDisabled: true,
+            takenOverBy: callbackQuery.from.id.toString(),
+            takenOverAt: new Date(),
+            status: 'active',
+            updatedAt: new Date(),
+          }).where(eq(supportChatSessions.sessionId, sessionId));
+
+          // Answer callback to remove loading spinner
+          await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ callback_query_id: callbackQuery.id, text: '✅ Чат перехвачен!' }),
+          });
+
+          // Send instructions
+          await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: callbackQuery.from.id,
+              text: `✅ Вы перехватили чат!\n\nДля ответа пользователю:\n<code>/reply_${sessionId} ваш ответ</code>`,
+              parse_mode: 'HTML',
+            }),
+          });
         }
       } 
       else if (callbackData?.startsWith('resolve:')) {
