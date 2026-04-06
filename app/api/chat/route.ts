@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
@@ -50,7 +50,7 @@ async function callCloudflareAI(message: string): Promise<string | null> {
 
   try {
     const res = await fetch(
-      'https://api.cloudflare.com/client/v4/accounts/' + accountId + '/ai/run/@cf/meta/llama-3.1-8b-instruct',
+      'https://api.cloudflare.com/client/v4/accounts/' + accountId + '/ai/run/@cf/meta/llama-3.2-1b-instruct',
       {
         method: 'POST',
         headers: {
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     const cfResponse = await callCloudflareAI(message);
     if (cfResponse) {
       aiMessage = cfResponse;
-      aiModel = 'cloudflare-llama-3.1-8b';
+      aiModel = 'cloudflare-llama-3.2-1b';
     }
 
     // Keyword fallback if CF failed
