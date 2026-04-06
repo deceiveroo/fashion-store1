@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { createClient } from '@supabase/supabase-js';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
 const secret = new TextEncoder().encode(JWT_SECRET);
 
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 async function getUserId(request: NextRequest): Promise<string | null> {
-  // Try NextAuth session first (fast - reads cookie, no DB)
   const session = await auth();
   if (session?.user?.id) return session.user.id;
 
-  // Try Bearer token
   const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
     try {
@@ -27,14 +30,9 @@ async function getUserId(request: NextRequest): Promise<string | null> {
 
 export async function POST(request: NextRequest) {
   try {
-    // Проверяем что пользователь авторизован (любой, не обязательно админ)
     const userId = await getUserId(request);
-    
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Необходимо авторизоваться' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Необходимо авторизоваться' }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -44,52 +42,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Файл не предоставлен' }, { status: 400 });
     }
 
-    // Проверка типа файла
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Неподдерживаемый формат файла. Разрешены: JPEG, PNG, WebP, GIF' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Разрешены только изображения: JPEG, PNG, WebP, GIF' }, { status: 400 });
     }
 
-    // Проверка размера файла (5MB максимум)
     if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Файл слишком большой. Максимальный размер: 5MB' }, { status: 400 });
+      return NextResponse.json({ error: 'Файл слишком большой. Максимум: 5MB' }, { status: 400 });
     }
+
+    const ext = path.extname(file.name) || '.jpg';
+    const fileName = `products/${uuidv4()}${ext}`;
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Создаем уникальное имя файла
-    const fileExtension = path.extname(file.name);
-    const fileName = `${uuidv4()}${fileExtension}`;
-    
-    // Путь для сохранения файла - в папку uploads/products
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'products');
-    
-    // Создаем папку если не существует
-    await mkdir(uploadDir, { recursive: true });
-    
-    const filePath = path.join(uploadDir, fileName);
+    const { error } = await supabase.storage
+      .from('uploads')
+      .upload(fileName, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
 
-    // Сохраняем файл
-    await writeFile(filePath, buffer);
+    if (error) {
+      console.error('[UPLOAD] Supabase error:', error.message);
+      return NextResponse.json({ error: 'Ошибка загрузки файла' }, { status: 500 });
+    }
 
-    // URL для доступа к файлу
-    const url = `/uploads/products/${fileName}`;
+    const { data: { publicUrl } } = supabase.storage
+      .from('uploads')
+      .getPublicUrl(fileName);
 
-    return NextResponse.json({ 
-      success: true, 
-      url,
-      fileName: file.name,
-      message: 'Файл успешно загружен'
-    });
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    return NextResponse.json({ 
-      error: 'Ошибка при загрузке файла',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return NextResponse.json({ success: true, url: publicUrl });
+  } catch (error: any) {
+    console.error('[UPLOAD] Error:', error.message);
+    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
   }
 }
