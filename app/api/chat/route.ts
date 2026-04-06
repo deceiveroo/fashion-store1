@@ -50,7 +50,7 @@ async function callCloudflareAI(message: string): Promise<string | null> {
 
   try {
     const res = await fetch(
-      'https://api.cloudflare.com/client/v4/accounts/' + accountId + '/ai/run/@cf/meta/llama-3.2-1b-instruct',
+      'https://api.cloudflare.com/client/v4/accounts/' + accountId + '/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast',
       {
         method: 'POST',
         headers: {
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     const cfResponse = await callCloudflareAI(message);
     if (cfResponse) {
       aiMessage = cfResponse;
-      aiModel = 'cloudflare-llama-3.2-1b';
+      aiModel = 'cloudflare-llama-3.3-70b-fast';
     }
 
     // Keyword fallback if CF failed
