@@ -394,13 +394,13 @@ export default function SupportChat() {
                   whileHover={{ scale: 1.05 }} 
                   whileTap={{ scale: 0.95 }}
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={loading || !takenOver}  // Disabled when not taken over by operator
+                  disabled={loading || !takenOver}
                   className={`px-4 py-3 rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
                     takenOver 
                       ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white' 
                       : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
-                  title={takenOver ? "Прикрепить изображение" : "Функция доступна только при подключении оператора"}
+                  title={takenOver ? "Прикрепить изображение" : "Доступно только при операторе"}
                 >
                   <Upload className="w-5 h-5" />
                 </motion.button>
