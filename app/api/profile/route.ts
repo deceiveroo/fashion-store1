@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, safeQuery } from '@/lib/db';
 import { userProfiles, users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (existingProfile.length > 0) {
-        await db
+        await safeQuery(() => db
           .update(userProfiles)
           .set({
             firstName: firstName || existingProfile[0].firstName,
@@ -149,9 +149,9 @@ export async function POST(request: NextRequest) {
             avatar: avatar !== undefined ? avatar : existingProfile[0].avatar,
             updatedAt: new Date(),
           })
-          .where(eq(userProfiles.userId, userId));
+          .where(eq(userProfiles.userId, userId)));
       } else {
-        await db.insert(userProfiles).values({
+        await safeQuery(() => db.insert(userProfiles).values({
           id: crypto.randomUUID(),
           userId,
           firstName,
@@ -159,16 +159,15 @@ export async function POST(request: NextRequest) {
           phone,
           address,
           avatar,
-        });
+        }));
       }
 
-      // Also update users.image for consistency - always sync both fields
       const avatarUrl = avatar !== undefined ? avatar : existingProfile[0]?.avatar;
       if (avatarUrl) {
-        await db
+        await safeQuery(() => db
           .update(users)
           .set({ image: avatarUrl, updatedAt: new Date() })
-          .where(eq(users.id, userId));
+          .where(eq(users.id, userId)));
       }
 
       return NextResponse.json({ message: 'Профиль успешно обновлен' });

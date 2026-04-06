@@ -4,35 +4,25 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
-import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
 const secret = new TextEncoder().encode(JWT_SECRET);
 
 async function getUserId(request: NextRequest): Promise<string | null> {
-  let userId: string | null = null;
-
-  // Try NextAuth session (cookies)
+  // Try NextAuth session first (fast - reads cookie, no DB)
   const session = await auth();
-  if (session?.user?.id) {
-    userId = session.user.id;
-  } else {
-    // Try Bearer token
-    const authHeader = request.headers.get('authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      try {
-        const token = authHeader.substring(7);
-        const { payload } = await jwtVerify(token, secret);
-        userId = payload.userId as string;
-      } catch (error) {
-        console.error('Invalid token:', error);
-      }
-    }
-  }
+  if (session?.user?.id) return session.user.id;
 
-  return userId;
+  // Try Bearer token
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.substring(7);
+      const { payload } = await jwtVerify(token, secret);
+      return payload.userId as string;
+    } catch {}
+  }
+  return null;
 }
 
 export async function POST(request: NextRequest) {

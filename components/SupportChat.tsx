@@ -232,7 +232,7 @@ export default function SupportChat() {
                   <Sparkles className="w-5 h-5 text-white" />
                 </motion.div>
                 <div>
-                  <h3 className="text-white font-semibold">AI Поддержка</h3>
+                  <h3 className="text-white font-semibold">ELEVATE</h3>
                   <div className="flex items-center gap-1">
                     <motion.div
                       animate={{ scale: [1, 1.2, 1] }}
