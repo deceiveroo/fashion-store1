@@ -11,11 +11,12 @@ interface Message {
   timestamp: Date;
 }
 
-// Generate unique session ID for this chat
+// Generate unique session ID for this chat (client-only)
 function getSessionId() {
+  if (typeof window === 'undefined') return '';
   let sessionId = localStorage.getItem('chat_session_id');
   if (!sessionId) {
-    sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     localStorage.setItem('chat_session_id', sessionId);
   }
   return sessionId;
