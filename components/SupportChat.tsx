@@ -54,36 +54,36 @@ export default function SupportChat() {
     }
   }, [isOpen]);
 
-  // Poll for new messages when waiting for admin
+  // Poll for new messages when chat is open (to get admin replies)
   useEffect(() => {
-    if (waitingForAdmin && isOpen) {
+    if (isOpen) {
       pollIntervalRef.current = setInterval(() => {
         pollForNewMessages();
-      }, 3000);
+      }, 2000);
     }
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [waitingForAdmin, isOpen]);
+  }, [isOpen, messages]);
 
   const pollForNewMessages = async () => {
     try {
-      const response = await fetch(`/api/admin/support-chats/${sessionId}`);
+      // Use public endpoint - not admin endpoint
+      const response = await fetch(`/api/chat/messages?sessionId=${sessionId}`);
       if (response.ok) {
         const data = await response.json();
         const newMessages = data.messages || [];
         
-        // Convert to our message format
         const formattedMessages: Message[] = newMessages.map((msg: any) => ({
           id: msg.id,
           text: msg.message,
-          sender: msg.sender,
+          sender: msg.sender as 'user' | 'ai' | 'admin',
           timestamp: new Date(msg.createdAt),
         }));
 
-        // Check if there are new admin messages
+        // Check if there are new admin messages not yet shown
         const hasNewAdminMessage = formattedMessages.some(
           (msg) => msg.sender === 'admin' && !messages.find((m) => m.id === msg.id)
         );
@@ -131,12 +131,10 @@ export default function SupportChat() {
         setWaitingForAdmin(true);
       }
 
-      // Always show the message, even if there was an error
-      // The API now returns friendly messages instead of errors
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: data.message || 'Извините, произошла ошибка. Попробуйте позже.',
-        sender: data.takenOver ? 'ai' : 'ai',
+        sender: 'ai',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
