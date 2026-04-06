@@ -1,414 +1,350 @@
-// app/company/about/page.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
-import { Users, Award, Target, Heart, Sparkles, Star, TrendingUp, Globe, ChevronDown, Zap, Shield, Rocket, Mountain, Plane, Ship, Building2 } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
+import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { Users, Award, Zap, Globe, Star, TrendingUp, Building2, ArrowRight, Shield, Heart } from 'lucide-react';
 import Link from 'next/link';
 
-export default function AboutPage() {
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
-  
-  const [isVisible, setIsVisible] = useState(false);
-  
+function CountUp({ end, duration = 2 }: { end: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+
   useEffect(() => {
-    setIsVisible(true);
-  }, []);
+    if (!inView) return;
+    let start = 0;
+    const step = end / (duration * 60);
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= end) { setCount(end); clearInterval(timer); }
+      else setCount(Math.floor(start));
+    }, 1000 / 60);
+    return () => clearInterval(timer);
+  }, [inView, end, duration]);
 
-  // Улучшенные значения компании
-  const values = [
-    {
-      icon: Shield,
-      title: "Экологичность",
-      description: "Мы используем только переработанные и биоразлагаемые материалы для защиты нашей планеты"
-    },
-    {
-      icon: Zap,
-      title: "Инновации",
-      description: "Применяем передовые технологии в производстве для создания высококачественной продукции"
-    },
-    {
-      icon: Heart,
-      title: "Качество",
-      description: "Каждый продукт проходит строгий контроль качества и создается с любовью к деталям"
-    },
-    {
-      icon: Globe,
-      title: "Сообщество",
-      description: "Создаем глобальное сообщество единомышленников, разделяющих наши ценности"
-    }
-  ];
+  return <span ref={ref}>{count}</span>;
+}
 
-  // Улучшенные статистические данные
-  const stats = [
-    { number: "100K+", label: "Клиентов по всему миру", icon: Users },
-    { number: "7+", label: "Лет на рынке", icon: TrendingUp },
-    { number: "98%", label: "Довольных клиентов", icon: Star },
-    { number: "500+", label: "Партнеров", icon: Building2 }
-  ];
+const stats = [
+  { number: 100, suffix: 'K+', label: 'Клиентов', icon: Users },
+  { number: 7, suffix: '+', label: 'Лет опыта', icon: TrendingUp },
+  { number: 98, suffix: '%', label: 'Довольных', icon: Star },
+  { number: 500, suffix: '+', label: 'Партнёров', icon: Building2 },
+];
 
-  // Обновленные данные о команде, взятые с /about
-  const team = [
-    { 
-      name: "Анна Иванова", 
-      role: "Главный дизайнер", 
-      image: "/images/team/anna.jpg",
-      description: "Ведущий эксперт в области устойчивой моды с более чем 10 лет опыта в индустрии"
-    },
-    { 
-      name: "Максим Петров", 
-      role: "Технический директор", 
-      image: "/images/team/maxim.jpg",
-      description: "Инженер с глубокими знаниями в области умных материалов и IoT-технологий"
-    },
-    { 
-      name: "Елена Смирнова", 
-      role: "Менеджер по устойчивому развитию", 
-      image: "/images/team/elena.jpg",
-      description: "Эксперт в области экологических стандартов и устойчивого производства"
-    }
-  ];
+const values = [
+  { icon: Shield, title: 'Экологичность', desc: 'Только переработанные и биоразлагаемые материалы', color: 'from-emerald-400 to-teal-500' },
+  { icon: Zap, title: 'Инновации', desc: 'Передовые технологии в каждом изделии', color: 'from-purple-500 to-violet-600' },
+  { icon: Heart, title: 'Качество', desc: 'Строгий контроль и любовь к деталям', color: 'from-pink-500 to-rose-600' },
+  { icon: Globe, title: 'Сообщество', desc: 'Глобальная сеть единомышленников', color: 'from-blue-500 to-indigo-600' },
+];
 
-  // История компании
-  const timeline = [
-    { year: "2015", title: "Основание бренда ELEVATE", description: "Начало пути с миссией создавать устойчивую и стильную одежду" },
-    { year: "2017", title: "Первая коллекция", description: "Выпуск первой коллекции из переработанных материалов" },
-    { year: "2020", title: "Международное признание", description: "Получение наград за устойчивое производство и инновации" },
-    { year: "2022", title: "Технологический прорыв", description: "Внедрение AI-технологий в производственный процесс" },
-    { year: "2023", title: "Расширение по всему миру", description: "Открытие 25 магазинов в 10 странах" },
-    { year: "2024", title: "Будущее начинается", description: "Запуск коллекции, вдохновленной устойчивостью" }
-  ];
+const timeline = [
+  { year: '2015', title: 'Основание', desc: 'Начало пути с миссией создавать устойчивую моду' },
+  { year: '2017', title: 'Первая коллекция', desc: 'Выпуск коллекции из переработанных материалов' },
+  { year: '2020', title: 'Признание', desc: 'Международные награды за инновации' },
+  { year: '2022', title: 'AI-прорыв', desc: 'Внедрение искусственного интеллекта в производство' },
+  { year: '2023', title: 'Экспансия', desc: '25 магазинов в 10 странах мира' },
+  { year: '2024', title: 'Будущее', desc: 'Новая эра устойчивой роскоши' },
+];
 
-  // Используем spring для плавной анимации
-  const springConfig = { damping: 15, stiffness: 100 };
-  const scrollYProgressSpring = useSpring(scrollYProgress, springConfig);
+const team = [
+  { name: 'Анна Иванова', role: 'Главный дизайнер', initials: 'АИ', color: 'from-purple-500 to-pink-500' },
+  { name: 'Максим Петров', role: 'Технический директор', initials: 'МП', color: 'from-blue-500 to-purple-500' },
+  { name: 'Елена Смирнова', role: 'Директор по развитию', initials: 'ЕС', color: 'from-pink-500 to-rose-500' },
+];
+
+export default function AboutPage() {
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '40%']);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 pt-24 pb-16 relative overflow-x-hidden">
-      {/* Легкий фон с анимированными элементами */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Анимированные градиентные пятна */}
-        <motion.div
-          className="absolute w-96 h-96 rounded-full bg-purple-200/30 blur-3xl"
-          animate={{
-            x: [0, 100, 0, -100, 0],
-            y: [0, -50, 0, 50, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          style={{ top: '20%', left: '10%' }}
-        />
-        
-        <motion.div
-          className="absolute w-80 h-80 rounded-full bg-pink-200/30 blur-3xl"
-          animate={{
-            x: [0, -80, 0, 80, 0],
-            y: [0, 60, 0, -60, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          style={{ top: '70%', left: '75%' }}
-        />
-      </div>
+    <div className="min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden">
 
-      {/* Плавающие элементы */}
-      <motion.div
-        className="absolute w-64 h-64 rounded-full bg-gradient-to-r from-purple-100/50 via-pink-100/50 to-blue-100/50 blur-2xl"
-        animate={{
-          scale: [1, 1.5, 1],
-          opacity: [0.2, 0.4, 0.2]
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        style={{ top: '30%', left: '5%' }}
-      />
-      
-      <motion.div
-        className="absolute w-72 h-72 rounded-full bg-gradient-to-r from-pink-100/50 via-purple-100/50 to-blue-100/50 blur-2xl"
-        animate={{
-          scale: [1.2, 1, 1.2],
-          opacity: [0.3, 0.1, 0.3]
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        style={{ top: '60%', left: '75%' }}
-      />
-
-      {/* Параллакс контент */}
-      <div ref={containerRef} className="relative z-10">
-        {/* Герой-секция */}
+      {/* HERO — fullscreen с параллаксом */}
+      <section ref={heroRef} className="relative h-screen flex items-center justify-center overflow-hidden">
+        {/* Animated gradient background */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          className="text-center mb-24 relative"
+          className="absolute inset-0"
+          animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+          transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+          style={{
+            background: 'linear-gradient(135deg, #f3e8ff, #fce7f3, #ede9fe, #dbeafe)',
+            backgroundSize: '400% 400%',
+          }}
+        />
+
+        {/* Big decorative letters */}
+        <motion.div
+          style={{ y: heroY, opacity: heroOpacity }}
+          className="absolute inset-0 flex items-center justify-center select-none pointer-events-none"
         >
-          <div className="flex justify-center mb-10">
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ 
-                type: "spring", 
-                stiffness: 100, 
-                damping: 10,
-                delay: 0.2
-              }}
-              className="relative"
-            >
-              <div className="absolute -inset-8 bg-gradient-to-r from-purple-300/30 to-pink-300/30 rounded-full blur-2xl opacity-80"></div>
-              <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 w-32 h-32 rounded-full flex items-center justify-center shadow-2xl shadow-purple-500/30">
-                <Heart className="text-white" size={64} />
-              </div>
-            </motion.div>
-          </div>
-          <motion.h1 
-            className="text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-700 via-pink-700 to-blue-700 mb-8"
-            initial={{ opacity: 0, y: 30 }}
+          <span className="text-[30vw] font-black text-purple-100 dark:text-purple-950 leading-none tracking-tighter">
+            EL
+          </span>
+        </motion.div>
+
+        {/* Floating orbs */}
+        {[
+          { size: 400, x: '10%', y: '20%', color: 'bg-purple-300/30', dur: 8 },
+          { size: 300, x: '70%', y: '60%', color: 'bg-pink-300/30', dur: 12 },
+          { size: 200, x: '50%', y: '10%', color: 'bg-blue-300/30', dur: 10 },
+        ].map((orb, i) => (
+          <motion.div
+            key={i}
+            className={`absolute rounded-full blur-3xl ${orb.color}`}
+            style={{ width: orb.size, height: orb.size, left: orb.x, top: orb.y }}
+            animate={{ scale: [1, 1.3, 1], x: [0, 30, 0], y: [0, -20, 0] }}
+            transition={{ duration: orb.dur, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        ))}
+
+        <motion.div
+          style={{ y: heroY, opacity: heroOpacity }}
+          className="relative z-10 text-center px-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
-            О нас
-          </motion.h1>
-          <motion.p 
-            className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed px-4"
+            <span className="inline-block text-xs font-bold tracking-[0.4em] text-purple-600 uppercase mb-6 px-4 py-2 bg-purple-100 rounded-full">
+              О компании ELEVATE
+            </span>
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-gray-900 leading-[0.9] tracking-tighter mb-8">
+              Мода{' '}
+              <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+                будущего
+              </span>
+              <br />сегодня
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              Переосмысливаем роскошь через инновации, устойчивость и страсть к совершенству
+            </p>
+          </motion.div>
+
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
+            transition={{ delay: 0.8, duration: 1 }}
+            className="mt-12 flex justify-center"
           >
-            Мы переосмысливаем роскошную моду с инновационным дизайном и устойчивыми практиками
-          </motion.p>
-        </motion.div>
-
-        {/* Улучшенная статистика с анимированными иконками */}
-        <motion.div 
-          className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-28 px-4"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
-        >
-          {stats.map((stat, index) => (
-            <motion.div 
-              key={index}
-              className="text-center bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg"
-              whileHover={{ y: -15, scale: 1.05 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 + index * 0.1, duration: 0.5 }}
+            <motion.div
+              animate={{ y: [0, 12, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-6 h-10 border-2 border-gray-400 rounded-full flex items-start justify-center p-1"
             >
-              <div className="flex justify-center mb-4">
-                <motion.div
-                  whileHover={{ scale: 1.2, rotate: 10 }}
-                  className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-200 to-pink-200 flex items-center justify-center"
-                >
-                  <stat.icon className="text-purple-700" size={28} />
-                </motion.div>
-              </div>
-              <motion.div 
-                className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-700 mb-2"
-                initial={{ scale: 0.5 }}
-                animate={{ scale: 1 }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 200, 
-                  damping: 10,
-                  delay: 1.2 + index * 0.1 
-                }}
-              >
-                {stat.number}
-              </motion.div>
-              <div className="text-gray-700 text-sm">{stat.label}</div>
+              <div className="w-1 h-3 bg-gray-400 rounded-full" />
             </motion.div>
-          ))}
+          </motion.div>
         </motion.div>
+      </section>
 
-        {/* Улучшенная секция истории компании */}
-        <div className="max-w-6xl mx-auto mb-28 relative px-4">
-          <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-purple-500 via-pink-500 to-blue-500 rounded-full"></div>
-          
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16 relative z-10">
-            Наша история
-          </h2>
-          
-          <div className="space-y-16">
-            {timeline.map((item, index) => (
-              <motion.div 
-                key={index}
-                className={`flex flex-col md:flex-row items-center ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} relative z-10`}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -100 : 100 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.8, delay: index * 0.1 }}
-              >
-                <div className={`md:w-5/12 p-6 ${index % 2 === 0 ? 'md:pr-16 text-right' : 'md:pl-16 text-left'}`}>
-                  <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl">
-                    <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-700 mb-3">{item.year}</h3>
-                    <h4 className="text-xl font-semibold text-gray-900 mb-3">{item.title}</h4>
-                    <p className="text-gray-700">{item.description}</p>
-                  </div>
-                </div>
-                
-                <div className="md:w-2/12 flex justify-center">
-                  <motion.div 
-                    className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 z-10 border-4 border-white flex items-center justify-center"
-                    whileHover={{ scale: 1.3, rotate: 360 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                  </motion.div>
-                </div>
-                
-                <div className="md:w-5/12"></div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Улучшенная секция команды с реальными изображениями */}
-        <div className="mb-28 px-4">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16"
-          >
-            Наша команда
-          </motion.h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {team.map((member, index) => (
+      {/* STATS — горизонтальная полоса */}
+      <section className="py-20 bg-gray-950">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+            {stats.map((stat, i) => (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 50 }}
+                key={i}
+                initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.3 + index * 0.1, duration: 0.6 }}
-                whileHover={{ y: -20, scale: 1.05 }}
-                className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/50 hover:shadow-2xl transition-all overflow-hidden"
+                transition={{ delay: i * 0.1, duration: 0.6 }}
+                className="text-center p-8 border-r border-gray-800 last:border-0"
               >
-                <div className="flex flex-col items-center">
-                  <div className="w-24 h-24 rounded-full overflow-hidden mb-6 shadow-lg">
-                    <img 
-                      src={member.image} 
-                      alt={member.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Fallback to gradient background if image fails to load
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/images/team/default.jpg';
-                        target.onerror = null;
-                      }}
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{member.name}</h3>
-                  <p className="text-purple-600 mb-3 font-medium">{member.role}</p>
-                  <p className="text-gray-700 text-sm text-center">{member.description}</p>
+                <div className="text-5xl md:text-6xl font-black text-white mb-2">
+                  <CountUp end={stat.number} />{stat.suffix}
                 </div>
-                
-                <motion.div 
-                  className="mt-6 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-                  initial={{ width: 0 }}
-                  whileInView={{ width: "100%" }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
-                />
+                <div className="text-gray-500 text-sm font-medium tracking-widest uppercase">{stat.label}</div>
               </motion.div>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Улучшенная секция ценностей */}
-        <div className="mb-28 px-4">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
+      {/* MISSION — большой текст */}
+      <section className="py-32 px-4">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 1 }}
+          >
+            <p className="text-xs font-bold tracking-[0.4em] text-purple-600 uppercase mb-8">Наша миссия</p>
+            <h2 className="text-4xl md:text-6xl font-black text-gray-900 dark:text-white leading-tight">
+              Мы верим, что{' '}
+              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                стиль и ответственность
+              </span>{' '}
+              не противоречат друг другу — они дополняют.
+            </h2>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* VALUES — сетка с hover-эффектами */}
+      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.5 }}
-            className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16"
+            className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-16 text-center"
           >
             Наши ценности
           </motion.h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((value, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {values.map((v, i) => (
               <motion.div
-                key={value.title}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                key={i}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
-                whileHover={{ y: -15, scale: 1.05 }}
-                className="bg-white/70 backdrop-blur-sm rounded-3xl p-7 shadow-xl border border-white/50 text-center hover:shadow-2xl transition-all"
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                className="group relative bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-default"
               >
-                <motion.div 
-                  className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-200 to-pink-200 flex items-center justify-center mx-auto mb-6"
-                  whileHover={{ rotate: 360, scale: 1.1 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <value.icon className="text-purple-700" size={36} />
-                </motion.div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{value.title}</h3>
-                <p className="text-gray-700 leading-relaxed">{value.description}</p>
+                {/* Gradient background on hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${v.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+                
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${v.color} flex items-center justify-center mb-6 shadow-lg`}>
+                  <v.icon className="text-white" size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{v.title}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{v.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Призыв к действию */}
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 1.2, duration: 0.8 }}
-          className="bg-gradient-to-r from-purple-100/70 to-pink-100/70 backdrop-blur-sm rounded-3xl p-12 text-gray-900 text-center border border-white/50 mx-4"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            whileInView={{ scale: 1 }}
+      {/* TIMELINE — горизонтальный скролл */}
+      <section className="py-20 overflow-hidden">
+        <div className="px-4 mb-12">
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 1.4, type: "spring", stiffness: 200, damping: 15 }}
-            className="mb-8"
+            className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white text-center"
           >
-            <Star size={64} className="mx-auto text-yellow-500" />
-          </motion.div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-700 to-pink-700">
-            Готовы начать свой путь с ELEVATE?
-          </h2>
-          <p className="text-gray-700 mb-10 max-w-2xl mx-auto text-lg">
-            Присоединяйтесь к глобальному сообществу, которое формирует будущее моды
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link 
-              href="/products" 
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-bold hover:shadow-xl transition-all transform hover:scale-105 shadow-lg"
+            Наша история
+          </motion.h2>
+        </div>
+
+        <div className="flex gap-6 px-8 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-hide">
+          {timeline.map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: 60 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="flex-shrink-0 w-72 snap-start"
             >
-              Исследовать коллекции
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl p-8 h-full border border-purple-100 dark:border-gray-700 hover:border-purple-300 transition-colors">
+                <div className="text-6xl font-black text-purple-200 dark:text-purple-900 mb-4 leading-none">
+                  {item.year}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{item.title}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* TEAM */}
+      <section className="py-20 px-4 bg-gray-950">
+        <div className="max-w-6xl mx-auto">
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-black text-white mb-16 text-center"
+          >
+            Команда
+          </motion.h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {team.map((member, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                whileHover={{ y: -6 }}
+                className="group bg-gray-900 rounded-3xl p-8 border border-gray-800 hover:border-purple-500/50 transition-all duration-300"
+              >
+                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${member.color} flex items-center justify-center text-white text-2xl font-black mb-6 shadow-lg`}>
+                  {member.initials}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
+                <p className="text-purple-400 text-sm font-medium">{member.role}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-32 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+          className="absolute -right-40 -top-40 w-96 h-96 border border-white/10 rounded-full"
+        />
+        <motion.div
+          animate={{ rotate: -360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+          className="absolute -left-20 -bottom-20 w-64 h-64 border border-white/10 rounded-full"
+        />
+
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <motion.h2
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-5xl md:text-7xl font-black text-white mb-8 leading-tight"
+          >
+            Готовы стать частью ELEVATE?
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="text-white/80 text-xl mb-12 max-w-2xl mx-auto"
+          >
+            Присоединяйтесь к сообществу, которое формирует будущее моды
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <Link
+              href="/products"
+              className="group inline-flex items-center gap-2 bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-all shadow-2xl"
+            >
+              Смотреть коллекции
+              <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
             </Link>
-            <Link 
-              href="/company/stores" 
-              className="bg-white/70 text-gray-900 px-8 py-4 rounded-xl font-bold hover:bg-white/90 transition-all border border-white/50"
+            <Link
+              href="/company/stores"
+              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all border border-white/20"
             >
               Найти магазин
             </Link>
-          </div>
-        </motion.div>
-      </div>
-      
-      {/* Убираем фиксированную стрелку вниз, т.к. она не нужна */}
+          </motion.div>
+        </div>
+      </section>
     </div>
   );
 }
