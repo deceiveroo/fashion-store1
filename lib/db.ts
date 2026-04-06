@@ -36,15 +36,14 @@ function buildPoolConfig(): PoolConfig {
         : isSupabase
           ? { rejectUnauthorized: false }
           : base.ssl ?? false,
-    max: isSupabase ? 3 : 5, // Увеличено для Supabase
+    max: isSupabase ? 1 : 3,
     min: 0,
-    idleTimeoutMillis: 30000, // Увеличено до 30 секунд
-    connectionTimeoutMillis: 30000, // Увеличено до 30 секунд
-    allowExitOnIdle: true, // Разрешаем выход при idle
-    statement_timeout: 30000, // Увеличено до 30 секунд
-    query_timeout: 30000, // Увеличено до 30 секунд
-    keepAlive: true,
-    keepAliveInitialDelayMillis: 10000, // Увеличено до 10 секунд
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 10000,
+    allowExitOnIdle: true,
+    statement_timeout: 30000,
+    query_timeout: 30000,
+    keepAlive: false,
   };
 }
 

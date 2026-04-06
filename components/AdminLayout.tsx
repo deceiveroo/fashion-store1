@@ -79,6 +79,20 @@ export default function AdminLayout({ children, currentPage }: AdminLayoutProps)
     );
   }
 
+  if (status === 'unauthenticated' || !['admin', 'manager', 'support'].includes(role)) {
+    if (typeof window !== 'undefined') {
+      router.replace(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
+    }
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-violet-50 to-zinc-50 dark:from-zinc-950 dark:to-violet-950">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-violet-600 border-t-transparent" />
+          <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">Перенаправление...</p>
+        </div>
+      </div>
+    );
+  }
+
   const filtered = nav.filter((item) => item.roles.includes(role));
 
   return (
