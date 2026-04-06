@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { sessionId, status, notes } = await request.json();
+    const { sessionId, status, notes, takenOverBy } = await request.json();
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
@@ -58,6 +58,11 @@ export async function PATCH(request: NextRequest) {
     if (notes !== undefined) {
       updateData.notes = notes;
     }
+    
+    if (takenOverBy !== undefined) {
+      updateData.takenOverBy = takenOverBy;
+      updateData.takenOverAt = new Date();
+    }
 
     await db
       .update(supportChatSessions)
@@ -69,6 +74,52 @@ export async function PATCH(request: NextRequest) {
     console.error('[ADMIN] Error updating support chat:', error);
     return NextResponse.json(
       { error: 'Failed to update support chat' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE method to remove individual messages
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await auth();
+
+    if (!session?.user || !['admin', 'manager'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { sessionId, messageId } = await request.json();
+
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+    }
+
+    if (messageId) {
+      // Delete a specific message
+      await db
+        .delete(supportChatMessages)
+        .where(eq(supportChatMessages.id, messageId));
+    } else {
+      // Delete entire session (admin only)
+      if (session.user.role !== 'admin') {
+        return NextResponse.json({ error: 'Only admins can delete entire sessions' }, { status: 403 });
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(supportChatMessages)
+          .where(eq(supportChatMessages.sessionId, sessionId));
+        await tx
+          .delete(supportChatSessions)
+          .where(eq(supportChatSessions.sessionId, sessionId));
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('[ADMIN] Error deleting support chat:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete support chat' },
       { status: 500 }
     );
   }
