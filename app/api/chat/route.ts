@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { supportChatMessages, supportChatSessions, chatSessions, messages as messagesSchema } from '@/lib/schema';
-import { eq, and } from 'drizzle-orm';
-import { processAIResponse } from '@/lib/ai/support-processor';
+import { supportChatMessages, supportChatSessions } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 
 const fallbackResponses: Record<string, string> = {
   'доставка': "Мы предлагаем несколько вариантов доставки:\n\n Курьерская доставка - 1-3 дня (бесплатно от 5000₽)\n Почта России - 5-10 дней (от 300₽)\n Самовывоз из магазина - бесплатно",
@@ -84,52 +83,6 @@ async function callCloudflareAI(message: string): Promise<string | null> {
   }
 }
 
-// Helper function to get or create a numeric session ID for the chatSessions table
-async function getOrCreateNumericSession(sessionId: string) {
-  // Attempt to convert the string sessionId to a numeric ID
-  // If it's already numeric, return it
-  const numericId = parseInt(sessionId);
-  if (!isNaN(numericId)) {
-    return numericId;
-  }
-
-  // Otherwise, try to find a corresponding record in chatSessions table
-  // If not found, create a new entry
-  try {
-    // Check if we have a mapping for this string session ID
-    // Since the chatSessions table uses numeric IDs, we'll create a mapping
-    // We'll use a hash of the string sessionId to generate a consistent numeric ID
-    let hash = 0;
-    for (let i = 0; i < sessionId.length; i++) {
-      const char = sessionId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash |= 0; // Convert to 32bit integer
-    }
-
-    // Ensure the hash is positive and within reasonable bounds
-    const numericSessionId = Math.abs(hash) % 1000000000; // Limit to 9 digits
-
-    // Check if this session already exists in the chatSessions table
-    const existingSession = await db.select().from(chatSessions).where(eq(chatSessions.id, numericSessionId)).limit(1);
-    
-    if (existingSession.length === 0) {
-      // Create a new session in the chatSessions table
-      await db.insert(chatSessions).values({
-        id: numericSessionId,
-        status: 'ai', // Default to AI mode
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-    }
-    
-    return numericSessionId;
-  } catch (error) {
-    console.error('[CHAT] Error getting/creating numeric session:', error);
-    // Return a default value in case of error
-    return 1; // Default to 1 if anything goes wrong
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { message, sessionId } = await request.json();
@@ -149,62 +102,17 @@ export async function POST(request: NextRequest) {
       console.log('[CHAT] Could not check takeover status');
     }
 
-    // Check if we need to transfer to operator
-    const lowerMessage = message.toLowerCase();
-    if (lowerMessage.includes('оператор') || lowerMessage.includes('человек') || lowerMessage.includes('помогите')) {
-      // Get or create the numeric session ID
-      const numericSessionId = await getOrCreateNumericSession(sessionId);
-      
-      // Update session to waiting status in the main chatSessions table
-      await db
-        .update(chatSessions)
-        .set({ status: 'waiting', updatedAt: new Date() })
-        .where(eq(chatSessions.id, numericSessionId));
-        
-      return NextResponse.json({ 
-        message: 'Передаю ваш запрос специалисту. Ожидайте ответа в течение нескольких минут.', 
-        takenOver: true 
-      });
-    }
-
     let aiMessage = '';
     let aiModel = 'fallback';
 
-    // Try AI processor first
-    try {
-      // Get the numeric session ID for the AI processor
-      const numericSessionId = await getOrCreateNumericSession(sessionId);
-      
-      const aiResponse = await processAIResponse(message, numericSessionId);
-      if (aiResponse.text) {
-        aiMessage = aiResponse.text;
-        aiModel = 'gpt-4o-mini';
-        
-        // If AI indicates low confidence, suggest operator
-        if (aiResponse.fallback) {
-          // Update session to waiting status
-          await db
-            .update(chatSessions)
-            .set({ status: 'waiting', updatedAt: new Date() })
-            .where(eq(chatSessions.id, numericSessionId));
-            
-          aiMessage += '\n\nЕсли вам нужна помощь от специалиста, нажмите кнопку "Позвать оператора".';
-        }
-      }
-    } catch (error) {
-      console.error('[CHAT] AI Processor error:', error);
+    // Cloudflare Workers AI
+    const cfResponse = await callCloudflareAI(message);
+    if (cfResponse) {
+      aiMessage = cfResponse;
+      aiModel = 'cloudflare-llama-3.3-70b-fast';
     }
 
-    // If AI processor didn't work, try Cloudflare Workers AI
-    if (!aiMessage) {
-      const cfResponse = await callCloudflareAI(message);
-      if (cfResponse) {
-        aiMessage = cfResponse;
-        aiModel = 'cloudflare-llama-3.3-70b-fast';
-      }
-    }
-
-    // Keyword fallback if both AIs failed
+    // Keyword fallback if CF failed
     if (!aiMessage) {
       const fallback = findBestResponse(message);
       if (fallback) {

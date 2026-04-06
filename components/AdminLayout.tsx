@@ -41,8 +41,7 @@ export type AdminPageId =
   | 'analytics'
   | 'reports'
   | 'settings'
-  | 'support-chats'
-  | 'contact-messages';
+  | 'support-chats';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -55,7 +54,6 @@ const nav = [
   { id: 'orders' as const, label: 'Заказы', href: '/admin/orders', icon: ShoppingCart, roles: ['admin', 'manager', 'support'] },
   { id: 'customers' as const, label: 'Клиенты', href: '/admin/customers', icon: Users, roles: ['admin', 'manager', 'support'] },
   { id: 'support-chats' as const, label: 'Чаты', href: '/admin/support-chats', icon: MessageCircle, roles: ['admin', 'manager', 'support'] },
-  { id: 'contact-messages' as const, label: 'Обращения', href: '/admin/contact-messages', icon: MessageCircle, roles: ['admin', 'manager', 'support'] },
   { id: 'users' as const, label: 'Команда', href: '/admin/users', icon: Shield, roles: ['admin'] },
   { id: 'categories' as const, label: 'Категории', href: '/admin/categories', icon: Tag, roles: ['admin', 'manager'] },
   { id: 'analytics' as const, label: 'Аналитика', href: '/admin/analytics', icon: LineChart, roles: ['admin', 'manager', 'support'] },
