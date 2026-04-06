@@ -8,10 +8,17 @@ import path from 'path';
 const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
 const secret = new TextEncoder().encode(JWT_SECRET);
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// 创建 Supabase 客户端的函数，仅在运行时调用
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error('Supabase URL и/или Service Role Key не настроены в переменных окружения');
+  }
+  
+  return createClient(supabaseUrl, supabaseServiceRoleKey);
+}
 
 async function getUserId(request: NextRequest): Promise<string | null> {
   const session = await auth();
@@ -31,7 +38,7 @@ async function getUserId(request: NextRequest): Promise<string | null> {
 // Extract storage path from public URL
 function extractStoragePath(url: string): string | null {
   try {
-    // URL format: https://xxx.supabase.co/storage/v1/object/public/uploads/products/file.jpg
+    // URL format: https://xxx.supabase.co/storage/v1/object/public/uploads/file.jpg
     const match = url.match(/\/storage\/v1\/object\/public\/uploads\/(.+)$/);
     return match ? match[1] : null;
   } catch {
@@ -41,6 +48,9 @@ function extractStoragePath(url: string): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    // 初始化 Supabase 客户端（仅在运行时）
+    const supabase = getSupabaseClient();
+    
     const userId = await getUserId(request);
     if (!userId) {
       return NextResponse.json({ error: 'Необходимо авторизоваться' }, { status: 401 });
