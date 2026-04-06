@@ -38,53 +38,57 @@ function SupportChatsPage() {
   const [isSending, setIsSending] = useState(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'resolved' | 'archived'>('all');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const selectedIdRef = useRef<string | null>(null);
+  const selectedSessionRef = useRef<ChatSession | null>(null);
+  const sessionsEsRef = useRef<EventSource | null>(null);
+  const messagesEsRef = useRef<EventSource | null>(null);
   const isTakenOver = selectedSession?.aiDisabled === true;
 
-  useEffect(() => { selectedIdRef.current = selectedSession?.sessionId || null; }, [selectedSession]);
-
-  const loadSessions = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true);
-    try {
-      const res = await fetch('/api/admin/support-chats');
-      if (!res.ok) return;
-      const data = await res.json();
-      const list: ChatSession[] = data.sessions || [];
-      setSessions(list);
-      if (selectedIdRef.current) {
-        const updated = list.find(s => s.sessionId === selectedIdRef.current);
-        if (updated) setSelectedSession(updated);
-      }
-    } catch {}
-    finally { if (!silent) setIsLoading(false); }
-  }, []);
-
-  const loadMessages = useCallback(async (sessionId: string) => {
-    try {
-      const res = await fetch('/api/admin/support-chats/' + sessionId);
-      if (res.ok) {
-        const data = await res.json();
-        setMessages(data.messages || []);
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    loadSessions();
-    const t = setInterval(() => loadSessions(true), 5000);
-    return () => clearInterval(t);
-  }, [loadSessions]);
-
-  useEffect(() => {
-    if (!selectedSession) { setMessages([]); return; }
-    loadMessages(selectedSession.sessionId);
-    const t = setInterval(() => {
-      if (selectedIdRef.current) loadMessages(selectedIdRef.current);
-    }, 2000);
-    return () => clearInterval(t);
-  }, [selectedSession?.sessionId, loadMessages]);
-
+  useEffect(() => { selectedSessionRef.current = selectedSession; }, [selectedSession]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  // SSE for sessions list
+  useEffect(() => {
+    setIsLoading(true);
+    const es = new EventSource('/api/admin/support-chats/stream');
+    sessionsEsRef.current = es;
+
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'sessions') {
+          setSessions(data.sessions || []);
+          setIsLoading(false);
+          // Sync selected session
+          if (selectedSessionRef.current) {
+            const updated = (data.sessions || []).find((s: ChatSession) => s.sessionId === selectedSessionRef.current!.sessionId);
+            if (updated) setSelectedSession(updated);
+          }
+        }
+      } catch {}
+    };
+
+    es.onerror = () => { setIsLoading(false); };
+
+    return () => { es.close(); };
+  }, []);
+
+  // SSE for messages when session selected
+  useEffect(() => {
+    if (messagesEsRef.current) { messagesEsRef.current.close(); messagesEsRef.current = null; }
+    if (!selectedSession) { setMessages([]); return; }
+
+    const es = new EventSource(`/api/admin/support-chats/stream?sessionId=${selectedSession.sessionId}`);
+    messagesEsRef.current = es;
+
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'messages') setMessages(data.messages || []);
+      } catch {}
+    };
+
+    return () => { es.close(); };
+  }, [selectedSession?.sessionId]);
 
   const handleSelectSession = (session: ChatSession) => {
     setSelectedSession(session);
@@ -98,11 +102,10 @@ function SupportChatsPage() {
         body: JSON.stringify({ sessionId }),
       });
       if (res.ok) {
-        toast.success('Чат перехвачен! Теперь вы можете писать.');
+        toast.success('Чат перехвачен!');
         setSelectedSession(prev => prev ? { ...prev, aiDisabled: true } : prev);
-        loadSessions(true);
       } else toast.error('Не удалось перехватить чат');
-    } catch { toast.error('Ошибка при перехвате чата'); }
+    } catch { toast.error('Ошибка'); }
   };
 
   const handleSendMessage = async () => {
@@ -115,17 +118,8 @@ function SupportChatsPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: selectedSession.sessionId, message: msg }),
       });
-      if (res.ok) {
-        // Immediately reload messages after sending
-        await loadMessages(selectedSession.sessionId);
-      } else {
-        setMessageInput(msg);
-        toast.error('Не удалось отправить сообщение');
-      }
-    } catch {
-      setMessageInput(msg);
-      toast.error('Ошибка отправки');
-    }
+      if (!res.ok) { setMessageInput(msg); toast.error('Не удалось отправить'); }
+    } catch { setMessageInput(msg); toast.error('Ошибка отправки'); }
     finally { setIsSending(false); }
   };
 
@@ -138,14 +132,13 @@ function SupportChatsPage() {
       if (res.ok) {
         toast.success('Статус обновлен');
         setSelectedSession(prev => prev ? { ...prev, status } : prev);
-        loadSessions(true);
-      } else toast.error('Не удалось обновить статус');
-    } catch { toast.error('Ошибка обновления статуса'); }
+      } else toast.error('Ошибка');
+    } catch { toast.error('Ошибка'); }
   };
 
   const handleDeleteChat = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Удалить этот чат и все сообщения?')) return;
+    if (!confirm('Удалить этот чат?')) return;
     try {
       const res = await fetch('/api/admin/support-chats/delete', {
         method: 'DELETE', headers: { 'Content-Type': 'application/json' },
@@ -154,12 +147,8 @@ function SupportChatsPage() {
       if (res.ok) {
         toast.success('Чат удалён');
         if (selectedSession?.sessionId === sessionId) { setSelectedSession(null); setMessages([]); }
-        loadSessions(true);
-      } else {
-        const d = await res.json().catch(() => ({}));
-        toast.error(d.error || 'Не удалось удалить чат');
-      }
-    } catch { toast.error('Ошибка удаления'); }
+      } else toast.error('Ошибка удаления');
+    } catch { toast.error('Ошибка'); }
   };
 
   const filteredSessions = sessions.filter(s => filter === 'all' || s.status === filter);
@@ -170,11 +159,8 @@ function SupportChatsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Чаты поддержки</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Всего: {sessions.length}  Live обновление</p>
+            <p className="text-sm text-gray-500 mt-0.5">Всего: {sessions.length}  <span className="text-green-500"> Live</span></p>
           </div>
-          <button onClick={() => loadSessions()} className="p-2 text-gray-500 hover:text-purple-600 transition-colors rounded-lg hover:bg-gray-100">
-            <RefreshCw className="h-5 w-5" />
-          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
@@ -283,20 +269,16 @@ function SupportChatsPage() {
                     <p className="text-xs text-center text-gray-400 mb-2">Нажмите "Перехватить чат" чтобы писать пользователю</p>
                   )}
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={messageInput}
+                    <input type="text" value={messageInput}
                       onChange={e => setMessageInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-                      placeholder={isTakenOver ? "Напишите сообщение пользователю..." : "Сначала перехватите чат..."}
+                      placeholder={isTakenOver ? "Напишите сообщение..." : "Сначала перехватите чат..."}
                       disabled={!isTakenOver || isSending}
                       className="flex-1 px-3 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed"
                     />
-                    <button
-                      onClick={handleSendMessage}
+                    <button onClick={handleSendMessage}
                       disabled={!messageInput.trim() || isSending || !isTakenOver}
-                      className="px-3 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                    >
+                      className="px-3 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                       <Send className="w-4 h-4" />
                     </button>
                   </div>
