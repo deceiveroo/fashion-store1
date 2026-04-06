@@ -3,29 +3,39 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function proxy(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const isSecure = req.nextUrl.protocol === 'https:';
+
+  // NextAuth uses different cookie names for HTTP vs HTTPS
+  const cookieName = isSecure
+    ? '__Secure-next-auth.session-token'
+    : 'next-auth.session-token';
+
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    cookieName,
+  });
+
   const path = req.nextUrl.pathname;
 
-  // Allow access to admin login page (keep for backward compat)
+  // /admin/login - redirect to main signin
   if (path === '/admin/login') {
-    // If already authenticated as admin, redirect to dashboard
     if (token && ['admin', 'manager', 'support'].includes((token.role as string) ?? '')) {
       return NextResponse.redirect(new URL('/admin/dashboard', req.url));
     }
-    // Otherwise redirect to main signin
     const url = new URL('/auth/signin', req.url);
     url.searchParams.set('callbackUrl', '/admin/dashboard');
     return NextResponse.redirect(url);
   }
 
-  // Not authenticated - redirect to main signin with callback to admin
+  // Not authenticated
   if (!token) {
     const url = new URL('/auth/signin', req.url);
     url.searchParams.set('callbackUrl', req.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 
-  // Authenticated but wrong role
+  // Wrong role
   const role = token.role as string | undefined;
   if (!['admin', 'manager', 'support'].includes(role ?? '')) {
     return NextResponse.redirect(new URL('/', req.url));
