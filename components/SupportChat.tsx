@@ -69,7 +69,18 @@ export default function SupportChat() {
               sender: m.sender, 
               timestamp: new Date(m.createdAt) 
             });
-            if (m.sender === 'admin') setTakenOver(false);
+            if (m.sender === 'admin') {
+              setTakenOver(true);
+              // Add notification that operator joined
+              if (m.sender === 'admin' && !messages.some(msg => msg.text.includes('оператор подключился'))) {
+                setMessages(prev => [...prev, { 
+                  id: `notif-${Date.now()}`, 
+                  text: 'Оператор подключился к чату и сможет обработать ваши изображения', 
+                  sender: 'ai', 
+                  timestamp: new Date() 
+                }]);
+              }
+            }
           }
         }
         if (newMsgs.length > 0) {
@@ -82,7 +93,7 @@ export default function SupportChat() {
     es.onerror = () => {};
 
     return () => { es.close(); esRef.current = null; };
-  }, [isOpen, sessionId]);
+  }, [isOpen, sessionId, messages]);
 
   const send = async (text: string, imageUrl: string | null = null) => {
     if ((!text.trim() && !imageUrl) || loading) return;
@@ -383,9 +394,13 @@ export default function SupportChat() {
                   whileHover={{ scale: 1.05 }} 
                   whileTap={{ scale: 0.95 }}
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={loading}
-                  className="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  title="Прикрепить изображение"
+                  disabled={loading || !takenOver}  // Disabled when not taken over by operator
+                  className={`px-4 py-3 rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+                    takenOver 
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white' 
+                      : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                  title={takenOver ? "Прикрепить изображение" : "Функция доступна только при подключении оператора"}
                 >
                   <Upload className="w-5 h-5" />
                 </motion.button>

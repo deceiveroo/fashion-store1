@@ -1,58 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { eq, desc, sql } from 'drizzle-orm';
+import { isAdmin } from '@/lib/server-auth';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user || !['admin', 'manager', 'support'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await isAdmin();
+    if (!admin) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { sessionId, message, imageUrl } = await request.json();
+    const { sessionId, message, imageUrl } = await req.json();
 
-    if (!sessionId || (!message && !imageUrl)) {
-      return NextResponse.json({ error: 'Session ID and either message or image URL are required' }, { status: 400 });
+    if (!sessionId) {
+      return Response.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    // Save admin message with potential image
-    await db.insert(supportChatMessages).values({
-      id: crypto.randomUUID(),
-      sessionId,
-      message: message || '',
-      imageUrl: imageUrl || null,
-      sender: 'admin',
-      aiModel: null,
-      createdAt: new Date(),
-    });
-
-    // Update session
-    const existingSession = await db
-      .select()
+    // Verify session exists
+    const session = await db.select()
       .from(supportChatSessions)
       .where(eq(supportChatSessions.sessionId, sessionId))
       .limit(1);
 
-    if (existingSession.length > 0) {
-      await db
-        .update(supportChatSessions)
-        .set({
-          messageCount: (existingSession[0].messageCount || 0) + 1,
-          lastMessageAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(supportChatSessions.sessionId, sessionId));
+    if (session.length === 0) {
+      return Response.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('[ADMIN] Error sending message:', error);
-    return NextResponse.json(
-      { error: 'Failed to send message' },
-      { status: 500 }
-    );
+    // Insert the admin message
+    await db.insert(supportChatMessages).values({
+      sessionId,
+      message,
+      imageUrl: imageUrl || null, // Store image URL if provided
+      sender: 'admin',
+    });
+
+    // Update session stats
+    await db.update(supportChatSessions)
+      .set({
+        messageCount: sql`${supportChatSessions.messageCount} + 1`,
+        lastMessageAt: new Date(),
+      })
+      .where(eq(supportChatSessions.sessionId, sessionId));
+
+    return Response.json({ success: true });
+  } catch (error) {
+    console.error('Error sending admin message:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -81,8 +81,19 @@ function SupportChatsPage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }),
     });
     if (r.ok) { 
-      toast.success('Чат перехвачен!'); 
+      toast.success('Чат перехвачен! Теперь вы можете принимать изображения.'); 
       setSel(p => p ? { ...p, aiDisabled: true } : p); 
+      
+      // Add a message to the chat indicating the operator has taken over
+      const takeoverMsg = {
+        id: `sys-${Date.now()}`,
+        sessionId: sid,
+        message: 'Оператор подключился к чату и теперь может обрабатывать изображения',
+        sender: 'ai',
+        createdAt: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, takeoverMsg]);
     } else toast.error('Ошибка');
   };
 
@@ -317,8 +328,8 @@ function SupportChatsPage() {
                             <div className="mt-2">
                               <img 
                                 src={m.imageUrl} 
-                                alt="Attached" 
-                                className="max-w-full max-h-40 rounded-lg object-contain"
+                                alt="Вложение" 
+                                className="max-w-full max-h-60 rounded-lg object-contain border border-gray-200 dark:border-gray-700 p-1 bg-white dark:bg-gray-800"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).style.display = 'none';
                                 }}
@@ -388,6 +399,7 @@ function SupportChatsPage() {
                       accept="image/*"
                       onChange={handleImageUpload}
                       className="hidden"
+                      multiple={false}
                     />
                     
                     <button 

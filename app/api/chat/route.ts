@@ -2,44 +2,167 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions } from '@/lib/schema';
 import { eq, desc, sql } from 'drizzle-orm';
+import { requireUser } from '@/lib/server-auth';
 
-const fallbackResponses: Record<string, string> = {
-  'доставка': "Мы предлагаем несколько вариантов доставки:\n\n Курьерская доставка - 1-3 дня (бесплатно от 5000₽)\n Почта России - 5-10 дней (от 300₽)\n Самовывоз из магазина - бесплатно",
-  'возврат': "Вы можете вернуть товар в течение 14 дней с момента получения:\n\n Товар не должен быть в употреблении\n Сохранены бирки и упаковка\n Есть чек или подтверждение заказа",
-  'оплата': "Доступные способы оплаты:\n\n Банковские карты (Visa, MasterCard, МИР)\n Наличные при получении\n Apple Pay / Google Pay",
-  'размер': "Для подбора размера:\n\n Используйте таблицу размеров на странице товара\n Измерьте свои параметры\n Напишите нам - поможем с выбором!",
-  'заказ': "Оформление заказа:\n\n1 Добавьте товары в корзину\n2 Перейдите в корзину и нажмите Оформить\n3 Заполните данные доставки\n4 Выберите способ оплаты",
-  'скидка': "Актуальные акции:\n\n Скидка 10% на первый заказ (промокод: FIRST10)\n Бесплатная доставка от 5000₽\n Сезонные распродажи до -50%",
-};
+```
 
-function findBestResponse(message: string): string | null {
-  const lower = message.toLowerCase();
-  for (const [keyword, response] of Object.entries(fallbackResponses)) {
-    if (lower.includes(keyword)) return response;
-  }
-  return null;
-}
-
-async function saveMessage(sessionId: string, message: string, sender: 'user' | 'ai' | 'admin', aiModel: string | null) {
+c:\Users\NIKITA\Desktop\1\fashion-store\app\api\chat\route.ts
+```typescript
+<<<<<<< SEARCH
+export async function POST(request: NextRequest) {
   try {
-    const existing = await db.select().from(supportChatSessions).where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
-    if (existing.length === 0) {
-      await db.insert(supportChatSessions).values({
-        id: crypto.randomUUID(), sessionId, status: 'active', messageCount: 1,
-        firstMessage: sender === 'user' ? message : null, lastMessageAt: new Date(),
-        createdAt: new Date(), updatedAt: new Date(),
-      });
-    } else {
-      await db.update(supportChatSessions).set({
-        messageCount: (existing[0]?.messageCount || 0) + 1,
-        lastMessageAt: new Date(), updatedAt: new Date(),
-      }).where(eq(supportChatSessions.sessionId, sessionId));
+    const { message, sessionId } = await request.json();
+    if (!message || !sessionId) {
+      return NextResponse.json({ error: 'Message and sessionId required' }, { status: 400 });
     }
-    await db.insert(supportChatMessages).values({
-      id: crypto.randomUUID(), sessionId, message, sender, aiModel, createdAt: new Date(),
+
+    await saveMessage(sessionId, message, 'user', null);
+
+    // Check if admin has taken over
+    try {
+      const session = await db.select().from(supportChatSessions).where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
+      if (session[0]?.aiDisabled) {
+        return NextResponse.json({ message: ' Ваш запрос передан оператору. Пожалуйста, подождите...', takenOver: true });
+      }
+    } catch {
+      console.log('[CHAT] Could not check takeover status');
+    }
+
+    let aiMessage = '';
+    let aiModel = 'fallback';
+
+    // Cloudflare Workers AI
+    const cfResponse = await callCloudflareAI(message);
+    if (cfResponse) {
+      aiMessage = cfResponse;
+      aiModel = 'cloudflare-llama-3.3-70b-fast';
+    }
+
+    // Keyword fallback if CF failed
+    if (!aiMessage) {
+      const fallback = findBestResponse(message);
+      if (fallback) {
+        aiMessage = fallback;
+        aiModel = 'fallback';
+      } else {
+        aiMessage = "Спасибо за вопрос! \n\nЯ могу помочь с:\n Доставкой\n Возвратом\n Оплатой\n Размерами\n Скидками\n\nИли свяжитесь:\n support@elevate.com\n +7 (800) 123-45-67";
+        aiModel = 'fallback';
+      }
+    }
+
+    await saveMessage(sessionId, aiMessage, 'ai', aiModel);
+    
+    // Check if we should trigger rating request
+    const shouldRate = await shouldTriggerRating(sessionId);
+    if (shouldRate) {
+      await triggerRatingRequest(sessionId);
+      aiMessage += "\n\nПожалуйста, оцените качество нашей поддержки ⭐️";
+    }
+    
+    return NextResponse.json({ 
+      message: aiMessage,
+      showRating: shouldRate
     });
-  } catch (error: any) {
-    console.error('[CHAT] DB save error:', error.message);
+
+  } catch (error) {
+    console.error('Error handling chat message:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+export async function POST(req: NextRequest) {
+  try {
+    const { message, imageUrl, sessionId } = await req.json();
+    
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+    }
+
+    // Get the session to check if it's taken over by an admin
+    let session = await db.select().from(supportChatSessions).where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
+    let sessionRecord = session[0];
+
+    // If no session exists, create one
+    if (!sessionRecord) {
+      const user = await requireUser();
+      sessionRecord = (await db.insert(supportChatSessions).values({
+        sessionId,
+        userId: user?.id || null,
+        userEmail: user?.email || null,
+        userName: user?.name || null,
+        firstMessage: message.substring(0, 100),
+        lastMessageAt: new Date(),
+      }).returning())[0];
+    }
+
+    // Check if imageUrl is provided but admin hasn't taken over
+    if (imageUrl && !sessionRecord?.aiDisabled) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Изображения могут отправляться только после подключения оператора' 
+      }, { status: 400 });
+    }
+
+    // Insert the user message
+    const [newMessage] = await db.insert(supportChatMessages).values({
+      sessionId,
+      message,
+      imageUrl: imageUrl || null, // Store the image URL if provided
+      sender: 'user',
+    }).returning();
+
+    // Update session stats
+    await db.update(supportChatSessions)
+      .set({
+        messageCount: sql`${supportChatSessions.messageCount} + 1`,
+        lastMessageAt: new Date(),
+      })
+      .where(eq(supportChatSessions.sessionId, sessionId));
+
+    // If an admin has taken over the chat, don't respond with AI
+    if (sessionRecord?.aiDisabled) {
+      return NextResponse.json({ 
+        success: true, 
+        takenOver: true, 
+        message: 'Сообщение отправлено оператору. Ожидайте ответа.' 
+      });
+    }
+
+    // Otherwise, simulate AI response after a delay
+    setTimeout(async () => {
+      try {
+        // In a real implementation, this would call an AI service
+        const responses = [
+          'Чем еще могу помочь?',
+          'Пожалуйста, уточните ваш вопрос.',
+          'Спасибо за информацию. Что-то еще?',
+          'Я получил ваше сообщение. Могу ли я чем-то еще помочь?',
+          'Записал ваш запрос. Нужна ли вам дополнительная помощь?'
+        ];
+        
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        
+        await db.insert(supportChatMessages).values({
+          sessionId,
+          message: randomResponse,
+          sender: 'ai',
+        }).returning();
+        
+        // Update session stats again
+        await db.update(supportChatSessions)
+          .set({
+            messageCount: sql`${supportChatSessions.messageCount} + 1`,
+            lastMessageAt: new Date(),
+          })
+          .where(eq(supportChatSessions.sessionId, sessionId));
+      } catch (error) {
+        console.error('Error in AI response timeout:', error);
+      }
+    }, 2000); // Simulate typing delay
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error handling chat message:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -105,45 +228,6 @@ async function triggerRatingRequest(sessionId: string): Promise<void> {
   }
 }
 
-async function callCloudflareAI(message: string): Promise<string | null> {
-  const token = process.env.CLOUDFLARE_API_TOKEN;
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  if (!token || !accountId) return null;
-
-  try {
-    const res = await fetch(
-      'https://api.cloudflare.com/client/v4/accounts/' + accountId + '/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: 'Ты AI-ассистент магазина одежды ELEVATE. Отвечай кратко и дружелюбно на русском языке. Помогай с вопросами о доставке, возврате, размерах, оплате и товарах. Не отвечай на темы не связанные с магазином.',
-            },
-            { role: 'user', content: message },
-          ],
-          max_tokens: 300,
-        }),
-      }
-    );
-
-    if (!res.ok) {
-      console.error('[CHAT] Cloudflare AI error:', res.status, await res.text());
-      return null;
-    }
-
-    const data = await res.json();
-    return data?.result?.response || null;
-  } catch (error: any) {
-    console.error('[CHAT] Cloudflare AI exception:', error.message);
-    return null;
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
