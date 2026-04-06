@@ -12,17 +12,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { sessionId, message } = await request.json();
+    const { sessionId, message, imageUrl } = await request.json();
 
-    if (!sessionId || !message) {
-      return NextResponse.json({ error: 'Session ID and message are required' }, { status: 400 });
+    if (!sessionId || (!message && !imageUrl)) {
+      return NextResponse.json({ error: 'Session ID and either message or image URL are required' }, { status: 400 });
     }
 
-    // Save admin message
+    // Save admin message with potential image
     await db.insert(supportChatMessages).values({
       id: crypto.randomUUID(),
       sessionId,
-      message,
+      message: message || '',
+      imageUrl: imageUrl || null,
       sender: 'admin',
       aiModel: null,
       createdAt: new Date(),

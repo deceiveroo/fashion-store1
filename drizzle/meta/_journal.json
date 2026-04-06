@@ -8,6 +8,13 @@
       "when": 1775328806827,
       "tag": "0000_complex_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775494068397,
+      "tag": "0001_nosy_speed",
+      "breakpoints": true
     }
   ]
 }

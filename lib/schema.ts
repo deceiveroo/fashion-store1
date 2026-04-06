@@ -403,6 +403,7 @@ export const supportChatMessages = pgTable('support_chat_messages', {
   userEmail: text('user_email'), // Optional: user email if provided
   userName: text('user_name'), // Optional: user name if provided
   message: text('message').notNull(),
+  imageUrl: text('image_url'), // Optional: URL of image attached to the message
   sender: text('sender', { enum: ['user', 'ai', 'admin'] }).notNull(),
   aiModel: text('ai_model'), // Which AI model was used (openai, groq, fallback)
   isResolved: boolean('is_resolved').default(false),
@@ -435,6 +436,9 @@ export const supportChatSessions = pgTable('support_chat_sessions', {
   takenOverBy: text('taken_over_by').references(() => users.id, { onDelete: 'set null' }), // Admin who took over
   takenOverAt: timestamp('taken_over_at', { mode: 'date' }),
   aiDisabled: boolean('ai_disabled').default(false), // Whether AI is disabled for this chat
+  operatorRating: integer('operator_rating'), // Rating given to the operator (1-10)
+  operatorRatedAt: timestamp('operator_rated_at', { mode: 'date' }), // When the rating was given
+  operatorRatedBy: text('operator_rated_by'), // User ID who gave the rating
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {

@@ -1,12 +1,12 @@
 ﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw } from 'lucide-react';
+import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Upload, Star } from 'lucide-react';
 import { toast } from 'sonner';
-import AdminLayout from '@/components/AdminLayout';
+import AdminLayout from '@/components\AdminLayout';
 
-interface Msg { id: string; sessionId: string; message: string; sender: 'user'|'ai'|'admin'; createdAt: string; }
-interface Session { id: string; sessionId: string; userEmail: string|null; userName: string|null; status: 'active'|'resolved'|'archived'; messageCount: number|null; firstMessage: string|null; lastMessageAt: string|null; aiDisabled: boolean|null; createdAt: string; }
+interface Msg { id: string; sessionId: string; message: string; imageUrl?: string | null; sender: 'user'|'ai'|'admin'; createdAt: string; }
+interface Session { id: string; sessionId: string; userEmail: string|null; userName: string|null; status: 'active'|'resolved'|'archived'; messageCount: number|null; firstMessage: string|null; lastMessageAt: string|null; aiDisabled: boolean|null; operatorRating?: number | null; createdAt: string; }
 
 function SupportChatsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -16,9 +16,13 @@ function SupportChatsPage() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState<'all'|'active'|'resolved'>('all');
+  const [showRating, setShowRating] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [submittingRating, setSubmittingRating] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const selRef = useRef<Session|null>(null);
   const msgEsRef = useRef<EventSource|null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const taken = sel?.aiDisabled === true;
 
   useEffect(() => { selRef.current = sel; }, [sel]);
@@ -76,19 +80,123 @@ function SupportChatsPage() {
     const r = await fetch('/api/admin/support-chats/takeover', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }),
     });
-    if (r.ok) { toast.success('Чат перехвачен!'); setSel(p => p ? { ...p, aiDisabled: true } : p); }
-    else toast.error('Ошибка');
+    if (r.ok) { 
+      toast.success('Чат перехвачен!'); 
+      setSel(p => p ? { ...p, aiDisabled: true } : p); 
+    } else toast.error('Ошибка');
   };
 
-  const sendMsg = async () => {
-    if (!input.trim() || !sel || sending || !taken) return;
-    const msg = input.trim(); setInput(''); setSending(true);
-    const r = await fetch('/api/admin/support-chats/send', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: sel.sessionId, message: msg }),
+  const finishConversation = async () => {
+    if (!sel) return;
+    
+    const r = await fetch('/api/admin/support-chats/finish', {
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: sel.sessionId }),
     });
-    if (!r.ok) { setInput(msg); toast.error('Ошибка отправки'); }
+    
+    if (r.ok) {
+      toast.success('Разговор завершен!');
+      setSel(p => p ? { ...p, aiDisabled: false } : p);
+      setMessages(prev => [
+        ...prev, 
+        { 
+          id: `sys-${Date.now()}`, 
+          sessionId: sel.sessionId,
+          message: 'Оператор завершил разговор. Сейчас с вами снова общается наш ИИ-помощник', 
+          sender: 'ai', 
+          createdAt: new Date().toISOString() 
+        }
+      ]);
+      // Show rating interface after a delay
+      setTimeout(() => {
+        setShowRating(true);
+      }, 2000);
+    } else {
+      toast.error('Ошибка завершения разговора');
+    }
+  };
+
+  const sendMsg = async (message: string, imageUrl: string | null = null) => {
+    if ((!message.trim() && !imageUrl) || !sel || sending || !taken) return;
+    const msg = message.trim(); 
+    setInput(''); 
+    setSending(true);
+    
+    const r = await fetch('/api/admin/support-chats/send', {
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: sel.sessionId, message: msg, imageUrl }),
+    });
+    
+    if (!r.ok) { 
+      setInput(msg); 
+      toast.error('Ошибка отправки'); 
+    } else {
+      // Clear input if message sent successfully
+      setInput('');
+    }
+    
     setSending(false);
+  };
+
+  const submitRating = async () => {
+    if (!sel || rating < 1 || rating > 10) return;
+    
+    setSubmittingRating(true);
+    
+    try {
+      const response = await fetch('/api/admin/support-chats/rating', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: sel.sessionId, rating }),
+      });
+      
+      if (response.ok) {
+        setShowRating(false);
+        setRating(0);
+        toast.success('Оценка сохранена');
+        // Reload sessions to update the rating
+        loadSessions();
+      } else {
+        toast.error('Ошибка сохранения оценки');
+      }
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      toast.error('Ошибка сохранения оценки');
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.match('image.*')) {
+      toast.error('Пожалуйста, выберите изображение');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Файл слишком большой. Максимальный размер: 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        sendMsg(input, event.target.result.toString());
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const setStatus = async (sid: string, status: string) => {
@@ -144,6 +252,16 @@ function SupportChatsPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       {s.aiDisabled && <Shield className="h-3.5 w-3.5 text-green-600"/>}
+                      {s.operatorRating && (
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`w-2.5 h-2.5 ${i < Math.round(s.operatorRating/2) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} 
+                            />
+                          ))}
+                        </div>
+                      )}
                       <button onClick={(e)=>del(s.sessionId,e)} className="p-0.5 text-gray-300 hover:text-red-500"><Trash2 className="h-3.5 w-3.5"/></button>
                     </div>
                   </div>
@@ -174,6 +292,11 @@ function SupportChatsPage() {
                       ? <button onClick={()=>takeover(sel.sessionId)} className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-xs font-medium"> Перехватить чат</button>
                       : <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium"> Вы ведёте чат</span>
                     }
+                    {taken && (
+                      <button onClick={finishConversation} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium flex items-center gap-1">
+                        Завершить разговор
+                      </button>
+                    )}
                     {sel.status==='active' && <button onClick={()=>setStatus(sel.sessionId,'resolved')} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5"/> Решено</button>}
                     <button onClick={()=>setStatus(sel.sessionId,'archived')} className="px-3 py-1.5 bg-gray-500 text-white rounded-lg text-xs font-medium flex items-center gap-1"><Archive className="h-3.5 w-3.5"/> Архив</button>
                   </div>
@@ -189,11 +312,63 @@ function SupportChatsPage() {
                         </div>
                         <div className={'max-w-[75%] rounded-2xl px-3 py-2 '+(m.sender==='user'?'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-tl-none':m.sender==='admin'?'bg-green-500 text-white rounded-tr-none':'bg-purple-500 text-white rounded-tr-none')}>
                           <p className="text-sm whitespace-pre-wrap">{m.message}</p>
+                          
+                          {m.imageUrl && (
+                            <div className="mt-2">
+                              <img 
+                                src={m.imageUrl} 
+                                alt="Attached" 
+                                className="max-w-full max-h-40 rounded-lg object-contain"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                          
                           <span className="text-xs mt-0.5 block opacity-70">{new Date(m.createdAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}{m.sender==='admin'&&'  Вы'}</span>
                         </div>
                       </div>
                     ))
                   }
+                  
+                  {/* Rating Interface */}
+                  {showRating && (
+                    <div className="flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+                      <p className="mb-3 text-center text-gray-700 dark:text-gray-300">
+                        Как вы оцените помощь оператора по шкале от 1 до 10?
+                      </p>
+                      <div className="flex mb-3">
+                        {[...Array(10)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-6 h-6 mx-0.5 cursor-pointer ${
+                              i < rating
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-300 dark:text-gray-600'
+                            }`}
+                            onClick={() => setRating(i + 1)}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={submitRating}
+                          disabled={submittingRating}
+                          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg disabled:opacity-50"
+                        >
+                          {submittingRating ? 'Отправка...' : 'Отправить'}
+                        </button>
+                        <button
+                          onClick={() => setShowRating(false)}
+                          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg"
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div ref={endRef}/>
                 </div>
 
@@ -201,12 +376,30 @@ function SupportChatsPage() {
                   {!taken && <p className="text-xs text-center text-gray-400 mb-2">Перехватите чат чтобы писать</p>}
                   <div className="flex gap-2">
                     <input type="text" value={input} onChange={e=>setInput(e.target.value)}
-                      onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}}
+                      onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg(input);}}}
                       placeholder={taken?"Напишите сообщение...":"Сначала перехватите чат..."}
                       disabled={!taken||sending}
                       className="flex-1 px-3 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white disabled:opacity-40"
                     />
-                    <button onClick={sendMsg} disabled={!input.trim()||sending||!taken}
+                    
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={!taken || sending}
+                      className="px-3 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl disabled:opacity-40"
+                      title="Прикрепить изображение"
+                    >
+                      <Upload className="w-4 h-4"/>
+                    </button>
+                    
+                    <button onClick={() => sendMsg(input)} disabled={!input.trim()||sending||!taken}
                       className="px-3 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl disabled:opacity-40">
                       <Send className="w-4 h-4"/>
                     </button>

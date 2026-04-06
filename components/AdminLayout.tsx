@@ -58,6 +58,7 @@ const nav = [
   { id: 'categories' as const, label: 'Категории', href: '/admin/categories', icon: Tag, roles: ['admin', 'manager'] },
   { id: 'analytics' as const, label: 'Аналитика', href: '/admin/analytics', icon: LineChart, roles: ['admin', 'manager', 'support'] },
   { id: 'reports' as const, label: 'Отчёты', href: '/admin/reports', icon: BarChart3, roles: ['admin', 'manager', 'support'] },
+  { id: 'stats' as const, label: 'Статистика', href: '/admin/stats', icon: BarChart3, roles: ['admin', 'manager', 'support'] }, // Adding stats page
   { id: 'settings' as const, label: 'Настройки', href: '/admin/settings', icon: Settings, roles: ['admin'] },
 ];
 
@@ -133,27 +134,30 @@ export default function AdminLayout({ children, currentPage }: AdminLayoutProps)
           </Link>
         </div>
 
-        <nav className="space-y-1 p-4">
-          {filtered.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href || currentPage === item.id;
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  'group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all',
-                  active
-                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30'
-                    : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800/50'
-                )}
-              >
-                <Icon className={cn('h-5 w-5 shrink-0 transition-transform group-hover:scale-110', active && 'drop-shadow-sm')} />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="space-y-1 px-2">
+          {filtered.map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={classNames(
+                currentPage === item.id
+                  ? 'bg-purple-50 text-purple-700 border-r-2 border-purple-700'
+                  : 'text-gray-700 hover:bg-gray-50',
+                'group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors'
+              )}
+            >
+              {item.icon && (
+                <item.icon
+                  className={classNames(
+                    currentPage === item.id ? 'text-purple-700' : 'text-gray-400 group-hover:text-gray-500',
+                    'mr-3 h-6 w-6 shrink-0'
+                  )}
+                  aria-hidden="true"
+                />
+              )}
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 border-t border-zinc-200/50 bg-white/50 p-4 backdrop-blur-xl dark:border-zinc-800/50 dark:bg-zinc-900/50">

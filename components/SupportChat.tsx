@@ -1,12 +1,13 @@
 ﻿'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, MessageCircle, Sparkles, Bot, User, Shield, Headset } from 'lucide-react';
+import { X, Send, MessageCircle, Sparkles, Bot, User, Shield, Headset, Paperclip, Image as ImageIcon, Upload, Star } from 'lucide-react';
 
 interface Message {
   id: string;
   text: string;
+  imageUrl?: string;
   sender: 'user' | 'ai' | 'admin';
   timestamp: Date;
 }
@@ -30,8 +31,12 @@ export default function SupportChat() {
   const [loading, setLoading] = useState(false);
   const [takenOver, setTakenOver] = useState(false);
   const [sessionId] = useState(() => getSessionId());
+  const [showRating, setShowRating] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [submittingRating, setSubmittingRating] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const esRef = useRef<EventSource | null>(null);
   const knownIds = useRef<Set<string>>(new Set(['0']));
 
@@ -57,7 +62,13 @@ export default function SupportChat() {
           knownIds.current.add(m.id);
           // Only show ai and admin messages from server (user messages already shown locally)
           if (m.sender === 'ai' || m.sender === 'admin') {
-            newMsgs.push({ id: m.id, text: m.message, sender: m.sender, timestamp: new Date(m.createdAt) });
+            newMsgs.push({ 
+              id: m.id, 
+              text: m.message, 
+              imageUrl: m.imageUrl, 
+              sender: m.sender, 
+              timestamp: new Date(m.createdAt) 
+            });
             if (m.sender === 'admin') setTakenOver(false);
           }
         }
@@ -73,12 +84,16 @@ export default function SupportChat() {
     return () => { es.close(); esRef.current = null; };
   }, [isOpen, sessionId]);
 
-  const send = async () => {
-    if (!input.trim() || loading) return;
-    const text = input.trim();
-    setInput('');
-
-    const userMsg: Message = { id: `local-${Date.now()}`, text, sender: 'user', timestamp: new Date() };
+  const send = async (text: string, imageUrl: string | null = null) => {
+    if ((!text.trim() && !imageUrl) || loading) return;
+    
+    const userMsg: Message = { 
+      id: `local-${Date.now()}`, 
+      text, 
+      imageUrl: imageUrl || undefined,
+      sender: 'user', 
+      timestamp: new Date() 
+    };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
@@ -86,7 +101,7 @@ export default function SupportChat() {
       const r = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, sessionId }),
+        body: JSON.stringify({ message: text, imageUrl, sessionId }),
       });
       const d = await r.json();
       if (d.takenOver) {
@@ -100,6 +115,67 @@ export default function SupportChat() {
     } catch {
       setMessages(prev => [...prev, { id: `err-${Date.now()}`, text: 'Ошибка соединения. Попробуйте снова.', sender: 'ai', timestamp: new Date() }]);
       setLoading(false);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.match('image.*')) {
+      alert('Пожалуйста, выберите изображение');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Файл слишком большой. Максимальный размер: 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        send(input, event.target.result.toString());
+        setInput('');
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const submitRating = async () => {
+    if (rating < 1 || rating > 10) return;
+    
+    setSubmittingRating(true);
+    
+    try {
+      const response = await fetch('/api/chat/rating', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, rating }),
+      });
+      
+      if (response.ok) {
+        setShowRating(false);
+        setRating(0);
+        // Confirm rating was submitted
+        setMessages(prev => [...prev, { 
+          id: `rating-${Date.now()}`, 
+          text: 'Спасибо за вашу оценку!', 
+          sender: 'ai', 
+          timestamp: new Date() 
+        }]);
+      }
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
@@ -186,6 +262,20 @@ export default function SupportChat() {
                     : msg.sender === 'admin' ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white'
                     : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'}`}>
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                    
+                    {msg.imageUrl && (
+                      <div className="mt-2">
+                        <img 
+                          src={msg.imageUrl} 
+                          alt="Attached" 
+                          className="max-w-full max-h-40 rounded-lg object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    
                     <span className={`text-xs mt-1 block ${msg.sender !== 'user' && msg.sender !== 'admin' ? 'text-gray-500' : 'text-white/70'}`}>
                       {msg.timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                       {msg.sender === 'admin' && '  Оператор'}
@@ -193,6 +283,47 @@ export default function SupportChat() {
                   </div>
                 </motion.div>
               ))}
+              
+              {/* Rating Interface */}
+              {showRating && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  className="flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700"
+                >
+                  <p className="mb-3 text-center text-gray-700 dark:text-gray-300">
+                    Как вы оцените помощь оператора по шкале от 1 до 10?
+                  </p>
+                  <div className="flex mb-3">
+                    {[...Array(10)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-6 h-6 mx-0.5 cursor-pointer ${
+                          i < rating
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300 dark:text-gray-600'
+                        }`}
+                        onClick={() => setRating(i + 1)}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={submitRating}
+                      disabled={submittingRating}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg disabled:opacity-50"
+                    >
+                      {submittingRating ? 'Отправка...' : 'Отправить'}
+                    </button>
+                    <button
+                      onClick={() => setShowRating(false)}
+                      className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </motion.div>
+              )}
 
               {loading && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3">
@@ -224,14 +355,48 @@ export default function SupportChat() {
             {/* Input */}
             <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
               <div className="flex gap-2">
-                <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder="Напишите сообщение..." disabled={loading}
+                <input 
+                  ref={inputRef} 
+                  type="text" 
+                  value={input} 
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => { 
+                    if (e.key === 'Enter' && !e.shiftKey) { 
+                      e.preventDefault(); 
+                      send(input); 
+                    } 
+                  }}
+                  placeholder="Напишите сообщение..." 
+                  disabled={loading}
                   className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white placeholder-gray-500 disabled:opacity-50 text-sm"
                 />
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                  onClick={send} disabled={!input.trim() || loading}
-                  className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                
+                <motion.button 
+                  whileHover={{ scale: 1.05 }} 
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  className="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  title="Прикрепить изображение"
+                >
+                  <Upload className="w-5 h-5" />
+                </motion.button>
+                
+                <motion.button 
+                  whileHover={{ scale: 1.05 }} 
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => send(input)} 
+                  disabled={!input.trim() || loading}
+                  className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
                   <Send className="w-5 h-5" />
                 </motion.button>
               </div>

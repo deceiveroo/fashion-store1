@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 
 const fallbackResponses: Record<string, string> = {
   'доставка': "Мы предлагаем несколько вариантов доставки:\n\n Курьерская доставка - 1-3 дня (бесплатно от 5000₽)\n Почта России - 5-10 дней (от 300₽)\n Самовывоз из магазина - бесплатно",
@@ -40,6 +40,68 @@ async function saveMessage(sessionId: string, message: string, sender: 'user' | 
     });
   } catch (error: any) {
     console.error('[CHAT] DB save error:', error.message);
+  }
+}
+
+// Check if conversation should be rated
+async function shouldTriggerRating(sessionId: string): Promise<boolean> {
+  try {
+    // Get the session
+    const session = await db.select().from(supportChatSessions)
+      .where(eq(supportChatSessions.sessionId, sessionId))
+      .limit(1);
+    
+    if (!session.length || session[0].status !== 'active') {
+      return false;
+    }
+    
+    // Get last 2 messages
+    const lastMessages = await db.select()
+      .from(supportChatMessages)
+      .where(eq(supportChatMessages.sessionId, sessionId))
+      .orderBy(desc(supportChatMessages.createdAt))
+      .limit(2);
+    
+    // Should trigger rating if:
+    // 1. There are at least 2 messages (user + AI)
+    // 2. Last message was from AI
+    // 3. Conversation has been active for at least 5 minutes
+    if (lastMessages.length >= 2 && 
+        lastMessages[0].sender === 'ai' && 
+        session[0].messageCount >= 2) {
+      
+      const sessionStart = new Date(session[0].createdAt);
+      const now = new Date();
+      const duration = (now.getTime() - sessionStart.getTime()) / 60000; // in minutes
+      
+      return duration >= 5;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('[CHAT] Rating check error:', error);
+    return false;
+  }
+}
+
+// Trigger rating request
+async function triggerRatingRequest(sessionId: string): Promise<void> {
+  try {
+    // In a real implementation, this would:
+    // 1. Send a rating request email/SMS to the user
+    // 2. Or show a rating UI in the chat
+    // For now, we'll just mark the session as completed
+    
+    await db.update(supportChatSessions)
+      .set({
+        status: 'completed',
+        updatedAt: new Date(),
+      })
+      .where(eq(supportChatSessions.sessionId, sessionId));
+      
+    console.log(`[CHAT] Rating request triggered for session ${sessionId}`);
+  } catch (error) {
+    console.error('[CHAT] Rating trigger error:', error);
   }
 }
 
@@ -125,7 +187,18 @@ export async function POST(request: NextRequest) {
     }
 
     await saveMessage(sessionId, aiMessage, 'ai', aiModel);
-    return NextResponse.json({ message: aiMessage });
+    
+    // Check if we should trigger rating request
+    const shouldRate = await shouldTriggerRating(sessionId);
+    if (shouldRate) {
+      await triggerRatingRequest(sessionId);
+      aiMessage += "\n\nПожалуйста, оцените качество нашей поддержки ⭐️";
+    }
+    
+    return NextResponse.json({ 
+      message: aiMessage,
+      showRating: shouldRate
+    });
 
   } catch (error: any) {
     console.error('[CHAT] Error:', error.message);
