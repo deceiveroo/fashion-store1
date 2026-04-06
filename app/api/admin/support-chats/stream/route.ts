@@ -1,91 +1,78 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions } from '@/lib/schema';
-import { eq, desc, gt } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
-
-export const dynamic = 'force-dynamic';
+import { desc, eq } from 'drizzle-orm';
+import { isAdmin } from '@/lib/server-auth';
 
 export async function GET(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user || !['admin', 'manager', 'support'].includes(session.user.role)) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  try {
+    const admin = await isAdmin();
 
-  const { searchParams } = new URL(request.url);
-  const sessionId = searchParams.get('sessionId');
+    if (!admin) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-  const encoder = new TextEncoder();
-  let lastMessageId: string | null = null;
-  let closed = false;
+    const url = new URL(request.url);
+    const sessionId = url.searchParams.get('sessionId');
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (data: object) => {
-        if (closed) return;
-        try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-        } catch {}
-      };
+    if (!sessionId) {
+      return Response.json({ error: 'Session ID is required' }, { status: 400 });
+    }
 
-      // Send initial data
-      try {
-        if (sessionId) {
-          const messages = await db.select().from(supportChatMessages)
-            .where(eq(supportChatMessages.sessionId, sessionId))
-            .orderBy(supportChatMessages.createdAt);
-          send({ type: 'messages', messages });
-          if (messages.length > 0) lastMessageId = messages[messages.length - 1].id;
-        } else {
-          const sessions = await db.select().from(supportChatSessions)
-            .orderBy(desc(supportChatSessions.lastMessageAt));
-          send({ type: 'sessions', sessions });
-        }
-      } catch (e) {
-        send({ type: 'error', message: 'Failed to load initial data' });
-      }
+    // Check if session belongs to admin or is public
+    const session = await db
+      .select()
+      .from(supportChatSessions)
+      .where(eq(supportChatSessions.sessionId, sessionId))
+      .limit(1);
 
-      // Poll every 1 second for new data
-      const interval = setInterval(async () => {
-        if (closed) { clearInterval(interval); return; }
-        try {
-          if (sessionId) {
-            // Get only new messages
-            const query = db.select().from(supportChatMessages)
+    if (session.length === 0) {
+      return Response.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    // Start SSE
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        // Initial data
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: 'init', messages: [] })}\n\n`)
+        );
+
+        // Watch for new messages
+        const interval = setInterval(async () => {
+          try {
+            const newMessages = await db
+              .select()
+              .from(supportChatMessages)
               .where(eq(supportChatMessages.sessionId, sessionId))
-              .orderBy(supportChatMessages.createdAt);
-            const messages = await query;
-            
-            if (messages.length > 0) {
-              const latestId = messages[messages.length - 1].id;
-              if (latestId !== lastMessageId) {
-                lastMessageId = latestId;
-                send({ type: 'messages', messages });
-              }
+              .orderBy(desc(supportChatMessages.createdAt))
+              .limit(10); // Last 10 messages
+
+            if (newMessages.length > 0) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ messages: newMessages })}\n\n`)
+              );
             }
-          } else {
-            const sessions = await db.select().from(supportChatSessions)
-              .orderBy(desc(supportChatSessions.lastMessageAt));
-            send({ type: 'sessions', sessions });
+          } catch (err) {
+            console.error('Stream error:', err);
+            clearInterval(interval);
           }
-        } catch {}
-      }, 1000);
+        }, 2000); // Poll every 2 seconds
 
-      // Cleanup on disconnect
-      request.signal.addEventListener('abort', () => {
-        closed = true;
-        clearInterval(interval);
-        try { controller.close(); } catch {}
-      });
-    },
-  });
+        // Cleanup
+        request.signal.addEventListener('abort', () => {
+          clearInterval(interval);
+          controller.close();
+        });
+      },
+    });
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    },
-  });
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/event-stream' },
+    });
+  } catch (error) {
+    console.error('[ADMIN] Error in support chat stream:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

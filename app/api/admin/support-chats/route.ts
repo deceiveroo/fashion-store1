@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatSessions, supportChatMessages } from '@/lib/schema';
 import { desc, eq } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { isAdmin } from '@/lib/server-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
+    const admin = await isAdmin();
 
-    if (!session?.user || !['admin', 'manager', 'support'].includes(session.user.role)) {
+    if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
 // Update session status
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await auth();
+    const admin = await isAdmin();
 
-    if (!session?.user || !['admin', 'manager', 'support'].includes(session.user.role)) {
+    if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -51,7 +51,7 @@ export async function PATCH(request: NextRequest) {
       updateData.status = status;
       if (status === 'resolved') {
         updateData.resolvedAt = new Date();
-        updateData.resolvedBy = session.user.id;
+        updateData.resolvedBy = admin.id;
       }
     }
 
@@ -82,9 +82,9 @@ export async function PATCH(request: NextRequest) {
 // DELETE method to remove individual messages
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth();
+    const admin = await isAdmin();
 
-    if (!session?.user || !['admin', 'manager'].includes(session.user.role)) {
+    if (!admin || admin.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

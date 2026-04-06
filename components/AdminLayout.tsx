@@ -29,6 +29,11 @@ import { AdminCommandPalette } from '@/components/admin/AdminCommandPalette';
 import { AdminKeyboardShortcuts } from '@/components/admin/AdminKeyboardShortcuts';
 import { AdminOrderPoller } from '@/components/admin/AdminOrderPoller';
 
+// Define classNames function using clsx logic
+function classNames(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(' ');
+}
+
 export type AdminPageId =
   | 'dashboard'
   | 'products'

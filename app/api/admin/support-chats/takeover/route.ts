@@ -1,40 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatSessions } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { isAdmin } from '@/lib/server-auth';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user || !['admin', 'manager', 'support'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await isAdmin();
+    if (!admin) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { sessionId } = await request.json();
-
+    const { sessionId } = await req.json();
+    
     if (!sessionId) {
-      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+      return Response.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    // Take over the chat - disable AI and mark as taken over by admin
-    await db
-      .update(supportChatSessions)
+    // Update the session to indicate it's taken over by an admin
+    await db.update(supportChatSessions)
       .set({
         aiDisabled: true,
-        takenOverBy: session.user.id,
+        takenOverBy: admin.id,
         takenOverAt: new Date(),
-        updatedAt: new Date(),
       })
       .where(eq(supportChatSessions.sessionId, sessionId));
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('[ADMIN] Error taking over chat:', error);
-    return NextResponse.json(
-      { error: 'Failed to take over chat' },
-      { status: 500 }
-    );
+    return Response.json({ success: true });
+  } catch (error) {
+    console.error('Error taking over chat:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

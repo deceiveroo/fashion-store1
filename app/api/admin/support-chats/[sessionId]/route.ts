@@ -1,34 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { supportChatMessages } from '@/lib/schema';
-import { eq, asc } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { supportChatSessions, supportChatMessages } from '@/lib/schema';
+import { desc, eq } from 'drizzle-orm';
+import { isAdmin } from '@/lib/server-auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
   try {
-    const session = await auth();
+    const admin = await isAdmin();
 
-    if (!session?.user || !['admin', 'manager', 'support'].includes(session.user.role)) {
+    if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { sessionId } = params;
 
-    // Get all messages for this session
+    // Get chat session and messages
+    const session = await db
+      .select()
+      .from(supportChatSessions)
+      .where(eq(supportChatSessions.sessionId, sessionId))
+      .limit(1);
+
+    if (session.length === 0) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+
     const messages = await db
       .select()
       .from(supportChatMessages)
       .where(eq(supportChatMessages.sessionId, sessionId))
-      .orderBy(asc(supportChatMessages.createdAt));
+      .orderBy(desc(supportChatMessages.createdAt));
 
-    return NextResponse.json({ messages });
+    return NextResponse.json({ session: session[0], messages });
   } catch (error: any) {
-    console.error('[ADMIN] Error fetching chat messages:', error);
+    console.error('[ADMIN] Error fetching support chat session:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch chat messages' },
+      { error: 'Failed to fetch support chat session' },
       { status: 500 }
     );
   }
