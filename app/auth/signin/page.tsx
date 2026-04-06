@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,6 +15,8 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
   const { login } = useAuth();
 
   const validateForm = () => {
@@ -46,7 +48,10 @@ export default function SignIn() {
     try {
       await login(email, password);
       toast.success('С возвращением!');
-      router.push('/');
+      // Also sign in via NextAuth so admin proxy can see the session
+      const { signIn } = await import('next-auth/react');
+      await signIn('credentials', { email, password, redirect: false });
+      router.push(callbackUrl);
     } catch (error: any) {
       console.error('Login error:', error);
       // Проверяем, является ли ошибка сетевой
