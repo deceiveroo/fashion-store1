@@ -97,3 +97,10 @@ NEXTAUTH_V5_COMPARISON.md
 NEXTAUTH_V5_MIGRATION.md
 README-DRIZZLE.md
 README.setup.md
+# Broken routes
+app/api/admin/contact-messages/
+app/api/create-payment-intent/
+app/api/create-sbp-payment/
+app/api/create-crypto-payment/
+app/api/webhook/stripe/
+app/api/webhook/crypto/
