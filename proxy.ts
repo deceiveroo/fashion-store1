@@ -6,19 +6,22 @@ export async function proxy(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const path = req.nextUrl.pathname;
 
-  // Allow access to admin login page
+  // Allow access to admin login page (keep for backward compat)
   if (path === '/admin/login') {
     // If already authenticated as admin, redirect to dashboard
     if (token && ['admin', 'manager', 'support'].includes((token.role as string) ?? '')) {
       return NextResponse.redirect(new URL('/admin/dashboard', req.url));
     }
-    return NextResponse.next();
+    // Otherwise redirect to main signin
+    const url = new URL('/auth/signin', req.url);
+    url.searchParams.set('callbackUrl', '/admin/dashboard');
+    return NextResponse.redirect(url);
   }
 
-  // Not authenticated - redirect to admin login
+  // Not authenticated - redirect to main signin with callback to admin
   if (!token) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/admin/login';
+    const url = new URL('/auth/signin', req.url);
+    url.searchParams.set('callbackUrl', req.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 
