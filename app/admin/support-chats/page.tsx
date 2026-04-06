@@ -43,7 +43,6 @@ function SupportChatsPage() {
 
   useEffect(() => { selectedIdRef.current = selectedSession?.sessionId || null; }, [selectedSession]);
 
-  // Load sessions
   const loadSessions = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
@@ -52,7 +51,6 @@ function SupportChatsPage() {
       const data = await res.json();
       const list: ChatSession[] = data.sessions || [];
       setSessions(list);
-      // Sync selected session state
       if (selectedIdRef.current) {
         const updated = list.find(s => s.sessionId === selectedIdRef.current);
         if (updated) setSelectedSession(updated);
@@ -61,22 +59,22 @@ function SupportChatsPage() {
     finally { if (!silent) setIsLoading(false); }
   }, []);
 
-  // Load messages for selected session
   const loadMessages = useCallback(async (sessionId: string) => {
     try {
       const res = await fetch('/api/admin/support-chats/' + sessionId);
-      if (res.ok) { const data = await res.json(); setMessages(data.messages || []); }
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data.messages || []);
+      }
     } catch {}
   }, []);
 
-  // Poll sessions every 5s
   useEffect(() => {
     loadSessions();
     const t = setInterval(() => loadSessions(true), 5000);
     return () => clearInterval(t);
   }, [loadSessions]);
 
-  // Poll messages every 2s when session selected
   useEffect(() => {
     if (!selectedSession) { setMessages([]); return; }
     loadMessages(selectedSession.sessionId);
@@ -86,7 +84,6 @@ function SupportChatsPage() {
     return () => clearInterval(t);
   }, [selectedSession?.sessionId, loadMessages]);
 
-  // Scroll to bottom on new messages
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const handleSelectSession = (session: ChatSession) => {
@@ -102,7 +99,6 @@ function SupportChatsPage() {
       });
       if (res.ok) {
         toast.success('Чат перехвачен! Теперь вы можете писать.');
-        // Immediately update local state so input becomes enabled
         setSelectedSession(prev => prev ? { ...prev, aiDisabled: true } : prev);
         loadSessions(true);
       } else toast.error('Не удалось перехватить чат');
@@ -110,32 +106,23 @@ function SupportChatsPage() {
   };
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedSession || isSending) return;
-    const msg = messageInput;
+    if (!messageInput.trim() || !selectedSession || isSending || !isTakenOver) return;
+    const msg = messageInput.trim();
     setMessageInput('');
     setIsSending(true);
-    // Optimistic update
-    const optimistic: ChatMessage = {
-      id: 'tmp-' + Date.now(),
-      sessionId: selectedSession.sessionId,
-      message: msg,
-      sender: 'admin',
-      aiModel: null,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages(prev => [...prev, optimistic]);
     try {
       const res = await fetch('/api/admin/support-chats/send', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: selectedSession.sessionId, message: msg }),
       });
-      if (!res.ok) {
-        setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+      if (res.ok) {
+        // Immediately reload messages after sending
+        await loadMessages(selectedSession.sessionId);
+      } else {
         setMessageInput(msg);
         toast.error('Не удалось отправить сообщение');
       }
     } catch {
-      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       setMessageInput(msg);
       toast.error('Ошибка отправки');
     }
@@ -183,7 +170,7 @@ function SupportChatsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Чаты поддержки</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Всего: {sessions.length}  Авто-обновление 2/5 сек</p>
+            <p className="text-sm text-gray-500 mt-0.5">Всего: {sessions.length}  Live обновление</p>
           </div>
           <button onClick={() => loadSessions()} className="p-2 text-gray-500 hover:text-purple-600 transition-colors rounded-lg hover:bg-gray-100">
             <RefreshCw className="h-5 w-5" />
@@ -191,7 +178,6 @@ function SupportChatsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
-          {/* Sessions list */}
           <div className="lg:col-span-1 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
             <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex gap-2 flex-shrink-0">
               {(['all', 'active', 'resolved'] as const).map(f => (
@@ -235,23 +221,19 @@ function SupportChatsPage() {
             </div>
           </div>
 
-          {/* Chat view */}
           <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
             {selectedSession ? (
               <>
-                {/* Header */}
                 <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{selectedSession.userName || selectedSession.userEmail || 'Гость'}</h3>
                       <p className="text-xs text-gray-500">{selectedSession.userEmail || 'Анонимный'}  {isTakenOver ? ' Вы в чате' : ' AI отвечает'}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={(e) => handleDeleteChat(selectedSession.sessionId, e)}
-                        className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <button onClick={(e) => handleDeleteChat(selectedSession.sessionId, e)}
+                      className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     {!isTakenOver ? (
@@ -275,7 +257,6 @@ function SupportChatsPage() {
                   </div>
                 </div>
 
-                {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-800/50">
                   {messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-gray-400 text-sm">Нет сообщений</div>
@@ -286,7 +267,7 @@ function SupportChatsPage() {
                       </div>
                       <div className={'max-w-[75%] rounded-2xl px-3 py-2 ' + (msg.sender === 'user' ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-tl-none' : msg.sender === 'admin' ? 'bg-green-500 text-white rounded-tr-none' : 'bg-purple-500 text-white rounded-tr-none')}>
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
-                        <span className={'text-xs mt-0.5 block opacity-70'}>
+                        <span className="text-xs mt-0.5 block opacity-70">
                           {new Date(msg.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                           {msg.sender === 'admin' && '  Вы'}
                           {msg.sender === 'ai' && '  AI'}
@@ -297,7 +278,6 @@ function SupportChatsPage() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input */}
                 <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
                   {!isTakenOver && (
                     <p className="text-xs text-center text-gray-400 mb-2">Нажмите "Перехватить чат" чтобы писать пользователю</p>
