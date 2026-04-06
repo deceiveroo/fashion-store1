@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions } from '@/lib/schema';
 import { eq, desc, sql } from 'drizzle-orm';
-import { requireUser } from '@/lib/server-auth';
+import { getSession } from '@/lib/server-auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,12 +18,12 @@ export async function POST(req: NextRequest) {
 
     // If no session exists, create one
     if (!sessionRecord) {
-      const user = await requireUser();
+      const user = await getSession();
       sessionRecord = (await db.insert(supportChatSessions).values({
         sessionId,
-        userId: user?.id || null,
-        userEmail: user?.email || null,
-        userName: user?.name || null,
+        userId: user?.user?.id || null,
+        userEmail: user?.user?.email || null,
+        userName: user?.user?.name || null,
         firstMessage: message.substring(0, 100),
         lastMessageAt: new Date(),
       }).returning())[0];
