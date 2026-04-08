@@ -63,14 +63,20 @@ export async function requireUser(): Promise<{ id: string; email: string; name: 
   return session.user;
 }
 
-export async function isStaff(): Promise<boolean> {
+export async function isStaff() {
   const s = await getSession();
-  return isStaffRole(s?.user?.role);
+  if (!s?.user || !isStaffRole(s.user.role)) {
+    return null;
+  }
+  return s.user;
 }
 
-export async function isAdmin(): Promise<boolean> {
+export async function isAdmin() {
   const s = await getSession();
-  return s?.user?.role === 'admin';
+  if (!s?.user || s.user.role !== 'admin') {
+    return null;
+  }
+  return s.user;
 }
 
 export async function checkStaff(): Promise<boolean> {
