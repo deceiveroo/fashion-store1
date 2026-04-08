@@ -21,9 +21,9 @@ async function getProduct(id: string) {
         featured: products.featured,
         createdAt: products.createdAt,
         images: productImages,
-        categoryIds: categories.id,
-        categoryNames: categories.name,
-        categorySlugs: categories.slug,
+        categoryId: categories.id,
+        categoryName: categories.name,
+        categorySlug: categories.slug,
       })
       .from(products)
       .leftJoin(productImages, eq(productImages.productId, products.id))
@@ -37,6 +37,16 @@ async function getProduct(id: string) {
 
     // Группируем данные
     const firstProduct = productData[0];
+    
+    // Собираем уникальные категории с названиями
+    const categoryNames = Array.from(
+      new Set(
+        productData
+          .filter(item => item.categoryName)
+          .map(item => item.categoryName as string)
+      )
+    );
+    
     const product = {
       id: firstProduct.id,
       name: firstProduct.name,
@@ -52,13 +62,7 @@ async function getProduct(id: string) {
           url: item.images?.url,
           isMain: item.images?.isMain,
         })),
-      categories: Array.from(
-        new Set(
-          productData
-            .filter(item => item.categoryIds)
-            .map(item => item.categoryIds)
-        )
-      ),
+      categories: categoryNames.length > 0 ? categoryNames : ['Без категории'],
       mainImage: productData.find(item => item.images?.isMain)?.images?.url || 
                  productData[0]?.images?.url || 
                  '/placeholder-image.jpg'
