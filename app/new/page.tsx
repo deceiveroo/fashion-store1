@@ -3,9 +3,10 @@ import { db, safeQuery } from '@/lib/db';
 import { products, productCategory, productImages, categories } from '@/lib/schema';
 import { eq, inArray } from 'drizzle-orm';
 import ProductCard from '@/components/ProductCard';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import PageHero from '@/components/PageHero';
 import { unstable_cache } from 'next/cache';
+import CategoryHeader from '@/components/CategoryHeader';
+import ProductGridSkeleton from '@/components/ProductGridSkeleton';
 
 // Cache the product fetching to improve performance
 const getCachedNewProducts = unstable_cache(
@@ -122,15 +123,20 @@ async function NewProducts() {
 
     if (!productsWithImages || productsWithImages.length === 0) {
       return (
-        <div className="text-center py-12">
-          <h3 className="text-xl font-medium text-gray-900">Товары не найдены</h3>
-          <p className="mt-1 text-gray-500">Пока нет новых товаров</p>
+        <div className="text-center py-20">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/20 dark:to-orange-900/20 mb-6">
+            <svg className="w-10 h-10 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Товары не найдены</h3>
+          <p className="text-gray-600 dark:text-gray-400">Пока нет новых товаров</p>
         </div>
       );
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {productsWithImages.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
@@ -139,9 +145,14 @@ async function NewProducts() {
   } catch (error) {
     console.error('Error rendering new products:', error);
     return (
-      <div className="text-center py-12">
-        <h3 className="text-xl font-medium text-red-600">Ошибка загрузки товаров</h3>
-        <p className="mt-1 text-gray-500">Произошла ошибка при загрузке товаров. Пожалуйста, попробуйте позже.</p>
+      <div className="text-center py-20">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 mb-6">
+          <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">Ошибка загрузки товаров</h3>
+        <p className="text-gray-600 dark:text-gray-400">Произошла ошибка при загрузке товаров. Пожалуйста, попробуйте позже.</p>
       </div>
     );
   }
@@ -149,29 +160,22 @@ async function NewProducts() {
 
 export default function NewPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 pt-20">
       <PageHero
         title="Новинки"
         description="Покупайте новейшие коллекции первыми. Наши новинки сочетают инновационные материалы и передовой дизайн."
         backgroundImage="/images/new-arrivals-hero.avif"
       />
       
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Suspense fallback={
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
-                  <div className="bg-gray-200 h-64 w-full" />
-                  <div className="p-4 space-y-2">
-                    <div className="bg-gray-200 h-4 rounded w-3/4" />
-                    <div className="bg-gray-200 h-4 rounded w-1/2" />
-                    <div className="bg-gray-200 h-6 rounded w-1/3 mt-2" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          }>
+      <CategoryHeader 
+        title="Новые поступления"
+        description="Будьте первыми, кто откроет для себя наши последние коллекции"
+        icon="new"
+      />
+      
+      <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <Suspense fallback={<ProductGridSkeleton count={8} />}>
             <NewProducts />
           </Suspense>
         </div>
