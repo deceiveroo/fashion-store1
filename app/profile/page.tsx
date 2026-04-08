@@ -8,6 +8,9 @@ import { Camera, Mail, Phone, MapPin, Lock, Edit3, ChevronRight, LogOut, Package
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import AccountHealthDashboard from '@/components/profile/AccountHealthDashboard';
+import AIStyleAssistant from '@/components/profile/AIStyleAssistant';
+import EcoFootprint from '@/components/profile/EcoFootprint';
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, logout, refreshUser } = useAuth();
@@ -168,13 +171,13 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-pink-50 to-purple-50 relative overflow-hidden pt-16">
+    <div className="min-h-screen bg-gradient-to-br from-white via-pink-50 to-purple-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 relative overflow-hidden pt-16">
       {/* Анимированные элементы фона */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(15)].map((_, i) => (
           <motion.div
             key={`circle-${i}`}
-            className="absolute rounded-full bg-pink-200/30"
+            className="absolute rounded-full bg-pink-200/30 dark:bg-pink-500/20"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -205,12 +208,33 @@ export default function ProfilePage() {
           transition={{ duration: 0.6 }}
           className="mb-10 text-center"
         >
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 relative inline-block">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2 relative inline-block">
             <span className="relative z-10">Мой Профиль</span>
 
           </h1>
-          <p className="text-gray-600">Управляйте вашими данными и настройками</p>
+          <p className="text-gray-600 dark:text-gray-400">Управляйте вашими данными и настройками</p>
         </motion.div>
+
+        {/* Account Health Dashboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mb-8"
+        >
+          <AccountHealthDashboard
+            hasPassword={true}
+            has2FA={false}
+            emailVerified={!!user?.email}
+            phoneVerified={!!formData.phone}
+          />
+        </motion.div>
+
+        {/* AI Assistant and Eco Footprint Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <AIStyleAssistant />
+          <EcoFootprint />
+        </div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -220,10 +244,10 @@ export default function ProfilePage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="lg:col-span-2 bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/50"
+            className="lg:col-span-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/50 dark:border-gray-700/50"
           >
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <User className="text-indigo-600" size={20} /> Личная информация
               </h2>
               {!isEditing && (
@@ -266,7 +290,7 @@ export default function ProfilePage() {
               <div className="flex-1 space-y-6 w-full">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Имя</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Имя</label>
                     {isEditing ? (
                       <input
                         type="text"
@@ -276,7 +300,7 @@ export default function ProfilePage() {
                         placeholder="Ваше имя"
                       />
                     ) : (
-                      <p className="text-gray-900 py-2.5 px-4 bg-white/70 rounded-lg border border-gray-200 backdrop-blur-sm">{formData.firstName || '—'}</p>
+                      <p className="text-gray-900 dark:text-white py-2.5 px-4 bg-white/70 dark:bg-gray-700/70 rounded-lg border border-gray-200 dark:border-gray-600 backdrop-blur-sm">{formData.firstName || '—'}</p>
                     )}
                   </div>
 
@@ -379,7 +403,7 @@ export default function ProfilePage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/50"
             >
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
                 <Settings className="text-indigo-600" size={20} /> Быстрые действия
               </h3>
               <div className="space-y-3">
