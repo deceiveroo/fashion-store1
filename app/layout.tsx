@@ -5,7 +5,7 @@ import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
 import ClientLayoutWrapper from '@/components/ClientLayoutWrapper';
 import { Providers } from '@/components/providers/Providers';
-import SupportChat from '@/components/SupportChat';
+import SupportChatNew from '@/components/SupportChatNew';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -48,7 +48,7 @@ export default function RootLayout({
             <CartProvider>
               <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 transition-colors duration-300">
                 <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
-                <SupportChat />
+                <SupportChatNew />
               </div>
             </CartProvider>
           </AuthProvider>
