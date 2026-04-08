@@ -148,9 +148,9 @@ export default function ContactPage() {
                   📞
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Телефон</h3>
-                  <p className="text-gray-700">+7 (495) 123-45-67</p>
-                  <p className="text-gray-700">+7 (495) 987-65-43</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Телефон</h3>
+                  <p className="text-gray-700 dark:text-gray-300">+7 (495) 123-45-67</p>
+                  <p className="text-gray-700 dark:text-gray-300">+7 (495) 987-65-43</p>
                 </div>
               </motion.div>
               
@@ -165,9 +165,9 @@ export default function ContactPage() {
                   ✉️
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Email</h3>
-                  <p className="text-gray-700">hello@elevate-fashion.ru</p>
-                  <p className="text-gray-700">support@elevate-fashion.ru</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Email</h3>
+                  <p className="text-gray-700 dark:text-gray-300">hello@elevate-fashion.ru</p>
+                  <p className="text-gray-700 dark:text-gray-300">support@elevate-fashion.ru</p>
                 </div>
               </motion.div>
               
@@ -182,9 +182,9 @@ export default function ContactPage() {
                   🕒
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Режим работы</h3>
-                  <p className="text-gray-700">Пн-Пт: 9:00 - 21:00</p>
-                  <p className="text-gray-700">Сб-Вс: 10:00 - 20:00</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Режим работы</h3>
+                  <p className="text-gray-700 dark:text-gray-300">Пн-Пт: 9:00 - 21:00</p>
+                  <p className="text-gray-700 dark:text-gray-300">Сб-Вс: 10:00 - 20:00</p>
                 </div>
               </motion.div>
             </div>
@@ -201,12 +201,12 @@ export default function ContactPage() {
             whileHover={{ y: -5 }}
             className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50"
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-8">Отправить сообщение</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Отправить сообщение</h2>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Имя
                   </label>
                   <input

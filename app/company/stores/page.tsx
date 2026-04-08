@@ -288,7 +288,7 @@ export default function StoresPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 pt-24 pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-indigo-900/20 dark:to-gray-900 pt-24 pb-16 relative overflow-hidden">
       {/* Animated background elements */}
       <AnimatedBackground />
       

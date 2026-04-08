@@ -41,7 +41,7 @@ export default function ReturnsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 pt-24 pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 pt-24 pb-16 relative overflow-hidden">
       {/* Анимированные элементы фона */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(18)].map((_, i) => (
