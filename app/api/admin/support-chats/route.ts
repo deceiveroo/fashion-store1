@@ -101,10 +101,6 @@ export async function DELETE(request: NextRequest) {
         .where(eq(supportChatMessages.id, messageId));
     } else {
       // Delete entire session (admin only)
-      if (session.user.role !== 'admin') {
-        return NextResponse.json({ error: 'Only admins can delete entire sessions' }, { status: 403 });
-      }
-
       await db.transaction(async (tx) => {
         await tx
           .delete(supportChatMessages)

@@ -18,15 +18,13 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    // Update the session to disable AI and reset takenOverBy
+    // Update the session to mark as resolved
     await db.update(supportChatSessions)
       .set({
-        aiDisabled: false,
-        takenOverBy: null,
-        takenOverAt: null,
+        status: 'resolved',
         resolvedAt: new Date(),
         resolvedBy: admin.id,
-        status: 'active' // Keep it active so others can see it
+        updatedAt: new Date(),
       })
       .where(eq(supportChatSessions.sessionId, sessionId));
 

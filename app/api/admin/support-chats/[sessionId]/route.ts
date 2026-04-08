@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatSessions, supportChatMessages } from '@/lib/schema';
-import { desc, eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { isAdmin } from '@/lib/server-auth';
 
 export async function GET(
@@ -32,7 +32,7 @@ export async function GET(
       .select()
       .from(supportChatMessages)
       .where(eq(supportChatMessages.sessionId, sessionId))
-      .orderBy(desc(supportChatMessages.createdAt));
+      .orderBy(asc(supportChatMessages.createdAt)); // ASC order for chat display
 
     return NextResponse.json({ session: session[0], messages });
   } catch (error: any) {
