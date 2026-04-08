@@ -37,13 +37,13 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 pt-24 pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 pt-24 pb-16 relative overflow-x-hidden">
       {/* Анимированные элементы фона */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(20)].map((_, i) => (
           <motion.div
             key={`circle-${i}`}
-            className="absolute rounded-full bg-purple-200/30"
+            className="absolute rounded-full bg-purple-200/30 dark:bg-purple-500/10"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -88,7 +88,7 @@ export default function ContactPage() {
           </motion.div>
           
           <motion.h1 
-            className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-700 via-pink-700 to-blue-700 bg-clip-text text-transparent mb-6"
+            className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-700 via-pink-700 to-blue-700 dark:from-purple-400 dark:via-pink-400 dark:to-blue-400 bg-clip-text text-transparent mb-6"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.7 }}
@@ -97,7 +97,7 @@ export default function ContactPage() {
           </motion.h1>
           
           <motion.p 
-            className="text-xl text-gray-700 max-w-3xl mx-auto"
+            className="text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.7 }}
@@ -118,7 +118,7 @@ export default function ContactPage() {
             whileHover={{ y: -5 }}
             className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50"
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-8">Контактная информация</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Контактная информация</h2>
             
             <div className="space-y-6">
               <motion.div 
@@ -132,8 +132,8 @@ export default function ContactPage() {
                   📍
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Адрес</h3>
-                  <p className="text-gray-700">Москва, ул. Модная, 123</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Адрес</h3>
+                  <p className="text-gray-700 dark:text-gray-300">Москва, ул. Модная, 123</p>
                 </div>
               </motion.div>
               
