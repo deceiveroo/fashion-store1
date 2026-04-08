@@ -11,6 +11,13 @@ import { useSession } from 'next-auth/react';
 import AccountHealthDashboard from '@/components/profile/AccountHealthDashboard';
 import AIStyleAssistant from '@/components/profile/AIStyleAssistant';
 import EcoFootprint from '@/components/profile/EcoFootprint';
+import DigitalTwin from '@/components/profile/DigitalTwin';
+import PurchaseMap from '@/components/profile/PurchaseMap';
+import GiftWishlist from '@/components/profile/GiftWishlist';
+import SecuritySettings from '@/components/profile/SecuritySettings';
+import PaymentMethods from '@/components/profile/PaymentMethods';
+import NotificationSettings from '@/components/profile/NotificationSettings';
+import GDPRSettings from '@/components/profile/GDPRSettings';
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, logout, refreshUser } = useAuth();
@@ -235,6 +242,39 @@ export default function ProfilePage() {
           <AIStyleAssistant />
           <EcoFootprint />
         </div>
+
+        {/* Digital Twin and Purchase Map */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <DigitalTwin />
+          <PurchaseMap />
+        </div>
+
+        {/* Gift Wishlist */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mb-8"
+        >
+          <GiftWishlist />
+        </motion.div>
+
+        {/* Security, Payment, and Notifications */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          <SecuritySettings />
+          <PaymentMethods />
+          <NotificationSettings />
+        </div>
+
+        {/* GDPR Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mb-8"
+        >
+          <GDPRSettings />
+        </motion.div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
