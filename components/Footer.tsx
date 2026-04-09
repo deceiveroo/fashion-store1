@@ -329,7 +329,7 @@ export default function Footer() {
           className="border-t border-gray-200 dark:border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-3"
         >
           <p className="text-gray-600 dark:text-gray-500 text-xs text-center md:text-left">
-            © 2025 ELEVATE. Все права защищены. Сделано с <Heart size={12} className="inline text-red-500 mx-0.5 align-text-bottom" /> в России
+            © 2026 ELEVATE. Все права защищены. Сделано с <Heart size={12} className="inline text-red-500 mx-0.5 align-text-bottom" /> в России
           </p>
           <div className="flex flex-wrap justify-center gap-4 text-xs">
             <Link 

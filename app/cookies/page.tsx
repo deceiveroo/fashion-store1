@@ -143,7 +143,7 @@ export default function CookiesPage() {
             Политика использования Cookies
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Последнее обновление: 9 апреля 2025 г.
+            Последнее обновление: 9 апреля 2026 г.
           </p>
         </motion.div>
 

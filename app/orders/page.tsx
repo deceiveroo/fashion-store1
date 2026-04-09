@@ -52,7 +52,8 @@ export default function OrdersPage() {
       
       if (res.ok) {
         const data = await res.json();
-        setOrders(data.orders || []);
+        // Исправлено: теперь просто используем полученный массив, а не data.orders
+        setOrders(Array.isArray(data) ? data : []);
       } else if (res.status === 401) {
         toast.error('Требуется авторизация');
       }
