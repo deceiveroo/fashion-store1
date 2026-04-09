@@ -1,7 +1,17 @@
--- Add Payment Methods table
-CREATE TABLE IF NOT EXISTS payment_methods (
-  id TEXT PRIMARY KEY NOT NULL,
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+-- =====================================================
+-- PROFILE TABLES MIGRATION FOR SUPABASE
+-- FIXED VERSION: Uses UUID to match your users table
+-- =====================================================
+
+-- Drop existing tables if they exist (clean slate)
+DROP TABLE IF EXISTS notification_settings CASCADE;
+DROP TABLE IF EXISTS user_sessions CASCADE;
+DROP TABLE IF EXISTS payment_methods CASCADE;
+
+-- 1. Payment Methods table
+CREATE TABLE payment_methods (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('card', 'wallet')),
   last4 TEXT NOT NULL,
   brand TEXT NOT NULL,
@@ -13,12 +23,14 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS payment_methods_user_idx ON payment_methods(user_id);
+CREATE INDEX payment_methods_user_idx ON payment_methods(user_id);
 
--- Add User Sessions table
-CREATE TABLE IF NOT EXISTS user_sessions (
-  id TEXT PRIMARY KEY NOT NULL,
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+COMMENT ON TABLE payment_methods IS 'Stores user payment methods (cards and wallets)';
+
+-- 2. User Sessions table
+CREATE TABLE user_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   token TEXT NOT NULL UNIQUE,
   device TEXT,
   location TEXT,
@@ -28,13 +40,15 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS user_sessions_user_idx ON user_sessions(user_id);
-CREATE UNIQUE INDEX IF NOT EXISTS user_sessions_token_idx ON user_sessions(token);
+CREATE INDEX user_sessions_user_idx ON user_sessions(user_id);
+CREATE UNIQUE INDEX user_sessions_token_idx ON user_sessions(token);
 
--- Add Notification Settings table
-CREATE TABLE IF NOT EXISTS notification_settings (
-  id TEXT PRIMARY KEY NOT NULL,
-  user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+COMMENT ON TABLE user_sessions IS 'Tracks user login sessions for security';
+
+-- 3. Notification Settings table
+CREATE TABLE notification_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
   orders_email BOOLEAN DEFAULT TRUE,
   orders_push BOOLEAN DEFAULT TRUE,
   orders_sms BOOLEAN DEFAULT FALSE,
@@ -57,16 +71,35 @@ CREATE TABLE IF NOT EXISTS notification_settings (
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS notification_settings_user_idx ON notification_settings(user_id);
+CREATE UNIQUE INDEX notification_settings_user_idx ON notification_settings(user_id);
 
--- Add missing columns to orders table if they don't exist
+COMMENT ON TABLE notification_settings IS 'User notification preferences';
+
+-- 4. Add items column to orders table (if not exists)
 DO $$ 
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='items') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name='orders' AND column_name='items'
+  ) THEN
     ALTER TABLE orders ADD COLUMN items JSONB;
   END IF;
 END $$;
 
-COMMENT ON TABLE payment_methods IS 'Stores user payment methods (cards and wallets)';
-COMMENT ON TABLE user_sessions IS 'Tracks user login sessions for security';
-COMMENT ON TABLE notification_settings IS 'User notification preferences';
+-- =====================================================
+-- VERIFICATION QUERIES
+-- =====================================================
+SELECT 
+  'payment_methods' as table_name, 
+  COUNT(*) as row_count 
+FROM payment_methods
+UNION ALL
+SELECT 
+  'user_sessions' as table_name, 
+  COUNT(*) as row_count 
+FROM user_sessions
+UNION ALL
+SELECT 
+  'notification_settings' as table_name, 
+  COUNT(*) as row_count 
+FROM notification_settings;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { wishlist, products, productImages } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { userWishlistItems, products, productImages } from '@/lib/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -11,31 +11,43 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const items = await db
+    const wishlistItems = await db
       .select({
-        id: wishlist.id,
-        productId: wishlist.productId,
-        addedAt: wishlist.addedAt,
+        id: userWishlistItems.id,
+        productId: userWishlistItems.productId,
+        addedAt: userWishlistItems.createdAt,
         product: {
           id: products.id,
           name: products.name,
           price: products.price,
           inStock: products.inStock,
         },
-        image: productImages.url,
       })
-      .from(wishlist)
-      .leftJoin(products, eq(wishlist.productId, products.id))
-      .leftJoin(
-        productImages,
-        and(
-          eq(productImages.productId, products.id),
-          eq(productImages.isMain, true)
-        )
-      )
-      .where(eq(wishlist.userId, user.id));
+      .from(userWishlistItems)
+      .leftJoin(products, eq(userWishlistItems.productId, products.id))
+      .where(eq(userWishlistItems.userId, user.id))
+      .orderBy(desc(userWishlistItems.createdAt));
 
-    return NextResponse.json({ items });
+    // Get images for each product
+    const itemsWithImages = await Promise.all(
+      wishlistItems.map(async (item) => {
+        if (!item.product) return { ...item, image: null };
+        
+        const images = await db
+          .select()
+          .from(productImages)
+          .where(eq(productImages.productId, item.productId))
+          .orderBy(productImages.order)
+          .limit(1);
+
+        return {
+          ...item,
+          image: images[0]?.url || null,
+        };
+      })
+    );
+
+    return NextResponse.json({ items: itemsWithImages });
   } catch (error) {
     console.error('Error fetching wishlist:', error);
     return NextResponse.json({ error: 'Failed to fetch wishlist' }, { status: 500 });
@@ -59,11 +71,11 @@ export async function POST(request: NextRequest) {
     // Check if already in wishlist
     const existing = await db
       .select()
-      .from(wishlist)
+      .from(userWishlistItems)
       .where(
         and(
-          eq(wishlist.userId, user.id),
-          eq(wishlist.productId, productId)
+          eq(userWishlistItems.userId, user.id),
+          eq(userWishlistItems.productId, productId)
         )
       )
       .limit(1);
@@ -73,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     const [item] = await db
-      .insert(wishlist)
+      .insert(userWishlistItems)
       .values({
         userId: user.id,
         productId,
@@ -102,11 +114,11 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db
-      .delete(wishlist)
+      .delete(userWishlistItems)
       .where(
         and(
-          eq(wishlist.userId, user.id),
-          eq(wishlist.productId, productId)
+          eq(userWishlistItems.userId, user.id),
+          eq(userWishlistItems.productId, productId)
         )
       );
 

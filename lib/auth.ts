@@ -105,7 +105,7 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role ?? 'customer';
+        token.role = ((user as any).role ?? 'customer') as string;
         token.image = (user as any).image;
       }
       const uid = (token.id as string) || token.sub;
@@ -115,7 +115,7 @@ export const authConfig: NextAuthConfig = {
           .from(users)
           .where(eq(users.id, uid))
           .limit(1);
-        if (u?.role) token.role = u.role;
+        if (u?.role) token.role = u.role as string;
         if (u?.image) token.image = u.image;
       }
       return token;
@@ -136,3 +136,57 @@ export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
 // Для обратной совместимости
 export const authOptions = authConfig;
+
+// Helper function to verify authentication from API routes
+export async function verifyAuth(request: Request) {
+  try {
+    // Try to get token from Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Decode JWT token manually (simple base64 decode for payload)
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+    
+    // Check if token is expired
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      return null;
+    }
+
+    // Get user ID from token
+    const userId = payload.id || payload.sub;
+    if (!userId) {
+      return null;
+    }
+
+    // Fetch user from database
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name ?? '',
+      role: user.role,
+      image: user.image ?? undefined,
+    };
+  } catch (error) {
+    console.error('[AUTH] verifyAuth error:', error);
+    return null;
+  }
+}
