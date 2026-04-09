@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, User, Menu, X, Search, Plus, LogOut, ChevronDown, Package, Heart } from 'lucide-react';
-import SearchComponent from './Search';
+import SearchComponent from './SearchNew';
 import Cart from './Cart';
 import ThemeToggle from './ThemeToggle';
 import { useCart } from '@/context/CartContext';
