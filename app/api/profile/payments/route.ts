@@ -1,152 +1,146 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, safeQuery } from '@/lib/db';
-import { sql } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
-import { jwtVerify } from 'jose';
+import { db } from '@/lib/db';
+import { paymentMethods } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { verifyAuth } from '@/lib/auth';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
-const secret = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserId(request: NextRequest): Promise<string | null> {
-  const session = await auth();
-  if (session?.user?.id) return session.user.id;
-  
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    try {
-      const token = authHeader.substring(7);
-      const { payload } = await jwtVerify(token, secret);
-      return payload.userId as string;
-    } catch {}
-  }
-  return null;
-}
-
-// GET - получить способы оплаты
 export async function GET(request: NextRequest) {
-  const userId = await getUserId(request);
-  
-  if (!userId) {
-    return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
-  }
-
   try {
-    const paymentMethods = await safeQuery(() =>
-      db.execute(sql`
-        SELECT id, type, last4, brand, expiry_month, expiry_year, holder_name, is_default
-        FROM payment_methods
-        WHERE user_id = ${userId}
-        ORDER BY is_default DESC, created_at DESC
-      `)
-    );
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    return NextResponse.json({
-      paymentMethods: paymentMethods?.rows || [],
-    });
+    const methods = await db
+      .select()
+      .from(paymentMethods)
+      .where(eq(paymentMethods.userId, user.id));
+
+    return NextResponse.json({ methods });
   } catch (error) {
-    console.error('Payment methods fetch error:', error);
-    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
+    console.error('Error fetching payment methods:', error);
+    return NextResponse.json({ error: 'Failed to fetch payment methods' }, { status: 500 });
   }
 }
 
-// POST - добавить способ оплаты или установить по умолчанию
 export async function POST(request: NextRequest) {
-  const userId = await getUserId(request);
-  
-  if (!userId) {
-    return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
-  }
-
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
+    const { cardNumber, holderName, expiryMonth, expiryYear, cvv, isDefault } = body;
 
-    if (body.action === 'add') {
-      // Определяем бренд по номеру карты
-      let brand = 'Unknown';
-      const firstDigit = body.cardNumber.charAt(0);
-      if (firstDigit === '4') brand = 'Visa';
-      else if (firstDigit === '5') brand = 'Mastercard';
-      else if (firstDigit === '2') brand = 'Mir';
-
-      const last4 = body.cardNumber.slice(-4);
-
-      await safeQuery(() =>
-        db.execute(sql`
-          INSERT INTO payment_methods (
-            id, user_id, type, last4, brand, expiry_month, expiry_year, holder_name, is_default
-          )
-          VALUES (
-            gen_random_uuid(), 
-            ${userId}, 
-            'card', 
-            ${last4}, 
-            ${brand}, 
-            ${body.expiryMonth}, 
-            ${body.expiryYear}, 
-            ${body.holderName}, 
-            false
-          )
-        `)
-      );
-
-      return NextResponse.json({ message: 'Способ оплаты добавлен' });
+    // Validate card data
+    if (!cardNumber || !holderName || !expiryMonth || !expiryYear || !cvv) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (body.action === 'set_default') {
-      // Сначала убираем default со всех
-      await safeQuery(() =>
-        db.execute(sql`
-          UPDATE payment_methods
-          SET is_default = false
-          WHERE user_id = ${userId}
-        `)
-      );
+    // Get card brand from first digit
+    const firstDigit = cardNumber[0];
+    let brand = 'Unknown';
+    if (firstDigit === '4') brand = 'Visa';
+    else if (firstDigit === '5') brand = 'Mastercard';
+    else if (firstDigit === '2') brand = 'Mir';
 
-      // Устанавливаем новый default
-      await safeQuery(() =>
-        db.execute(sql`
-          UPDATE payment_methods
-          SET is_default = true
-          WHERE id = ${body.paymentId} AND user_id = ${userId}
-        `)
-      );
-
-      return NextResponse.json({ message: 'Способ оплаты установлен по умолчанию' });
+    // If this is default, unset other defaults
+    if (isDefault) {
+      await db
+        .update(paymentMethods)
+        .set({ isDefault: false })
+        .where(eq(paymentMethods.userId, user.id));
     }
 
-    return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 });
+    // Store only last 4 digits
+    const last4 = cardNumber.slice(-4);
+
+    const [method] = await db
+      .insert(paymentMethods)
+      .values({
+        userId: user.id,
+        type: 'card',
+        last4,
+        brand,
+        expiryMonth: parseInt(expiryMonth),
+        expiryYear: parseInt(expiryYear),
+        holderName,
+        isDefault: isDefault || false,
+      })
+      .returning();
+
+    return NextResponse.json({ method });
   } catch (error) {
-    console.error('Payment method update error:', error);
-    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
+    console.error('Error adding payment method:', error);
+    return NextResponse.json({ error: 'Failed to add payment method' }, { status: 500 });
   }
 }
 
-// DELETE - удалить способ оплаты
 export async function DELETE(request: NextRequest) {
-  const userId = await getUserId(request);
-  
-  if (!userId) {
-    return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
-  }
-
   try {
-    const { searchParams } = new URL(request.url);
-    const paymentId = searchParams.get('id');
-
-    if (!paymentId) {
-      return NextResponse.json({ error: 'ID не указан' }, { status: 400 });
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await safeQuery(() =>
-      db.execute(sql`
-        DELETE FROM payment_methods
-        WHERE id = ${paymentId} AND user_id = ${userId}
-      `)
-    );
+    const { searchParams } = new URL(request.url);
+    const methodId = searchParams.get('id');
 
-    return NextResponse.json({ message: 'Способ оплаты удален' });
+    if (!methodId) {
+      return NextResponse.json({ error: 'Method ID required' }, { status: 400 });
+    }
+
+    await db
+      .delete(paymentMethods)
+      .where(
+        and(
+          eq(paymentMethods.id, methodId),
+          eq(paymentMethods.userId, user.id)
+        )
+      );
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Payment method delete error:', error);
-    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
+    console.error('Error deleting payment method:', error);
+    return NextResponse.json({ error: 'Failed to delete payment method' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { methodId, isDefault } = body;
+
+    if (!methodId) {
+      return NextResponse.json({ error: 'Method ID required' }, { status: 400 });
+    }
+
+    // Unset all defaults
+    await db
+      .update(paymentMethods)
+      .set({ isDefault: false })
+      .where(eq(paymentMethods.userId, user.id));
+
+    // Set new default
+    await db
+      .update(paymentMethods)
+      .set({ isDefault: true })
+      .where(
+        and(
+          eq(paymentMethods.id, methodId),
+          eq(paymentMethods.userId, user.id)
+        )
+      );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error updating payment method:', error);
+    return NextResponse.json({ error: 'Failed to update payment method' }, { status: 500 });
   }
 }

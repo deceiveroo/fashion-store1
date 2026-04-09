@@ -460,3 +460,93 @@ export const supportChatSessionsRelations = relations(supportChatSessions, ({ on
   resolvedByUser: one(users, { fields: [supportChatSessions.resolvedBy], references: [users.id] }),
   messages: many(supportChatMessages),
 }));
+
+// Payment Methods table
+export const paymentMethods = pgTable('payment_methods', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type', { enum: ['card', 'wallet'] }).notNull(),
+  last4: text('last4').notNull(),
+  brand: text('brand').notNull(), // Visa, Mastercard, Mir, YooMoney, etc
+  expiryMonth: integer('expiry_month'),
+  expiryYear: integer('expiry_year'),
+  holderName: text('holder_name'),
+  isDefault: boolean('is_default').default(false),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: index('payment_methods_user_idx').on(table.userId),
+  };
+});
+
+// Wishlist table (alias for userWishlistItems for easier access)
+export const wishlist = userWishlistItems;
+
+// User Sessions table (for security tracking)
+export const userSessions = pgTable('user_sessions', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  device: text('device'),
+  location: text('location'),
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  lastActive: timestamp('last_active', { mode: 'date' }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: index('user_sessions_user_idx').on(table.userId),
+    tokenIdx: uniqueIndex('user_sessions_token_idx').on(table.token),
+  };
+});
+
+// Notification Settings table
+export const notificationSettings = pgTable('notification_settings', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  ordersEmail: boolean('orders_email').default(true),
+  ordersPush: boolean('orders_push').default(true),
+  ordersSms: boolean('orders_sms').default(false),
+  promotionsEmail: boolean('promotions_email').default(true),
+  promotionsPush: boolean('promotions_push').default(false),
+  promotionsSms: boolean('promotions_sms').default(false),
+  wishlistEmail: boolean('wishlist_email').default(true),
+  wishlistPush: boolean('wishlist_push').default(true),
+  wishlistSms: boolean('wishlist_sms').default(false),
+  priceDropsEmail: boolean('price_drops_email').default(true),
+  priceDropsPush: boolean('price_drops_push').default(true),
+  priceDropsSms: boolean('price_drops_sms').default(false),
+  newsletterEmail: boolean('newsletter_email').default(true),
+  newsletterPush: boolean('newsletter_push').default(false),
+  newsletterSms: boolean('newsletter_sms').default(false),
+  securityEmail: boolean('security_email').default(true),
+  securityPush: boolean('security_push').default(true),
+  securitySms: boolean('security_sms').default(true),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: uniqueIndex('notification_settings_user_idx').on(table.userId),
+  };
+});
+
+// Relations for new tables
+export const paymentMethodsRelations = relations(paymentMethods, ({ one }) => ({
+  user: one(users, { fields: [paymentMethods.userId], references: [users.id] }),
+}));
+
+export const userSessionsRelations = relations(userSessions, ({ one }) => ({
+  user: one(users, { fields: [userSessions.userId], references: [users.id] }),
+}));
+
+export const notificationSettingsRelations = relations(notificationSettings, ({ one }) => ({
+  user: one(users, { fields: [notificationSettings.userId], references: [users.id] }),
+}));

@@ -1,129 +1,83 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, safeQuery } from '@/lib/db';
-import { sql } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
-import { jwtVerify } from 'jose';
+import { db } from '@/lib/db';
+import { users, orders, wishlist, paymentMethods, notificationSettings } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { verifyAuth } from '@/lib/auth';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
-const secret = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserId(request: NextRequest): Promise<string | null> {
-  const session = await auth();
-  if (session?.user?.id) return session.user.id;
-  
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    try {
-      const token = authHeader.substring(7);
-      const { payload } = await jwtVerify(token, secret);
-      return payload.userId as string;
-    } catch {}
-  }
-  return null;
-}
-
-// GET - экспортировать все данные пользователя
 export async function GET(request: NextRequest) {
-  const userId = await getUserId(request);
-  
-  if (!userId) {
-    return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
-  }
-
   try {
-    // Собираем все данные пользователя
-    const userData = await safeQuery(() =>
-      db.execute(sql`
-        SELECT id, email, name, role, created_at
-        FROM users
-        WHERE id = ${userId}
-      `)
-    );
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const profileData = await safeQuery(() =>
-      db.execute(sql`
-        SELECT *
-        FROM user_profiles
-        WHERE user_id = ${userId}
-      `)
-    );
+    // Fetch all user data
+    const [userData] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
 
-    const ordersData = await safeQuery(() =>
-      db.execute(sql`
-        SELECT o.*, 
-          json_agg(
-            json_build_object(
-              'name', oi.name,
-              'price', oi.price,
-              'quantity', oi.quantity,
-              'size', oi.size,
-              'color', oi.color
-            )
-          ) as items
-        FROM orders o
-        LEFT JOIN order_items oi ON o.id = oi.order_id
-        WHERE o.user_id = ${userId}
-        GROUP BY o.id
-      `)
-    );
+    const userOrders = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.userId, user.id));
 
-    const wishlistData = await safeQuery(() =>
-      db.execute(sql`
-        SELECT gw.*, p.name, p.price
-        FROM gift_wishlist gw
-        LEFT JOIN products p ON gw.product_id = p.id
-        WHERE gw.user_id = ${userId}
-      `)
-    );
+    const userWishlist = await db
+      .select()
+      .from(wishlist)
+      .where(eq(wishlist.userId, user.id));
 
-    const sessionsData = await safeQuery(() =>
-      db.execute(sql`
-        SELECT * FROM user_sessions WHERE user_id = ${userId}
-      `)
-    );
+    const userPaymentMethods = await db
+      .select()
+      .from(paymentMethods)
+      .where(eq(paymentMethods.userId, user.id));
 
-    const loginHistoryData = await safeQuery(() =>
-      db.execute(sql`
-        SELECT * FROM login_history WHERE user_id = ${userId}
-      `)
-    );
+    const userNotifications = await db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.userId, user.id))
+      .limit(1);
 
-    const paymentMethodsData = await safeQuery(() =>
-      db.execute(sql`
-        SELECT id, type, last4, brand, expiry_month, expiry_year, holder_name, is_default
-        FROM payment_methods
-        WHERE user_id = ${userId}
-      `)
-    );
-
-    const notificationSettingsData = await safeQuery(() =>
-      db.execute(sql`
-        SELECT * FROM notification_settings WHERE user_id = ${userId}
-      `)
-    );
-
-    // Формируем JSON для экспорта
+    // Compile all data
     const exportData = {
       exportDate: new Date().toISOString(),
-      user: userData?.rows?.[0] || {},
-      profile: profileData?.rows?.[0] || {},
-      orders: ordersData?.rows || [],
-      wishlist: wishlistData?.rows || [],
-      sessions: sessionsData?.rows || [],
-      loginHistory: loginHistoryData?.rows || [],
-      paymentMethods: paymentMethodsData?.rows || [],
-      notificationSettings: notificationSettingsData?.rows?.[0] || {},
+      personalInfo: {
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone,
+        address: userData.address,
+        createdAt: userData.createdAt,
+      },
+      orders: userOrders.map(order => ({
+        id: order.id,
+        total: order.total,
+        status: order.status,
+        createdAt: order.createdAt,
+        items: order.items,
+      })),
+      wishlist: userWishlist,
+      paymentMethods: userPaymentMethods.map(method => ({
+        id: method.id,
+        type: method.type,
+        brand: method.brand,
+        last4: method.last4,
+        isDefault: method.isDefault,
+      })),
+      notificationSettings: userNotifications[0] || {},
     };
 
-    // Возвращаем как JSON файл для скачивания
+    // Return as JSON file
     return new NextResponse(JSON.stringify(exportData, null, 2), {
       headers: {
         'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="user-data-${userId}.json"`,
+        'Content-Disposition': `attachment; filename="user-data-${user.id}-${Date.now()}.json"`,
       },
     });
   } catch (error) {
-    console.error('Data export error:', error);
-    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
+    console.error('Error exporting user data:', error);
+    return NextResponse.json({ error: 'Failed to export user data' }, { status: 500 });
   }
 }

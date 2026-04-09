@@ -1,157 +1,118 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, safeQuery } from '@/lib/db';
-import { sql } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
-import { jwtVerify } from 'jose';
+import { db } from '@/lib/db';
+import { wishlist, products, productImages } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { verifyAuth } from '@/lib/auth';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
-const secret = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserId(request: NextRequest): Promise<string | null> {
-  const session = await auth();
-  if (session?.user?.id) return session.user.id;
-  
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    try {
-      const token = authHeader.substring(7);
-      const { payload } = await jwtVerify(token, secret);
-      return payload.userId as string;
-    } catch {}
-  }
-  return null;
-}
-
-// GET - получить вишлист
 export async function GET(request: NextRequest) {
-  const userId = await getUserId(request);
-  
-  if (!userId) {
-    return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
-  }
-
   try {
-    const wishlist = await safeQuery(() =>
-      db.execute(sql`
-        SELECT 
-          gw.id,
-          gw.product_id,
-          gw.is_public,
-          gw.is_purchased,
-          gw.size,
-          gw.notes,
-          p.name,
-          p.price,
-          p.image
-        FROM gift_wishlist gw
-        LEFT JOIN products p ON gw.product_id = p.id
-        WHERE gw.user_id = ${userId}
-        ORDER BY gw.created_at DESC
-      `)
-    );
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const settings = await safeQuery(() =>
-      db.execute(sql`
-        SELECT max_budget, min_budget, excluded_categories, share_token
-        FROM wishlist_settings
-        WHERE user_id = ${userId}
-      `)
-    );
+    const items = await db
+      .select({
+        id: wishlist.id,
+        productId: wishlist.productId,
+        addedAt: wishlist.addedAt,
+        product: {
+          id: products.id,
+          name: products.name,
+          price: products.price,
+          inStock: products.inStock,
+        },
+        image: productImages.url,
+      })
+      .from(wishlist)
+      .leftJoin(products, eq(wishlist.productId, products.id))
+      .leftJoin(
+        productImages,
+        and(
+          eq(productImages.productId, products.id),
+          eq(productImages.isMain, true)
+        )
+      )
+      .where(eq(wishlist.userId, user.id));
 
-    return NextResponse.json({
-      items: wishlist?.rows || [],
-      settings: settings?.rows?.[0] || {
-        max_budget: 20000,
-        min_budget: 1000,
-        excluded_categories: [],
-        share_token: '',
-      },
-    });
+    return NextResponse.json({ items });
   } catch (error) {
-    console.error('Wishlist fetch error:', error);
-    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
+    console.error('Error fetching wishlist:', error);
+    return NextResponse.json({ error: 'Failed to fetch wishlist' }, { status: 500 });
   }
 }
 
-// POST - добавить в вишлист или обновить настройки
 export async function POST(request: NextRequest) {
-  const userId = await getUserId(request);
-  
-  if (!userId) {
-    return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
-  }
-
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
+    const { productId } = body;
 
-    if (body.action === 'add_item') {
-      await safeQuery(() =>
-        db.execute(sql`
-          INSERT INTO gift_wishlist (id, user_id, product_id, is_public, size, notes)
-          VALUES (gen_random_uuid(), ${userId}, ${body.productId}, ${body.isPublic || true}, ${body.size || null}, ${body.notes || null})
-        `)
-      );
-      return NextResponse.json({ message: 'Товар добавлен в вишлист' });
+    if (!productId) {
+      return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
     }
 
-    if (body.action === 'toggle_visibility') {
-      await safeQuery(() =>
-        db.execute(sql`
-          UPDATE gift_wishlist
-          SET is_public = NOT is_public
-          WHERE id = ${body.itemId} AND user_id = ${userId}
-        `)
-      );
-      return NextResponse.json({ message: 'Видимость изменена' });
+    // Check if already in wishlist
+    const existing = await db
+      .select()
+      .from(wishlist)
+      .where(
+        and(
+          eq(wishlist.userId, user.id),
+          eq(wishlist.productId, productId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      return NextResponse.json({ error: 'Already in wishlist' }, { status: 400 });
     }
 
-    if (body.action === 'update_settings') {
-      await safeQuery(() =>
-        db.execute(sql`
-          UPDATE wishlist_settings
-          SET 
-            max_budget = ${body.maxBudget},
-            min_budget = ${body.minBudget},
-            excluded_categories = ${body.excludedCategories}
-          WHERE user_id = ${userId}
-        `)
-      );
-      return NextResponse.json({ message: 'Настройки обновлены' });
-    }
+    const [item] = await db
+      .insert(wishlist)
+      .values({
+        userId: user.id,
+        productId,
+      })
+      .returning();
 
-    return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 });
+    return NextResponse.json({ item });
   } catch (error) {
-    console.error('Wishlist update error:', error);
-    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
+    console.error('Error adding to wishlist:', error);
+    return NextResponse.json({ error: 'Failed to add to wishlist' }, { status: 500 });
   }
 }
 
-// DELETE - удалить из вишлиста
 export async function DELETE(request: NextRequest) {
-  const userId = await getUserId(request);
-  
-  if (!userId) {
-    return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
-  }
-
   try {
-    const { searchParams } = new URL(request.url);
-    const itemId = searchParams.get('id');
-
-    if (!itemId) {
-      return NextResponse.json({ error: 'ID не указан' }, { status: 400 });
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await safeQuery(() =>
-      db.execute(sql`
-        DELETE FROM gift_wishlist
-        WHERE id = ${itemId} AND user_id = ${userId}
-      `)
-    );
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get('productId');
 
-    return NextResponse.json({ message: 'Товар удален из вишлиста' });
+    if (!productId) {
+      return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
+    }
+
+    await db
+      .delete(wishlist)
+      .where(
+        and(
+          eq(wishlist.userId, user.id),
+          eq(wishlist.productId, productId)
+        )
+      );
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Wishlist delete error:', error);
-    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
+    console.error('Error removing from wishlist:', error);
+    return NextResponse.json({ error: 'Failed to remove from wishlist' }, { status: 500 });
   }
 }
