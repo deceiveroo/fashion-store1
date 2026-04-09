@@ -5,7 +5,7 @@ import { orders, orderItems, users } from '@/lib/schema';
 import { eq, desc } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
-import { getSession, isAdmin } from '@/lib/server-auth';
+import { getSession } from '@/lib/server-auth';
 
 // Функция с повторными попытками для надежной работы с базой данных
 async function queryWithRetry<T>(queryFn: () => Promise<T>): Promise<T> {
@@ -49,6 +49,7 @@ interface OrderItem {
   image?: string;
   size?: string;
   color?: string;
+  variantId?: string;
 }
 
 interface Recipient {
@@ -79,8 +80,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
     }
 
-    // Проверяем роль администратора один раз
-    const isAdminUser = await isAdmin();
+    // Получаем роль пользователя для определения доступа
+    const isAdminUser = session.user.role === 'admin';
 
     // Оптимизированный запрос без JOIN
     let ordersList;
@@ -95,6 +96,12 @@ export async function GET(request: NextRequest) {
             status: orders.status,
             createdAt: orders.createdAt,
             updatedAt: orders.updatedAt,
+            discount: orders.discount,
+            deliveryPrice: orders.deliveryPrice,
+            deliveryMethod: orders.deliveryMethod,
+            paymentMethod: orders.paymentMethod,
+            recipient: orders.recipient,
+            comment: orders.comment,
           })
           .from(orders)
           .orderBy(desc(orders.createdAt))
@@ -145,6 +152,12 @@ export async function GET(request: NextRequest) {
             status: orders.status,
             createdAt: orders.createdAt,
             updatedAt: orders.updatedAt,
+            discount: orders.discount,
+            deliveryPrice: orders.deliveryPrice,
+            deliveryMethod: orders.deliveryMethod,
+            paymentMethod: orders.paymentMethod,
+            recipient: orders.recipient,
+            comment: orders.comment,
           })
           .from(orders)
           .where(eq(orders.userId, session.user.id))
@@ -168,6 +181,7 @@ export async function GET(request: NextRequest) {
                 id: orderItems.id,
                 orderId: orderItems.orderId,
                 productId: orderItems.productId,
+                variantId: orderItems.variantId,
                 name: orderItems.name,
                 price: orderItems.price,
                 quantity: orderItems.quantity,
@@ -202,18 +216,19 @@ export async function GET(request: NextRequest) {
         id: order.id,
         userId: order.userId,
         total: Number(order.total),
-        discount: 0,
-        deliveryPrice: 0,
-        deliveryMethod: 'courier',
-        paymentMethod: 'card',
+        discount: Number(order.discount || 0),
+        deliveryPrice: Number(order.deliveryPrice || 0),
+        deliveryMethod: order.deliveryMethod || 'courier',
+        paymentMethod: order.paymentMethod || 'card',
         status: order.status as 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled',
         createdAt: order.createdAt?.toString() || new Date().toISOString(),
         updatedAt: order.updatedAt?.toString() || new Date().toISOString(),
-        recipient: { firstName: '', lastName: '', phone: '', email: '', address: '' },
-        comment: null,
+        recipient: order.recipient || { firstName: '', lastName: '', phone: '', email: '', address: '' },
+        comment: order.comment || null,
         items: items.map((item: any) => ({
           id: item.id,
           productId: item.productId,
+          variantId: item.variantId,
           name: item.name || 'Product',
           price: Number(item.price),
           quantity: item.quantity,
@@ -248,29 +263,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Функция аутентификации для POST запросов (для создания заказа)
-async function authenticateToken(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return null;
-  }
-
-  const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-  const secret = new TextEncoder().encode(JWT_SECRET);
-
-  try {
-    const { payload } = await jwtVerify(token, secret);
-    return payload as { userId: string; email: string; role?: string };
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    // Используем правильную функцию аутентификации из нашего модуля
+    const session = await getSession();
     
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -292,14 +288,14 @@ export async function POST(request: NextRequest) {
         // Create the order
         const [order] = await trx.insert(orders).values({
           userId: session.user.id,
-          total,
-          discount,
-          deliveryPrice,
+          total: total.toString(), // Convert to string to match decimal field
+          discount: discount ? discount.toString() : '0',
+          deliveryPrice: deliveryPrice ? deliveryPrice.toString() : '0',
           deliveryMethod,
           paymentMethod,
           status: 'processing', // Changed from 'pending' to 'processing'
           recipient,
-          comment
+          comment: comment || ''
         }).returning();
 
         // Add items to the order
@@ -309,9 +305,9 @@ export async function POST(request: NextRequest) {
             productId: item.id,
             variantId: item.variantId || null,
             name: item.name,
-            price: item.price,
+            price: item.price.toString(), // Convert to string to match decimal field
             quantity: item.quantity,
-            image: item.image,
+            image: item.image || '',
             size: item.size || null,
             color: item.color || null
           });
