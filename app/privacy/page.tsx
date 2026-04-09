@@ -362,14 +362,21 @@ export default function PrivacyPage() {
                   {section.title}
                 </h2>
               </div>
-              <ul className="space-y-3">
-                {section.content.map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">{item}</span>
-                  </li>
-                ))}
-              </ul>
+              
+              {/* Render subsections */}
+              {section.subsections.map((subsection, subIdx) => (
+                <div key={subIdx} className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{subsection.subtitle}</h3>
+                  <ul className="space-y-2 pl-2 ml-2 border-l-2 border-blue-100 dark:border-blue-900/50">
+                    {subsection.items.map((item, itemIdx) => (
+                      <li key={itemIdx} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                        <span className="text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </motion.div>
           );
         })}

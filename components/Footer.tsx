@@ -86,13 +86,13 @@ export default function Footer() {
   };
 
   return (
-    <footer className="relative bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-900 dark:via-purple-900/10 dark:to-black text-gray-800 dark:text-white overflow-hidden">
+    <footer className="relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:via-purple-900/10 dark:to-black text-gray-800 dark:text-white overflow-hidden">
       {/* Subtle Animated Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-30">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10 dark:opacity-30">
         <motion.div
           animate={{
             scale: [1, 1.1, 1],
-            opacity: [0.2, 0.4, 0.2],
+            opacity: [0.1, 0.2, 0.1],
           }}
           transition={{
             duration: 15,
@@ -116,7 +116,7 @@ export default function Footer() {
         <motion.div
           animate={{
             scale: [1, 1.2, 1],
-            opacity: [0.2, 0.4, 0.2],
+            opacity: [0.1, 0.2, 0.1],
           }}
           transition={{
             duration: 20,
@@ -139,7 +139,7 @@ export default function Footer() {
         />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
           {/* Brand Section */}
@@ -156,7 +156,7 @@ export default function Footer() {
               ELEVATE
             </motion.h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed max-w-md text-sm">
-              Переосмысливаем роскошную моду с инновационным дизайном и устойчивыми практиками.
+              Переосмысливаем роскошную моду с инновационным дизином и устойчивыми практиками.
             </p>
 
             {/* Newsletter */}
