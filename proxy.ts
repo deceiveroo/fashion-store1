@@ -36,7 +36,7 @@ const SECURITY_HEADERS = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   cleanupExpired();
 
   const { pathname } = request.nextUrl;
