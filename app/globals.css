@@ -17,10 +17,26 @@
     --primary: #6366f1;
     --primary-hover: #4f46e5;
     
+    /* Admin colors (from nextjs-admin-dashboard-main) */
+    --admin-primary: #5750F1;
+    --admin-primary-hover: #4338CA;
+    --admin-stroke: #E6EBF1;
+    --admin-gray: #EFF4FB;
+    --admin-gray-2: #F3F4F6;
+    --admin-gray-3: #E5E7EB;
+    --admin-green: #22AD5C;
+    --admin-green-light: #2CD673;
+    --admin-red: #F23030;
+    --admin-red-light: #F56060;
+    --admin-blue: #3C50E0;
+    --admin-blue-light: #5475E5;
+    
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-card: 0px 1px 2px 0px rgba(0, 0, 0, 0.12);
+    --shadow-card-2: 0px 8px 13px -3px rgba(0, 0, 0, 0.07);
   }
 
   .dark {
@@ -36,16 +52,116 @@
     --primary: #818cf8;
     --primary-hover: #a5b4fc;
     
+    /* Admin dark colors */
+    --admin-dark: #111928;
+    --admin-dark-2: #1F2A37;
+    --admin-dark-3: #374151;
+    --admin-gray-dark: #122031;
+    --admin-stroke-dark: #27303E;
+    
     /* Shadows для темной темы */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+    --shadow-card: 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+    --shadow-card-2: 0px 8px 13px -3px rgba(0, 0, 0, 0.2);
   }
 
   body {
     background-color: var(--background);
     color: var(--foreground);
     font-family: Arial, Helvetica, sans-serif;
+  }
+
+  /* Admin specific styles */
+  .text-dark {
+    color: #111928;
+  }
+
+  .dark .text-dark {
+    color: #f1f5f9;
+  }
+
+  .text-dark-4 {
+    color: #4B5563;
+  }
+
+  .dark .text-dark-6 {
+    color: #9CA3AF;
+  }
+
+  .bg-gray-2 {
+    background-color: #F3F4F6;
+  }
+
+  .dark .bg-gray-2 {
+    background-color: #1F2A37;
+  }
+
+  .bg-gray-dark {
+    background-color: #122031;
+  }
+
+  .bg-dark-2 {
+    background-color: #1F2A37;
+  }
+
+  .bg-dark-3 {
+    background-color: #374151;
+  }
+
+  .border-stroke {
+    border-color: #E6EBF1;
+  }
+
+  .dark .border-stroke-dark {
+    border-color: #27303E;
+  }
+
+  .border-dark-3 {
+    border-color: #374151;
+  }
+
+  .border-dark-4 {
+    border-color: #4B5563;
+  }
+
+  .text-primary {
+    color: #5750F1;
+  }
+
+  .border-primary {
+    border-color: #5750F1;
+  }
+
+  .focus-visible\\:border-primary:focus-visible {
+    border-color: #5750F1;
+  }
+
+  .shadow-1 {
+    box-shadow: 0px 1px 2px 0px rgba(84, 87, 118, 0.12);
+  }
+
+  .text-heading-5 {
+    font-size: 28px;
+    line-height: 40px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #374151;
   }
 }
 

@@ -17,7 +17,13 @@ function buildPoolConfig(): PoolConfig {
   };
 }
 
-export const pool = new Pool(buildPoolConfig());
+const poolConfig = buildPoolConfig();
+// Увеличиваем connection pool для лучшей производительности
+poolConfig.max = 10; // Было 1, теперь 10
+poolConfig.min = 2;  // Держим 2 соединения всегда
+poolConfig.idleTimeoutMillis = 30000; // 30 секунд вместо 10
+
+export const pool = new Pool(poolConfig);
 let connectionCount = 0;
 pool.on('error', (err) => console.error('Unexpected error on idle client', err));
 pool.on('connect', () => { connectionCount++; if (process.env.NODE_ENV === 'development') console.log(`DB connection established (total: ${connectionCount})`); });

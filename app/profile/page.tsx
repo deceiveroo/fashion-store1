@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import GamificationProfileWidget from '@/components/gamification/GamificationProfileWidget';
 
 type Section = 'personal' | 'security' | 'payments' | 'notifications' | 'orders' | 'wishlist' | 'privacy';
 
@@ -468,6 +469,16 @@ export default function ProfilePage() {
             Мой Профиль
           </h1>
           <p className="text-gray-600 dark:text-gray-400">Управляйте вашими данными и настройками</p>
+        </motion.div>
+
+        {/* Gamification Widget */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-6"
+        >
+          <GamificationProfileWidget />
         </motion.div>
 
         {/* Profile Card */}

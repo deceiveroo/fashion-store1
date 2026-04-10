@@ -1,78 +1,70 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { supportChatMessages, supportChatSessions } from '@/lib/schema';
-import { desc, eq } from 'drizzle-orm';
-import { isAdmin } from '@/lib/server-auth';
+import { supportChatSessions, supportChatMessages } from '@/lib/schema';
+import { eq, desc } from 'drizzle-orm';
+import { auth } from '@/lib/auth';
 
+// Server-Sent Events для real-time обновлений чатов
 export async function GET(request: NextRequest) {
   try {
-    const admin = await isAdmin();
-
-    if (!admin) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await auth();
+    if (!session?.user || !['admin', 'manager', 'support'].includes(session.user.role)) {
+      return new Response('Unauthorized', { status: 401 });
     }
 
-    const url = new URL(request.url);
-    const sessionId = url.searchParams.get('sessionId');
-
-    if (!sessionId) {
-      return Response.json({ error: 'Session ID is required' }, { status: 400 });
-    }
-
-    // Check if session belongs to admin or is public
-    const session = await db
-      .select()
-      .from(supportChatSessions)
-      .where(eq(supportChatSessions.sessionId, sessionId))
-      .limit(1);
-
-    if (session.length === 0) {
-      return Response.json({ error: 'Session not found' }, { status: 404 });
-    }
-
-    // Start SSE
     const encoder = new TextEncoder();
+    
     const stream = new ReadableStream({
       async start(controller) {
-        // Initial data
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: 'init', messages: [] })}\n\n`)
-        );
+        let intervalId: NodeJS.Timeout;
 
-        // Watch for new messages
-        const interval = setInterval(async () => {
+        const sendUpdate = async () => {
           try {
-            const newMessages = await db
+            // Получаем активные сессии
+            const sessions = await db
               .select()
-              .from(supportChatMessages)
-              .where(eq(supportChatMessages.sessionId, sessionId))
-              .orderBy(desc(supportChatMessages.createdAt))
-              .limit(10); // Last 10 messages
+              .from(supportChatSessions)
+              .orderBy(desc(supportChatSessions.lastMessageAt))
+              .limit(50);
 
-            if (newMessages.length > 0) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ messages: newMessages })}\n\n`)
-              );
-            }
-          } catch (err) {
-            console.error('Stream error:', err);
-            clearInterval(interval);
+            const data = `data: ${JSON.stringify({ sessions, timestamp: Date.now() })}\n\n`;
+            controller.enqueue(encoder.encode(data));
+          } catch (error) {
+            console.error('SSE update error:', error);
+            // Отправляем ошибку клиенту
+            const errorData = `data: ${JSON.stringify({ error: 'Failed to fetch updates' })}\n\n`;
+            controller.enqueue(encoder.encode(errorData));
           }
-        }, 2000); // Poll every 2 seconds
+        };
 
-        // Cleanup
+        // Отправляем первое обновление сразу
+        await sendUpdate();
+
+        // Затем каждые 5 секунд
+        intervalId = setInterval(sendUpdate, 5000);
+
+        // Очистка при закрытии соединения
         request.signal.addEventListener('abort', () => {
-          clearInterval(interval);
+          clearInterval(intervalId);
           controller.close();
         });
       },
     });
 
     return new Response(stream, {
-      headers: { 'Content-Type': 'text/event-stream' },
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no', // Отключаем буферизацию в nginx
+      },
     });
-  } catch (error) {
-    console.error('[ADMIN] Error in support chat stream:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[SSE] Error:', error);
+    return new Response('Internal Server Error', { status: 500 });
   }
 }
+
+// Отключаем статическую оптимизацию для SSE
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
