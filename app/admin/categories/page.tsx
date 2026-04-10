@@ -1,217 +1,146 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Plus, Edit, Trash2, Tags, FolderTree } from 'lucide-react';
+import { Plus, Edit, Trash2, Tag, X, Save, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import AdminLayout from '@/components/AdminLayout';
+import AdminShell from '@/components/admin/AdminShell';
 
 interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parentId: string | null;
-  materializedPath: string | null;
-  position: number;
-  isFeatured: boolean;
-  locale: string;
-  createdAt: string;
-  updatedAt: string;
+  id: string; name: string; slug: string; parentId: string | null;
+  isFeatured: boolean; createdAt: string;
 }
 
+const toSlug = (s: string) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
 export default function CategoriesPage() {
-  const router = useRouter();
-  
   const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    parentId: '',
-    isFeatured: false,
-  });
+  const [editing, setEditing] = useState<Category | null>(null);
+  const [form, setForm] = useState({ name: '', slug: '', parentId: '', isFeatured: false });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  const loadCategories = async () => {
-    setIsLoading(true);
+  const load = async () => {
+    setLoading(true);
     try {
       const res = await fetch('/api/categories');
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(Array.isArray(data) ? data : []);
-      } else {
-        toast.error('Не удалось загрузить категории');
-      }
-    } catch (error) {
-      console.error('Load error:', error);
-      toast.error('Ошибка загрузки категорий');
-    } finally {
-      setIsLoading(false);
-    }
+      if (res.ok) setCategories(await res.json());
+      else toast.error('Ошибка загрузки');
+    } catch { toast.error('Ошибка'); }
+    finally { setLoading(false); }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => { load(); }, []);
+
+  const openCreate = () => { setEditing(null); setForm({ name: '', slug: '', parentId: '', isFeatured: false }); setShowModal(true); };
+  const openEdit = (c: Category) => { setEditing(c); setForm({ name: c.name, slug: c.slug, parentId: c.parentId || '', isFeatured: c.isFeatured }); setShowModal(true); };
+
+  const handleNameChange = (name: string) => {
+    setForm(f => ({ ...f, name, slug: editing ? f.slug : toSlug(name) }));
+  };
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.name || !formData.slug) {
-      toast.error('Заполните все обязательные поля');
-      return;
-    }
-
+    if (!form.name || !form.slug) { toast.error('Заполните название и slug'); return; }
+    setSaving(true);
     try {
-      const method = editingCategory ? 'PUT' : 'POST';
-      const url = editingCategory 
-        ? `/api/categories/${editingCategory.id}`
-        : '/api/categories';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          slug: formData.slug,
-          parentId: formData.parentId || null,
-          isFeatured: formData.isFeatured,
-        }),
+      const method = editing ? 'PUT' : 'POST';
+      const url = editing ? `/api/categories/${editing.id}` : '/api/categories';
+      const res = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: form.name, slug: form.slug, parentId: form.parentId || null, isFeatured: form.isFeatured }),
       });
-
-      if (response.ok) {
-        toast.success(editingCategory ? 'Категория обновлена' : 'Категория создана');
-        setShowModal(false);
-        setEditingCategory(null);
-        setFormData({ name: '', slug: '', parentId: '', isFeatured: false });
-        loadCategories();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Ошибка при сохранении');
-      }
-    } catch (error) {
-      toast.error('Ошибка соединения');
-    }
+      if (res.ok) { toast.success(editing ? 'Обновлено' : 'Создано'); setShowModal(false); load(); }
+      else { const d = await res.json(); toast.error(d.error || 'Ошибка'); }
+    } catch { toast.error('Ошибка'); }
+    finally { setSaving(false); }
   };
 
-  const handleEdit = (category: Category) => {
-    setEditingCategory(category);
-    setFormData({
-      name: category.name,
-      slug: category.slug,
-      parentId: category.parentId || '',
-      isFeatured: category.isFeatured,
-    });
-    setShowModal(true);
-  };
-
-  const handleDelete = async (categoryId: string, categoryName: string) => {
-    if (!confirm(`Удалить категорию "${categoryName}"?`)) return;
-    
+  const deleteCategory = async (id: string, name: string) => {
+    if (!confirm(`Удалить "${name}"?`)) return;
     try {
-      const response = await fetch(`/api/categories/${categoryId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        toast.success('Категория удалена');
-        loadCategories();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Ошибка при удалении');
-      }
-    } catch (error) {
-      toast.error('Ошибка соединения');
-    }
+      const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      if (res.ok) { toast.success('Удалено'); load(); }
+      else { const d = await res.json(); toast.error(d.error || 'Ошибка'); }
+    } catch { toast.error('Ошибка'); }
   };
 
-  const getParentCategoryName = (parentId: string | null) => {
-    if (!parentId) return 'Нет';
-    const parent = categories.find(c => c.id === parentId);
-    return parent?.name || 'Нет';
-  };
+  const parentName = (id: string | null) => id ? (categories.find(c => c.id === id)?.name || '—') : '—';
 
   return (
-    <AdminLayout currentPage="categories">
-      <div className="space-y-6">
+    <AdminShell>
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Управление категориями</h1>
-            <p className="text-gray-600 mt-1">Всего категорий: {categories.length}</p>
+            <h1 className="text-xl font-bold text-white">Категории</h1>
+            <p className="text-sm text-white/40">{categories.length} категорий</p>
           </div>
-          <button
-            onClick={() => {
-              setEditingCategory(null);
-              setFormData({ name: '', slug: '', parentId: '', isFeatured: false });
-              setShowModal(true);
-            }}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 hover:shadow-lg transition-shadow"
-          >
-            <Plus className="w-5 h-5" />
-            Добавить категорию
-          </button>
+          <div className="flex gap-2">
+            <button onClick={load} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button onClick={openCreate}
+              className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-colors">
+              <Plus className="h-4 w-4" />
+              Добавить
+            </button>
+          </div>
         </div>
 
-        {/* Categories List */}
-        {isLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          </div>
-        ) : categories.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-            <Tags className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-600">Категории не найдены</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Table */}
+        <div className="rounded-2xl border border-white/5 bg-white/[0.03] overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 text-white/20">
+              <Tag className="h-10 w-10 mb-2 opacity-40" />
+              <p className="text-sm">Категорий нет</p>
+              <button onClick={openCreate} className="mt-3 rounded-xl bg-violet-600 px-4 py-2 text-xs font-medium text-white hover:bg-violet-500 transition-colors">
+                Создать первую
+              </button>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Название</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Slug</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Родительская</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Статус</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Действия</th>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    {['Название','Slug','Родительская','Статус',''].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider last:text-right">{h}</th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {categories.map((category) => (
-                    <tr key={category.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-6">
-                        <div className="font-medium text-gray-900">{category.name}</div>
-                        <div className="text-sm text-gray-500">{category.id}</div>
+                <tbody>
+                  {categories.map(c => (
+                    <tr key={c.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10">
+                            <Tag className="h-3.5 w-3.5 text-violet-400" />
+                          </div>
+                          <span className="text-xs font-medium text-white">{c.name}</span>
+                        </div>
                       </td>
-                      <td className="py-4 px-6">
-                        <div className="text-sm text-gray-900">{category.slug}</div>
+                      <td className="px-4 py-3 text-xs text-white/40 font-mono">{c.slug}</td>
+                      <td className="px-4 py-3 text-xs text-white/40">{parentName(c.parentId)}</td>
+                      <td className="px-4 py-3">
+                        {c.isFeatured && (
+                          <span className="inline-flex items-center rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                            ★ Рекомендуемая
+                          </span>
+                        )}
                       </td>
-                      <td className="py-4 px-6">
-                        <div className="text-sm text-gray-900">{getParentCategoryName(category.parentId)}</div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          category.isFeatured 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {category.isFeatured ? 'Рекомендуемая' : 'Обычная'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(category)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"
-                          >
-                            <Edit className="w-4 h-4" />
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => openEdit(c)}
+                            className="rounded-lg p-1.5 text-white/30 hover:text-violet-400 hover:bg-violet-500/10 transition-all">
+                            <Edit className="h-3.5 w-3.5" />
                           </button>
-                          <button
-                            onClick={() => handleDelete(category.id, category.name)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                          >
-                            <Trash2 className="w-4 h-4" />
+                          <button onClick={() => deleteCategory(c.id, c.name)}
+                            className="rounded-lg p-1.5 text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>
@@ -220,100 +149,61 @@ export default function CategoriesPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
-
-        {/* Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  {editingCategory ? 'Редактировать категорию' : 'Создать категорию'}
-                </h3>
-                
-                <form onSubmit={handleSubmit}>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Название *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Название категории"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Slug *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.slug}
-                        onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="URL-идентификатор"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Родительская категория
-                      </label>
-                      <select
-                        value={formData.parentId}
-                        onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="">Без родительской</option>
-                        {categories
-                    .filter(c => !editingCategory || c.id !== editingCategory.id)
-                    .map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.isFeatured}
-                          onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                          className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                        />
-                        <span className="text-sm text-gray-700">Рекомендуемая категория</span>
-                      </label>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setShowModal(false)}
-                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        Отмена
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:shadow-lg transition-shadow"
-                      >
-                        {editingCategory ? 'Сохранить' : 'Создать'}
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </AdminLayout>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#0f0f1a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-white/5">
+              <h2 className="text-sm font-bold text-white">{editing ? 'Редактировать' : 'Создать'} категорию</h2>
+              <button onClick={() => setShowModal(false)} className="text-white/30 hover:text-white transition-colors"><X className="h-5 w-5" /></button>
+            </div>
+            <form onSubmit={submit} className="p-5 space-y-4">
+              <div>
+                <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Название *</label>
+                <input type="text" value={form.name} onChange={e => handleNameChange(e.target.value)} required
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Slug *</label>
+                <input type="text" value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} required
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white font-mono placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Родительская</label>
+                <select value={form.parentId} onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50">
+                  <option value="" className="bg-[#0f0f1a]">Без родительской</option>
+                  {categories.filter(c => !editing || c.id !== editing.id).map(c => (
+                    <option key={c.id} value={c.id} className="bg-[#0f0f1a]">{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div className={`relative h-5 w-9 rounded-full transition-colors ${form.isFeatured ? 'bg-violet-600' : 'bg-white/10'}`}
+                  onClick={() => setForm(f => ({ ...f, isFeatured: !f.isFeatured }))}>
+                  <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${form.isFeatured ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </div>
+                <span className="text-sm text-white/60">Рекомендуемая категория</span>
+              </label>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowModal(false)}
+                  className="flex-1 rounded-xl border border-white/10 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all">
+                  Отмена
+                </button>
+                <button type="submit" disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50 transition-colors">
+                  <Save className="h-4 w-4" />
+                  {saving ? 'Сохранение...' : (editing ? 'Сохранить' : 'Создать')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </AdminShell>
   );
 }

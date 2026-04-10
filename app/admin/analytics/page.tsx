@@ -1,270 +1,166 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
-  DollarSign, 
-  ShoppingCart, 
-  Users,
-  Calendar,
-  Download,
-  Filter
-} from 'lucide-react';
+import { DollarSign, ShoppingCart, TrendingUp, Users, Download, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import AdminLayout from '@/components/AdminLayout';
+import AdminShell from '@/components/admin/AdminShell';
 import { RevenueChart } from '@/components/admin/charts/RevenueChart';
-import { CategoryBarChart } from '@/components/admin/charts/CategoryBarChart';
 import { OrdersDonutChart } from '@/components/admin/charts/OrdersDonutChart';
-import { RadialProgressChart } from '@/components/admin/charts/RadialProgressChart';
+import { CategoryBarChart } from '@/components/admin/charts/CategoryBarChart';
 
-interface AnalyticsData {
-  revenueByMonth: Array<{ month: string; revenue: number; orders: number }>;
+interface Analytics {
+  revenueByMonth: { month: string; revenue: number; orders: number }[];
   ordersByStatus: Record<string, number>;
-  topProducts: Array<{
-    id: string;
-    name: string;
-    sales: number;
-    revenue: number;
-  }>;
+  topProducts: { id: string; name: string; sales: number; revenue: number }[];
+  customerGrowth: { totalCustomers: number; newCustomers: number; growthRate: number; chartData: { month: string; customers: number }[] };
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Ожидает', processing: 'Обработка', shipped: 'Отправлен',
+  delivered: 'Доставлен', cancelled: 'Отменён', returned: 'Возврат',
+};
+const STATUS_COLORS: Record<string, string> = {
+  pending: '#f59e0b', processing: '#3b82f6', shipped: '#8b5cf6',
+  delivered: '#10b981', cancelled: '#ef4444', returned: '#6b7280',
+};
+
 export default function AnalyticsPage() {
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [period]);
-
-  const loadAnalytics = async () => {
+  const load = async () => {
     setLoading(true);
     try {
-      // Single request for all analytics data
-      const data = await fetch('/api/admin/analytics?type=dashboard', { credentials: 'include' })
-        .then(r => r.ok ? r.json() : null);
-
-      if (data) {
-        setAnalytics({
-          revenueByMonth: data.revenueByMonth || [],
-          ordersByStatus: data.ordersByStatus || {},
-          topProducts: data.topProducts || [],
-        });
-      }
-    } catch (error) {
-      console.error('Load analytics error:', error);
-      toast.error('Ошибка загрузки аналитики');
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch('/api/admin/analytics?type=dashboard', { credentials: 'include' });
+      if (res.ok) setAnalytics(await res.json());
+      else toast.error('Ошибка загрузки аналитики');
+    } catch { toast.error('Ошибка'); }
+    finally { setLoading(false); }
   };
 
-  const statusColors: Record<string, string> = {
-    pending: '#f59e0b',
-    processing: '#3b82f6',
-    shipped: '#8b5cf6',
-    delivered: '#10b981',
-    cancelled: '#ef4444',
-    returned: '#6b7280',
-  };
+  useEffect(() => { load(); }, []);
 
-  const statusLabels: Record<string, string> = {
-    pending: 'Ожидание',
-    processing: 'В обработке',
-    shipped: 'Отправлено',
-    delivered: 'Доставлено',
-    cancelled: 'Отменено',
-    returned: 'Возврат',
-  };
+  const totalRevenue = analytics?.revenueByMonth.reduce((s, m) => s + m.revenue, 0) || 0;
+  const totalOrders = analytics?.revenueByMonth.reduce((s, m) => s + m.orders, 0) || 0;
+  const avgOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  const chartData = analytics ? Object.entries(analytics.ordersByStatus).map(([status, count]) => ({
-    name: statusLabels[status] || status,
-    value: count,
-    color: statusColors[status] || '#6b7280',
-  })) : [];
+  const donutData = analytics
+    ? Object.entries(analytics.ordersByStatus).map(([s, c]) => ({
+        name: STATUS_LABELS[s] || s, value: c as number, color: STATUS_COLORS[s] || '#6b7280',
+      }))
+    : [];
 
-  const categoryData = analytics?.topProducts.map(p => ({
-    category: p.name.slice(0, 15) + '...',
-    sales: p.sales,
-  })) || [];
+  const barData = analytics?.topProducts.map(p => ({ category: p.name.slice(0, 12), sales: p.sales })) || [];
 
-  const totalRevenue = analytics?.revenueByMonth.reduce((sum, m) => sum + m.revenue, 0) || 0;
-  const totalOrders = analytics?.revenueByMonth.reduce((sum, m) => sum + m.orders, 0) || 0;
-  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-  if (loading) {
-    return (
-      <AdminLayout currentPage="analytics">
-        <div className="flex min-h-[600px] items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto"></div>
-            <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">Загрузка аналитики...</p>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
+  const fmt = (n: number) => `${Math.round(n).toLocaleString('ru-RU')} ₽`;
 
   return (
-    <AdminLayout currentPage="analytics">
-      <div className="space-y-6">
+    <AdminShell>
+      <div className="space-y-5">
         {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-700 via-purple-700 to-pink-700 bg-clip-text text-transparent dark:from-violet-400 dark:via-purple-400 dark:to-pink-400">
-              Аналитика
-            </h1>
-            <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-              Подробная статистика и отчеты
-            </p>
+            <h1 className="text-xl font-bold text-white">Аналитика</h1>
+            <p className="text-sm text-white/40">Статистика и отчёты</p>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 rounded-xl p-1 shadow-lg border border-zinc-200 dark:border-zinc-700">
-              {(['week', 'month', 'quarter', 'year'] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    period === p
-                      ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-md'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700'
-                  }`}
-                >
-                  {p === 'week' ? 'Неделя' : p === 'month' ? 'Месяц' : p === 'quarter' ? 'Квартал' : 'Год'}
-                </button>
-              ))}
-            </div>
-            
-            <button className="flex items-center gap-2 rounded-xl bg-white dark:bg-zinc-800 px-5 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 shadow-lg ring-1 ring-zinc-200 dark:ring-zinc-700 transition-all hover:shadow-xl">
-              <Download className="h-4 w-4" />
-              Экспорт
+          <div className="flex gap-2">
+            <button onClick={load} disabled={loading}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all disabled:opacity-50">
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
-                <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+        {/* KPIs */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            { title: 'Общая выручка', value: loading ? '—' : fmt(totalRevenue), icon: DollarSign, color: 'text-emerald-400 bg-emerald-500/10' },
+            { title: 'Всего заказов', value: loading ? '—' : totalOrders.toLocaleString('ru-RU'), icon: ShoppingCart, color: 'text-blue-400 bg-blue-500/10' },
+            { title: 'Средний чек', value: loading ? '—' : fmt(avgOrder), icon: TrendingUp, color: 'text-violet-400 bg-violet-500/10' },
+          ].map(({ title, value, icon: Icon, color }) => (
+            <div key={title} className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
               </div>
+              <p className="text-xs text-white/30 uppercase tracking-wider">{title}</p>
+              <p className="mt-1 text-2xl font-bold text-white">{value}</p>
             </div>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Общая выручка</p>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-              {Math.round(totalRevenue).toLocaleString('ru-RU')} ₽
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Всего заказов</p>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-              {totalOrders.toLocaleString('ru-RU')}
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
-                <TrendingUp className="h-6 w-6 text-violet-600 dark:text-violet-400" />
-              </div>
-            </div>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Средний чек</p>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-              {Math.round(avgOrderValue).toLocaleString('ru-RU')} ₽
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
-                <Users className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-              </div>
-            </div>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Конверсия</p>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-              {conversionRate}%
-            </p>
-          </div>
+          ))}
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Revenue Chart */}
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Динамика выручки</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">По месяцам</p>
-              </div>
+        {/* Revenue chart */}
+        <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+          <h3 className="mb-4 text-sm font-semibold text-white">Динамика выручки</h3>
+          {loading ? (
+            <div className="flex h-48 items-center justify-center">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
             </div>
-            {analytics?.revenueByMonth && (
-              <RevenueChart data={analytics.revenueByMonth} />
+          ) : analytics?.revenueByMonth ? (
+            <RevenueChart data={analytics.revenueByMonth} />
+          ) : (
+            <div className="flex h-48 items-center justify-center text-white/20 text-sm">Нет данных</div>
+          )}
+        </div>
+
+        {/* Charts row */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">Статусы заказов</h3>
+            {loading ? (
+              <div className="flex h-48 items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              </div>
+            ) : donutData.length > 0 ? (
+              <OrdersDonutChart data={donutData} />
+            ) : (
+              <div className="flex h-48 items-center justify-center text-white/20 text-sm">Нет данных</div>
             )}
           </div>
 
-          {/* Orders by Status */}
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Статусы заказов</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Распределение</p>
+          <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">Топ товары</h3>
+            {loading ? (
+              <div className="flex h-48 items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
               </div>
-            </div>
-            <OrdersDonutChart data={chartData} />
-          </div>
-
-          {/* Top Products */}
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Топ товары</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">По продажам</p>
-              </div>
-            </div>
-            <CategoryBarChart data={categoryData} />
+            ) : barData.length > 0 ? (
+              <CategoryBarChart data={barData} />
+            ) : (
+              <div className="flex h-48 items-center justify-center text-white/20 text-sm">Нет данных</div>
+            )}
           </div>
         </div>
 
-        {/* Performance Metrics */}
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg">
-            <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-4">Выполнение плана</h3>
-            <div className="flex items-center justify-center">
-              <RadialProgressChart value={85} color="#8b5cf6" label="План" />
+        {/* Customer growth */}
+        {analytics?.customerGrowth && (
+          <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-white">Рост клиентской базы</h3>
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-white/40">Всего: <span className="text-white font-semibold">{analytics.customerGrowth.totalCustomers}</span></span>
+                <span className="text-white/40">Новых: <span className="text-emerald-400 font-semibold">+{analytics.customerGrowth.newCustomers}</span></span>
+                <span className={`font-semibold ${analytics.customerGrowth.growthRate >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {analytics.customerGrowth.growthRate >= 0 ? '+' : ''}{analytics.customerGrowth.growthRate}%
+                </span>
+              </div>
             </div>
-            <p className="text-center text-sm text-zinc-500 dark:text-zinc-400 mt-4">
-              85% от месячного плана
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg">
-            <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-4">Удержание клиентов</h3>
-            <div className="flex items-center justify-center">
-              <RadialProgressChart value={72} color="#10b981" label="Retention" />
+            <div className="flex items-end gap-1 h-24">
+              {analytics.customerGrowth.chartData.map((d, i) => {
+                const max = Math.max(...analytics.customerGrowth.chartData.map(x => x.customers));
+                const h = max > 0 ? (d.customers / max) * 100 : 0;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="w-full rounded-t-sm bg-violet-500/30 hover:bg-violet-500/50 transition-colors" style={{ height: `${h}%` }} title={`${d.customers}`} />
+                    <span className="text-[9px] text-white/20">{d.month}</span>
+                  </div>
+                );
+              })}
             </div>
-            <p className="text-center text-sm text-zinc-500 dark:text-zinc-400 mt-4">
-              72% повторных покупок
-            </p>
           </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-lg">
-            <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-4">Удовлетворенность</h3>
-            <div className="flex items-center justify-center">
-              <RadialProgressChart value={92} color="#3b82f6" label="CSAT" />
-            </div>
-            <p className="text-center text-sm text-zinc-500 dark:text-zinc-400 mt-4">
-              92% довольных клиентов
-            </p>
-          </div>
-        </div>
+        )}
       </div>
-    </AdminLayout>
+    </AdminShell>
   );
 }

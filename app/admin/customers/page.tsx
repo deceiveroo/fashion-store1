@@ -1,333 +1,178 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search, Eye, Package, Calendar, DollarSign, User, Trash2, Edit3, Camera, X, Save } from 'lucide-react';
+import { Search, User, Trash2, Edit3, Camera, X, Save, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import AdminLayout from '@/components/AdminLayout';
-import { motion } from 'framer-motion';
+import AdminShell from '@/components/admin/AdminShell';
 
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  role: string;
-  image?: string;
-  avatar?: string;
-  createdAt: string;
-  emailVerified?: string | null;
+interface Customer {
+  id: string; email: string; name?: string; firstName?: string; lastName?: string;
+  phone?: string; role: string; image?: string; avatar?: string;
+  status?: string; createdAt: string; emailVerified?: string | null;
 }
 
+const ROLE_STYLE: Record<string, string> = {
+  admin: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  manager: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  support: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  customer: 'bg-white/5 text-white/40 border-white/10',
+};
+
 export default function CustomersPage() {
-  const router = useRouter();
-  
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<Partial<User> & { password?: string }>({});
-  const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<(Customer & { password?: string }) | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  useEffect(() => {
-    filterUsers();
-  }, [users, searchQuery]);
-
-  const loadUsers = async () => {
-    setIsLoading(true);
+  const load = async () => {
+    setLoading(true);
     try {
       const res = await fetch('/api/admin/customers', { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(Array.isArray(data) ? data : []);
-      } else {
-        toast.error('Не удалось загрузить клиентов');
-      }
-    } catch (error) {
-      console.error('Load error:', error);
-      toast.error('Ошибка загрузки клиентов');
-    } finally {
-      setIsLoading(false);
-    }
+      if (!res.ok) { toast.error('Не удалось загрузить клиентов'); return; }
+      const data = await res.json();
+      // Handle both array and paginated response
+      setCustomers(Array.isArray(data) ? data : (data.customers || []));
+    } catch { toast.error('Ошибка загрузки'); }
+    finally { setLoading(false); }
   };
 
-  const filterUsers = () => {
-    let filtered = [...users];
+  useEffect(() => { load(); }, []);
 
-    if (searchQuery) {
-      filtered = filtered.filter(user => 
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (user.firstName && user.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (user.lastName && user.lastName.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    }
-
-    setFilteredUsers(filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Вы уверены, что хотите удалить этого клиента?')) return;
-    
+  const deleteCustomer = async (id: string) => {
+    if (!confirm('Удалить клиента?')) return;
     try {
-      const response = await fetch(`/api/admin/users?id=${userId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        toast.success('Клиент удален');
-        setUsers(users.filter(user => user.id !== userId));
-        if (selectedUser?.id === userId) {
-          setShowUserModal(false);
-          setShowEditModal(false);
-        }
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Ошибка при удалении клиента');
-      }
-    } catch (error) {
-      toast.error('Ошибка соединения');
-    }
+      const res = await fetch(`/api/admin/users?id=${id}`, { method: 'DELETE', credentials: 'include' });
+      if (res.ok) { setCustomers(c => c.filter(x => x.id !== id)); toast.success('Удалён'); if (editing?.id === id) setEditing(null); }
+      else { const d = await res.json(); toast.error(d.error || 'Ошибка'); }
+    } catch { toast.error('Ошибка'); }
   };
-
-  const viewUserDetails = (user: User) => {
-    setSelectedUser(user);
-    setShowUserModal(true);
-  };
-
-  const openEditUser = (user: User) => {
-    setEditingUser({ ...user });
-    setSelectedUser(user);
-    setShowEditModal(true);
-  };
-
-  const handleEditChange = (field: keyof User | 'password', value: string) => {
-    setEditingUser(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleAvatarClick = () => fileInputRef.current?.click();
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { 
-      toast.error('Пожалуйста, выберите изображение'); 
-      return; 
-    }
-    if (file.size > 5 * 1024 * 1024) { 
-      toast.error('Файл слишком большой (макс. 5MB)'); 
-      return; 
-    }
-    
-    setIsUploading(true);
+    if (!file.type.startsWith('image/')) { toast.error('Выберите изображение'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Файл > 5MB'); return; }
+    setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      // Pass old avatar URL so server can delete it
-      if (editingUser.avatar) fd.append('oldUrl', editingUser.avatar);
-      const res = await fetch('/api/upload', { 
-        method: 'POST', 
-        body: fd,
-        credentials: 'include',
-      });
-      
-      if (!res.ok) { 
-        const err = await res.json(); 
-        throw new Error(err.error || 'Ошибка загрузки'); 
-      }
-      
-      const data = await res.json();
-      setEditingUser(prev => ({ ...prev, avatar: data.url }));
+      const fd = new FormData(); fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const { url } = await res.json();
+      setEditing(prev => prev ? { ...prev, avatar: url, image: url } : prev);
       toast.success('Аватар загружен');
-    } catch (error: any) {
-      toast.error(error.message || 'Ошибка при загрузке аватара');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    } catch (err: any) { toast.error(err.message || 'Ошибка загрузки'); }
+    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
-  const saveUserChanges = async () => {
-    if (!editingUser.id) return;
-    
-    setIsSaving(true);
+  const save = async () => {
+    if (!editing?.id) return;
+    setSaving(true);
     try {
-      const response = await fetch('/api/admin/users', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: editingUser.id,
-          updates: {
-            firstName: editingUser.firstName,
-            lastName: editingUser.lastName,
-            phone: editingUser.phone,
-            role: editingUser.role,
-            image: editingUser.image,
-            avatar: editingUser.avatar,
-            ...(editingUser.password && { password: editingUser.password }),
-          }
-        })
+      const res = await fetch('/api/admin/users', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ userId: editing.id, updates: {
+          firstName: editing.firstName, lastName: editing.lastName, phone: editing.phone,
+          role: editing.role, image: editing.avatar || editing.image, avatar: editing.avatar || editing.image,
+          ...(editing.password && { password: editing.password }),
+        }}),
       });
-
-      if (response.ok) {
-        toast.success('Клиент обновлен');
-        loadUsers(); // Refresh the user list
-        setShowEditModal(false);
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Ошибка при обновлении клиента');
-      }
-    } catch (error) {
-      toast.error('Ошибка соединения');
-    } finally {
-      setIsSaving(false);
-    }
+      if (res.ok) { toast.success('Сохранено'); load(); setEditing(null); }
+      else { const d = await res.json(); toast.error(d.error || 'Ошибка'); }
+    } catch { toast.error('Ошибка'); }
+    finally { setSaving(false); }
   };
+
+  const filtered = customers.filter(c => {
+    const q = search.toLowerCase();
+    return !q || c.email.toLowerCase().includes(q) || (c.firstName||'').toLowerCase().includes(q) || (c.lastName||'').toLowerCase().includes(q);
+  });
+
+  const avatar = (c: Customer) => c.avatar || c.image;
+  const displayName = (c: Customer) => `${c.firstName||''} ${c.lastName||''}`.trim() || c.name || '—';
 
   return (
-    <AdminLayout currentPage="customers">
-      <div className="space-y-6">
+    <AdminShell>
+      <div className="space-y-5">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Управление клиентами</h1>
-          <p className="text-gray-600 mt-1">Всего клиентов: {users.length}</p>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Поиск клиентов..."
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={loadUsers}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
-              >
-                Обновить
-              </button>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white">Клиенты</h1>
+            <p className="text-sm text-white/40">{customers.length} клиентов</p>
           </div>
+          <button onClick={load} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
-        {/* Users List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
+          <input type="text" placeholder="Поиск по имени или email..." value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-white placeholder-white/20 focus:border-violet-500/50 focus:outline-none" />
+        </div>
+
+        {/* Table */}
+        <div className="rounded-2xl border border-white/5 bg-white/[0.03] overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
             </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="p-12 text-center">
-              <User className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">Нет клиентов</h3>
-              <p className="mt-1 text-gray-500">Не найдено клиентов по вашему запросу.</p>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 text-white/20">
+              <User className="h-10 w-10 mb-2 opacity-40" />
+              <p className="text-sm">Клиентов не найдено</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Клиент
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Роль
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Дата регистрации
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Действия
-                    </th>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    {['Клиент','Email','Роль','Дата',''].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider last:text-right">{h}</th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            {user.avatar || user.image ? (
-                              <img className="h-10 w-10 rounded-full" src={user.avatar || user.image} alt="" />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                                <User className="h-5 w-5 text-purple-600" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {user.firstName} {user.lastName}
+                <tbody>
+                  {filtered.map(c => (
+                    <tr key={c.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {avatar(c) ? (
+                            <img src={avatar(c)} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/10" />
+                          ) : (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/10 text-xs font-bold text-violet-400">
+                              {(c.firstName||c.email||'?')[0].toUpperCase()}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {user.name || '-'}
-                            </div>
-                          </div>
+                          )}
+                          <span className="text-xs font-medium text-white">{displayName(c)}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{user.email}</div>
-                        <div className="text-sm text-gray-500">
-                          {user.phone || '-'}
-                        </div>
+                      <td className="px-4 py-3">
+                        <p className="text-xs text-white/60">{c.email}</p>
+                        {c.phone && <p className="text-[10px] text-white/30">{c.phone}</p>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                          ${user.role === 'user' ? 'bg-gray-100 text-gray-800' : 
-                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                            user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                            user.role === 'support' ? 'bg-green-100 text-green-800' :
-                            user.role === 'moderator' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'}`}>
-                          {user.role}
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${ROLE_STYLE[c.role] || ROLE_STYLE.customer}`}>
+                          {c.role}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(user.createdAt).toLocaleDateString()}
+                      <td className="px-4 py-3 text-xs text-white/30 whitespace-nowrap">
+                        {new Date(c.createdAt).toLocaleDateString('ru-RU')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => openEditUser(user)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-3"
-                        >
-                          <Edit3 className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => setEditing({ ...c })}
+                            className="rounded-lg p-1.5 text-white/30 hover:text-violet-400 hover:bg-violet-500/10 transition-all">
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => deleteCustomer(c.id)}
+                            className="rounded-lg p-1.5 text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -336,165 +181,78 @@ export default function CustomersPage() {
             </div>
           )}
         </div>
+      </div>
 
-        {/* User Edit Modal */}
-        {showEditModal && editingUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Редактировать клиента</h3>
-                  <button 
-                    onClick={() => setShowEditModal(false)}
-                    className="text-gray-400 hover:text-gray-500"
-                  >
-                    <X className="h-6 w-6" />
+      {/* Edit Modal */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#0f0f1a] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-white/5">
+              <h2 className="text-sm font-bold text-white">Редактировать клиента</h2>
+              <button onClick={() => setEditing(null)} className="text-white/30 hover:text-white transition-colors"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              {/* Avatar */}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  {avatar(editing) ? (
+                    <img src={avatar(editing)} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-violet-500/30" />
+                  ) : (
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-500/10 text-lg font-bold text-violet-400">
+                      {(editing.firstName||editing.email||'?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                    className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white hover:bg-violet-500 transition-colors disabled:opacity-50">
+                    <Camera className="h-3 w-3" />
                   </button>
                 </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <div className="relative flex-shrink-0 h-16 w-16">
-                      {editingUser.avatar || editingUser.image ? (
-                        <img className="h-16 w-16 rounded-full" src={editingUser.avatar || editingUser.image} alt="" />
-                      ) : (
-                        <div className="h-16 w-16 rounded-full bg-purple-100 flex items-center justify-center">
-                          <User className="h-8 w-8 text-purple-600" />
-                        </div>
-                      )}
-                      <button
-                        onClick={handleAvatarClick}
-                        className="absolute bottom-0 right-0 bg-white rounded-full p-1.5 border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
-                      >
-                        <Camera size={14} className="text-gray-600" />
-                      </button>
-                    </div>
-                    <div className="ml-4">
-                      <h4 className="text-lg font-medium">
-                        {editingUser.firstName} {editingUser.lastName}
-                      </h4>
-                      <p className="text-gray-500">{editingUser.email}</p>
-                    </div>
+                <div>
+                  <p className="text-sm font-medium text-white">{displayName(editing)}</p>
+                  <p className="text-xs text-white/30">{editing.email}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {[['Имя','firstName'],['Фамилия','lastName'],['Телефон','phone']].map(([label, field]) => (
+                  <div key={field} className={field === 'phone' ? 'col-span-2' : ''}>
+                    <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">{label}</label>
+                    <input type="text" value={(editing as any)[field] || ''}
+                      onChange={e => setEditing(prev => prev ? { ...prev, [field]: e.target.value } : prev)}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Имя</label>
-                      <input
-                        type="text"
-                        value={editingUser.firstName || ''}
-                        onChange={(e) => handleEditChange('firstName', e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Фамилия</label>
-                      <input
-                        type="text"
-                        value={editingUser.lastName || ''}
-                        onChange={(e) => handleEditChange('lastName', e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <input
-                        type="email"
-                        value={editingUser.email || ''}
-                        disabled
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
-                      <input
-                        type="text"
-                        value={editingUser.phone || ''}
-                        onChange={(e) => handleEditChange('phone', e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Роль</label>
-                      <select
-                        value={editingUser.role || 'user'}
-                        onChange={(e) => handleEditChange('role', e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="user">User (Клиент)</option>
-                        <option value="customer">Customer</option>
-                        <option value="admin">Admin</option>
-                        <option value="manager">Manager</option>
-                        <option value="support">Support</option>
-                        <option value="moderator">Moderator</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Аватар URL</label>
-                      <input
-                        type="text"
-                        value={editingUser.avatar || ''}
-                        onChange={(e) => handleEditChange('avatar', e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Новый пароль (необязательно)</label>
-                      <input
-                        type="password"
-                        value={editingUser.password || ''}
-                        onChange={(e) => handleEditChange('password', e.target.value)}
-                        placeholder="Оставьте пустым, чтобы не менять"
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-3 pt-4">
-                    <button
-                      onClick={saveUserChanges}
-                      disabled={isSaving}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center disabled:opacity-50"
-                    >
-                      {isSaving ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Сохранение...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-1" /> Сохранить
-                        </>
-                      )}
-                    </button>
-                    
-                    <button
-                      onClick={() => handleDeleteUser(editingUser.id!)}
-                      className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-all flex items-center justify-center"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" /> Удалить
-                    </button>
-                  </div>
+                ))}
+                <div>
+                  <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Роль</label>
+                  <select value={editing.role} onChange={e => setEditing(prev => prev ? { ...prev, role: e.target.value } : prev)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50">
+                    {['customer','admin','manager','support'].map(r => <option key={r} value={r} className="bg-[#0f0f1a]">{r}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Новый пароль</label>
+                  <input type="password" placeholder="Оставьте пустым" value={editing.password || ''}
+                    onChange={e => setEditing(prev => prev ? { ...prev, password: e.target.value } : prev)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
                 </div>
               </div>
             </div>
+            <div className="flex gap-3 p-5 border-t border-white/5">
+              <button onClick={save} disabled={saving}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50 transition-colors">
+                <Save className="h-4 w-4" />
+                {saving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button onClick={() => deleteCustomer(editing.id)}
+                className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-colors">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        )}
-        
-        <input 
-          ref={fileInputRef} 
-          type="file" 
-          accept="image/*" 
-          onChange={handleAvatarChange} 
-          className="hidden" 
-        />
-      </div>
-    </AdminLayout>
+        </div>
+      )}
+
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+    </AdminShell>
   );
 }
