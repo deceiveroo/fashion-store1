@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatSessions, supportChatMessages } from '@/lib/schema';
 import { asc, eq } from 'drizzle-orm';
-import { isAdmin } from '@/lib/server-auth';
+import { isStaff } from '@/lib/server-auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
   try {
-    const admin = await isAdmin();
-
+    const admin = await isStaff();
     if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -2,11 +2,11 @@ import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatSessions } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { isAdmin } from '@/lib/server-auth';
+import { isStaff } from '@/lib/server-auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const admin = await isAdmin();
+    const admin = await isStaff();
     if (!admin) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
