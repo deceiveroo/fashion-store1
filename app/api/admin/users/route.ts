@@ -53,8 +53,9 @@ export async function GET(request: NextRequest) {
 
     // Получаем параметры пагинации
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50'); // Ограничиваем до 50 пользователей
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const offset = (page - 1) * limit;
 
     // Получаем пользователей с профилями, только с ролями 'admin', 'manager', 'support'
     const usersWithProfiles = await queryWithRetry(() =>
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
         .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
         .where(inArray(users.role, ['admin', 'manager', 'support'])) // Только пользователи с ролями admin, manager, support
         .orderBy(users.createdAt)
-        .limit(Math.min(limit, 100)) // Максимум 100
+        .limit(limit)
         .offset(offset)
     );
 

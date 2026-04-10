@@ -40,17 +40,17 @@ export default function AnalyticsPage() {
   const loadAnalytics = async () => {
     setLoading(true);
     try {
-      const [revenue, orders, products] = await Promise.all([
-        fetch('/api/admin/analytics?type=revenue-by-month', { credentials: 'include' }).then(r => r.json()),
-        fetch('/api/admin/analytics?type=orders-by-status', { credentials: 'include' }).then(r => r.json()),
-        fetch('/api/admin/analytics?type=top-products', { credentials: 'include' }).then(r => r.json()),
-      ]);
+      // Single request for all analytics data
+      const data = await fetch('/api/admin/analytics?type=dashboard', { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null);
 
-      setAnalytics({
-        revenueByMonth: revenue,
-        ordersByStatus: orders,
-        topProducts: products,
-      });
+      if (data) {
+        setAnalytics({
+          revenueByMonth: data.revenueByMonth || [],
+          ordersByStatus: data.ordersByStatus || {},
+          topProducts: data.topProducts || [],
+        });
+      }
     } catch (error) {
       console.error('Load analytics error:', error);
       toast.error('Ошибка загрузки аналитики');
@@ -88,11 +88,9 @@ export default function AnalyticsPage() {
     sales: p.sales,
   })) || [];
 
-  // Calculate metrics
   const totalRevenue = analytics?.revenueByMonth.reduce((sum, m) => sum + m.revenue, 0) || 0;
   const totalOrders = analytics?.revenueByMonth.reduce((sum, m) => sum + m.orders, 0) || 0;
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-  const conversionRate = 68; // Mock data
 
   if (loading) {
     return (
@@ -152,9 +150,6 @@ export default function AnalyticsPage() {
               <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
                 <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <span className="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
-                +15.3%
-              </span>
             </div>
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Общая выручка</p>
             <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -167,9 +162,6 @@ export default function AnalyticsPage() {
               <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
                 <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-full">
-                +8.1%
-              </span>
             </div>
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Всего заказов</p>
             <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -182,9 +174,6 @@ export default function AnalyticsPage() {
               <div className="p-3 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
                 <TrendingUp className="h-6 w-6 text-violet-600 dark:text-violet-400" />
               </div>
-              <span className="text-xs font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-2 py-1 rounded-full">
-                +12.5%
-              </span>
             </div>
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Средний чек</p>
             <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -197,9 +186,6 @@ export default function AnalyticsPage() {
               <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
                 <Users className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full">
-                {conversionRate}%
-              </span>
             </div>
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Конверсия</p>
             <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">

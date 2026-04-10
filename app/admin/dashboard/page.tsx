@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/AdminLayout';
+import NewAdminLayout from '@/components/admin/NewAdminLayout';
 import { StatCard } from '@/components/admin/StatCard';
 import { OrderStatisticsWidget } from '@/components/admin/OrderStatisticsWidget';
 import { CustomerGrowthWidget } from '@/components/admin/CustomerGrowthWidget';
@@ -25,6 +26,9 @@ interface StatsData {
     totalProducts: number;
     totalOrders: number;
     totalRevenue: number;
+    newUsersThisMonth: number;
+    newOrdersThisMonth: number;
+    revenueThisMonth: number;
   };
 }
 
@@ -92,7 +96,27 @@ export default function AdminDashboardPage() {
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
     try {
-      // Загружаем последовательно, чтобы не исчерпать connection pool
+      // ✅ Загружаем все данные одним запросом
+      const dashboardData = await fetch('/api/admin/analytics?type=dashboard', { 
+        credentials: 'include',
+        cache: 'no-store'
+      })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null);
+
+      if (dashboardData) {
+        setAnalytics({
+          revenueByMonth: dashboardData.revenueByMonth || [],
+          ordersByStatus: dashboardData.ordersByStatus || {},
+          topProducts: dashboardData.topProducts || [],
+          customerGrowth: dashboardData.customerGrowth || { totalCustomers: 0, newCustomers: 0, growthRate: 0, chartData: [] },
+          transactions: dashboardData.transactions || [],
+        });
+        setAnalyticsLoading(false);
+        return;
+      }
+
+      // Fallback: загружаем последовательно если dashboard endpoint не работает
       const revenue = await fetch('/api/admin/analytics?type=revenue-by-month', { credentials: 'include' })
         .then(r => r.ok ? r.json() : [])
         .catch(() => []);
@@ -162,7 +186,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <AdminLayout currentPage="dashboard">
+    <NewAdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -191,28 +215,28 @@ export default function AdminDashboardPage() {
             title="Всего пользователей"
             value={stats?.overview.totalUsers.toLocaleString('ru-RU') || 0}
             icon={Users}
-            trend={{ value: '+12.5%', isPositive: true }}
+            trend={{ value: `+${stats?.overview.newUsersThisMonth || 0} за месяц`, isPositive: true }}
             color="blue"
           />
           <StatCard
             title="Товары в каталоге"
             value={stats?.overview.totalProducts.toLocaleString('ru-RU') || 0}
             icon={Package}
-            trend={{ value: '+5.2%', isPositive: true }}
+            trend={{ value: 'В наличии', isPositive: true }}
             color="violet"
           />
           <StatCard
             title="Всего заказов"
             value={stats?.overview.totalOrders.toLocaleString('ru-RU') || 0}
             icon={ShoppingCart}
-            trend={{ value: '+8.1%', isPositive: true }}
+            trend={{ value: `+${stats?.overview.newOrdersThisMonth || 0} за месяц`, isPositive: true }}
             color="green"
           />
           <StatCard
             title="Выручка"
             value={`${Math.round(stats?.overview.totalRevenue || 0).toLocaleString('ru-RU')} ₽`}
             icon={DollarSign}
-            trend={{ value: '+15.3%', isPositive: true }}
+            trend={{ value: `${Math.round(stats?.overview.revenueThisMonth || 0).toLocaleString('ru-RU')} ₽ за месяц`, isPositive: true }}
             color="orange"
           />
         </div>
@@ -278,6 +302,6 @@ export default function AdminDashboardPage() {
           </>
         )}
       </div>
-    </AdminLayout>
+    </NewAdminLayout>
   );
 }

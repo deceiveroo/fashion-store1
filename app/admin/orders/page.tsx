@@ -35,21 +35,33 @@ const STATUS = {
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const LIMIT = 50;
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => { loadOrders(page); }, [page]);
 
-  const loadOrders = async () => {
+  const loadOrders = async (p = 1) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/orders', { credentials: 'include' });
-      if (res.ok) setOrders(await res.json());
-      else toast.error('Не удалось загрузить заказы');
+      const res = await fetch(`/api/admin/orders?page=${p}&limit=${LIMIT}`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        // Support both old array format and new paginated format
+        if (Array.isArray(data)) {
+          setOrders(data);
+          setTotal(data.length);
+        } else {
+          setOrders(data.orders || []);
+          setTotal(data.total || 0);
+        }
+      } else toast.error('Не удалось загрузить заказы');
     } catch { toast.error('Ошибка загрузки'); }
     finally { setLoading(false); }
   };
@@ -154,7 +166,7 @@ export default function AdminOrdersPage() {
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Управление и отслеживание заказов</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={loadOrders} className="flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
+            <button onClick={() => loadOrders(page)} className="flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
               <RefreshCw className="h-4 w-4" />
               Обновить
             </button>
@@ -357,6 +369,28 @@ export default function AdminOrdersPage() {
             <div className="border-t border-zinc-100 dark:border-zinc-800 px-5 py-3 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
               <span>Показано {filtered.length} из {orders.length} заказов</span>
               <span>Итого: <strong className="text-zinc-900 dark:text-zinc-100">{filtered.reduce((s, o) => s + Number(o.total), 0).toLocaleString('ru-RU')} ₽</strong></span>
+            </div>
+          )}
+          {/* Pagination */}
+          {!loading && total > LIMIT && (
+            <div className="border-t border-zinc-100 dark:border-zinc-800 px-5 py-3 flex items-center justify-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1.5 rounded-lg text-sm border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                ← Назад
+              </button>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                Стр. {page} из {Math.ceil(total / LIMIT)}
+              </span>
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={page >= Math.ceil(total / LIMIT)}
+                className="px-3 py-1.5 rounded-lg text-sm border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                Вперёд →
+              </button>
             </div>
           )}
         </div>

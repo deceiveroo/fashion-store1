@@ -13,10 +13,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all chat sessions
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const offset = (page - 1) * limit;
+
     const sessions = await db
       .select()
       .from(supportChatSessions)
-      .orderBy(desc(supportChatSessions.lastMessageAt));
+      .orderBy(desc(supportChatSessions.lastMessageAt))
+      .limit(limit)
+      .offset(offset);
 
     return NextResponse.json({ sessions });
   } catch (error: any) {

@@ -1,304 +1,174 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { users, products, orders, orderItems } from '@/lib/schema';
-import { count, sql, sum, eq, gte, lte, desc, and } from 'drizzle-orm';
-import { getSession, isStaff } from '@/lib/server-auth';
-import { subMonths, format, startOfMonth, endOfMonth } from 'date-fns';
-
-// Простое кеширование в памяти (5 минут)
-const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 минут
-
-function getCached(key: string) {
-  const cached = cache.get(key);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
-  }
-  return null;
-}
-
-function setCache(key: string, data: any) {
-  cache.set(key, { data, timestamp: Date.now() });
-  // Очистка старых записей
-  if (cache.size > 50) {
-    const oldestKey = Array.from(cache.keys())[0];
-    cache.delete(oldestKey);
-  }
-}
-
-// Helper function with retry logic and shorter timeout
-async function queryWithRetry<T>(queryFn: () => Promise<T>, maxRetries = 2, timeoutMs = 8000): Promise<T> {
-  let lastError: any;
-  
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      // Добавляем таймаут для запроса
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout')), timeoutMs)
-      );
-      
-      return await Promise.race([queryFn(), timeoutPromise]);
-    } catch (error: any) {
-      lastError = error;
-      const isConnectionError = 
-        error.message?.includes('Connection terminated') ||
-        error.message?.includes('ECONNRESET') ||
-        error.message?.includes('timeout') ||
-        error.code === 'ECONNRESET';
-      
-      if (isConnectionError && i < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, 300 * (i + 1)));
-        continue;
-      }
-      throw error;
-    }
-  }
-  
-  throw lastError;
-}
+import { users, orders, orderItems } from '@/lib/schema';
+import { count, sql, gte, desc } from 'drizzle-orm';
+import { isStaff } from '@/lib/server-auth';
+import { subMonths, format, startOfMonth } from 'date-fns';
+import { getCached, setCache, TTL } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session || !(await isStaff())) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const staff = await isStaff();
+    if (!staff) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') || 'overview';
-
-    // Проверяем кеш
+    const type = searchParams.get('type') || 'dashboard';
     const cacheKey = `analytics:${type}`;
-    const cached = getCached(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached);
+
+    const cached = await getCached(cacheKey);
+    if (cached) return NextResponse.json(cached);
+
+    let data: any;
+
+    switch (type) {
+      case 'dashboard': {
+        const [revenue, ordersByStatus, topProducts, customerGrowth, transactions] = await Promise.all([
+          fetchRevenueByMonth(),
+          fetchOrdersByStatus(),
+          fetchTopProducts(),
+          fetchCustomerGrowth(),
+          fetchRecentTransactions(),
+        ]);
+        data = { revenueByMonth: revenue, ordersByStatus, topProducts, customerGrowth, transactions };
+        break;
+      }
+      case 'revenue-by-month':
+        data = await fetchRevenueByMonth();
+        break;
+      case 'orders-by-status':
+        data = await fetchOrdersByStatus();
+        break;
+      case 'top-products':
+        data = await fetchTopProducts();
+        break;
+      case 'customer-growth':
+        data = await fetchCustomerGrowth();
+        break;
+      case 'transactions':
+        data = await fetchRecentTransactions();
+        break;
+      default:
+        return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
     }
 
-    // Используем try-catch для каждого типа, чтобы вернуть пустые данные при ошибке
-    try {
-      let result;
-      switch (type) {
-        case 'revenue-by-month':
-          result = await getRevenueByMonth();
-          break;
-        case 'orders-by-status':
-          result = await getOrdersByStatus();
-          break;
-        case 'top-products':
-          result = await getTopProducts();
-          break;
-        case 'customer-growth':
-          result = await getCustomerGrowth();
-          break;
-        case 'transactions':
-          result = await getRecentTransactions();
-          break;
-        default:
-          return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
-      }
-      
-      // Сохраняем в кеш
-      const data = result instanceof NextResponse ? await result.json() : result;
-      setCache(cacheKey, data);
-      
-      return NextResponse.json(data);
-    } catch (error) {
-      console.error(`Analytics API error for type ${type}:`, error);
-      // Возвращаем пустые данные вместо ошибки
-      const emptyData = getEmptyData(type);
-      return NextResponse.json(emptyData);
-    }
+    await setCache(cacheKey, data, TTL.ANALYTICS);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Analytics API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch analytics' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
   }
 }
 
-function getEmptyData(type: string) {
-  switch (type) {
-    case 'revenue-by-month':
-      return [];
-    case 'orders-by-status':
-      return {};
-    case 'top-products':
-      return [];
-    case 'customer-growth':
-      return { totalCustomers: 0, newCustomers: 0, growthRate: 0, chartData: [] };
-    case 'transactions':
-      return [];
-    default:
-      return {};
-  }
+async function fetchRevenueByMonth() {
+  const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
+
+  const rows = await db
+    .select({
+      monthLabel: sql<string>`TO_CHAR(DATE_TRUNC('month', ${orders.createdAt}), 'Mon')`,
+      revenue: sql<number>`COALESCE(SUM(CAST(${orders.total} AS NUMERIC)), 0)`,
+      orderCount: count(),
+    })
+    .from(orders)
+    .where(gte(orders.createdAt, sixMonthsAgo))
+    .groupBy(sql`DATE_TRUNC('month', ${orders.createdAt})`)
+    .orderBy(sql`DATE_TRUNC('month', ${orders.createdAt})`);
+
+  // Fill missing months with zeros
+  return Array.from({ length: 6 }, (_, i) => {
+    const date = subMonths(new Date(), 5 - i);
+    const label = format(date, 'MMM');
+    const found = rows.find(r => r.monthLabel === label);
+    return { month: label, revenue: Number(found?.revenue || 0), orders: found?.orderCount || 0 };
+  });
 }
 
-async function getRevenueByMonth() {
-  try {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = subMonths(new Date(), i);
-      const start = startOfMonth(date);
-      const end = endOfMonth(date);
+async function fetchOrdersByStatus() {
+  const rows = await db
+    .select({ status: orders.status, count: count() })
+    .from(orders)
+    .groupBy(orders.status);
 
-      const result = await queryWithRetry(() =>
-        db.select({
-          revenue: sql<number>`COALESCE(SUM(CAST(${orders.total} AS NUMERIC)), 0)`,
-          orderCount: count(),
-        })
-        .from(orders)
-        .where(and(
-          gte(orders.createdAt, start),
-          lte(orders.createdAt, end)
-        ))
-      );
-
-      months.push({
-        month: format(date, 'MMM'),
-        revenue: Number(result[0]?.revenue || 0),
-        orders: result[0]?.orderCount || 0,
-      });
-    }
-
-    return NextResponse.json(months);
-  } catch (error) {
-    console.error('Revenue by month error:', error);
-    return NextResponse.json([]);
-  }
+  return rows.reduce((acc, r) => ({ ...acc, [r.status]: r.count }), {} as Record<string, number>);
 }
 
-async function getOrdersByStatus() {
-  try {
-    const result = await queryWithRetry(() =>
-      db.select({
-        status: orders.status,
-        count: count(),
-      })
-      .from(orders)
-      .groupBy(orders.status)
-    );
+async function fetchTopProducts() {
+  const rows = await db
+    .select({
+      productId: orderItems.productId,
+      name: orderItems.name,
+      image: orderItems.image,
+      sales: sql<number>`CAST(SUM(${orderItems.quantity}) AS INTEGER)`,
+      revenue: sql<number>`CAST(SUM(CAST(${orderItems.price} AS NUMERIC) * ${orderItems.quantity}) AS NUMERIC)`,
+    })
+    .from(orderItems)
+    .groupBy(orderItems.productId, orderItems.name, orderItems.image)
+    .orderBy(desc(sql`SUM(${orderItems.quantity})`))
+    .limit(5);
 
-    const statusData = result.reduce((acc, row) => {
-      acc[row.status] = row.count;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return NextResponse.json(statusData);
-  } catch (error) {
-    console.error('Orders by status error:', error);
-    return NextResponse.json({});
-  }
+  return rows.map(p => ({
+    id: p.productId,
+    name: p.name,
+    sales: Number(p.sales),
+    revenue: Number(p.revenue),
+    image: p.image,
+    // Real trend: compare to previous period would require extra query; using 0 as neutral
+    trend: 0,
+  }));
 }
 
-async function getTopProducts() {
-  try {
-    const result = await queryWithRetry(() =>
-      db.select({
-        productId: orderItems.productId,
-        name: orderItems.name,
-        image: orderItems.image,
-        sales: sql<number>`CAST(SUM(${orderItems.quantity}) AS INTEGER)`,
-        revenue: sql<number>`CAST(SUM(CAST(${orderItems.price} AS NUMERIC) * ${orderItems.quantity}) AS NUMERIC)`,
-      })
-      .from(orderItems)
-      .groupBy(orderItems.productId, orderItems.name, orderItems.image)
-      .orderBy(desc(sql`SUM(${orderItems.quantity})`))
-      .limit(5)
-    );
+async function fetchCustomerGrowth() {
+  const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
 
-    const products = result.map((p, index) => ({
-      id: p.productId,
-      name: p.name,
-      sales: Number(p.sales),
-      revenue: Number(p.revenue),
-      image: p.image,
-      trend: Math.floor(Math.random() * 30) - 10, // Mock trend data
-    }));
+  const rows = await db
+    .select({
+      monthLabel: sql<string>`TO_CHAR(DATE_TRUNC('month', ${users.createdAt}), 'Mon')`,
+      count: count(),
+    })
+    .from(users)
+    .where(gte(users.createdAt, sixMonthsAgo))
+    .groupBy(sql`DATE_TRUNC('month', ${users.createdAt})`)
+    .orderBy(sql`DATE_TRUNC('month', ${users.createdAt})`);
 
-    return NextResponse.json(products);
-  } catch (error) {
-    console.error('Top products error:', error);
-    return NextResponse.json([]);
-  }
+  let cumulative = 0;
+  const chartData = Array.from({ length: 6 }, (_, i) => {
+    const date = subMonths(new Date(), 5 - i);
+    const label = format(date, 'MMM');
+    const found = rows.find(r => r.monthLabel === label);
+    cumulative += found?.count || 0;
+    return { month: label, customers: cumulative };
+  });
+
+  const current = chartData[chartData.length - 1]?.customers || 0;
+  const previous = chartData[chartData.length - 2]?.customers || 1;
+  const growthRate = Math.round(((current - previous) / previous) * 100);
+
+  return {
+    totalCustomers: current,
+    newCustomers: current - previous,
+    growthRate,
+    chartData,
+  };
 }
 
-async function getCustomerGrowth() {
-  try {
-    const months = [];
-    let totalCustomers = 0;
+async function fetchRecentTransactions() {
+  const rows = await db
+    .select({
+      id: orders.id,
+      total: orders.total,
+      status: orders.status,
+      createdAt: orders.createdAt,
+      paymentMethod: orders.paymentMethod,
+    })
+    .from(orders)
+    .orderBy(desc(orders.createdAt))
+    .limit(10);
 
-    for (let i = 5; i >= 0; i--) {
-      const date = subMonths(new Date(), i);
-      const start = startOfMonth(date);
-      const end = endOfMonth(date);
-
-      const result = await queryWithRetry(() =>
-        db.select({ count: count() })
-        .from(users)
-        .where(and(
-          gte(users.createdAt, start),
-          lte(users.createdAt, end)
-        ))
-      );
-
-      const newCustomers = result[0]?.count || 0;
-      totalCustomers += newCustomers;
-
-      months.push({
-        month: format(date, 'MMM'),
-        customers: totalCustomers,
-      });
-    }
-
-    const currentMonthCustomers = months[months.length - 1]?.customers || 0;
-    const previousMonthCustomers = months[months.length - 2]?.customers || 1;
-    const growthRate = Math.round(((currentMonthCustomers - previousMonthCustomers) / previousMonthCustomers) * 100);
-
-    return NextResponse.json({
-      totalCustomers: currentMonthCustomers,
-      newCustomers: currentMonthCustomers - previousMonthCustomers,
-      growthRate,
-      chartData: months,
-    });
-  } catch (error) {
-    console.error('Customer growth error:', error);
-    return NextResponse.json({
-      totalCustomers: 0,
-      newCustomers: 0,
-      growthRate: 0,
-      chartData: [],
-    });
-  }
-}
-
-async function getRecentTransactions() {
-  try {
-    const result = await queryWithRetry(() =>
-      db.select({
-        id: orders.id,
-        total: orders.total,
-        status: orders.status,
-        createdAt: orders.createdAt,
-        paymentMethod: orders.paymentMethod,
-      })
-      .from(orders)
-      .orderBy(desc(orders.createdAt))
-      .limit(10)
-    );
-
-    const transactions = result.map(order => ({
-      id: order.id,
-      type: 'income' as const,
-      description: `Заказ #${order.id.slice(0, 8)}`,
-      amount: Number(order.total),
-      date: order.createdAt.toISOString(),
-      method: order.paymentMethod || 'card',
-    }));
-
-    return NextResponse.json(transactions);
-  } catch (error) {
-    console.error('Recent transactions error:', error);
-    return NextResponse.json([]);
-  }
+  return rows.map(o => ({
+    id: o.id,
+    type: 'income' as const,
+    description: `Заказ #${o.id.slice(0, 8).toUpperCase()}`,
+    amount: Number(o.total),
+    date: o.createdAt.toISOString(),
+    method: o.paymentMethod || 'card',
+  }));
 }

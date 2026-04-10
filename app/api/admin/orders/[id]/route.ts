@@ -2,22 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders, orderItems } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { getSession, isStaff, isAdmin } from '@/lib/server-auth';
+import { invalidateCacheByPrefix } from '@/lib/cache';
+
+const VALID_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'] as const;
+type OrderStatus = typeof VALID_STATUSES[number];
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user || !['admin', 'manager', 'support'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const staff = await isStaff();
+    if (!staff) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
     const { status, recipient, comment, deliveryMethod, paymentMethod } = body;
 
-    const updateData: any = { updatedAt: new Date() };
+    if (status && !VALID_STATUSES.includes(status as OrderStatus)) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    const updateData: Record<string, any> = { updatedAt: new Date() };
     if (status) updateData.status = status;
     if (recipient) updateData.recipient = recipient;
     if (comment !== undefined) updateData.comment = comment;
@@ -25,6 +34,10 @@ export async function PATCH(
     if (paymentMethod) updateData.paymentMethod = paymentMethod;
 
     await db.update(orders).set(updateData).where(eq(orders.id, params.id));
+
+    // Invalidate analytics & stats cache after order mutation
+    await invalidateCacheByPrefix('analytics:');
+    await invalidateCacheByPrefix('stats:');
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -38,13 +51,17 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user || !['admin'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const admin = await isAdmin();
+    if (!admin) return NextResponse.json({ error: 'Unauthorized — admin only' }, { status: 403 });
 
-    await db.delete(orderItems).where(eq(orderItems.orderId, params.id));
-    await db.delete(orders).where(eq(orders.id, params.id));
+    await db.transaction(async (tx) => {
+      await tx.delete(orderItems).where(eq(orderItems.orderId, params.id));
+      await tx.delete(orders).where(eq(orders.id, params.id));
+    });
+
+    // Invalidate caches
+    await invalidateCacheByPrefix('analytics:');
+    await invalidateCacheByPrefix('stats:');
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
