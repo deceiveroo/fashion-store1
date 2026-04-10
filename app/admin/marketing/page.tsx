@@ -1,38 +1,35 @@
 'use client';
 
-import AdminLayout from '@/components/AdminLayout';
 import { Tag, Mail, ShoppingCart } from 'lucide-react';
-import Link from 'next/link';
+import AdminShell from '@/components/admin/AdminShell';
 
 export default function AdminMarketingPage() {
   return (
-    <AdminLayout currentPage="marketing">
-      <div className="space-y-8">
+    <AdminShell>
+      <div className="space-y-5">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Маркетинг</h1>
-          <p className="mt-1 text-zinc-600 dark:text-zinc-400">Купоны, брошенные корзины, email</p>
+          <h1 className="text-xl font-bold text-white">Маркетинг</h1>
+          <p className="text-sm text-white/40">Купоны, брошенные корзины, email</p>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Link
-            href="/api/admin/stats"
-            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-violet-300 dark:border-zinc-800 dark:bg-zinc-900"
-          >
-            <Tag className="mb-2 h-8 w-8 text-violet-600" />
-            <h2 className="font-semibold text-zinc-900 dark:text-white">Купоны</h2>
-            <p className="mt-1 text-sm text-zinc-500">Управление кодами в БД (таблица coupons)</p>
-          </Link>
-          <div className="rounded-xl border border-dashed border-zinc-300 p-6 dark:border-zinc-700">
-            <ShoppingCart className="mb-2 h-8 w-8 text-zinc-400" />
-            <h2 className="font-semibold text-zinc-900 dark:text-white">Брошенные корзины</h2>
-            <p className="mt-1 text-sm text-zinc-500">Напоминание по email (мок — подключите SMTP в настройках)</p>
-          </div>
-          <div className="rounded-xl border border-dashed border-zinc-300 p-6 dark:border-zinc-700">
-            <Mail className="mb-2 h-8 w-8 text-zinc-400" />
-            <h2 className="font-semibold text-zinc-900 dark:text-white">Шаблоны писем</h2>
-            <p className="mt-1 text-sm text-zinc-500">HTML с плейсхолдерами — храните в settings</p>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            { icon: Tag, title: 'Купоны', desc: 'Управление кодами скидок (таблица coupons в БД)', color: 'text-violet-400 bg-violet-500/10' },
+            { icon: ShoppingCart, title: 'Брошенные корзины', desc: 'Напоминание по email — подключите SMTP в настройках', color: 'text-amber-400 bg-amber-500/10' },
+            { icon: Mail, title: 'Email шаблоны', desc: 'HTML с плейсхолдерами — храните в settings', color: 'text-blue-400 bg-blue-500/10' },
+          ].map(({ icon: Icon, title, desc, color }) => (
+            <div key={title} className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color} mb-4`}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <h3 className="text-sm font-semibold text-white">{title}</h3>
+              <p className="mt-1 text-xs text-white/30">{desc}</p>
+              <div className="mt-4 rounded-lg border border-dashed border-white/10 px-3 py-2 text-[10px] text-white/20 text-center">
+                В разработке
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </AdminLayout>
+    </AdminShell>
   );
 }
