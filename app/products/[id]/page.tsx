@@ -5,6 +5,10 @@ import { productInStock, productFeatured } from '@/lib/product-query';
 import { eq, and, inArray } from 'drizzle-orm';
 import ProductClient from '@/components/ProductClient';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
+
 async function getProduct(id: string) {
   if (!id) {
     console.error('Product ID is empty');

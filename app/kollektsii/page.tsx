@@ -8,6 +8,10 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import PageHero from '@/components/PageHero';
 import { unstable_cache } from 'next/cache';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
+
 // Cache the product fetching to improve performance
 const getCachedProducts = unstable_cache(
   async () => {

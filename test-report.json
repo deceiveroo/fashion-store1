@@ -1,0 +1,212 @@
+{
+  "passed": 39,
+  "failed": 1,
+  "warnings": 0,
+  "tests": [
+    {
+      "status": "fail",
+      "message": "TypeScript compilation failed with 148 errors",
+      "details": "Run \"npx tsc --noEmit\" to see details"
+    },
+    {
+      "status": "pass",
+      "message": "No problematic placeholders or mock data found",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/coupons/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/coupons/[id]/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/abandoned-carts/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/email-templates/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/content/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/content/[id]/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/stats/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/analytics/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/reports/sales/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "API route exists: app/api/admin/reports/inventory/route.ts",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Schema table defined: coupons",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Schema table defined: emailTemplates",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Schema table defined: siteContent",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Schema table defined: products",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Schema table defined: orders",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Schema table defined: users",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "No duplicate table exports in schema",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Migration file valid: create-coupons-table.sql",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Migration file valid: create-email-templates.sql",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Migration file valid: create-site-content.sql",
+      "details": ""
+    },
+    {
+      "status": "info",
+      "message": "Total migration files: 20",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Dependency installed: next@^16.2.2",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Dependency installed: react@^19.2.0",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Dependency installed: react-dom@^19.2.0",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Dependency installed: typescript@^5",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Dependency installed: @supabase/supabase-js@^2.101.1",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Dependency installed: drizzle-orm@^0.44.7",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Dependency installed: lucide-react@^0.553.0",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Dependency installed: framer-motion@^12.23.24",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": ".env.example file exists",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Environment variable configured: NEXT_PUBLIC_SUPABASE_URL",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Environment variable configured: NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Environment variable configured: SUPABASE_SERVICE_ROLE_KEY",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Environment variable configured: JWT_SECRET",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Client component directive present: app/admin/marketing/page.tsx",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Client component directive present: app/admin/content/page.tsx",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Toast imported correctly in app/admin/content/page.tsx",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Client component directive present: app/admin/dashboard/page.tsx",
+      "details": ""
+    },
+    {
+      "status": "pass",
+      "message": "Toast imported correctly in app/admin/dashboard/page.tsx",
+      "details": ""
+    }
+  ]
+}
