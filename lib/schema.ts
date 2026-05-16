@@ -66,13 +66,17 @@ export const verificationTokens = pgTable(
   })
 );
 
-// Categories table
+// Categories table (aligned with БАЗА.txt)
 export const categories = pgTable('categories', {
   id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
+  description: text('description'),
+  image: text('image'),
   parentId: text('parent_id').references(() => categories.id, { onDelete: 'set null' }),
-  materializedPath: text('materialized_path'), // Path like "parent1/parent2/current"
+  isActive: boolean('is_active').default(true),
+  sortOrder: integer('sort_order').default(0),
+  materializedPath: text('materialized_path'),
   position: integer('position').default(0),
   isFeatured: boolean('is_featured').default(false),
   locale: text('locale').default('ru'),
@@ -101,6 +105,10 @@ export const products = pgTable('products', {
   categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
   inStock: boolean('in_stock').default(true),
   featured: boolean('featured').default(false),
+  isFeatured: boolean('is_featured').default(false),
+  isActive: boolean('is_active').default(true),
+  isNew: boolean('is_new').default(false),
+  isSale: boolean('is_sale').default(false),
   deletedAt: timestamp('deleted_at', { mode: 'date' }),
   seoTitle: text('seo_title'),
   seoDesc: text('seo_desc'),
@@ -116,19 +124,20 @@ export const products = pgTable('products', {
   };
 });
 
-// Product Images table
+// Product Images table (aligned with БАЗА.txt: is_primary, sort_order)
 export const productImages = pgTable('product_images', {
   id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
   productId: text('product_id')
     .notNull()
     .references(() => products.id, { onDelete: 'cascade' }),
   url: text('url').notNull(),
-  isMain: boolean('is_main').default(false),
-  order: integer('order').default(0),
+  altText: text('alt_text'),
+  isMain: boolean('is_primary').default(false),
+  order: integer('sort_order').default(0),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
   return {
-    productOrderIdx: index('product_images_product_order_idx').on(table.productId, table.order),
+    productOrderIdx: index('product_images_product_sort_idx').on(table.productId, table.order),
   };
 });
 
@@ -208,26 +217,6 @@ export const orderItems = pgTable('order_items', {
   };
 });
 
-// Coupons table
-export const coupons = pgTable('coupons', {
-  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
-  code: text('code').notNull().unique(),
-  type: text('type', { enum: couponTypeEnum }).notNull(),
-  value: decimal('value', { precision: 10, scale: 2 }).notNull(), // Discount value
-  minAmount: decimal('min_amount', { precision: 10, scale: 2 }).default('0'), // Min order amount
-  usageLimit: integer('usage_limit'), // Global usage limit
-  perUserLimit: integer('per_user_limit'), // Per-user usage limit
-  usedCount: integer('used_count').default(0),
-  expiresAt: timestamp('expires_at', { mode: 'date' }),
-  active: boolean('active').default(true).notNull(),
-  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
-}, (table) => {
-  return {
-    codeIdx: uniqueIndex('coupons_code_idx').on(table.code),
-  };
-});
-
 // Cart Items table
 export const cartItems = pgTable('cart_items', {
   id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
@@ -262,6 +251,133 @@ export const userWishlistItems = pgTable('user_wishlist_items', {
   return {
     userProductIdx: uniqueIndex('user_wishlist_items_user_product_unique').on(table.userId, table.productId),
     userIdx: index('user_wishlist_items_user_idx').on(table.userId),
+  };
+});
+
+// Gift Cards table
+export const giftCards = pgTable('gift_cards', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  code: text('code').notNull().unique(),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  balance: decimal('balance', { precision: 10, scale: 2 }).notNull(),
+  purchaserEmail: text('purchaser_email').notNull(),
+  recipientEmail: text('recipient_email').notNull(),
+  recipientName: text('recipient_name'),
+  message: text('message'),
+  status: text('status').default('pending').notNull(), // pending, sent, redeemed, expired
+  expiresAt: timestamp('expires_at', { mode: 'date' }),
+  purchasedBy: text('purchased_by').references(() => users.id, { onDelete: 'set null' }),
+  orderId: text('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  redeemedAt: timestamp('redeemed_at', { mode: 'date' }),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    codeIdx: index('gift_cards_code_idx').on(table.code),
+    statusIdx: index('gift_cards_status_idx').on(table.status),
+    purchaserIdx: index('gift_cards_purchaser_idx').on(table.purchasedBy),
+  };
+});
+
+// Bundle Deals table
+export const bundleDeals = pgTable('bundle_deals', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description'),
+  coverImage: text('cover_image'),
+  discountPercent: integer('discount_percent').notNull().default(0),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    slugIdx: uniqueIndex('bundle_deals_slug_idx').on(table.slug),
+    activeIdx: index('bundle_deals_active_idx').on(table.isActive),
+  };
+});
+
+// Bundle Items table
+export const bundleItems = pgTable('bundle_items', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  bundleId: text('bundle_id')
+    .notNull()
+    .references(() => bundleDeals.id, { onDelete: 'cascade' }),
+  productId: text('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  quantity: integer('quantity').notNull().default(1),
+  sortOrder: integer('sort_order').default(0),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    bundleProductIdx: uniqueIndex('bundle_items_bundle_product_unique').on(table.bundleId, table.productId),
+    bundleIdx: index('bundle_items_bundle_idx').on(table.bundleId),
+  };
+});
+
+// Coupons table for marketing
+export const coupons = pgTable('coupons', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  code: text('code').notNull().unique(),
+  discount: integer('discount').notNull(), // percentage or fixed amount
+  type: text('type').notNull().default('percent'), // 'percent' or 'fixed'
+  minOrder: decimal('min_order', { precision: 10, scale: 2 }), // minimum order amount
+  maxUses: integer('max_uses'), // maximum number of uses
+  usedCount: integer('used_count').default(0),
+  active: boolean('active').default(true),
+  expiresAt: timestamp('expires_at', { mode: 'date' }),
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    codeIdx: uniqueIndex('coupons_code_idx').on(table.code),
+    activeIdx: index('coupons_active_idx').on(table.active),
+    expiresIdx: index('coupons_expires_idx').on(table.expiresAt),
+  };
+});
+
+// Email Templates table for marketing
+export const emailTemplates = pgTable('email_templates', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull().unique(),
+  subject: text('subject').notNull(),
+  htmlContent: text('html_content').notNull(),
+  textContent: text('text_content'),
+  category: text('category').notNull().default('marketing'), // 'marketing', 'transactional', 'notification'
+  active: boolean('active').default(true),
+  variables: text('variables').array(), // Array of available template variables
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    categoryIdx: index('email_templates_category_idx').on(table.category),
+    activeIdx: index('email_templates_active_idx').on(table.active),
+  };
+});
+
+// Site Content table for CMS
+export const siteContent = pgTable('site_content', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  type: text('type').notNull(), // 'slider', 'page', 'blog'
+  title: text('title').notNull(),
+  slug: text('slug').unique(), // URL-friendly identifier for pages
+  content: text('content'), // HTML/Markdown content
+  imageUrl: text('image_url'),
+  published: boolean('published').default(false),
+  sortOrder: integer('sort_order').default(0), // For slider ordering
+  metaDescription: text('meta_description'), // SEO
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    typeIdx: index('site_content_type_idx').on(table.type),
+    publishedIdx: index('site_content_published_idx').on(table.published),
+    slugIdx: index('site_content_slug_idx').on(table.slug),
   };
 });
 
@@ -398,17 +514,12 @@ export const productCategoryRelations = relations(productCategory, ({ one }) => 
 // Support Chat Messages table
 export const supportChatMessages = pgTable('support_chat_messages', {
   id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
-  sessionId: text('session_id').notNull(), // Unique session for each chat conversation
-  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }), // Optional: if user is logged in
-  userEmail: text('user_email'), // Optional: user email if provided
-  userName: text('user_name'), // Optional: user name if provided
+  sessionId: text('session_id').notNull(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
   message: text('message').notNull(),
-  imageUrl: text('image_url'), // Optional: URL of image attached to the message
+  imageUrl: text('image_url'),
   sender: text('sender', { enum: ['user', 'ai', 'admin'] }).notNull(),
-  aiModel: text('ai_model'), // Which AI model was used (openai, groq, fallback)
-  isResolved: boolean('is_resolved').default(false),
-  userAgent: text('user_agent'), // Browser info
-  ipAddress: text('ip_address'), // User IP
+  isRead: boolean('is_read').default(false),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
   return {
@@ -549,4 +660,75 @@ export const userSessionsRelations = relations(userSessions, ({ one }) => ({
 
 export const notificationSettingsRelations = relations(notificationSettings, ({ one }) => ({
   user: one(users, { fields: [notificationSettings.userId], references: [users.id] }),
+}));
+
+// Curated Collections table (for manual product selections by admins)
+export const curatedCollections = pgTable('curated_collections', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(), // "Выбор редакции", "Летняя коллекция"
+  slug: text('slug').notNull().unique(),
+  description: text('description'),
+  coverImage: text('cover_image'), // URL изображения обложки
+  isActive: boolean('is_active').default(true).notNull(),
+  sortOrder: integer('sort_order').default(0), // Для порядка отображения
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    slugIdx: uniqueIndex('curated_collections_slug_idx').on(table.slug),
+  };
+});
+
+// Collection Items (products in curated collections)
+export const collectionItems = pgTable('collection_items', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  collectionId: text('collection_id')
+    .notNull()
+    .references(() => curatedCollections.id, { onDelete: 'cascade' }),
+  productId: text('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  sortOrder: integer('sort_order').default(0), // Порядок товара в подборке
+  addedBy: text('added_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    collectionProductIdx: uniqueIndex('collection_items_collection_product_unique').on(table.collectionId, table.productId),
+    collectionIdx: index('collection_items_collection_idx').on(table.collectionId),
+  };
+});
+
+// Product Views tracking (for trending recommendations)
+export const productViews = pgTable('product_views', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  productId: text('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }), // null для гостей
+  sessionId: text('session_id'), // Для отслеживания уникальных сессий
+  viewedAt: timestamp('viewed_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    productIdx: index('product_views_product_idx').on(table.productId),
+    userIdx: index('product_views_user_idx').on(table.userId),
+    viewedAtIdx: index('product_views_viewed_at_idx').on(table.viewedAt),
+  };
+});
+
+// Relations for recommendation tables
+export const curatedCollectionsRelations = relations(curatedCollections, ({ many, one }) => ({
+  items: many(collectionItems),
+  createdByUser: one(users, { fields: [curatedCollections.createdBy], references: [users.id] }),
+}));
+
+export const collectionItemsRelations = relations(collectionItems, ({ one }) => ({
+  collection: one(curatedCollections, { fields: [collectionItems.collectionId], references: [curatedCollections.id] }),
+  product: one(products, { fields: [collectionItems.productId], references: [products.id] }),
+  addedByUser: one(users, { fields: [collectionItems.addedBy], references: [users.id] }),
+}));
+
+export const productViewsRelations = relations(productViews, ({ one }) => ({
+  product: one(products, { fields: [productViews.productId], references: [products.id] }),
+  user: one(users, { fields: [productViews.userId], references: [users.id] }),
 }));

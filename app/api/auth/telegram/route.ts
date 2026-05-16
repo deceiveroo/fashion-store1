@@ -90,8 +90,9 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ success: true, token, userId });
-  } catch (error: any) {
-    console.error('[TELEGRAM AUTH] Error:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[TELEGRAM AUTH] Error:', errorMessage);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

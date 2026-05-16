@@ -134,7 +134,7 @@
     border-color: #5750F1;
   }
 
-  .focus-visible\\:border-primary:focus-visible {
+  .focus-visible\:border-primary:focus-visible {
     border-color: #5750F1;
   }
 
@@ -207,6 +207,66 @@
   }
 }
 
+/* ─── Admin panel theme (reacts to html.dark via next-themes) ─── */
+[data-admin-theme] {
+  --admin-bg: #f1f5f9;
+  --admin-bg-elevated: #ffffff;
+  --admin-bg-muted: #f8fafc;
+  --admin-sidebar: #ffffff;
+  --admin-header: rgba(255, 255, 255, 0.85);
+  --admin-card: rgba(255, 255, 255, 0.9);
+  --admin-card-hover: #f8fafc;
+  --admin-border: #e2e8f0;
+  --admin-border-subtle: #f1f5f9;
+  --admin-text: #0f172a;
+  --admin-text-muted: #64748b;
+  --admin-text-faint: #94a3b8;
+  --admin-accent: #7c3aed;
+  --admin-accent-soft: rgba(124, 58, 237, 0.1);
+  --admin-shadow: 0 1px 3px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.04);
+  --admin-glow: rgba(124, 58, 237, 0.15);
+}
+
+.dark [data-admin-theme] {
+  --admin-bg: #07070f;
+  --admin-bg-elevated: #0f0f1a;
+  --admin-bg-muted: #12121f;
+  --admin-sidebar: #0c0c16;
+  --admin-header: rgba(10, 10, 20, 0.88);
+  --admin-card: rgba(255, 255, 255, 0.04);
+  --admin-card-hover: rgba(255, 255, 255, 0.07);
+  --admin-border: rgba(255, 255, 255, 0.08);
+  --admin-border-subtle: rgba(255, 255, 255, 0.04);
+  --admin-text: #f8fafc;
+  --admin-text-muted: rgba(248, 250, 252, 0.55);
+  --admin-text-faint: rgba(248, 250, 252, 0.35);
+  --admin-accent: #a78bfa;
+  --admin-accent-soft: rgba(167, 139, 250, 0.12);
+  --admin-shadow: 0 4px 24px rgb(0 0 0 / 0.35);
+  --admin-glow: rgba(139, 92, 246, 0.25);
+}
+
+@layer components {
+  .admin-card {
+    border-radius: 1rem;
+    border: 1px solid var(--admin-border);
+    background: var(--admin-card);
+    box-shadow: var(--admin-shadow);
+    backdrop-filter: blur(12px);
+  }
+
+  .admin-card-interactive {
+    transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+
+  .admin-card-interactive:hover {
+    background: var(--admin-card-hover);
+    border-color: color-mix(in srgb, var(--admin-accent) 35%, var(--admin-border));
+    transform: translateY(-1px);
+    box-shadow: var(--admin-shadow), 0 0 0 1px var(--admin-glow);
+  }
+}
+
 @layer utilities {
   /* Анимация появления */
   @keyframes glassSlideIn {
@@ -222,5 +282,44 @@
 
   [data-sonner-toast] {
     animation: glassSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Text glow эффект для футуристичного дизайна */
+  .text-glow {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  }
+
+  .text-glow-purple {
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.8), 0 0 20px rgba(168, 85, 247, 0.6);
+  }
+
+  /* Holographic grid background */
+  .bg-holographic {
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(168, 85, 247, 0.05) 10px,
+        rgba(168, 85, 247, 0.05) 11px
+      );
+  }
+
+  /* Custom scrollbar для каталога */
+  .catalog-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .catalog-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .catalog-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(168, 85, 247, 0.5);
+    border-radius: 2px;
+  }
+
+  .catalog-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(168, 85, 247, 0.8);
   }
 }

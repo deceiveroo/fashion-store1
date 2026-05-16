@@ -5,7 +5,7 @@ import { ThemeProvider } from 'next-themes';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus>
+    <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus={false}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         {children}
       </ThemeProvider>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, User, Trash2, Edit3, Camera, X, Save, RefreshCw } from 'lucide-react';
+import { Search, User, Trash2, Edit3, Camera, X, Save, RefreshCw, Users, TrendingUp, Mail, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
 
@@ -63,7 +63,10 @@ export default function CustomersPage() {
       const { url } = await res.json();
       setEditing(prev => prev ? { ...prev, avatar: url, image: url } : prev);
       toast.success('Аватар загружен');
-    } catch (err: any) { toast.error(err.message || 'Ошибка загрузки'); }
+    } catch (err: unknown) { 
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(errorMessage || 'Ошибка загрузки'); 
+    }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
@@ -95,23 +98,55 @@ export default function CustomersPage() {
 
   return (
     <AdminShell>
-      <div className="space-y-5">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      <div className="space-y-6">
+        {/* Enhanced Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Клиенты</h1>
-            <p className="text-sm text-white/40">{customers.length} клиентов</p>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Users className="h-7 w-7 text-violet-400" />
+              Клиенты
+            </h1>
+            <p className="text-sm text-white/40 mt-1">Управление клиентами магазина</p>
           </div>
-          <button onClick={load} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+          <button onClick={load} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Обновить
           </button>
         </div>
 
-        {/* Search */}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Всего клиентов', value: customers.length, icon: Users, color: 'bg-violet-500/20 text-violet-400', trend: '+8%' },
+            { label: 'Администраторы', value: customers.filter(c => c.role === 'admin').length, icon: User, color: 'bg-blue-500/20 text-blue-400' },
+            { label: 'С менеджерами', value: customers.filter(c => c.phone).length, icon: Phone, color: 'bg-emerald-500/20 text-emerald-400' },
+            { label: 'Верифицированы', value: customers.filter(c => c.emailVerified).length, icon: Mail, color: 'bg-amber-500/20 text-amber-400' },
+          ].map(({ label, value, icon: Icon, color, trend }) => (
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-5 hover:bg-white/[0.08] transition-all backdrop-blur-sm">
+              {trend && (
+                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1">
+                  <TrendingUp className="h-3 w-3 text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-400">{trend}</span>
+                </div>
+              )}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-white/50 uppercase tracking-wider">{label}</p>
+                  <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+                </div>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
+                  <Icon className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Enhanced Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
-          <input type="text" placeholder="Поиск по имени или email..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-white placeholder-white/20 focus:border-violet-500/50 focus:outline-none" />
+          <input type="text" placeholder="Поиск по имени, фамилии или email..." value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-white placeholder-white/20 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30" />
         </div>
 
         {/* Table */}
@@ -141,18 +176,26 @@ export default function CustomersPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {avatar(c) ? (
-                            <img src={avatar(c)} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/10" />
+                            <img src={avatar(c)} alt="" className="h-10 w-10 rounded-xl object-cover ring-2 ring-white/10" />
                           ) : (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/10 text-xs font-bold text-violet-400">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-sm font-bold text-violet-400">
                               {(c.firstName||c.email||'?')[0].toUpperCase()}
                             </div>
                           )}
-                          <span className="text-xs font-medium text-white">{displayName(c)}</span>
+                          <span className="text-xs font-semibold text-white">{displayName(c)}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-xs text-white/60">{c.email}</p>
-                        {c.phone && <p className="text-[10px] text-white/30">{c.phone}</p>}
+                        <p className="text-xs text-white/60 flex items-center gap-1">
+                          <Mail className="h-3 w-3 text-white/20" />
+                          {c.email}
+                        </p>
+                        {c.phone && (
+                          <p className="text-[10px] text-white/30 flex items-center gap-1 mt-0.5">
+                            <Phone className="h-2.5 w-2.5" />
+                            {c.phone}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${ROLE_STYLE[c.role] || ROLE_STYLE.customer}`}>
@@ -217,7 +260,7 @@ export default function CustomersPage() {
                 {[['Имя','firstName'],['Фамилия','lastName'],['Телефон','phone']].map(([label, field]) => (
                   <div key={field} className={field === 'phone' ? 'col-span-2' : ''}>
                     <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">{label}</label>
-                    <input type="text" value={(editing as any)[field] || ''}
+                    <input type="text" value={(editing[field as keyof typeof editing] as string) || ''}
                       onChange={e => setEditing(prev => prev ? { ...prev, [field]: e.target.value } : prev)}
                       className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
                   </div>

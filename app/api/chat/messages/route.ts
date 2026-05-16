@@ -20,8 +20,9 @@ export async function GET(request: NextRequest) {
       .orderBy(asc(supportChatMessages.createdAt));
 
     return NextResponse.json({ messages });
-  } catch (error: any) {
-    console.error('[CHAT MESSAGES]', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[CHAT MESSAGES]', errorMessage);
     return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
   }
 }

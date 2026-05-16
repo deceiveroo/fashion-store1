@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     const user = userData[0];
 
     // Get user orders
-    let ordersWithItems: any[] = [];
+    let ordersWithItems: Record<string, unknown>[] = [];
     try {
       const userOrders = await safeQuery(() =>
         db.select({
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
       // Get ALL items in one query
       const orderIds = userOrders.map(o => o.id);
-      let allItems: any[] = [];
+      let allItems: Record<string, unknown>[] = [];
       if (orderIds.length > 0) {
         const fetchedItems = await safeQuery(() =>
           db.select().from(orderItems).where(inArray(orderItems.orderId, orderIds))
@@ -80,9 +80,10 @@ export async function GET(request: NextRequest) {
       }
 
       // Group items by orderId
-      const itemsByOrder = allItems.reduce((acc: any, item: any) => {
-        if (!acc[item.orderId]) acc[item.orderId] = [];
-        acc[item.orderId].push({
+      const itemsByOrder = allItems.reduce((acc: Record<string, unknown[]>, item: Record<string, unknown>) => {
+        const orderId = item.orderId as string;
+        if (!acc[orderId]) acc[orderId] = [];
+        acc[orderId].push({
           id: item.id,
           name: item.name || '',
           price: Number(item.price),
@@ -123,7 +124,7 @@ export async function GET(request: NextRequest) {
       role: user.role,
       orders: ordersWithItems,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in /api/auth/me:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }

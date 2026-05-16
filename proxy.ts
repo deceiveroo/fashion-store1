@@ -45,11 +45,21 @@ export function proxy(request: NextRequest) {
   // Rate limiting for API routes
   if (pathname.startsWith('/api/')) {
     const isAdminApi = pathname.startsWith('/api/admin/');
-    const isAuthApi = pathname.startsWith('/api/auth/');
+    const isAuthApi = pathname.startsWith('/api/auth/') || pathname.startsWith('/api/user/');
+    const isAuthReadEndpoint =
+      pathname === '/api/auth/session' ||
+      pathname === '/api/auth/csrf' ||
+      pathname === '/api/auth/providers';
 
     // Stricter limits for auth endpoints (brute-force protection)
     if (isAuthApi) {
-      if (!rateLimit(`auth:${ip}`, 10, 60_000)) {
+      // Keep stricter limits only for write endpoints (login/register/etc).
+      // Session/provider polling from SessionProvider should not hit brute-force limits.
+      const authLimit = isAuthReadEndpoint ? 120 : 10;
+      const authWindowMs = 60_000;
+      const authKeyPrefix = isAuthReadEndpoint ? 'auth-read' : 'auth';
+
+      if (!rateLimit(`${authKeyPrefix}:${ip}`, authLimit, authWindowMs)) {
         return new NextResponse(JSON.stringify({ error: 'Too many requests' }), {
           status: 429,
           headers: {

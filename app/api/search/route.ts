@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productImages, categories, productCategory } from '@/lib/db/schema';
-import { or, like, eq, desc, sql } from 'drizzle-orm';
+import { products, productImages, categories, productCategory } from '@/lib/schema';
+import { productInStock, productFeatured } from '@/lib/product-query';
+import { or, eq, desc, sql } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,8 +22,8 @@ export async function GET(request: NextRequest) {
         name: products.name,
         description: products.description,
         price: products.price,
-        inStock: products.inStock,
-        featured: products.featured,
+        inStock: productInStock,
+        featured: productFeatured,
         createdAt: products.createdAt,
         imageUrl: productImages.url,
         imageIsMain: productImages.isMain,

@@ -4,10 +4,12 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Send, MessageCircle, Sparkles, Bot, User, Shield, 
-  Headset, Upload, Image as ImageIcon, Smile, Paperclip,
-  Check, CheckCheck, Loader
+  Headset, Search, ChevronDown, Package, CreditCard, HelpCircle,
+  Check, CheckCheck, Loader, ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { findAutoResponse, AUTO_RESPONSES } from '@/lib/chat-auto-responses';
+import { supabase } from '@/lib/supabase-client';
 
 interface Message {
   id: string;
@@ -36,10 +38,14 @@ export default function SupportChatNew() {
   const [takenOver, setTakenOver] = useState(false);
   const [sessionId] = useState(() => getSessionId());
   const [typing, setTyping] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showSearch, setShowSearch] = useState(true); // Показывать поиск вместо чата
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const realtimeChannelRef = useRef<any>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -49,12 +55,12 @@ export default function SupportChatNew() {
     if (isOpen) {
       inputRef.current?.focus();
       loadMessages();
-      startPolling();
+      subscribeToRealtime();
     } else {
-      stopPolling();
+      unsubscribeFromRealtime();
     }
-    return () => stopPolling();
-  }, [isOpen]);
+    return () => unsubscribeFromRealtime();
+  }, [isOpen, sessionId]);
 
   const loadMessages = async () => {
     try {
@@ -66,7 +72,7 @@ export default function SupportChatNew() {
             id: m.id,
             text: m.message,
             imageUrl: m.imageUrl || m.image_url,
-            sender: m.sender,
+            sender: m.sender === 'admin' ? 'admin' : 'ai',
             timestamp: new Date(m.createdAt || m.created_at),
             read: m.readByAdmin || m.read_by_admin,
           })));
@@ -74,7 +80,7 @@ export default function SupportChatNew() {
           // Приветственное сообщение
           setMessages([{
             id: '0',
-            text: '👋 Привет! Я AI-ассистент ELEVATE. Чем могу помочь?',
+            text: '👋 Здравствуйте! Добро пожаловать в ELEVATE!\n\nЯ помогу вам с:\n• Информацией о доставке\n• Вопросами по товарам\n• Оформлением заказа\n• Возвратами и обменом\n\nОпишите ваш вопрос, и я постараюсь помочь!',
             sender: 'ai',
             timestamp: new Date(),
           }]);
@@ -85,52 +91,68 @@ export default function SupportChatNew() {
     }
   };
 
-  const startPolling = () => {
-    if (pollIntervalRef.current) return;
-    pollIntervalRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/chat?sessionId=${sessionId}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.messages && data.messages.length > 0) {
-            const newMessages = data.messages.map((m: any) => ({
-              id: m.id,
-              text: m.message,
-              imageUrl: m.imageUrl || m.image_url,
-              sender: m.sender,
-              timestamp: new Date(m.createdAt || m.created_at),
-              read: m.readByAdmin || m.read_by_admin,
-            }));
+  // Supabase Realtime подписка на новые сообщения
+  const subscribeToRealtime = () => {
+    if (realtimeChannelRef.current) return;
+
+    const channel = supabase
+      .channel(`chat-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_chat_messages',
+          filter: `session_id=eq.${sessionId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as any;
+          
+          // Проверяем не дубликат ли это
+          setMessages(prev => {
+            const exists = prev.some(m => m.id === newMsg.id);
+            if (exists) return prev;
             
-            // Обновляем только если есть новые сообщения
-            setMessages(prev => {
-              const lastId = prev[prev.length - 1]?.id;
-              const newLastId = newMessages[newMessages.length - 1]?.id;
-              if (lastId !== newLastId) {
-                return newMessages;
-              }
-              return prev;
-            });
+            return [...prev, {
+              id: newMsg.id,
+              text: newMsg.message,
+              imageUrl: newMsg.image_url,
+              sender: newMsg.sender === 'admin' ? 'admin' : 'ai',
+              timestamp: new Date(newMsg.created_at),
+              read: newMsg.read_by_admin,
+            }];
+          });
+
+          // Проверяем не подключился ли оператор
+          if (newMsg.sender === 'admin') {
+            setTakenOver(true);
           }
         }
-      } catch (error) {
-        console.error('Polling error:', error);
-      }
-    }, 2000); // Проверяем каждые 2 секунды
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Realtime connected for chat:', sessionId);
+        }
+      });
+
+    realtimeChannelRef.current = channel;
   };
 
-  const stopPolling = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
+  const unsubscribeFromRealtime = () => {
+    if (realtimeChannelRef.current) {
+      supabase.removeChannel(realtimeChannelRef.current);
+      realtimeChannelRef.current = null;
+      console.log('❌ Realtime disconnected');
     }
   };
 
   const send = async (text: string, imageUrl: string | null = null) => {
     if ((!text.trim() && !imageUrl) || loading) return;
 
+    // Оптимистичный UI - показываем сообщение сразу
+    const tempId = `temp-${Date.now()}`;
     const userMsg: Message = {
-      id: `local-${Date.now()}`,
+      id: tempId,
       text: text || '📷 Изображение',
       imageUrl: imageUrl || undefined,
       sender: 'user',
@@ -143,37 +165,98 @@ export default function SupportChatNew() {
     setTyping(true);
 
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: text || '📷 Изображение', 
-          imageUrl, 
-          sessionId 
-        }),
-      });
+      // Сначала проверяем/создаём сессию
+      const { data: existingSession, error: sessionError } = await supabase
+        .from('support_chat_sessions')
+        .select('id')
+        .eq('session_id', sessionId)
+        .single();
 
-      const data = await res.json();
-      
-      setTyping(false);
-      
-      if (data.takenOver) {
-        setTakenOver(true);
-        toast.info('Оператор подключён к чату');
+      // Если таблица не существует - показываем ошибку
+      if (sessionError && sessionError.code === '42P01') {
+        console.error('❌ Таблица support_chat_sessions не существует!');
+        toast.error('База данных не настроена. Выполните миграцию SQL.');
+        throw new Error('Database tables not initialized. Please run fix-chat-tables-final.sql in Supabase.');
       }
 
-      if (data.message && !data.takenOver) {
+      if (!existingSession) {
+        // Создаём новую сессию
+        await supabase.from('support_chat_sessions').insert({
+          id: crypto.randomUUID(),
+          session_id: sessionId,
+          status: 'active',
+          message_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      // Сохраняем в Supabase напрямую
+      const { error, data } = await supabase
+        .from('support_chat_messages')
+        .insert({
+          id: crypto.randomUUID(),
+          session_id: sessionId,
+          message: text || '📷 Изображение',
+          image_url: imageUrl,
+          sender: 'user',
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      // Обновляем сессию
+      await supabase.rpc('update_chat_session', {
+        p_session_id: sessionId,
+        p_message: text || '📷 Изображение',
+      });
+
+      setTyping(false);
+      
+      // Проверяем подключён ли оператор
+      const { data: session } = await supabase
+        .from('support_chat_sessions')
+        .select('ai_disabled')
+        .eq('session_id', sessionId)
+        .single();
+
+      if (session?.ai_disabled) {
+        setTakenOver(true);
+        toast.info('Оператор подключён к чату');
+        return;
+      }
+
+      // Проверяем авто-ответы
+      const autoResponse = findAutoResponse(text);
+      
+      if (autoResponse) {
+        // Используем авто-ответ
         const aiMsg: Message = {
-          id: `ai-${Date.now()}`,
-          text: data.message,
+          id: `auto-${Date.now()}`,
+          text: autoResponse,
           sender: 'ai',
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, aiMsg]);
+        
+        // Сохраняем авто-ответ в БД
+        await supabase.from('support_chat_messages').insert({
+          id: crypto.randomUUID(),
+          session_id: sessionId,
+          message: autoResponse,
+          sender: 'ai',
+          created_at: new Date().toISOString(),
+        });
       }
     } catch (error) {
       console.error('Send error:', error);
       toast.error('Ошибка отправки сообщения');
+      // Откатываем оптимистичное сообщение
+      setMessages(prev => prev.filter(m => m.id !== tempId));
       setTyping(false);
     } finally {
       setLoading(false);
@@ -310,14 +393,27 @@ export default function SupportChatNew() {
                   </div>
                 </div>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setIsOpen(false)}
-                className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </motion.button>
+              <div className="flex items-center gap-2">
+                {!takenOver && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={callOperator}
+                    className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors flex items-center gap-1"
+                    title="Позвать оператора"
+                  >
+                    <Headset className="w-5 h-5" />
+                  </motion.button>
+                )}
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsOpen(false)}
+                  className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </motion.button>
+              </div>
             </div>
 
             {/* Messages */}
@@ -426,47 +522,100 @@ export default function SupportChatNew() {
               <div ref={endRef} />
             </div>
 
-            {/* Operator button */}
+            {/* Quick Answer Buttons - Only show when operator NOT connected */}
             {!takenOver && (
-              <div className="px-4 pt-2 bg-white dark:bg-gray-900 flex-shrink-0">
-                <button
-                  onClick={callOperator}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
-                >
-                  <Headset className="w-4 h-4" />
-                  Позвать оператора
-                </button>
+              <div className="px-4 py-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                {!selectedCategory ? (
+                  // Show categories
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
+                      <Grid className="w-3 h-3" />
+                      Выберите тему вопроса:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
+                      {[
+                        { id: 'shipping', label: '🚚 Доставка', icon: 'delivery' },
+                        { id: 'returns', label: '↩️ Возврат', icon: 'return' },
+                        { id: 'payment', label: '💳 Оплата', icon: 'payment' },
+                        { id: 'sizes', label: '📏 Размеры', icon: 'size' },
+                        { id: 'products', label: '👕 Товары', icon: 'product' },
+                        { id: 'orders', label: '🛒 Заказы', icon: 'order' },
+                        { id: 'account', label: '👤 Аккаунт', icon: 'account' },
+                        { id: 'promotions', label: '🎁 Скидки', icon: 'promo' },
+                        { id: 'loyalty', label: '⭐ Бонусы', icon: 'bonus' },
+                        { id: 'company', label: '🏢 О нас', icon: 'about' },
+                        { id: 'care', label: '🧺 Уход', icon: 'care' },
+                        { id: 'technical', label: '🔧 Техподдержка', icon: 'tech' },
+                      ].map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => setSelectedCategory(cat.id)}
+                          className="px-3 py-2.5 text-xs font-medium bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all border border-purple-200 dark:border-purple-800 text-left"
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  // Show specific questions for selected category
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <button
+                        onClick={() => setSelectedCategory(null)}
+                        className="text-xs text-gray-500 hover:text-purple-600 flex items-center gap-1 transition-colors"
+                      >
+                        ← Назад к темам
+                      </button>
+                      <span className="text-xs text-gray-400 capitalize">{selectedCategory}</span>
+                    </div>
+                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                      {AUTO_RESPONSES.filter(r => r.category === selectedCategory).map((response, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            send(response.keywords[0]); // Send first keyword to trigger response
+                          }}
+                          className="w-full px-3 py-2.5 text-xs text-left bg-gray-50 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-700 dark:text-gray-300 rounded-lg transition-all border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 flex items-start gap-2 group"
+                        >
+                          <ChevronRight className="w-3 h-3 mt-0.5 text-gray-400 group-hover:text-purple-500 flex-shrink-0" />
+                          <span className="line-clamp-2">{response.response.split('\n')[0]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Input */}
-            <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-              <div className="flex gap-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      send(input);
-                    }
-                  }}
-                  placeholder="Напишите сообщение..."
-                  disabled={loading}
-                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white placeholder-gray-500 disabled:opacity-50 text-sm"
-                />
-                
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-                
-                {takenOver && (
+            {/* Input Area - Only show when operator IS connected */}
+            {takenOver && (
+              <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                <div className="flex gap-2">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        send(input);
+                      }
+                    }}
+                    placeholder="Напишите сообщение оператору..."
+                    disabled={loading}
+                    className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white placeholder-gray-500 disabled:opacity-50 text-sm"
+                  />
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -477,23 +626,23 @@ export default function SupportChatNew() {
                   >
                     <ImageIcon className="w-5 h-5" />
                   </motion.button>
-                )}
-                
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => send(input)}
-                  disabled={!input.trim() || loading}
-                  className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  {loading ? (
-                    <Loader className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Send className="w-5 h-5" />
-                  )}
-                </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => send(input)}
+                    disabled={!input.trim() || loading}
+                    className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    {loading ? (
+                      <Loader className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
+                  </motion.button>
+                </div>
               </div>
-            </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

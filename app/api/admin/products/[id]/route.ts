@@ -1,7 +1,8 @@
 // app/api/admin/products/[id]/route.ts
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productImages, productCategory, categories } from '@/lib/db/schema';
+import { products, productImages, productCategory, categories } from '@/lib/schema';
+import { productInStock, productFeatured } from '@/lib/product-query';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { getSession, isStaff } from '@/lib/server-auth';
 import { canManageProducts } from '@/lib/admin-permissions';
@@ -63,8 +64,8 @@ export async function GET(
           name: products.name,
           description: products.description,
           price: products.price,
-          inStock: products.inStock,
-          featured: products.featured,
+          inStock: productInStock,
+          featured: productFeatured,
           createdAt: products.createdAt,
           mainImage: sql<string>`(SELECT url FROM ${productImages} WHERE ${productImages.productId} = ${products.id} AND ${productImages.isMain} = true LIMIT 1)`.as('mainImage'),
           categories: sql<string[]>`(SELECT COALESCE(array_agg(${categories.id}), ARRAY[]::text[]) FROM ${productCategory} LEFT JOIN ${categories} ON ${categories.id} = ${productCategory.categoryId} WHERE ${productCategory.productId} = ${products.id})`.as('categories'),
@@ -193,9 +194,12 @@ export async function PUT(
       .set({
         name: name || existingProduct[0].name,
         description: description || existingProduct[0].description,
-        price: price !== undefined ? parseFloat(price) : existingProduct[0].price,
+        price: price !== undefined ? String(price) : existingProduct[0].price,
         inStock: inStock !== undefined ? Boolean(inStock) : existingProduct[0].inStock,
         featured: featured !== undefined ? Boolean(featured) : existingProduct[0].featured,
+        stock: inStock !== undefined ? (inStock ? Math.max(Number(existingProduct[0].stock) || 10, 1) : 0) : existingProduct[0].stock,
+        categoryId: categoryIds?.[0] || existingProduct[0].categoryId,
+        updatedAt: new Date(),
       })
       .where(eq(products.id, id));
 
@@ -207,8 +211,9 @@ export async function PUT(
     // Создаем новые связи с категориями
     if (categoryIds && categoryIds.length > 0) {
       const categoryRecords = categoryIds.map((categoryId: string) => ({
+        id: crypto.randomUUID(),
         productId: id,
-        categoryId
+        categoryId,
       }));
       await db.insert(productCategory).values(categoryRecords);
     }

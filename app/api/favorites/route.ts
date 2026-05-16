@@ -44,9 +44,10 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching favorites:', error);
-    if (error.message?.includes('does not exist')) return NextResponse.json([]);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('does not exist')) return NextResponse.json([]);
     return NextResponse.json({ error: 'Failed to fetch favorites' }, { status: 500 });
   }
 }
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     const [result] = await db.insert(userWishlistItems).values({ userId, productId }).returning();
     return NextResponse.json(result, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error adding favorite:', error);
     return NextResponse.json({ error: 'Failed to add favorite' }, { status: 500 });
   }
@@ -91,7 +92,7 @@ export async function DELETE(request: NextRequest) {
     );
 
     return NextResponse.json({ message: 'Removed from favorites' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error removing favorite:', error);
     return NextResponse.json({ error: 'Failed to remove favorite' }, { status: 500 });
   }

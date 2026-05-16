@@ -5,7 +5,8 @@ import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
 import ClientLayoutWrapper from '@/components/ClientLayoutWrapper';
 import { Providers } from '@/components/providers/Providers';
-import SupportChatNew from '@/components/SupportChatNew';
+import SupportChatMinimalist from '@/components/SupportChatMinimalist';
+import QuickViewProvider from '@/components/QuickViewProvider';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -31,13 +32,10 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  const theme = localStorage.getItem('theme');
-                  if (theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                  } else if (theme === 'light') {
-                    document.documentElement.classList.remove('dark');
-                  }
-                  // Если темы нет в localStorage, оставляем светлую по умолчанию
+                  const stored = localStorage.getItem('theme');
+                  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  const dark = stored === 'dark' || (stored !== 'light' && stored !== 'dark' && prefersDark);
+                  document.documentElement.classList.toggle('dark', dark);
                 } catch (e) {}
               })();
             `,
@@ -48,7 +46,8 @@ export default function RootLayout({
             <CartProvider>
               <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 transition-colors duration-300">
                 <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
-                <SupportChatNew />
+                <SupportChatMinimalist />
+                <QuickViewProvider />
               </div>
             </CartProvider>
           </AuthProvider>

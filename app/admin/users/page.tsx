@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { Search, Shield, Trash2, Edit3, Camera, X, Save, RefreshCw, UserPlus } from 'lucide-react';
+import { Search, Shield, Trash2, Edit3, Camera, X, Save, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
 
@@ -61,7 +61,10 @@ export default function UsersPage() {
       const { url } = await res.json();
       setEditing(prev => prev ? { ...prev, avatar: url, image: url } : prev);
       toast.success('Аватар загружен');
-    } catch (err: any) { toast.error(err.message || 'Ошибка'); }
+    } catch (err: unknown) { 
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(errorMessage || 'Ошибка'); 
+    }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
@@ -218,7 +221,7 @@ export default function UsersPage() {
                 {[['Имя','firstName'],['Фамилия','lastName'],['Телефон','phone']].map(([label, field]) => (
                   <div key={field} className={field === 'phone' ? 'col-span-2' : ''}>
                     <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">{label}</label>
-                    <input type="text" value={(editing as any)[field] || ''}
+                    <input type="text" value={(editing[field as keyof typeof editing] as string) || ''}
                       onChange={e => setEditing(prev => prev ? { ...prev, [field]: e.target.value } : prev)}
                       className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
                   </div>

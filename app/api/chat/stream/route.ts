@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatMessages } from '@/lib/schema';
-import { eq, asc, gt } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 

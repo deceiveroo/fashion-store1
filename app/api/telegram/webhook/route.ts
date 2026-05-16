@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
     if (update.message) {
       // Regular message
       const message = update.message;
-      const chatId = message.chat.id;
       const text = message.text || message.caption || '';
 
       // Check if it's an admin sending a reply via /reply_{sessionId} command

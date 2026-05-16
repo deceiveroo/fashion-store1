@@ -6,6 +6,7 @@ import { eq, desc } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
 import { getSession } from '@/lib/server-auth';
+import { verifyAuth } from '@/lib/auth';
 
 // Функция с повторными попытками для надежной работы с базой данных
 async function queryWithRetry<T>(queryFn: () => Promise<T>): Promise<T> {
@@ -71,17 +72,26 @@ interface OrderData {
   comment?: string;
 }
 
+async function resolveRequestUser(request: NextRequest): Promise<{ id: string; role: string } | null> {
+  const session = await getSession();
+  if (session?.user?.id) {
+    return { id: session.user.id, role: session.user.role ?? 'user' };
+  }
+
+  const bearerUser = await verifyAuth(request);
+  if (!bearerUser) return null;
+  return { id: bearerUser.id, role: bearerUser.role ?? 'user' };
+}
+
 export async function GET(request: NextRequest) {
   try {
-    // Проверяем сессию пользователя
-    const session = await getSession();
-    
-    if (!session) {
+    const currentUser = await resolveRequestUser(request);
+    if (!currentUser) {
       return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
     }
 
     // Получаем роль пользователя для определения доступа
-    const isAdminUser = session.user.role === 'admin';
+    const isAdminUser = currentUser.role === 'admin';
 
     // Оптимизированный запрос без JOIN
     let ordersList;
@@ -160,7 +170,7 @@ export async function GET(request: NextRequest) {
             comment: orders.comment,
           })
           .from(orders)
-          .where(eq(orders.userId, session.user.id))
+          .where(eq(orders.userId, currentUser.id))
           .orderBy(desc(orders.createdAt))
           .limit(50)
       );
@@ -265,10 +275,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Используем правильную функцию аутентификации из нашего модуля
-    const session = await getSession();
-    
-    if (!session || !session.user) {
+    const currentUser = await resolveRequestUser(request);
+    if (!currentUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -287,7 +295,7 @@ export async function POST(request: NextRequest) {
       return await db.transaction(async (trx) => {
         // Create the order
         const [order] = await trx.insert(orders).values({
-          userId: session.user.id,
+          userId: currentUser.id,
           total: total.toString(), // Convert to string to match decimal field
           discount: discount ? discount.toString() : '0',
           deliveryPrice: deliveryPrice ? deliveryPrice.toString() : '0',
@@ -318,13 +326,15 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(newOrder, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create order error:', error);
     
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
     // Определение типа ошибки и предоставление соответствующего сообщения
-    if (error.message?.includes('Connection terminated') || 
-        error.message?.includes('timeout') || 
-        error.message?.includes('Connection pool is closed')) {
+    if (errorMessage.includes('Connection terminated') || 
+        errorMessage.includes('timeout') || 
+        errorMessage.includes('Connection pool is closed')) {
       return NextResponse.json(
         { error: 'Database connection error. Please try again later.' }, 
         { status: 503 }
@@ -332,7 +342,7 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { error: error.message || 'Failed to create order' }, 
+      { error: errorMessage || 'Failed to create order' }, 
       { status: 500 }
     );
   }

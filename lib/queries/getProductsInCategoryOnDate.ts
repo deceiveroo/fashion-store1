@@ -4,8 +4,9 @@ import {
   products, 
   categories,
   productImages
-} from '@/lib/db/schema';
-import { eq, and, lte, gte, isNull } from 'drizzle-orm';
+} from '@/lib/schema';
+import { productInStock, productFeatured } from '@/lib/product-query';
+import { eq, and, lte, gte, isNull, gt } from 'drizzle-orm';
 import { format, addDays } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -25,8 +26,8 @@ export async function getProductsInCategoryByIdOnDate(
         name: products.name,
         description: products.description,
         price: products.price,
-        inStock: products.inStock,
-        featured: products.featured,
+        inStock: productInStock,
+        featured: productFeatured,
         createdAt: products.createdAt,
         updatedAt: products.updatedAt,
         
@@ -53,7 +54,7 @@ export async function getProductsInCategoryByIdOnDate(
         productImages,
         eq(productImages.productId, products.id)
       )
-      .where(eq(products.inStock, true)); // Only in-stock products
+      .where(gt(products.stock, 0));
 
     return result;
   } catch (error) {
@@ -92,8 +93,8 @@ export async function getProductsInCategoryOnDate(slug: string, date: Date) {
         name: products.name,
         description: products.description,
         price: products.price,
-        inStock: products.inStock,
-        featured: products.featured,
+        inStock: productInStock,
+        featured: productFeatured,
         position: products.position,
         isFeatured: products.isFeatured,
         locale: products.locale,
@@ -130,7 +131,7 @@ export async function getProductsInCategoryOnDate(slug: string, date: Date) {
         productImages,
         eq(productImages.productId, products.id)
       )
-      .where(eq(products.inStock, true)); // Only in-stock products
+      .where(gt(products.stock, 0));
 
     return {
       success: true,

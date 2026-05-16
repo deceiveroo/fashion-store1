@@ -1,24 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productImages, productCategory, categories } from '@/lib/schema';
+import { products, productImages, productCategory } from '@/lib/schema';
+import { productListSelect } from '@/lib/product-query';
 import { eq, and, inArray, desc } from 'drizzle-orm';
 import { checkCanManageProducts } from '@/lib/server-auth';
 import { v4 as uuidv4 } from 'uuid';
 
 // Helper function with retry logic for Supabase pooler
 async function queryWithRetry<T>(queryFn: () => Promise<T>, maxRetries = 3): Promise<T> {
-  let lastError: any;
+  let lastError: unknown;
   
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await queryFn();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCode = error instanceof Error && 'code' in error ? (error as { code?: string }).code : undefined;
+      
       const isConnectionError = 
-        error.message?.includes('Connection terminated') ||
-        error.message?.includes('ECONNRESET') ||
-        error.message?.includes('Pool is draining and cannot accept new connections') ||
-        error.code === 'ECONNRESET';
+        errorMessage.includes('Connection terminated') ||
+        errorMessage.includes('ECONNRESET') ||
+        errorMessage.includes('Pool is draining and cannot accept new connections') ||
+        errorCode === 'ECONNRESET';
       
       if (isConnectionError && i < maxRetries - 1) {
         console.warn(`Query failed (attempt ${i + 1}), retrying...`, error.message);
@@ -43,16 +47,7 @@ export async function GET(request: NextRequest) {
     // Оптимизированный запрос с подзапросами вместо JOIN
     const filteredProducts = await queryWithRetry(() =>
       db
-        .select({
-          id: products.id,
-          name: products.name,
-          description: products.description,
-          price: products.price,
-          inStock: products.inStock,
-          featured: products.featured,
-          createdAt: products.createdAt,
-          updatedAt: products.updatedAt,
-        })
+        .select(productListSelect)
         .from(products)
         .orderBy(desc(products.createdAt))
         .limit(limit)
@@ -99,10 +94,11 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(productsWithImages);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching products:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: 'Failed to fetch products', details: error.message },
+      { error: 'Failed to fetch products', details: errorMessage },
       { status: 500 }
     );
   }
@@ -175,10 +171,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(newProduct);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating product:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: 'Failed to create product', details: error.message },
+      { error: 'Failed to create product', details: errorMessage },
       { status: 500 }
     );
   }

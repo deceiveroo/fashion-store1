@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // Увеличен таймаут до 15 секунд
 
-      const response = await fetch(`${API_URL}/auth/me`, {
+      const response = await fetch(`${API_URL}/user/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -142,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // Увеличен таймаут до 15 секунд
 
-      const response = await fetch(`${API_URL}/auth/me`, {
+      const response = await fetch(`${API_URL}/user/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -173,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // Уменьшен таймаут до 8 секунд
 
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_URL}/user/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -219,7 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // Уменьшен таймаут до 8 секунд
 
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await fetch(`${API_URL}/user/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -270,7 +270,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // Уменьшен таймаут до 8 секунд
 
-      const response = await fetch(`${API_URL}/auth/change-password`, {
+      const response = await fetch(`${API_URL}/user/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -310,6 +310,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = (): void => {
     setUser(null);
     removeToken();
+    // Also clear NextAuth session cookie if present
+    void import('next-auth/react')
+      .then(({ signOut }) => signOut({ redirect: false }))
+      .catch(() => {});
   };
 
   const addOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'status'>): Promise<Order> => {

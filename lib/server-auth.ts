@@ -16,8 +16,13 @@ import { cache } from 'react';
 // Cache session for the duration of the request to avoid multiple DB queries
 export const getSession = cache(async () => {
   try {
-    const session = await auth(); // v5: просто auth()
+    const session = await auth();
     if (!session?.user?.id) return null;
+
+    // Trust JWT for role/email — extra DB round-trip caused pool exhaustion under load
+    if (session.user.role && session.user.email) {
+      return session;
+    }
 
     const row = await safeQuery(async () => {
       const [result] = await db
@@ -42,10 +47,10 @@ export const getSession = cache(async () => {
       user: {
         ...session.user,
         id: row.id,
-        email: row.email,
-        name: row.name,
-        role: row.role ?? 'user',
-        image: row.image,
+        email: row.email ?? session.user.email,
+        name: row.name ?? session.user.name,
+        role: row.role ?? session.user.role ?? 'customer',
+        image: row.image ?? session.user.image,
       },
     };
   } catch (e) {

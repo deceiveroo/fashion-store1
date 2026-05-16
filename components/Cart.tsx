@@ -58,6 +58,21 @@ export default function Cart({ isOpen, onClose }: CartProps) {
 
   const finalTotal = Math.max(0, total - getDiscount());
 
+  // Free shipping threshold
+  const FREE_SHIPPING_THRESHOLD = 3000;
+  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - total);
+  const freeShippingProgress = Math.min(100, (total / FREE_SHIPPING_THRESHOLD) * 100);
+
+  // Next discount tier
+  const getNextDiscountTier = () => {
+    if (total < 1000) return { threshold: 1000, discount: 100, label: 'Скидка 100₽' };
+    if (total < 3000) return { threshold: 3000, discount: 300, label: 'Скидка 300₽' };
+    if (total < 5000) return { threshold: 5000, discount: 500, label: 'Скидка 500₽' };
+    return null;
+  };
+
+  const nextTier = getNextDiscountTier();
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -270,6 +285,70 @@ export default function Cart({ isOpen, onClose }: CartProps) {
               )}
             </div>
 
+            {/* Free Shipping Progress Bar & Upsell */}
+            {items.length > 0 && remainingForFreeShipping > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="px-6 py-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-t border-purple-100 dark:border-purple-800"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <Rocket className="w-4 h-4 text-purple-600" />
+                    До бесплатной доставки
+                  </span>
+                  <span className="text-sm font-bold text-purple-600">
+                    {remainingForFreeShipping.toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${freeShippingProgress}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"
+                  />
+                </div>
+                
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  Добавьте товаров на {remainingForFreeShipping.toLocaleString('ru-RU')} ₽ для бесплатной доставки!
+                </p>
+              </motion.div>
+            )}
+
+            {/* Discount Tier Upsell */}
+            {items.length > 0 && nextTier && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-t border-green-100 dark:border-green-800"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
+                    <Gift className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                      Получите {nextTier.label}!
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Добавьте ещё на {(nextTier.threshold - total).toLocaleString('ru-RU')} ₽
+                    </p>
+                    <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, (total / nextTier.threshold) * 100)}%` }}
+                        transition={{ duration: 0.5 }}
+                        className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {/* Footer with Enhanced Design */}
             {items.length > 0 && (
               <motion.div 
@@ -307,10 +386,14 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                   
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Доставка</span>
-                    <span className="text-green-600 font-semibold flex items-center gap-1">
-                      <Rocket size={14} />
-                      Бесплатно
-                    </span>
+                    {total >= FREE_SHIPPING_THRESHOLD ? (
+                      <span className="text-green-600 font-semibold flex items-center gap-1">
+                        <Rocket size={14} />
+                        Бесплатно
+                      </span>
+                    ) : (
+                      <span className="text-gray-900 dark:text-gray-200">300 ₽</span>
+                    )}
                   </div>
                   
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-3 flex justify-between items-center">

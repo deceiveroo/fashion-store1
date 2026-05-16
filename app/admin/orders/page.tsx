@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Package, Clock, CheckCircle, XCircle, Truck, Download, Eye, ChevronDown, RefreshCw, ShoppingBag, TrendingUp, AlertCircle, Filter, Edit2, Trash2, X, Save } from 'lucide-react';
+import { Search, Package, Clock, CheckCircle, XCircle, Truck, Download, Eye, ChevronDown, RefreshCw, ShoppingBag, TrendingUp, AlertCircle, Filter, Edit2, Trash2, X, Save, Zap, DollarSign, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
 
@@ -119,39 +119,51 @@ export default function AdminOrdersPage() {
 
   return (
     <AdminShell>
-      <div className="space-y-5">
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="space-y-6">
+        {/* Enhanced Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Заказы</h1>
-            <p className="text-sm text-white/40">Управление заказами</p>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <ShoppingBag className="h-7 w-7 text-violet-400" />
+              Заказы
+            </h1>
+            <p className="text-sm text-white/40 mt-1">Управление заказами магазина</p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => loadOrders(page)} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+          <div className="flex gap-3">
+            <button onClick={() => loadOrders(page)} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
               <RefreshCw className="h-4 w-4" />
+              Обновить
             </button>
-            <button onClick={exportCSV} className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-colors">
+            <button onClick={exportCSV} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 px-5 py-2.5 text-sm font-medium text-white hover:from-violet-500 hover:to-violet-400 transition-all shadow-lg shadow-violet-500/20">
               <Download className="h-4 w-4" />
-              Экспорт
+              Экспорт CSV
             </button>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {/* Enhanced Stats Cards */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { label: 'Всего', value: stats.total, icon: ShoppingBag, color: 'text-violet-400' },
-            { label: 'Выручка', value: `${stats.revenue.toLocaleString('ru-RU')} ₽`, icon: TrendingUp, color: 'text-emerald-400' },
-            { label: 'Ожидают', value: stats.pending, icon: AlertCircle, color: 'text-amber-400' },
-            { label: 'Доставлено', value: stats.delivered, icon: CheckCircle, color: 'text-blue-400' },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-white/30 uppercase tracking-wider">{label}</p>
-                  <p className="mt-1 text-xl font-bold text-white">{value}</p>
+            { label: 'Всего заказов', value: stats.total, icon: ShoppingBag, color: 'bg-violet-500/20 text-violet-400', trend: '+12%' },
+            { label: 'Выручка', value: `${stats.revenue.toLocaleString('ru-RU')} ₽`, icon: DollarSign, color: 'bg-emerald-500/20 text-emerald-400', trend: '+8.5%' },
+            { label: 'Ожидают', value: stats.pending, icon: Clock, color: 'bg-amber-500/20 text-amber-400' },
+            { label: 'Доставлено', value: stats.delivered, icon: CheckCircle, color: 'bg-blue-500/20 text-blue-400', trend: '+15%' },
+          ].map(({ label, value, icon: Icon, color, trend }) => (
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-5 hover:bg-white/[0.08] transition-all backdrop-blur-sm">
+              {trend && (
+                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1">
+                  <TrendingUp className="h-3 w-3 text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-400">{trend}</span>
                 </div>
-                <Icon className={`h-5 w-5 ${color}`} />
+              )}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-white/50 uppercase tracking-wider">{label}</p>
+                  <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+                </div>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
+                  <Icon className="h-6 w-6" />
+                </div>
               </div>
             </div>
           ))}

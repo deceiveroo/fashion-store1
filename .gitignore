@@ -45,7 +45,9 @@ nul
 env.backup
 restore-env.ps1
 
-# Guide and documentation files
+# Guide and documentation files (temporary notes)
+*.md
+!README.md
 QUICK_FIX_GUIDE.md
 QUICK_FIX_LOGIN.md
 QUICK_LOGIN.md
@@ -97,6 +99,78 @@ NEXTAUTH_V5_COMPARISON.md
 NEXTAUTH_V5_MIGRATION.md
 README-DRIZZLE.md
 README.setup.md
+
+# SQL migration and fix files (keep only in migrations folder)
+*.sql
+!migrations/*.sql
+
+# Test and temporary files
+*.test.*
+test-*.js
+test-*.ts
+*-test.js
+*-test.ts
+
+# Temporary admin audit and fix files
+ADMIN_*.md
+ALL_*.md
+AUDIT_*.md
+BULLETPROOF_*.sql
+CHAT_*.md
+CLEAN_*.sql
+COMPLETE_*.md
+CREATE_*.sql
+DESIGN_*.md
+DROP_*.sql
+EXECUTE_*.md
+FEATURES_*.md
+FINAL_*.md
+FIXED_*.md
+FIXES_*.md
+FIX_*.md
+HEALTH_*.md
+HOW_*.md
+MARKETING_*.md
+OPTIMIZATIONS_*.md
+PERFORMANCE_*.md
+PROJECT_*.md
+PROJECT_*.txt
+QUICK_*.md
+REALTIME_*.md
+RECOMMENDATIONS_*.md
+SET_*.sql
+STRUCTURE_*.txt
+STRUCTURE_*.md
+URGENT_*.md
+USE_*.md
+*_CHECKLIST.md
+*_COMPLETE.md
+*_GUIDE.md
+*_INSTRUCTIONS.md
+*_REPORT.md
+*_SOLUTION.md
+
+# Database check and verification scripts
+check-*.sql
+verify-*.sql
+fix-*.sql
+enable-*.sql
+create-*.sql
+add-*.sql
+reset-*.sql
+sync-*.sql
+
+# Supabase local config
+supabase/
+
+# Public uploads (avatars, etc.)
+public/uploads/
+
+# Drizzle generated files
+drizzle/meta/
+
+# TypeScript build info
+*.tsbuildinfo
 # Broken routes
 app/api/admin/contact-messages/
 app/api/create-payment-intent/

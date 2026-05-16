@@ -4,10 +4,37 @@ import { categories } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const categoriesList = await db.select().from(categories);
-    
+    let categoriesList;
+    try {
+      categoriesList = await db
+        .select({
+          id: categories.id,
+          name: categories.name,
+          slug: categories.slug,
+          description: categories.description,
+          image: categories.image,
+          parentId: categories.parentId,
+          isActive: categories.isActive,
+          sortOrder: categories.sortOrder,
+          createdAt: categories.createdAt,
+          updatedAt: categories.updatedAt,
+        })
+        .from(categories);
+    } catch {
+      categoriesList = await db
+        .select({
+          id: categories.id,
+          name: categories.name,
+          slug: categories.slug,
+          parentId: categories.parentId,
+          createdAt: categories.createdAt,
+          updatedAt: categories.updatedAt,
+        })
+        .from(categories);
+    }
+
     return NextResponse.json(categoriesList);
   } catch (error) {
     console.error('Ошибка получения категорий:', error);

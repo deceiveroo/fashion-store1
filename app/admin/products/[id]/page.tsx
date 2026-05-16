@@ -157,13 +157,16 @@ export default function EditProductPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`/api/products/${productId}`, {
+      const res = await fetch(`/api/admin/products/${productId}`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          description: formData.description,
           price: parseFloat(formData.price),
+          inStock: formData.inStock,
+          featured: formData.featured,
           categories: selectedCategories,
           images: images.length > 0 ? images : ['/placeholder-image.jpg'],
         }),
@@ -189,7 +192,7 @@ export default function EditProductPage() {
     }
 
     try {
-      const res = await fetch(`/api/products/${productId}`, {
+      const res = await fetch(`/api/admin/products/${productId}`, {
         method: 'DELETE',
         credentials: 'include',
       });

@@ -55,7 +55,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [expandedSections, setExpandedSections] = useState<Set<Section>>(new Set(['personal']));
+  const [activeSection, setActiveSection] = useState<Section>('personal');
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -71,11 +71,11 @@ export default function ProfilePage() {
   const [isUploading, setIsUploading] = useState(false);
 
   // Real data states
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [sessions, setSessions] = useState<UserSession[]>([]);
-  const [notifications, setNotifications] = useState<any>({});
+  const [notifications, setNotifications] = useState<Record<string, unknown>>({});
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Payment form
@@ -213,17 +213,6 @@ export default function ProfilePage() {
     }
   };
 
-  const toggleSection = (section: Section) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(section)) {
-        newSet.delete(section);
-      } else {
-        newSet.add(section);
-      }
-      return newSet;
-    });
-  };
 
   const handleAvatarClick = () => fileInputRef.current?.click();
 
@@ -239,9 +228,10 @@ export default function ProfilePage() {
       const oldAvatar = formData.avatar || user?.image;
       if (oldAvatar && oldAvatar.includes('supabase')) fd.append('oldUrl', oldAvatar);
       const token = localStorage.getItem('auth-token');
-      const res = await fetch('/api/upload', { 
-        method: 'POST', 
+      const res = await fetch('/api/profile/avatar', {
+        method: 'POST',
         body: fd,
+        credentials: 'include',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Ошибка загрузки'); }
@@ -457,8 +447,8 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-pink-50 to-purple-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 pt-20 pb-12">
-      <div className="max-w-5xl mx-auto px-4">
+    <div className="min-h-screen bg-white dark:bg-gray-950 pt-20 pb-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -485,7 +475,7 @@ export default function ProfilePage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 mb-6 border border-purple-100 dark:border-purple-900/50"
+          className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5 mb-6 border border-gray-200 dark:border-gray-800"
         >
           <div className="flex items-center gap-6 flex-wrap">
             {/* Avatar */}
@@ -495,7 +485,12 @@ export default function ProfilePage() {
               onClick={handleAvatarClick}
             >
               {formData.avatar ? (
-                <img src={formData.avatar} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={formData.avatar}
+                  alt={formData.firstName || 'Аватар'}
+                  className="w-full h-full object-cover"
+                  onError={() => setFormData((prev) => ({ ...prev, avatar: '' }))}
+                />
               ) : (
                 <span className="text-3xl font-bold text-purple-600 dark:text-purple-400">{getInitials()}</span>
               )}
@@ -538,11 +533,33 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
-        {/* Accordion Sections */}
+        <nav className="flex gap-2 overflow-x-auto mb-4 pb-1">
+          {sections.map((section) => {
+            const Icon = section.icon;
+            const isActive = activeSection === section.id;
+            return (
+              <button
+                key={`nav-${section.id}`}
+                type="button"
+                onClick={() => setActiveSection(section.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${
+                  isActive
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                <Icon size={15} />
+                {section.title}
+              </button>
+            );
+          })}
+        </nav>
+
         <div className="space-y-4">
           {sections.map((section, index) => {
             const Icon = section.icon;
-            const isExpanded = expandedSections.has(section.id);
+            const isExpanded = activeSection === section.id;
+            if (!isExpanded) return null;
 
             return (
               <motion.div
@@ -554,7 +571,7 @@ export default function ProfilePage() {
               >
                 {/* Section Header */}
                 <button
-                  onClick={() => toggleSection(section.id)}
+                  onClick={() => setActiveSection(section.id)}
                   className="w-full p-6 flex items-center justify-between hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-colors"
                 >
                   <div className="flex items-center gap-4">

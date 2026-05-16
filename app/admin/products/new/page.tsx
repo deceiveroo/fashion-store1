@@ -87,8 +87,9 @@ export default function NewProductPage() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Ошибка при загрузке файла');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(errorMessage || 'Ошибка при загрузке файла');
     } finally {
       setIsUploading(false);
     }

@@ -28,7 +28,8 @@ export async function GET() {
       passwordMatch: ok,
       hashPrefix: user.password?.substring(0, 7),
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: errorMessage });
   }
 }

@@ -10,7 +10,7 @@ export interface AchievementProgress {
 }
 
 // Award XP to user
-export async function awardXP(userId: string, amount: number, reason: string, metadata?: any) {
+export async function awardXP(userId: string, amount: number, reason: string, metadata?: Record<string, unknown>) {
   try {
     // Add XP to history
     await db.execute(sql`

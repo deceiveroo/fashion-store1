@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { supportChatSessions, supportChatMessages } from '@/lib/schema';
 import { desc, eq } from 'drizzle-orm';
 import { isAdmin } from '@/lib/server-auth';
+import { cache, CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,22 +13,50 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check cache first
+    const cacheKey = `${CACHE_KEYS.SITE_CONFIG}:support-chats:list`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     // Get all chat sessions
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const offset = (page - 1) * limit;
 
-    const sessions = await db
-      .select()
-      .from(supportChatSessions)
-      .orderBy(desc(supportChatSessions.lastMessageAt))
-      .limit(limit)
-      .offset(offset);
+    try {
+      const sessions = await db
+        .select()
+        .from(supportChatSessions)
+        .orderBy(desc(supportChatSessions.lastMessageAt))
+        .limit(limit)
+        .offset(offset);
 
-    return NextResponse.json({ sessions });
-  } catch (error: any) {
-    console.error('[ADMIN] Error fetching support chats:', error);
+      // Cache the result for 10 seconds to reduce DB load
+      const responseData = { sessions };
+      cache.set(cacheKey, responseData, CACHE_TTL.SHORT); // 10 seconds
+
+      return NextResponse.json(responseData);
+    } catch (dbError: unknown) {
+      const dbErrorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+      console.error('[ADMIN] Database error fetching support chats:', dbErrorMessage);
+      
+      // If table doesn't exist, return empty array with helpful message
+      if (dbErrorMessage.includes('does not exist') || dbErrorMessage.includes('relation')) {
+        return NextResponse.json({ 
+          sessions: [],
+          error: 'Database tables not initialized. Please run the migration SQL in Supabase.',
+          migrationFile: 'fix-chat-tables-final.sql'
+        });
+      }
+      
+      throw dbError;
+    }
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[ADMIN] Error fetching support chats:', errorMessage);
     return NextResponse.json(
       { error: 'Failed to fetch support chats' },
       { status: 500 }
@@ -50,7 +79,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
@@ -77,8 +106,9 @@ export async function PATCH(request: NextRequest) {
       .where(eq(supportChatSessions.sessionId, sessionId));
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('[ADMIN] Error updating support chat:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[ADMIN] Error updating support chat:', errorMessage);
     return NextResponse.json(
       { error: 'Failed to update support chat' },
       { status: 500 }
@@ -119,8 +149,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('[ADMIN] Error deleting support chat:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[ADMIN] Error deleting support chat:', errorMessage);
     return NextResponse.json(
       { error: 'Failed to delete support chat' },
       { status: 500 }

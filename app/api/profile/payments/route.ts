@@ -4,6 +4,14 @@ import { paymentMethods } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
 
+function isTableMissingError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    (message.includes('relation') && message.includes('does not exist')) ||
+    message.includes('"payment_methods"')
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
@@ -19,6 +27,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ methods });
   } catch (error) {
     console.error('Error fetching payment methods:', error);
+    if (isTableMissingError(error)) {
+      // Soft-fail for environments where optional profile tables are not migrated yet.
+      return NextResponse.json({ methods: [] });
+    }
     return NextResponse.json({ error: 'Failed to fetch payment methods' }, { status: 500 });
   }
 }

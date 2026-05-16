@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, TrendingUp, Users, Star, RefreshCw, Download } from 'lucide-react';
+import { MessageSquare, Users, Star, RefreshCw, Download } from 'lucide-react';
 import AdminShell from '@/components/admin/AdminShell';
 import { toast } from 'sonner';
 

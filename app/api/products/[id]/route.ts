@@ -1,37 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productImages, productCategory, categories } from '@/lib/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { products, productImages, productCategory } from '@/lib/schema';
+import { productInStock, productFeatured } from '@/lib/product-query';
+import { eq } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 import { canManageProducts } from '@/lib/admin-permissions';
 import { v4 as uuidv4 } from 'uuid';
 
-// Helper function with retry logic for Supabase pooler
 async function queryWithRetry<T>(queryFn: () => Promise<T>, maxRetries = 3): Promise<T> {
-  let lastError: any;
-  
+  let lastError: unknown;
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await queryFn();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
-      const isConnectionError = 
-        error.message?.includes('Connection terminated') ||
-        error.message?.includes('ECONNRESET') ||
-        error.message?.includes('Pool is draining and cannot accept new connections') ||
-        error.code === 'ECONNRESET';
-      
+      const err = error as { message?: string; code?: string };
+      const isConnectionError =
+        err.message?.includes('Connection terminated') ||
+        err.message?.includes('ECONNRESET') ||
+        err.message?.includes('Pool is draining') ||
+        err.code === 'ECONNRESET';
       if (isConnectionError && i < maxRetries - 1) {
-        console.warn(`Query failed (attempt ${i + 1}), retrying...`, error.message);
-        // Wait before retry (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+        await new Promise((resolve) => setTimeout(resolve, 500 * (i + 1)));
         continue;
       }
       throw error;
     }
   }
-  
   throw lastError;
+}
+
+function normalizeImages(images: unknown): string[] {
+  if (!Array.isArray(images)) return [];
+  return images
+    .map((img) => (typeof img === 'string' ? img : (img as { url?: string })?.url))
+    .filter((url): url is string => !!url && url.trim().length > 0);
 }
 
 export async function GET(
@@ -40,7 +43,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-
     if (!id) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
     }
@@ -52,8 +54,8 @@ export async function GET(
           name: products.name,
           description: products.description,
           price: products.price,
-          inStock: products.inStock,
-          featured: products.featured,
+          inStock: productInStock,
+          featured: productFeatured,
           createdAt: products.createdAt,
           imageId: productImages.id,
           imageUrl: productImages.url,
@@ -72,35 +74,30 @@ export async function GET(
 
     const firstProduct = productData[0];
     const images = productData
-      .filter(item => item.imageId)
-      .map(item => ({
+      .filter((item) => item.imageId && item.imageUrl)
+      .map((item) => ({
         id: item.imageId!,
-        url: item.imageUrl,
+        url: item.imageUrl!,
         isMain: item.imageIsMain ?? false,
         order: item.imageOrder,
       }));
 
-    const product = {
+    return NextResponse.json({
       id: firstProduct.id,
       name: firstProduct.name,
       description: firstProduct.description,
-      price: firstProduct.price,
+      price: parseFloat(String(firstProduct.price ?? '0')),
       inStock: firstProduct.inStock ?? true,
       featured: firstProduct.featured ?? false,
       createdAt: firstProduct.createdAt,
-      images,
-      mainImage: images.find(img => img.isMain)?.url || 
-                 images[0]?.url || 
-                 '/placeholder-image.jpg'
-    };
-
-    return NextResponse.json(product);
-  } catch (error: any) {
+      images: images.map((i) => i.url),
+      mainImage:
+        images.find((img) => img.isMain)?.url || images[0]?.url || '/placeholder-image.jpg',
+    });
+  } catch (error: unknown) {
     console.error('Error fetching product:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch product', details: error.message },
-      { status: 500 }
-    );
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: 'Failed to fetch product', details: errorMessage }, { status: 500 });
   }
 }
 
@@ -109,38 +106,32 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Проверяем, является ли пользователь администратором
     const session = await getSession();
-    
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     if (!canManageProducts(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
     const data = await request.json();
+    const imageUrls = normalizeImages(data.images);
+    const categoryIds: string[] = Array.isArray(data.categories) ? data.categories : [];
+    const inStock = data.inStock !== false;
+    const stock = inStock ? Math.max(Number(data.stock) || 10, 1) : 0;
 
-    if (!id) {
-      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
-    }
-
-    // Обновление продукта
     const [updatedProduct] = await queryWithRetry(() =>
       db
         .update(products)
         .set({
           name: data.name,
           description: data.description,
-          price: data.price,
-          inStock: data.inStock ?? true,
-          featured: data.featured ?? false,
-          position: data.position ?? 0,
-          isFeatured: data.isFeatured ?? false,
-          locale: data.locale || 'ru',
-          meta: data.meta || null,
+          price: String(data.price),
+          inStock,
+          featured: Boolean(data.featured),
+          stock,
+          categoryId: categoryIds[0] || null,
           updatedAt: new Date(),
         })
         .where(eq(products.id, id))
@@ -151,36 +142,40 @@ export async function PUT(
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    // Обновление изображений если предоставлены
-    if (data.images && Array.isArray(data.images)) {
-      // Сначала удаляем старые изображения
+    await queryWithRetry(() => db.delete(productImages).where(eq(productImages.productId, id)));
+
+    const urls = imageUrls.length > 0 ? imageUrls : ['/placeholder-image.jpg'];
+    await queryWithRetry(() =>
+      db.insert(productImages).values(
+        urls.map((url, index) => ({
+          id: uuidv4(),
+          productId: id,
+          url,
+          isMain: index === 0,
+          order: index,
+        }))
+      )
+    );
+
+    await queryWithRetry(() => db.delete(productCategory).where(eq(productCategory.productId, id)));
+
+    if (categoryIds.length > 0) {
       await queryWithRetry(() =>
-        db.delete(productImages).where(eq(productImages.productId, id))
+        db.insert(productCategory).values(
+          categoryIds.map((categoryId) => ({
+            id: uuidv4(),
+            productId: id,
+            categoryId,
+          }))
+        )
       );
-
-      // Затем добавляем новые
-      const imageValues = data.images.map((image: any) => ({
-        id: image.id || uuidv4(),
-        productId: id,
-        url: image.url,
-        isMain: image.isMain || false,
-        order: image.order || 0,
-      }));
-
-      if (imageValues.length > 0) {
-        await queryWithRetry(() =>
-          db.insert(productImages).values(imageValues)
-        );
-      }
     }
 
-    return NextResponse.json(updatedProduct);
-  } catch (error: any) {
+    return NextResponse.json({ message: 'Product updated', product: updatedProduct });
+  } catch (error: unknown) {
     console.error('Error updating product:', error);
-    return NextResponse.json(
-      { error: 'Failed to update product', details: error.message },
-      { status: 500 }
-    );
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: 'Failed to update product', details: errorMessage }, { status: 500 });
   }
 }
 
@@ -189,34 +184,34 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Проверяем, является ли пользователь администратором
     const session = await getSession();
-    
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     if (!canManageProducts(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
-
     if (!id) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
     }
 
-    // Удаляем продукт (каскадно удалятся связанные записи благодаря настройкам внешних ключей)
-    await queryWithRetry(() =>
-      db.delete(products).where(eq(products.id, id)).returning()
+    await queryWithRetry(() => db.delete(productCategory).where(eq(productCategory.productId, id)));
+    await queryWithRetry(() => db.delete(productImages).where(eq(productImages.productId, id)));
+
+    const deleted = await queryWithRetry(() =>
+      db.delete(products).where(eq(products.id, id)).returning({ id: products.id })
     );
 
+    if (deleted.length === 0) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
     return NextResponse.json({ message: 'Product deleted successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting product:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete product', details: error.message },
-      { status: 500 }
-    );
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: 'Failed to delete product', details: errorMessage }, { status: 500 });
   }
 }

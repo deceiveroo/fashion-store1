@@ -65,13 +65,14 @@ export default function SignUp() {
       });
       toast.success('Регистрация прошла успешно!');
       router.push('/auth/signin');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       // Проверяем, является ли ошибка сетевой
-      if (error.message.includes('Failed to fetch') || error.message.includes('сети') || error.message.includes('connection')) {
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('сети') || errorMessage.includes('connection')) {
         toast.error('Ошибка подключения. Проверьте интернет-соединение и повторите попытку.');
       } else {
-        toast.error(error.message || 'Ошибка при регистрации');
+        toast.error(errorMessage || 'Ошибка при регистрации');
       }
     } finally {
       setIsLoading(false);

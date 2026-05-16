@@ -30,15 +30,13 @@ export default function AddToCartButton({ product, disabled }: AddToCartButtonPr
   };
 
   return (
-    <motion.button
-      whileHover={{ scale: disabled ? 1 : 1.05 }}
-      whileTap={{ scale: disabled ? 1 : 0.95 }}
+    <button
       onClick={handleAddToCart}
       disabled={disabled}
-      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-3.5 px-6 text-sm font-medium hover:bg-gray-800 dark:hover:bg-neutral-200 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
     >
-      <ShoppingBag size={20} />
+      <ShoppingBag size={18} />
       {disabled ? 'Нет в наличии' : 'В корзину'}
-    </motion.button>
+    </button>
   );
 }

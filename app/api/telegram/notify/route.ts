@@ -51,8 +51,9 @@ export async function POST(request: NextRequest) {
     await sendTelegramMessage(ADMIN_CHAT_ID, text, keyboard);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('[TELEGRAM NOTIFY]', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[TELEGRAM NOTIFY]', errorMessage);
     return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 });
   }
 }

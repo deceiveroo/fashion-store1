@@ -6,6 +6,7 @@ import { eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import { users } from './schema';
 import type { NextAuthConfig } from 'next-auth';
+import { jwtVerify } from 'jose';
 
 // NextAuth v5 конфигурация
 export const authConfig: NextAuthConfig = {
@@ -105,11 +106,12 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
-        token.role = ((user as any).role ?? 'customer') as string;
-        token.image = (user as any).image;
+        token.role = ((user as { role?: string }).role ?? 'customer') as string;
+        token.image = (user as { image?: string | null }).image ?? undefined;
       }
+      // Refresh role/image only on explicit update — avoids DB hit on every session poll
       const uid = (token.id as string) || token.sub;
-      if (uid && (!token.role || !token.image || trigger === 'update')) {
+      if (uid && trigger === 'update') {
         const [u] = await db
           .select({ role: users.role, image: users.image })
           .from(users)
@@ -147,22 +149,13 @@ export async function verifyAuth(request: Request) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    
-    // Decode JWT token manually (simple base64 decode for payload)
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return null;
-    }
 
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-    
-    // Check if token is expired
-    if (payload.exp && payload.exp * 1000 < Date.now()) {
-      return null;
-    }
+    const secretValue = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
+    const secret = new TextEncoder().encode(secretValue);
+    const { payload } = await jwtVerify(token, secret);
 
-    // Get user ID from token
-    const userId = payload.id || payload.sub;
+    // Support both custom auth token ("userId") and NextAuth-like token ("id"/"sub")
+    const userId = (payload.userId as string) || (payload.id as string) || (payload.sub as string);
     if (!userId) {
       return null;
     }

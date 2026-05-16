@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Plus, Edit3, Trash2, Package, RefreshCw } from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, Package, RefreshCw, TrendingUp, Tag, Eye, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
 
@@ -51,49 +51,67 @@ export default function AdminProductsPage() {
 
   return (
     <AdminShell>
-      <div className="space-y-5">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      <div className="space-y-6">
+        {/* Enhanced Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Товары</h1>
-            <p className="text-sm text-white/40">{products.length} товаров в каталоге</p>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Tag className="h-7 w-7 text-violet-400" />
+              Товары
+            </h1>
+            <p className="text-sm text-white/40 mt-1">Управление каталогом товаров</p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={load} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+          <div className="flex gap-3">
+            <button onClick={load} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Обновить
             </button>
             <button onClick={() => router.push('/admin/products/new')}
-              className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-colors">
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 px-5 py-2.5 text-sm font-medium text-white hover:from-violet-500 hover:to-violet-400 transition-all shadow-lg shadow-violet-500/20">
               <Plus className="h-4 w-4" />
-              Добавить
+              Добавить товар
             </button>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Enhanced Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Всего', value: products.length, color: 'text-white' },
-            { label: 'В наличии', value: products.filter(p => p.inStock).length, color: 'text-emerald-400' },
-            { label: 'Нет в наличии', value: products.filter(p => !p.inStock).length, color: 'text-red-400' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
-              <p className={`text-2xl font-bold ${color}`}>{value}</p>
-              <p className="text-xs text-white/30 mt-1">{label}</p>
+            { label: 'Всего товаров', value: products.length, icon: Package, color: 'bg-violet-500/20 text-violet-400', trend: '+5%' },
+            { label: 'В наличии', value: products.filter(p => p.inStock).length, icon: CheckCircle, color: 'bg-emerald-500/20 text-emerald-400' },
+            { label: 'Нет в наличии', value: products.filter(p => !p.inStock).length, icon: AlertCircle, color: 'bg-red-500/20 text-red-400' },
+            { label: 'Рекомендуемые', value: products.filter(p => p.featured).length, icon: Eye, color: 'bg-blue-500/20 text-blue-400' },
+          ].map(({ label, value, icon: Icon, color, trend }) => (
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-5 hover:bg-white/[0.08] transition-all backdrop-blur-sm">
+              {trend && (
+                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1">
+                  <TrendingUp className="h-3 w-3 text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-400">{trend}</span>
+                </div>
+              )}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-white/50 uppercase tracking-wider">{label}</p>
+                  <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+                </div>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
+                  <Icon className="h-6 w-6" />
+                </div>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-3">
+        {/* Enhanced Filters */}
+        <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
-            <input type="text" placeholder="Поиск товаров..." value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-white placeholder-white/20 focus:border-violet-500/50 focus:outline-none" />
+            <input type="text" placeholder="Поиск по названию или описанию..." value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-white placeholder-white/20 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30" />
           </div>
           <select value={stockFilter} onChange={e => setStockFilter(e.target.value)}
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:outline-none">
-            <option value="all" className="bg-[#0f0f1a]">Все</option>
+            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-violet-500/50 focus:outline-none">
+            <option value="all" className="bg-[#0f0f1a]">Все товары</option>
             <option value="in" className="bg-[#0f0f1a]">В наличии</option>
             <option value="out" className="bg-[#0f0f1a]">Нет в наличии</option>
           </select>
@@ -130,21 +148,26 @@ export default function AdminProductsPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {p.mainImage ? (
-                            <img src={p.mainImage} alt={p.name} className="h-10 w-10 rounded-lg object-cover bg-white/5"
+                            <img src={p.mainImage} alt={p.name} className="h-12 w-12 rounded-xl object-cover bg-white/5 border border-white/10"
                               onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                           ) : (
-                            <div className="h-10 w-10 rounded-lg bg-white/5 flex items-center justify-center">
-                              <Package className="h-4 w-4 text-white/20" />
+                            <div className="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                              <Package className="h-5 w-5 text-white/20" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-xs font-medium text-white truncate max-w-[200px]">{p.name}</p>
-                            {p.featured && <span className="text-[10px] text-violet-400">★ Рекомендуемый</span>}
+                            <p className="text-xs font-semibold text-white truncate max-w-[200px]">{p.name}</p>
+                            {p.featured && (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-violet-400 mt-0.5">
+                                <Eye className="h-3 w-3" />
+                                Рекомендуемый
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-xs font-semibold text-white">{fmt(p.price)}</span>
+                        <span className="text-xs font-bold text-white">{fmt(p.price)}</span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border ${

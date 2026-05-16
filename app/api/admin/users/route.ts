@@ -6,21 +6,24 @@ import { getSession, isStaff, isAdmin } from '@/lib/server-auth';
 
 // Helper function with retry logic for Supabase pooler
 async function queryWithRetry<T>(queryFn: () => Promise<T>, maxRetries = 3): Promise<T> {
-  let lastError: any;
+  let lastError: unknown;
   
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await queryFn();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCode = error instanceof Error && 'code' in error ? (error as { code?: string }).code : undefined;
+      
       const isConnectionError = 
-        error.message?.includes('Connection terminated') ||
-        error.message?.includes('ECONNRESET') ||
-        error.message?.includes('Pool is draining and cannot accept new connections') ||
-        error.code === 'ECONNRESET';
+        errorMessage.includes('Connection terminated') ||
+        errorMessage.includes('ECONNRESET') ||
+        errorMessage.includes('Pool is draining and cannot accept new connections') ||
+        errorCode === 'ECONNRESET';
       
       if (isConnectionError && i < maxRetries - 1) {
-        console.warn(`Query failed (attempt ${i + 1}), retrying...`, error.message);
+        console.warn(`Query failed (attempt ${i + 1}), retrying...`, errorMessage);
         // Wait before retry (exponential backoff)
         await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
         continue;
@@ -144,7 +147,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Prepare user updates - sync image field with avatar
-    const userUpdates: any = {
+    const userUpdates: Record<string, unknown> = {
       ...updates,
       updatedAt: new Date(),
     };

@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       .where(inArray(orders.id, ids))
       .orderBy(desc(orders.createdAt));
 
-    const grouped = new Map<string, any>();
+    const grouped = new Map<string, Record<string, unknown>>();
     for (const row of rows) {
       if (!grouped.has(row.orderId)) {
         grouped.set(row.orderId, {
@@ -88,8 +88,9 @@ export async function GET(request: NextRequest) {
 
     const result = ids.map(id => grouped.get(id)).filter(Boolean);
     return NextResponse.json({ orders: result, total, page, limit });
-  } catch (error: any) {
-    console.error('[ADMIN ORDERS] GET error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[ADMIN ORDERS] GET error:', errorMessage);
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 }

@@ -4,6 +4,14 @@ import { userSessions } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
 
+function isTableMissingError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    (message.includes('relation') && message.includes('does not exist')) ||
+    message.includes('"user_sessions"')
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
@@ -64,6 +72,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ sessions: sessionsWithCurrent });
   } catch (error) {
     console.error('Error fetching sessions:', error);
+    if (isTableMissingError(error)) {
+      return NextResponse.json({ sessions: [] });
+    }
     return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 });
   }
 }

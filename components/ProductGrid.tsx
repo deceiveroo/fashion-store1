@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { products, productImages } from '@/lib/schema';
+import { productListSelect } from '@/lib/product-query';
 import { desc, eq } from 'drizzle-orm';
 import ProductCard from './ProductCard';
 
@@ -17,10 +18,6 @@ interface Product {
   price: number;
   inStock: boolean;
   featured: boolean;
-  position: number;
-  isFeatured: boolean;
-  locale: string;
-  meta: any;
   createdAt: Date;
   updatedAt: Date;
   images: ProductImage[];
@@ -28,21 +25,9 @@ interface Product {
 }
 
 async function getProducts(): Promise<Product[]> {
-  // Fetch all products with their images in a single query to avoid N+1
   const productsWithImages = await db
     .select({
-      id: products.id,
-      name: products.name,
-      description: products.description,
-      price: products.price,
-      inStock: products.inStock,
-      featured: products.featured,
-      position: products.position,
-      isFeatured: products.isFeatured,
-      locale: products.locale,
-      meta: products.meta,
-      createdAt: products.createdAt,
-      updatedAt: products.updatedAt,
+      ...productListSelect,
       imageId: productImages.id,
       imageUrl: productImages.url,
       imageIsMain: productImages.isMain,
@@ -52,80 +37,59 @@ async function getProducts(): Promise<Product[]> {
     .leftJoin(productImages, eq(productImages.productId, products.id))
     .orderBy(desc(products.createdAt), productImages.order);
 
-  // Process products and group images
-  const productMap = new Map<string, Product>();
-  
-  for (const item of productsWithImages) {
-    if (!productMap.has(item.id)) {
-      // Create new product
-      const product: Product = {
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        price: item.price,
-        inStock: item.inStock,
-        featured: item.featured,
-        position: item.position,
-        isFeatured: item.isFeatured,
-        locale: item.locale,
-        meta: item.meta,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        images: []
-      };
-      
-      // Add main image if available
-      if (item.imageId) {
-        product.images.push({
+  const groupedProducts = productsWithImages.reduce(
+    (acc, item) => {
+      if (!acc[item.id]) {
+        acc[item.id] = {
+          id: item.id,
+          name: item.name,
+          description: item.description ?? '',
+          price: parseFloat(String(item.price ?? '0')),
+          inStock: item.inStock,
+          featured: item.featured,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+          images: [] as ProductImage[],
+        };
+      }
+
+      if (item.imageId && item.imageUrl) {
+        acc[item.id].images.push({
           id: item.imageId,
           url: item.imageUrl,
-          isMain: item.imageIsMain,
-          order: item.imageOrder
+          isMain: item.imageIsMain ?? false,
+          order: item.imageOrder ?? 0,
         });
       }
-      
-      productMap.set(item.id, product);
-    } else {
-      // Add image to existing product
-      const product = productMap.get(item.id)!;
-      if (item.imageId) {
-        product.images.push({
-          id: item.imageId,
-          url: item.imageUrl,
-          isMain: item.imageIsMain,
-          order: item.imageOrder
-        });
-      }
-    }
-  }
 
-  // Convert to array and sort by creation date
-  const productsArray = Array.from(productMap.values())
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return acc;
+    },
+    {} as Record<string, Product>
+  );
 
-  // Calculate main image for each product
-  return productsArray.map(product => ({
+  return Object.values(groupedProducts).map((product) => ({
     ...product,
-    mainImage: product.images.find(img => img.isMain)?.url || 
-               product.images[0]?.url || 
-               '/placeholder-image.jpg'
+    mainImage:
+      product.images.find((img) => img.isMain)?.url ||
+      product.images[0]?.url ||
+      '/placeholder-image.jpg',
   }));
 }
 
 export default async function ProductGrid() {
-  const products = await getProducts();
+  const productList = await getProducts();
 
-  if (products.length === 0) {
+  if (productList.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Товары пока не добавлены</p>
+        <p className="text-gray-500">Товары не найдены</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-      {products.map((product) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {productList.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
     </div>

@@ -4,35 +4,39 @@ import { users, products, categories } from '@/lib/schema';
 import { sql } from 'drizzle-orm';
 
 export async function GET() {
-  const results: Record<string, any> = {};
+  const results: Record<string, unknown> = {};
 
   try {
     // 1. Basic connection test
     const ping = await db.execute(sql`SELECT 1 as ok`);
     results.connection = 'OK';
-  } catch (e: any) {
-    return NextResponse.json({ connection: 'FAILED', error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ connection: 'FAILED', error: errorMessage }, { status: 500 });
   }
 
   try {
     const [row] = await db.select({ count: sql<number>`count(*)` }).from(users);
     results.users_count = Number(row.count);
-  } catch (e: any) {
-    results.users_error = e.message;
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    results.users_error = errorMessage;
   }
 
   try {
     const [row] = await db.select({ count: sql<number>`count(*)` }).from(products);
     results.products_count = Number(row.count);
-  } catch (e: any) {
-    results.products_error = e.message;
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    results.products_error = errorMessage;
   }
 
   try {
     const [row] = await db.select({ count: sql<number>`count(*)` }).from(categories);
     results.categories_count = Number(row.count);
-  } catch (e: any) {
-    results.categories_error = e.message;
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    results.categories_error = errorMessage;
   }
 
   try {

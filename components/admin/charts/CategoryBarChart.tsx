@@ -9,7 +9,7 @@ interface CategoryBarChartProps {
 export function CategoryBarChart({ data }: CategoryBarChartProps) {
   return (
     <div className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={300} minWidth={0}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-zinc-800" />
           <XAxis 

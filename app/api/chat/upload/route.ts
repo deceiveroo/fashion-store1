@@ -3,13 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error('Supabase URL и/или Service Role Key не настроены');
+  }
+
+  return createClient(supabaseUrl, supabaseServiceRoleKey);
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getSupabaseClient();
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -47,8 +54,9 @@ export async function POST(request: NextRequest) {
       .getPublicUrl(fileName);
 
     return NextResponse.json({ success: true, url: publicUrl });
-  } catch (error: any) {
-    console.error('[CHAT UPLOAD]', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[CHAT UPLOAD]', errorMessage);
     return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
   }
 }

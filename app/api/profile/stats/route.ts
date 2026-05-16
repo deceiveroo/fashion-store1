@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, safeQuery } from '@/lib/db';
-import { orders, orderItems, users } from '@/lib/schema';
+import { orders, orderItems } from '@/lib/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';

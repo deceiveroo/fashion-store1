@@ -104,8 +104,9 @@ export async function POST(request: NextRequest) {
       .getPublicUrl(fileName);
 
     return NextResponse.json({ success: true, url: publicUrl });
-  } catch (error: any) {
-    console.error('[UPLOAD] Error:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[UPLOAD] Error:', errorMessage);
     return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { userWishlistItems, products, productImages } from '@/lib/db/schema';
+import { userWishlistItems, products, productImages } from '@/lib/schema';
+import { productInStock } from '@/lib/product-query';
 import { eq, and, desc } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
 
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
           id: products.id,
           name: products.name,
           price: products.price,
-          inStock: products.inStock,
+          inStock: productInStock,
         },
       })
       .from(userWishlistItems)

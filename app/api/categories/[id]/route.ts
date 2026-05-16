@@ -41,7 +41,7 @@ export async function PUT(
     const body = await request.json();
     const { name, slug, parentId, isFeatured } = body;
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
     if (slug !== undefined) updateData.slug = slug;
     if (parentId !== undefined) updateData.parentId = parentId;

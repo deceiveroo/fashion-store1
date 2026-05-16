@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, FileSpreadsheet, TrendingUp, Package, DollarSign, RefreshCw } from 'lucide-react';
+import { Download, TrendingUp, Package, DollarSign, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
 
@@ -11,7 +11,7 @@ export default function AdminReportsPage() {
   const [loading, setLoading] = useState(false);
   const [range, setRange] = useState('month');
   const [salesData, setSalesData] = useState<ReportData[]>([]);
-  const [inventoryData, setInventoryData] = useState<any[]>([]);
+  const [inventoryData, setInventoryData] = useState<Record<string, unknown>[]>([]);
 
   const load = async () => {
     setLoading(true);
@@ -28,10 +28,10 @@ export default function AdminReportsPage() {
 
   useEffect(() => { load(); }, [range]);
 
-  const exportCSV = (data: any[], filename: string, headers: Record<string, string>) => {
+  const exportCSV = (data: unknown[], filename: string, headers: Record<string, string>) => {
     if (!data.length) { toast.error('Нет данных'); return; }
     const keys = Object.keys(headers);
-    const rows = [Object.values(headers).join(','), ...data.map(r => keys.map(k => r[k] ?? '').join(','))].join('\n');
+    const rows = [Object.values(headers).join(','), ...data.map(r => keys.map(k => (r as Record<string, unknown>)[k] ?? '').join(','))].join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['\uFEFF'+rows], { type: 'text/csv;charset=utf-8;' }));
     a.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;

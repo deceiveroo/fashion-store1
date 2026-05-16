@@ -52,19 +52,20 @@ export default function SignIn() {
       const { signIn } = await import('next-auth/react');
       await signIn('credentials', { email, password, redirect: false });
       router.push(callbackUrl);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       // Проверяем, является ли ошибка сетевой
-      if (error.message.includes('Failed to fetch') || 
-          error.message.includes('сети') || 
-          error.message.includes('connection') ||
-          error.message.includes('timeout') ||
-          error.message.includes('Время ожидания запроса истекло')) {
+      if (errorMessage.includes('Failed to fetch') || 
+          errorMessage.includes('сети') || 
+          errorMessage.includes('connection') ||
+          errorMessage.includes('timeout') ||
+          errorMessage.includes('Время ожидания запроса истекло')) {
         toast.error('Ошибка подключения. Проверьте интернет-соединение и повторите попытку.');
-      } else if (error.message.includes('401')) {
+      } else if (errorMessage.includes('401')) {
         toast.error('Неверный email или пароль');
       } else {
-        toast.error(error.message || 'Ошибка при входе в систему');
+        toast.error(errorMessage || 'Ошибка при входе в систему');
       }
     } finally {
       setIsLoading(false);
@@ -172,14 +173,14 @@ export default function SignIn() {
             </motion.div>
 
             {/* Admin Hint */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-center text-sm text-gray-500 bg-purple-50 rounded-lg p-3"
-            >
-              <strong>Доступ администратора:</strong> ХУЙ ВАМ НЕ СКАЖУ ЭТО МНЕ ДЛЯ ПРОВЕРКИ
-            </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-center text-sm text-gray-500 bg-purple-50 rounded-lg p-3"
+          >
+            <strong>Подсказка:</strong> используйте email и пароль, указанные при регистрации.
+          </motion.div>
 
             {/* Submit Button */}
             <motion.button

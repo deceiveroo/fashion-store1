@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { db } from '@/lib/db';
 import { products, productImages } from '@/lib/schema';
+import { productInStock, productFeatured } from '@/lib/product-query';
 import { eq, desc } from 'drizzle-orm';
 import ProductCard from '@/components/ProductCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -17,8 +18,8 @@ const getCachedProducts = unstable_cache(
         name: products.name,
         description: products.description,
         price: products.price,
-        inStock: products.inStock,
-        featured: products.featured,
+        inStock: productInStock,
+        featured: productFeatured,
         createdAt: products.createdAt,
         updatedAt: products.updatedAt,
         imageId: productImages.id,

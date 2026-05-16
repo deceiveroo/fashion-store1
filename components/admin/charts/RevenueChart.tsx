@@ -1,50 +1,44 @@
 'use client';
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useChartTheme } from '@/hooks/useChartTheme';
 
 interface RevenueChartProps {
   data: Array<{ month: string; revenue: number; orders: number }>;
 }
 
 export function RevenueChart({ data }: RevenueChartProps) {
+  const chart = useChartTheme();
+
+  if (!chart.mounted) {
+    return <div className="h-[300px] w-full min-h-[300px] animate-pulse rounded-xl bg-[var(--admin-bg-muted)]" />;
+  }
+
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-[300px] w-full min-h-[300px] min-w-0">
+      <ResponsiveContainer width="100%" height={300} minWidth={0}>
         <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={chart.isDark ? 0.35 : 0.25} />
+              <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-zinc-800" />
-          <XAxis 
-            dataKey="month" 
-            stroke="#9ca3af" 
-            style={{ fontSize: '12px' }}
-            className="dark:stroke-zinc-600"
+          <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+          <XAxis dataKey="month" stroke={chart.axis} tick={{ fill: chart.axis, fontSize: 12 }} />
+          <YAxis stroke={chart.axis} tick={{ fill: chart.axis, fontSize: 12 }} />
+          <Tooltip
+            contentStyle={chart.tooltip}
+            labelStyle={{ color: chart.tooltip.color, fontWeight: 600 }}
+            formatter={(value: number) => [`${Math.round(value).toLocaleString('ru-RU')} ₽`, 'Выручка']}
           />
-          <YAxis 
-            stroke="#9ca3af" 
-            style={{ fontSize: '12px' }}
-            className="dark:stroke-zinc-600"
-          />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-            }}
-            labelStyle={{ color: '#374151', fontWeight: 600 }}
-          />
-          <Area 
-            type="monotone" 
-            dataKey="revenue" 
-            stroke="#8b5cf6" 
+          <Area
+            type="monotone"
+            dataKey="revenue"
+            stroke="#8b5cf6"
             strokeWidth={2}
-            fillOpacity={1} 
-            fill="url(#colorRevenue)" 
+            fillOpacity={1}
+            fill="url(#colorRevenue)"
           />
         </AreaChart>
       </ResponsiveContainer>

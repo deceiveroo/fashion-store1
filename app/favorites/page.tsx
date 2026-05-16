@@ -3,9 +3,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingCart, Eye, Trash2 } from 'lucide-react';
+import { Heart, ShoppingCart, Eye, Trash2, Share2, Download, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
 interface FavoriteItem {
@@ -22,15 +23,38 @@ interface FavoriteItem {
 
 export default function FavoritesPage() {
   const { user } = useAuth();
+  const { addToCart } = useCart();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+  const [priceDrops, setPriceDrops] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
       fetchFavorites();
+      checkPriceDrops();
     }
   }, [user]);
+
+  const checkPriceDrops = async () => {
+    try {
+      const response = await fetch('/api/wishlist/price-check');
+      if (response.ok) {
+        const data = await response.json();
+        // Check for items with compareAtPrice > currentPrice (discounted)
+        const drops = (data.items || []).filter((item: any) => 
+          item.compareAtPrice && Number(item.currentPrice) < Number(item.compareAtPrice)
+        ).map((item: any) => ({
+          ...item,
+          discount: Number(item.compareAtPrice) - Number(item.currentPrice),
+          discountPercent: Math.round(((Number(item.compareAtPrice) - Number(item.currentPrice)) / Number(item.compareAtPrice)) * 100),
+        }));
+        setPriceDrops(drops);
+      }
+    } catch (error) {
+      console.error('Error checking price drops:', error);
+    }
+  };
 
   const fetchFavorites = async () => {
     try {
@@ -83,6 +107,46 @@ export default function FavoritesPage() {
         return newSet;
       });
     }
+  };
+
+  const shareWishlist = async () => {
+    const shareUrl = `${window.location.origin}/favorites?shared=${user?.id}`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Мой список желаний',
+          text: `Посмотрите мои избранные товары! ${favorites.length} товаров`,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Ссылка скопирована в буфер обмена!');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
+  const addAllToCart = () => {
+    const inStockItems = favorites.filter(item => item.inStock);
+    
+    if (inStockItems.length === 0) {
+      toast.error('Нет товаров в наличии');
+      return;
+    }
+
+    inStockItems.forEach(item => {
+      addToCart({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        image: item.image,
+        quantity: 1,
+      });
+    });
+
+    toast.success(`Добавлено ${inStockItems.length} товаров в корзину`);
   };
 
   if (!user) {
@@ -161,6 +225,61 @@ export default function FavoritesPage() {
             {favorites.length} товар{favorites.length !== 1 ? 'а' : ''} в избранном
           </p>
         </motion.div>
+
+        {/* Price Drops Alert */}
+        {priceDrops.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                <Tag className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-green-900 dark:text-green-100">
+                  Цены снизились!
+                </h3>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  {priceDrops.length} товар{priceDrops.length !== 1 ? 'а' : ''} со скидкой
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {priceDrops.slice(0, 3).map((drop) => (
+                <div key={drop.productId} className="flex items-center justify-between bg-white/50 dark:bg-black/20 rounded-lg p-2">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate flex-1">
+                    {drop.productName}
+                  </span>
+                  <span className="ml-2 text-sm font-bold text-green-600">
+                    -{drop.discountPercent}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 mb-6">
+          <button
+            onClick={addAllToCart}
+            disabled={favorites.length === 0}
+            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+          >
+            <ShoppingCart size={20} />
+            Добавить все в корзину
+          </button>
+          
+          <button
+            onClick={shareWishlist}
+            className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-all border border-gray-200 shadow-md hover:shadow-lg"
+          >
+            <Share2 size={20} />
+            Поделиться
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {favorites.map((item, index) => (

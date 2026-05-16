@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { products } from '@/lib/db/schema';  // Updated import path
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const allProducts = await db.select().from(products);
     return new Response(JSON.stringify(allProducts), {

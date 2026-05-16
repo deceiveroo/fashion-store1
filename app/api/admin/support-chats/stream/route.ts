@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
         'X-Accel-Buffering': 'no', // Отключаем буферизацию в nginx
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SSE] Error:', error);
     return new Response('Internal Server Error', { status: 500 });
   }

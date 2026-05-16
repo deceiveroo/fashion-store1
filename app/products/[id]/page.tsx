@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
-import { products, productImages, productCategory, categories } from '@/lib/db/schema';
+import { products, productImages, productCategory, categories } from '@/lib/schema';
+import { productInStock, productFeatured } from '@/lib/product-query';
 import { eq, and, inArray } from 'drizzle-orm';
 import ProductClient from '@/components/ProductClient';
 
@@ -17,8 +18,8 @@ async function getProduct(id: string) {
         name: products.name,
         description: products.description,
         price: products.price,
-        inStock: products.inStock,
-        featured: products.featured,
+        inStock: productInStock,
+        featured: productFeatured,
         createdAt: products.createdAt,
         images: productImages,
         categoryId: categories.id,

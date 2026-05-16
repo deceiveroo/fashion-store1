@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Получаем userId из сессии или используем demo
     const cookieStore = await cookies();

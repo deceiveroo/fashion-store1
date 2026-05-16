@@ -4,6 +4,35 @@ import { notificationSettings } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
 
+function isTableMissingError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    (message.includes('relation') && message.includes('does not exist')) ||
+    message.includes('"notification_settings"')
+  );
+}
+
+const defaultSettings = {
+  ordersEmail: true,
+  ordersPush: true,
+  ordersSms: true,
+  promotionsEmail: true,
+  promotionsPush: false,
+  promotionsSms: false,
+  wishlistEmail: true,
+  wishlistPush: true,
+  wishlistSms: false,
+  priceDropsEmail: true,
+  priceDropsPush: true,
+  priceDropsSms: false,
+  newsletterEmail: true,
+  newsletterPush: false,
+  newsletterSms: false,
+  securityEmail: true,
+  securityPush: true,
+  securitySms: true,
+};
+
 export async function GET(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
@@ -19,37 +48,23 @@ export async function GET(request: NextRequest) {
 
     if (settings.length === 0) {
       // Create default settings
-      const [defaultSettings] = await db
+      const [createdSettings] = await db
         .insert(notificationSettings)
         .values({
           userId: user.id,
-          ordersEmail: true,
-          ordersPush: true,
-          ordersSms: true,
-          promotionsEmail: true,
-          promotionsPush: false,
-          promotionsSms: false,
-          wishlistEmail: true,
-          wishlistPush: true,
-          wishlistSms: false,
-          priceDropsEmail: true,
-          priceDropsPush: true,
-          priceDropsSms: false,
-          newsletterEmail: true,
-          newsletterPush: false,
-          newsletterSms: false,
-          securityEmail: true,
-          securityPush: true,
-          securitySms: true,
+          ...defaultSettings,
         })
         .returning();
 
-      return NextResponse.json({ settings: defaultSettings });
+      return NextResponse.json({ settings: createdSettings });
     }
 
     return NextResponse.json({ settings: settings[0] });
   } catch (error) {
     console.error('Error fetching notification settings:', error);
+    if (isTableMissingError(error)) {
+      return NextResponse.json({ settings: defaultSettings });
+    }
     return NextResponse.json({ error: 'Failed to fetch notification settings' }, { status: 500 });
   }
 }

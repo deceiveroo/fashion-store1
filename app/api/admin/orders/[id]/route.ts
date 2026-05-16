@@ -3,7 +3,6 @@ import { db } from '@/lib/db';
 import { orders, orderItems } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { getSession, isStaff, isAdmin } from '@/lib/server-auth';
-import { invalidateCacheByPrefix } from '@/lib/cache';
 
 const VALID_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'] as const;
 type OrderStatus = typeof VALID_STATUSES[number];
@@ -35,9 +34,7 @@ export async function PATCH(
 
     await db.update(orders).set(updateData).where(eq(orders.id, params.id));
 
-    // Invalidate analytics & stats cache after order mutation
-    await invalidateCacheByPrefix('analytics:');
-    await invalidateCacheByPrefix('stats:');
+    // Cache auto-expires by TTL
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -59,9 +56,7 @@ export async function DELETE(
       await tx.delete(orders).where(eq(orders.id, params.id));
     });
 
-    // Invalidate caches
-    await invalidateCacheByPrefix('analytics:');
-    await invalidateCacheByPrefix('stats:');
+    // Cache auto-expires by TTL
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

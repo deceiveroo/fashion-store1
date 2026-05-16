@@ -1,6 +1,6 @@
 import { db } from './db';
 import { products, users, categories, productCategory, productImages } from './db/schema';
-import { eq, and, or, sql } from 'drizzle-orm';
+import { eq, or, sql } from 'drizzle-orm';
 
 export async function seedDatabase() {
   // Seed categories first

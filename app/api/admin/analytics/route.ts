@@ -4,7 +4,7 @@ import { users, orders, orderItems } from '@/lib/schema';
 import { count, sql, gte, desc } from 'drizzle-orm';
 import { isStaff } from '@/lib/server-auth';
 import { subMonths, format, startOfMonth } from 'date-fns';
-import { getCached, setCache, TTL } from '@/lib/cache';
+import { cache, CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,20 +15,18 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') || 'dashboard';
     const cacheKey = `analytics:${type}`;
 
-    const cached = await getCached(cacheKey);
+    const cached = cache.get(cacheKey);
     if (cached) return NextResponse.json(cached);
 
-    let data: any;
+    let data: unknown;
 
     switch (type) {
       case 'dashboard': {
-        const [revenue, ordersByStatus, topProducts, customerGrowth, transactions] = await Promise.all([
-          fetchRevenueByMonth(),
-          fetchOrdersByStatus(),
-          fetchTopProducts(),
-          fetchCustomerGrowth(),
-          fetchRecentTransactions(),
-        ]);
+        const revenue = await fetchRevenueByMonth();
+        const ordersByStatus = await fetchOrdersByStatus();
+        const topProducts = await fetchTopProducts();
+        const customerGrowth = await fetchCustomerGrowth();
+        const transactions = await fetchRecentTransactions();
         data = { revenueByMonth: revenue, ordersByStatus, topProducts, customerGrowth, transactions };
         break;
       }
@@ -51,7 +49,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
     }
 
-    await setCache(cacheKey, data, TTL.ANALYTICS);
+    cache.set(cacheKey, data, CACHE_TTL.LONG);
     return NextResponse.json(data);
   } catch (error) {
     console.error('Analytics API error:', error);

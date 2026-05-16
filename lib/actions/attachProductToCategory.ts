@@ -9,7 +9,6 @@ import {
   categories, 
   linkEvents 
 } from '@/lib/db/schema';
-import { nanoid } from 'nanoid';
 
 export interface AttachProductToCategoryParams {
   productId?: string;
@@ -18,7 +17,7 @@ export interface AttachProductToCategoryParams {
   isFeatured?: boolean;
   locale?: string;
   reason?: string;
-  meta?: any;
+  meta?: Record<string, unknown>;
   validFrom?: Date | null;
   validTo?: Date | null;
 }

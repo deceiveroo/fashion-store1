@@ -9,7 +9,7 @@ export async function GET() {
     const configRows = await db.select().from(settings);
     
     // Convert the rows to a key-value object
-    const config: Record<string, any> = {};
+    const config: Record<string, unknown> = {};
     configRows.forEach(row => {
       try {
         // Attempt to parse the value as JSON, fallback to raw value
