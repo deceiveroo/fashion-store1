@@ -103,6 +103,17 @@ README.setup.md
 # SQL migration and fix files (keep only in migrations folder)
 *.sql
 !migrations/*.sql
+!add-admin-indexes.sql
+!add-chat-tables.sql
+!add-profile-features-tables.sql
+!add-profile-tables.sql
+!check-chat-tables.sql
+!clean-and-reset.sql
+!create-gamification-tables.sql
+!fix-database-schema.sql
+!fix-missing-columns.sql
+!init-database.sql
+!seed-products.sql
 
 # Test and temporary files
 *.test.*
