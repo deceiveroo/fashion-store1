@@ -33,7 +33,20 @@ export async function GET(request: NextRequest) {
     if (favoriteProductIds.length === 0) return NextResponse.json([]);
 
     const [favoriteProducts, allImages] = await Promise.all([
-      safeQuery(() => db.select().from(products).where(inArray(products.id, favoriteProductIds))),
+      safeQuery(() => 
+        db.select({
+          id: products.id,
+          name: products.name,
+          description: products.description,
+          price: products.price,
+          stock: products.stock,
+          featured: products.featured,
+          isActive: products.isActive,
+          slug: products.slug,
+          createdAt: products.createdAt,
+          updatedAt: products.updatedAt,
+        }).from(products).where(inArray(products.id, favoriteProductIds))
+      ),
       safeQuery(() => db.select().from(productImages).where(inArray(productImages.productId, favoriteProductIds)).orderBy(productImages.order)),
     ]);
 
