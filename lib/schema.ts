@@ -99,7 +99,7 @@ export const products = pgTable('products', {
   sku: text('sku').notNull().unique(),
   price: decimal('price', { precision: 10, scale: 2 }).notNull(), // Price in cents
   compareAtPrice: decimal('compare_at_price', { precision: 10, scale: 2 }), // Original price for comparison
-  cost: decimal('cost', { precision: 10, scale: 2 }), // Cost to merchant
+  cost: decimal('cost_price', { precision: 10, scale: 2 }), // Cost to merchant (DB column: cost_price)
   stock: integer('stock').default(0).notNull(),
   weight: decimal('weight', { precision: 8, scale: 2 }), // In grams
   categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
