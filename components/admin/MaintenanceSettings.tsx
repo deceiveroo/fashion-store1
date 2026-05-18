@@ -457,6 +457,13 @@ export default function MaintenanceSettings() {
           <Save className="h-4 w-4" />
           {isSaving ? 'Сохранение...' : 'Сохранить настройки'}
         </button>
+
+        {/* Quick toggle for testing */}
+        <div className="pt-4 border-t border-white/10">
+          <p className="text-xs text-white/30 mb-2">
+            💡 Если изменения не применяются, попробуйте обновить страницу (F5)
+          </p>
+        </div>
       </motion.div>
 
       {/* Preview Link */}

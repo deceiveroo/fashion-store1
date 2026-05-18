@@ -251,7 +251,7 @@ export default function MaintenancePage() {
               </motion.div>
             )}
 
-            {/* Gallery */}
+            {/* Gallery - Displayed as cards, not background */}
             {config.galleryImages && config.galleryImages.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -259,26 +259,33 @@ export default function MaintenancePage() {
                 transition={{ delay: 0.7 }}
                 className="mt-8"
               >
-                <h3 className="text-white/60 text-sm font-medium mb-4 text-center">Наши работы</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <h3 className="text-white/80 text-lg font-semibold mb-6 text-center">✨ Наши работы</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {config.galleryImages.map((img, index) => (
                     <motion.div
                       key={index}
-                      initial={{ opacity: 0, scale: 0.8 }}
+                      initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.8 + index * 0.1 }}
-                      whileHover={{ scale: 1.05 }}
-                      className="relative aspect-square rounded-xl overflow-hidden border border-white/20 group"
+                      whileHover={{ scale: 1.02, y: -5 }}
+                      className="relative group"
                     >
-                      <img
-                        src={img}
-                        alt={`Gallery ${index + 1}`}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden shadow-xl">
+                        <div className="aspect-video relative overflow-hidden">
+                          <img
+                            src={img}
+                            alt={`Gallery ${index + 1}`}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </div>
+                        <div className="p-4">
+                          <p className="text-white/60 text-sm">Проект #{index + 1}</p>
+                        </div>
+                      </div>
                     </motion.div>
                   ))}
                 </div>

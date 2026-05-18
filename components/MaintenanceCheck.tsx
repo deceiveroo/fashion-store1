@@ -38,16 +38,26 @@ export default function MaintenanceCheck({ children }: { children: React.ReactNo
     }
 
     // Check maintenance status for non-admin users
-    fetch('/api/maintenance/status')
-      .then((res) => res.json())
-      .then((data: MaintenanceStatus) => {
-        setIsMaintenanceMode(data.maintenanceMode);
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error checking maintenance status:', error);
-        setIsLoading(false);
-      });
+    const checkStatus = () => {
+      fetch('/api/maintenance/status', { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data: MaintenanceStatus) => {
+          console.log('Maintenance status:', data.maintenanceMode);
+          setIsMaintenanceMode(data.maintenanceMode);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error checking maintenance status:', error);
+          setIsLoading(false);
+        });
+    };
+
+    checkStatus();
+    
+    // Refresh every 30 seconds to catch status changes
+    const interval = setInterval(checkStatus, 30000);
+    
+    return () => clearInterval(interval);
   }, [isExemptPath, isAdmin]);
 
   if (isLoading) {
