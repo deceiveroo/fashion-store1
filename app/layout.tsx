@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans, Oswald } from 'next/font/google';
 import './globals.css';
 import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -16,12 +16,20 @@ const inter = Inter({
   display: 'swap',
 });
 
-// Шрифт для заголовков - более стильный
+// Шрифт для заголовков - стильный и современный
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin', 'latin-ext'],
   variable: '--font-jakarta',
   display: 'swap',
   weight: ['400', '500', '600', '700', '800'],
+});
+
+// Шрифт Oswald для крупных заголовков (с поддержкой кириллицы)
+const oswald = Oswald({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-oswald',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -39,7 +47,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased text-gray-900 dark:text-gray-100`}>
+      <body className={`${inter.variable} ${jakarta.variable} ${oswald.variable} font-sans antialiased text-gray-900 dark:text-gray-100`}>
         <script
           dangerouslySetInnerHTML={{
             __html: `
