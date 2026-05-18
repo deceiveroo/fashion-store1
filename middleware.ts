@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { auth } from './lib/auth';
 
 // NOTE: In-memory rate limiting works only for single-instance deployments.
 // For Vercel (multi-instance), upgrade to @upstash/ratelimit + Redis.
@@ -36,11 +37,32 @@ const SECURITY_HEADERS = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
 
-export function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   cleanupExpired();
 
   const { pathname } = request.nextUrl;
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
+
+  // Check authentication for admin routes
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+    const session = await auth();
+    
+    if (!session?.user) {
+      // Not authenticated - redirect to login
+      const url = new URL('/auth/signin', request.url);
+      url.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(url);
+    }
+    
+    // Check if user has staff role
+    const userRole = session.user.role;
+    const isStaff = ['admin', 'manager', 'support'].includes(userRole || '');
+    
+    if (!isStaff) {
+      // Not a staff member - redirect to home
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
 
   // Rate limiting for API routes
   if (pathname.startsWith('/api/')) {

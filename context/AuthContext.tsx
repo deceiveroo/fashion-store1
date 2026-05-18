@@ -2,6 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react';
 
 export interface OrderItem {
   id: string;
@@ -66,11 +67,33 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { data: session, status } = useSession();
 
-  // Проверяем авторизацию при загрузке
+  // Синхронизируем состояние пользователя с NextAuth сессией
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (status === 'loading') {
+      setIsLoading(true);
+      return;
+    }
+
+    if (session?.user) {
+      setUser({
+        id: session.user.id || '',
+        email: session.user.email || '',
+        name: session.user.name || '',
+        firstName: session.user.name?.split(' ')[0] || '',
+        lastName: session.user.name?.split(' ').slice(1).join(' ') || '',
+        phone: '',
+        image: session.user.image || undefined,
+        role: session.user.role || 'customer',
+        orders: [],
+      });
+    } else {
+      setUser(null);
+    }
+
+    setIsLoading(false);
+  }, [session, status]);
 
   const getToken = (): string | null => {
     if (typeof window !== 'undefined') {
@@ -170,47 +193,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // Уменьшен таймаут до 8 секунд
-
-      const response = await fetch(`${API_URL}/user/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-        signal: controller.signal,
+      // Используем NextAuth signIn
+      const result = await nextAuthSignIn('credentials', {
+        email,
+        password,
+        redirect: false,
       });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        // Получаем текст ошибки
-        let errorMessage = 'Login failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || 'Login failed';
-        } catch (e) {
-          // Если не удалось распарсить JSON, используем статус
-          errorMessage = `Login failed with status: ${response.status}`;
-        }
-        
-        throw new Error(errorMessage);
+      if (result?.error) {
+        throw new Error(result.error);
       }
 
-      const { user: userData, token } = await response.json();
-      
-      setToken(token);
-      setUser(userData);
+      if (!result?.ok) {
+        throw new Error('Login failed');
+      }
+
+      // После успешного входа сессия обновится автоматически через useSession
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
-      }
-      // Если ошибка уже имеет сообщение, просто пробрасываем её
-      if (error.message) {
-        throw error;
-      }
-      throw new Error(error instanceof Error ? error.message : 'Ошибка подключения к серверу');
+      console.error('Login error:', error);
+      throw new Error(error.message || 'Ошибка подключения к серверу');
     }
   };
 
@@ -307,13 +308,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = (): void => {
+  const logout = async (): Promise<void> => {
     setUser(null);
     removeToken();
-    // Also clear NextAuth session cookie if present
-    void import('next-auth/react')
-      .then(({ signOut }) => signOut({ redirect: false }))
-      .catch(() => {});
+    // Используем NextAuth signOut
+    await nextAuthSignOut({ redirect: false });
   };
 
   const addOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'status'>): Promise<Order> => {

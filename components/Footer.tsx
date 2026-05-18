@@ -139,9 +139,9 @@ export default function Footer() {
         />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-8 mb-4 md:mb-8">
           {/* Brand Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -151,16 +151,16 @@ export default function Footer() {
           >
             <motion.h3 
               whileHover={{ scale: 1.02 }}
-              className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 bg-clip-text text-transparent mb-4 inline-block"
+              className="text-xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 bg-clip-text text-transparent mb-2 md:mb-4 inline-block"
             >
               ELEVATE
             </motion.h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed max-w-md text-sm">
-              Переосмысливаем роскошную моду с инновационным дизином и устойчивыми практиками.
+            <p className="text-gray-600 dark:text-gray-400 mb-3 md:mb-6 leading-relaxed max-w-md text-xs">
+              Переосмысливаем роскошную моду с инновационным дизайном.
             </p>
 
-            {/* Newsletter */}
-            <div className="mb-6">
+            {/* Newsletter - Hidden on mobile */}
+            <div className="hidden md:block mb-6">
               <h4 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">
                 Подпишитесь на рассылку
               </h4>
@@ -208,7 +208,7 @@ export default function Footer() {
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ scale: 1.15, y: -3 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`p-2.5 bg-white/50 dark:bg-white/10 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-white/10 ${social.color} transition-all`}
+                  className={`p-2 md:p-2.5 bg-white/50 dark:bg-white/10 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-white/10 ${social.color} transition-all`}
                 >
                   <social.icon />
                 </motion.a>
@@ -216,38 +216,36 @@ export default function Footer() {
             </div>
           </motion.div>
 
-          {/* Links Sections - Reduced to 2 columns on larger screens for compactness */}
-          {footerSections.slice(0, 2).map((section, sectionIndex) => (
-            <motion.div
-              key={section.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: sectionIndex * 0.1 }}
-            >
-              <h4 className="font-bold text-sm mb-4 text-gray-800 dark:text-white">{section.title}</h4>
-              <ul className="space-y-2">
-                {section.links.slice(0, 4).map((link) => (  // Limiting to 4 links for compactness
-                  <motion.li
-                    key={link.name}
-                    whileHover={{ x: 3 }}
-                  >
-                    <Link
-                      href={link.href}
-                      className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200 text-sm inline-flex items-center gap-2 group"
+          {/* Links Sections - Hidden on mobile, shown on md+ */}
+          <div className="hidden md:grid md:grid-cols-2 lg:col-span-3 gap-6 lg:gap-8">
+            {footerSections.map((section, sectionIndex) => (
+              <motion.div
+                key={section.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: sectionIndex * 0.1 }}
+              >
+                <h4 className="font-bold text-sm mb-4 text-gray-800 dark:text-white">{section.title}</h4>
+                <ul className="space-y-2">
+                  {section.links.slice(0, 4).map((link) => (
+                    <motion.li
+                      key={link.name}
+                      whileHover={{ x: 3 }}
                     >
-                      <span>{link.name}</span>
-                      <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </Link>
-                  </motion.li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
-          
-          {/* Company section moved to last column */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
+                      <Link
+                        href={link.href}
+                        className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200 text-sm inline-flex items-center gap-2 group"
+                      >
+                        <span>{link.name}</span>
+                        <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
+                    </motion.li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
+          </div>
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
@@ -272,12 +270,12 @@ export default function Footer() {
           </motion.div>
         </div>
 
-        {/* Contact Info */}
+        {/* Contact Info - Hidden on mobile */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="border-t border-gray-200 dark:border-gray-800 pt-6 mb-6"
+          className="hidden md:block border-t border-gray-200 dark:border-gray-800 pt-6 mb-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <motion.a
@@ -326,12 +324,12 @@ export default function Footer() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="border-t border-gray-200 dark:border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-3"
+          className="border-t border-gray-200 dark:border-gray-800 pt-4 md:pt-6 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-3"
         >
-          <p className="text-gray-600 dark:text-gray-500 text-xs text-center md:text-left">
-            © 2026 ELEVATE. Все права защищены. Сделано с <Heart size={12} className="inline text-red-500 mx-0.5 align-text-bottom" /> в России
+          <p className="text-gray-600 dark:text-gray-500 text-[10px] md:text-xs text-center md:text-left">
+            © 2026 ELEVATE. Все права защищены.
           </p>
-          <div className="flex flex-wrap justify-center gap-4 text-xs">
+          <div className="hidden md:flex flex-wrap justify-center gap-4 text-xs">
             <Link 
               href="/privacy" 
               className="text-gray-600 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
