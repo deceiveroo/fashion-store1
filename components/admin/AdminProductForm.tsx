@@ -144,6 +144,12 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (uploading) {
+      toast.error('Дождитесь окончания загрузки фото');
+      return;
+    }
+    
     if (!form.name.trim() || !form.description.trim() || !form.price) {
       toast.error('Заполните обязательные поля');
       return;
@@ -424,11 +430,25 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
               </button>
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || uploading}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 py-3 text-sm font-medium text-white shadow-lg shadow-violet-500/25 disabled:opacity-50"
               >
-                <Save className="h-4 w-4" />
-                {saving ? 'Сохранение...' : mode === 'edit' ? 'Сохранить' : 'Создать товар'}
+                {uploading ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    Загрузка фото...
+                  </>
+                ) : saving ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    Сохранение...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    {mode === 'edit' ? 'Сохранить' : 'Создать товар'}
+                  </>
+                )}
               </button>
             </div>
           </form>
