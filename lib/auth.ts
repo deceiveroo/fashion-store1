@@ -70,11 +70,7 @@ export const authConfig: NextAuthConfig = {
           
           const role = String(user.role ?? 'customer').toLowerCase();
           console.log('[AUTH] Role:', role);
-          if (!['admin', 'manager', 'support'].includes(role)) {
-            console.log('[AUTH] Role not in allowed list');
-            return null;
-          }
-          
+          // Разрешаем вход всем ролям
           console.log('[AUTH] Success! Returning user object');
           return {
             id: user.id,
@@ -107,9 +103,9 @@ export const authConfig: NextAuthConfig = {
           .from(users)
           .where(sql`lower(${users.email}) = ${em}`)
           .limit(1);
-        const r = String(u?.role ?? '').toLowerCase();
-        if (!u || !['admin', 'manager', 'support'].includes(r)) {
-          return false; // v5: возвращаем false вместо redirect
+        // Если пользователь не найден, создаем его с ролью customer
+        if (!u) {
+          return true; // Позволяем создать нового пользователя
         }
       }
       return true;
