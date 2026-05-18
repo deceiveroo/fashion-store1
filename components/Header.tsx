@@ -199,8 +199,9 @@ export default function Header() {
                     {/* Backdrop for closing on click outside */}
                     {isUserMenuOpen && (
                       <div
-                        className="fixed inset-0 z-40"
+                        className="fixed inset-0 z-40 bg-transparent"
                         onClick={() => setIsUserMenuOpen(false)}
+                        aria-hidden="true"
                       />
                     )}
 
