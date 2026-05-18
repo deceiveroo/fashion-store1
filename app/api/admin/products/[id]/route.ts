@@ -49,6 +49,10 @@ export async function GET(
 
     const { id } = await params;
 
+    console.log('[admin/products GET] Fetching product:', id);
+
+    // Отключаем кэширование для этого запроса
+
     const rows = await queryWithRetry(() =>
       db
         .select({
@@ -93,13 +97,24 @@ export async function GET(
 
     const categoryIds = categoryRows.map((r) => r.categoryId).filter(Boolean);
 
-    return NextResponse.json({
-      ...product,
-      price: parseFloat(String(product.price ?? '0')) || 0,
-      categories: categoryIds,
-      images: images.map((img) => img.url),
-      mainImage: images.find((img) => img.isMain)?.url ?? images[0]?.url ?? '/placeholder-image.jpg',
-    });
+    console.log('[admin/products GET] Returning images:', images.map((img) => img.url));
+
+    return NextResponse.json(
+      {
+        ...product,
+        price: parseFloat(String(product.price ?? '0')) || 0,
+        categories: categoryIds,
+        images: images.map((img) => img.url),
+        mainImage: images.find((img) => img.isMain)?.url ?? images[0]?.url ?? '/placeholder-image.jpg',
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('[admin/products GET]', error);
     return NextResponse.json({ error: 'Ошибка загрузки товара' }, { status: 500 });

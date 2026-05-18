@@ -153,6 +153,8 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
       return;
     }
 
+    console.log('[AdminProductForm] Current images state before save:', images);
+
     setSaving(true);
     try {
       const url =
@@ -161,11 +163,14 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
           : '/api/products';
       const method = mode === 'edit' ? 'PUT' : 'POST';
 
+      const payloadData = payload();
+      console.log('[AdminProductForm] Payload created:', JSON.stringify(payloadData.images, null, 2));
+
       const res = await fetch(url, {
         method,
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload()),
+        body: JSON.stringify(payloadData),
       });
       const data = await res.json();
 
