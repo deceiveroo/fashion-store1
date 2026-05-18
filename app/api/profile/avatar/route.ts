@@ -30,16 +30,31 @@ async function getUserId(request: NextRequest): Promise<string | null> {
 async function uploadToSupabase(buffer: Buffer, fileName: string, contentType: string) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseServiceRoleKey) return null;
+  
+  console.log('[avatar] Supabase URL configured:', !!supabaseUrl);
+  console.log('[avatar] Service Role Key configured:', !!supabaseServiceRoleKey);
+  
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    console.warn('[avatar] Supabase credentials missing, will use local storage');
+    return null;
+  }
 
   const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+  
+  console.log('[avatar] Uploading to Supabase:', fileName);
+  
   const { error } = await supabase.storage.from('uploads').upload(fileName, buffer, {
     contentType,
     upsert: true,
   });
-  if (error) throw error;
+  
+  if (error) {
+    console.error('[avatar] Supabase upload error:', error.message);
+    throw error;
+  }
 
   const { data } = supabase.storage.from('uploads').getPublicUrl(fileName);
+  console.log('[avatar] Upload successful:', data.publicUrl);
   return data.publicUrl;
 }
 
