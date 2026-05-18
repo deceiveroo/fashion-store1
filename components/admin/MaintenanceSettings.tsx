@@ -145,22 +145,6 @@ export default function MaintenanceSettings() {
   const handleSave = async () => {
     setIsSaving(true);
 
-    // Validate background image URL if provided
-    if (config.backgroundImage && config.backgroundImage.trim() !== '') {
-      const url = config.backgroundImage.trim();
-      
-      // Check if it's a valid image URL
-      const isValidImageUrl = url.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i) || 
-                              url.includes('supabase.co/storage') ||
-                              url.includes('cloudinary.com') ||
-                              url.includes('imgur.com');
-      
-      if (!isValidImageUrl && !url.startsWith('data:image')) {
-        toast.warning('URL может быть не изображением. Убедитесь что ссылка прямая на картинку (заканчивается на .jpg, .png и т.д.)');
-        // Continue anyway - let user decide
-      }
-    }
-
     try {
       const response = await fetch('/api/admin/maintenance', {
         method: 'PUT',
