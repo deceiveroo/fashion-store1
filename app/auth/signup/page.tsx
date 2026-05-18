@@ -80,7 +80,7 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -88,7 +88,7 @@ export default function SignUp() {
         className="max-w-md w-full"
       >
         {/* Card */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700">
           {/* Header */}
           <div className="text-center mb-8">
             <motion.h1
@@ -99,7 +99,7 @@ export default function SignUp() {
             >
               Регистрация
             </motion.h1>
-            <p className="text-gray-700">Создайте новый аккаунт</p>
+            <p className="text-gray-700 dark:text-gray-300">Создайте новый аккаунт</p>
           </div>
 
           {/* Form */}
@@ -110,7 +110,7 @@ export default function SignUp() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Имя
               </label>
               <div className="relative">
@@ -122,9 +122,9 @@ export default function SignUp() {
                     setName(e.target.value);
                     if(errors.name) setErrors(prev => ({...prev, name: ''}));
                   }}
-                  className={`w-full pl-10 pr-4 py-3 bg-white/50 border ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
-                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200`}
+                  className={`w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-700 border ${
+                    errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
                   placeholder="Введите ваше имя"
                   required
                   disabled={isLoading}
@@ -139,7 +139,7 @@ export default function SignUp() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email адрес
               </label>
               <div className="relative">
@@ -151,9 +151,9 @@ export default function SignUp() {
                     setEmail(e.target.value);
                     if(errors.email) setErrors(prev => ({...prev, email: ''}));
                   }}
-                  className={`w-full pl-10 pr-4 py-3 bg-white/50 border ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200`}
+                  className={`w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-700 border ${
+                    errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
                   placeholder="Введите ваш email"
                   required
                   disabled={isLoading}
@@ -168,7 +168,7 @@ export default function SignUp() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Пароль
               </label>
               <div className="relative">
@@ -180,9 +180,9 @@ export default function SignUp() {
                     setPassword(e.target.value);
                     if(errors.password) setErrors(prev => ({...prev, password: ''}));
                   }}
-                  className={`w-full pl-10 pr-12 py-3 bg-white/50 border ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200`}
+                  className={`w-full pl-10 pr-12 py-3 bg-white dark:bg-gray-700 border ${
+                    errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
                   placeholder="Введите ваш пароль"
                   required
                   disabled={isLoading}
@@ -205,7 +205,7 @@ export default function SignUp() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Подтвердите пароль
               </label>
               <div className="relative">
@@ -217,9 +217,9 @@ export default function SignUp() {
                     setConfirmPassword(e.target.value);
                     if(errors.confirmPassword) setErrors(prev => ({...prev, confirmPassword: ''}));
                   }}
-                  className={`w-full pl-10 pr-12 py-3 bg-white/50 border ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200`}
+                  className={`w-full pl-10 pr-12 py-3 bg-white dark:bg-gray-700 border ${
+                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
                   placeholder="Повторите ваш пароль"
                   required
                   disabled={isLoading}

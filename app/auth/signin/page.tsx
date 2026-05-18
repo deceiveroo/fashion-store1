@@ -75,7 +75,7 @@ export default function SignIn() {
   // Google sign in removed - using only custom auth
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -83,7 +83,7 @@ export default function SignIn() {
         className="max-w-md w-full"
       >
         {/* Card */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700">
           {/* Header */}
           <div className="text-center mb-8">
             <motion.h1
@@ -94,7 +94,7 @@ export default function SignIn() {
             >
               С возвращением
             </motion.h1>
-            <p className="text-gray-700">Войдите в свой аккаунт</p>
+            <p className="text-gray-700 dark:text-gray-300">Войдите в свой аккаунт</p>
           </div>
 
 
@@ -107,7 +107,7 @@ export default function SignIn() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email адрес
               </label>
               <div className="relative">
@@ -119,9 +119,9 @@ export default function SignIn() {
                     setEmail(e.target.value);
                     if(errors.email) setErrors(prev => ({...prev, email: ''}));
                   }}
-                  className={`w-full pl-10 pr-4 py-3 bg-white/50 border ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200`}
+                  className={`w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-700 border ${
+                    errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
                   placeholder="Введите ваш email"
                   required
                   disabled={isLoading}
@@ -137,10 +137,10 @@ export default function SignIn() {
               transition={{ delay: 0.3 }}
             >
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Пароль
                 </label>
-                <Link href="/auth/forgot-password" className="text-sm text-purple-600 hover:text-purple-700 transition-colors">
+                <Link href="/auth/forgot-password" className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 transition-colors">
                   Забыли пароль?
                 </Link>
               </div>
@@ -153,9 +153,9 @@ export default function SignIn() {
                     setPassword(e.target.value);
                     if(errors.password) setErrors(prev => ({...prev, password: ''}));
                   }}
-                  className={`w-full pl-10 pr-12 py-3 bg-white/50 border ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200`}
+                  className={`w-full pl-10 pr-12 py-3 bg-white dark:bg-gray-700 border ${
+                    errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
                   placeholder="Введите ваш пароль"
                   required
                   disabled={isLoading}
@@ -163,7 +163,7 @@ export default function SignIn() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   disabled={isLoading}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -177,7 +177,7 @@ export default function SignIn() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-center text-sm text-gray-500 bg-purple-50 rounded-lg p-3"
+            className="text-center text-sm text-gray-600 dark:text-gray-400 bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3"
           >
             <strong>Подсказка:</strong> используйте email и пароль, указанные при регистрации.
           </motion.div>

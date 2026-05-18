@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -9,10 +9,19 @@ import SupportChatMinimalist from '@/components/SupportChatMinimalist';
 import QuickViewProvider from '@/components/QuickViewProvider';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
+// Основной шрифт для текста - более современный и читаемый
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-inter',
   display: 'swap',
+});
+
+// Шрифт для заголовков - более стильный
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-jakarta',
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
 });
 
 export const metadata: Metadata = {
@@ -30,7 +39,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased text-gray-900 dark:text-gray-100`}>
+      <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased text-gray-900 dark:text-gray-100`}>
         <script
           dangerouslySetInnerHTML={{
             __html: `
