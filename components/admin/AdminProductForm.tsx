@@ -124,12 +124,16 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
     }
   };
 
-  const payload = () => ({
-    ...form,
-    price: parseFloat(form.price),
-    categories: selectedCategories,
-    images: images.length > 0 ? images : ['/placeholder-image.jpg'],
-  });
+  const payload = () => {
+    const data = {
+      ...form,
+      price: parseFloat(form.price),
+      categories: selectedCategories,
+      images: images.length > 0 ? images : ['/placeholder-image.jpg'],
+    };
+    console.log('[AdminProductForm] Sending payload:', JSON.stringify(data, null, 2));
+    return data;
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -175,6 +175,8 @@ export async function PUT(
       images,
     } = body;
 
+    console.log('[admin/products PUT] Received images:', images);
+
     const categoryIds: string[] = (categoryIdsRaw ?? categoryIdsAlt ?? []).filter(Boolean);
 
     if (!name?.trim() || !description?.trim() || price === undefined || price === '') {
@@ -248,6 +250,7 @@ export async function PUT(
       : [];
 
     if (imageUrls.length > 0) {
+      console.log('[admin/products PUT] Saving images:', imageUrls);
       await db.insert(productImages).values(
         imageUrls.map((url: string, index: number) => ({
           id: `${id}-img-${index}-${crypto.randomUUID().slice(0, 8)}`,
@@ -257,6 +260,9 @@ export async function PUT(
           order: index,
         }))
       );
+      console.log('[admin/products PUT] Images saved successfully');
+    } else {
+      console.log('[admin/products PUT] No images to save');
     }
 
     return NextResponse.json({ success: true, message: 'Товар сохранён' });
