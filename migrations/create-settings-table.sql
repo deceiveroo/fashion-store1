@@ -21,5 +21,6 @@ INSERT INTO settings (key, value, description) VALUES
   ('maintenance_description', 'Мы проводим технические работы. Сайт скоро будет доступен.', 'Description shown on maintenance page'),
   ('maintenance_end_time', '', 'ISO date when maintenance ends (optional)'),
   ('maintenance_background_image', '', 'Background image URL for maintenance page'),
-  ('maintenance_enable_subscription', 'true', 'Enable email subscription form on maintenance page')
+  ('maintenance_enable_subscription', 'true', 'Enable email subscription form on maintenance page'),
+  ('maintenance_gallery_images', '[]', 'JSON array of gallery image URLs to display on maintenance page')
 ON CONFLICT (key) DO NOTHING;

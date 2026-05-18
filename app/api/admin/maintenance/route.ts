@@ -21,6 +21,7 @@ export async function GET() {
       'maintenance_end_time',
       'maintenance_background_image',
       'maintenance_enable_subscription',
+      'maintenance_gallery_images',
     ];
 
     const result = await db.select().from(settings).where(
@@ -41,6 +42,13 @@ export async function GET() {
       endTime: config.maintenance_end_time || null,
       backgroundImage: config.maintenance_background_image || null,
       enableSubscription: config.maintenance_enable_subscription !== 'false',
+      galleryImages: (() => {
+        try {
+          return JSON.parse(config.maintenance_gallery_images || '[]');
+        } catch {
+          return [];
+        }
+      })(),
     });
   } catch (error) {
     console.error('Error fetching maintenance settings:', error);
@@ -65,6 +73,7 @@ export async function PUT(request: Request) {
       endTime,
       backgroundImage,
       enableSubscription,
+      galleryImages,
     } = body;
 
     // Prepare updates
@@ -75,6 +84,7 @@ export async function PUT(request: Request) {
       { key: 'maintenance_end_time', value: endTime || '' },
       { key: 'maintenance_background_image', value: backgroundImage || '' },
       { key: 'maintenance_enable_subscription', value: String(enableSubscription ?? true) },
+      { key: 'maintenance_gallery_images', value: JSON.stringify(galleryImages || []) },
     ];
 
     // Upsert each setting

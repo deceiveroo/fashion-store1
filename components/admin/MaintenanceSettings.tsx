@@ -12,6 +12,7 @@ interface MaintenanceConfig {
   endTime: string | null;
   backgroundImage: string | null;
   enableSubscription: boolean;
+  galleryImages: string[];
 }
 
 export default function MaintenanceSettings() {
@@ -22,6 +23,7 @@ export default function MaintenanceSettings() {
     endTime: null,
     backgroundImage: null,
     enableSubscription: true,
+    galleryImages: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -72,6 +74,48 @@ export default function MaintenanceSettings() {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/admin/maintenance/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setConfig({ 
+          ...config, 
+          galleryImages: [...config.galleryImages, data.url] 
+        });
+        toast.success('Фото добавлено в галерею');
+      } else {
+        toast.error(data.error || 'Ошибка загрузки');
+      }
+    } catch (error) {
+      console.error('Error uploading gallery image:', error);
+      toast.error('Произошла ошибка при загрузке');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setConfig({
+      ...config,
+      galleryImages: config.galleryImages.filter((_, i) => i !== index),
+    });
+    toast.success('Фото удалено из галереи');
   };
 
   const handleSave = async () => {
@@ -283,6 +327,58 @@ export default function MaintenanceSettings() {
               />
             </div>
           )}
+        </div>
+
+        {/* Gallery Images */}
+        <div>
+          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
+            <ImageIcon className="inline w-3 h-3 mr-1" />
+            Галерея изображений ({config.galleryImages.length})
+          </label>
+          
+          {/* Upload button for gallery */}
+          <div className="mb-3">
+            <input
+              type="file"
+              id="gallery-upload"
+              onChange={handleGalleryUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <label
+              htmlFor="gallery-upload"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm text-white transition-colors cursor-pointer"
+            >
+              <Upload className="w-4 h-4" />
+              {isUploading ? 'Загрузка...' : 'Добавить фото в галерею'}
+            </label>
+          </div>
+
+          {/* Gallery preview grid */}
+          {config.galleryImages.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              {config.galleryImages.map((img, index) => (
+                <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-white/10 group">
+                  <img
+                    src={img}
+                    alt={`Gallery ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGalleryImage(index)}
+                    className="absolute top-1 right-1 p-1.5 bg-red-500/80 hover:bg-red-600 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <p className="text-xs text-white/30 mt-2">
+            💡 Добавьте несколько фото которые будут показаны на странице обслуживания
+          </p>
         </div>
 
         {/* Enable Subscription */}

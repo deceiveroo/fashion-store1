@@ -12,6 +12,7 @@ interface MaintenanceConfig {
   endTime: string | null;
   backgroundImage: string | null;
   enableSubscription: boolean;
+  galleryImages: string[];
 }
 
 export default function MaintenancePage() {
@@ -247,6 +248,40 @@ export default function MaintenancePage() {
                     Мы отправим вам уведомление, когда сайт заработает
                   </p>
                 </form>
+              </motion.div>
+            )}
+
+            {/* Gallery */}
+            {config.galleryImages && config.galleryImages.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="mt-8"
+              >
+                <h3 className="text-white/60 text-sm font-medium mb-4 text-center">Наши работы</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {config.galleryImages.map((img, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.8 + index * 0.1 }}
+                      whileHover={{ scale: 1.05 }}
+                      className="relative aspect-square rounded-xl overflow-hidden border border-white/20 group"
+                    >
+                      <img
+                        src={img}
+                        alt={`Gallery ${index + 1}`}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </motion.div>
+                  ))}
+                </div>
               </motion.div>
             )}
           </div>
