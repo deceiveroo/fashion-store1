@@ -235,7 +235,6 @@ export default function ProfilePage() {
       setFormData(prev => ({ ...prev, avatar: data.url }));
       await saveProfile({ avatar: data.url });
       await refreshUser();
-      if (updateSession) await updateSession();
       toast.success('Аватар обновлен');
     } catch (error: any) {
       toast.error(error.message || 'Ошибка при загрузке аватара');
@@ -246,13 +245,12 @@ export default function ProfilePage() {
   };
 
   const saveProfile = async (updates: any) => {
-    const token = localStorage.getItem('auth-token');
     const res = await fetch('/api/profile', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
+      credentials: 'include',
       body: JSON.stringify(updates),
     });
     if (!res.ok) { const error = await res.json(); throw new Error(error.message || 'Ошибка сохранения'); }

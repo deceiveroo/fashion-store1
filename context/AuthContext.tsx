@@ -41,8 +41,10 @@ export interface User {
   firstName: string;
   lastName: string;
   phone: string;
+  address?: string;
   orders: Order[];
   image?: string;
+  avatar?: string;
   role?: string;
 }
 
@@ -158,34 +160,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async (): Promise<void> => {
-    const token = getToken();
-    if (!token) return;
-
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // Увеличен таймаут до 15 секунд
-
-      const response = await fetch(`${API_URL}/user/me`, {
+      // Fetch from /api/profile using cookies
+      const response = await fetch('/api/profile', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
+        credentials: 'include',
       });
-
-      clearTimeout(timeoutId);
 
       if (response.ok) {
         const userData = await response.json();
-        setUser(userData);
+        setUser({
+          id: userData.id || '',
+          email: userData.email || '',
+          name: userData.name || '',
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          phone: userData.phone || '',
+          address: userData.address || '',
+          avatar: userData.avatar || undefined,
+          image: userData.image || userData.avatar || undefined,
+          role: user?.role || 'customer',
+          orders: user?.orders || [],
+        });
       } else {
         throw new Error('Failed to refresh user data');
       }
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
-      }
       console.error('Failed to refresh user data:', error);
       throw error;
     }
