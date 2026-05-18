@@ -185,7 +185,10 @@ export default function AdminLayout({ children, currentPage }: AdminLayoutProps)
           </div>
           <button
             type="button"
-            onClick={() => signOut({ callbackUrl: '/' })}
+            onClick={async () => {
+              await signOut({ redirect: false });
+              router.push('/');
+            }}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 transition-all hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/60"
           >
             <LogOut className="h-4 w-4" />
