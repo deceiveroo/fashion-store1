@@ -152,6 +152,13 @@ export async function PUT(request: NextRequest) {
       updatedAt: new Date(),
     };
     
+    // Hash password if provided
+    if (updates.password) {
+      const bcrypt = await import('bcryptjs');
+      userUpdates.password = await bcrypt.default.hash(updates.password, 10);
+      console.log('[ADMIN USERS] Password hashed for user:', userId);
+    }
+    
     // If avatar is being updated, also update the image field for consistency
     if (updates.avatar) {
       userUpdates.image = updates.avatar;
