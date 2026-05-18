@@ -214,6 +214,30 @@ export default function Footer() {
                 </motion.a>
               ))}
             </div>
+            
+            {/* Mobile Quick Links - Visible only on mobile */}
+            <div className="md:hidden mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-bold text-xs mb-2 text-gray-800 dark:text-white">Магазин</h4>
+                  <ul className="space-y-1">
+                    <li><Link href="/new" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Новинки</Link></li>
+                    <li><Link href="/collections" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Коллекции</Link></li>
+                    <li><Link href="/men" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Мужское</Link></li>
+                    <li><Link href="/women" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Женское</Link></li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs mb-2 text-gray-800 dark:text-white">Поддержка</h4>
+                  <ul className="space-y-1">
+                    <li><Link href="/support/contact" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Связаться</Link></li>
+                    <li><Link href="/support/delivery" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Доставка</Link></li>
+                    <li><Link href="/support/returns" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Возвраты</Link></li>
+                    <li><Link href="/support/faq" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">FAQ</Link></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </motion.div>
 
           {/* Links Sections - Hidden on mobile, shown on md+ */}

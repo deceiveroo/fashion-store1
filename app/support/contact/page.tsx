@@ -116,7 +116,7 @@ export default function ContactPage() {
               delay: 0.2
             }}
             whileHover={{ y: -5 }}
-            className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50 dark:border-gray-700"
           >
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Контактная информация</h2>
             
@@ -199,7 +199,7 @@ export default function ContactPage() {
               delay: 0.3
             }}
             whileHover={{ y: -5 }}
-            className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50 dark:border-gray-700"
           >
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Отправить сообщение</h2>
             
