@@ -149,7 +149,28 @@ export const authOptions = authConfig;
 // Helper function to verify authentication from API routes
 export async function verifyAuth(request: Request) {
   try {
-    // Try to get token from Authorization header
+    // Сначала пробуем получить пользователя из NextAuth session (cookies)
+    const session = await auth();
+    if (session?.user?.id) {
+      // Получаем полные данные пользователя из базы
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, session.user.id))
+        .limit(1);
+      
+      if (user) {
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name ?? '',
+          role: user.role,
+          image: user.image ?? undefined,
+        };
+      }
+    }
+
+    // Если нет сессии, пробуем токен из заголовка Authorization
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return null;
