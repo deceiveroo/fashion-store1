@@ -26,6 +26,16 @@ export default function Cart({ isOpen, onClose }: CartProps) {
     window.dispatchEvent(new CustomEvent('cartStateChange', { detail: { isOpen } }));
   }, [isOpen]);
 
+  // Listen for closeCart event from global backdrop
+  useEffect(() => {
+    const handleCloseCart = () => {
+      onClose();
+    };
+
+    window.addEventListener('closeCart', handleCloseCart as EventListener);
+    return () => window.removeEventListener('closeCart', handleCloseCart as EventListener);
+  }, [onClose]);
+
   // Анимация при изменении количества товаров
   // useEffect(() => {
   //   if (items.length > 0) {

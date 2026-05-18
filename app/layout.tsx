@@ -8,6 +8,7 @@ import { Providers } from '@/components/providers/Providers';
 import SupportChatMinimalist from '@/components/SupportChatMinimalist';
 import QuickViewProvider from '@/components/QuickViewProvider';
 import MaintenanceCheck from '@/components/MaintenanceCheck';
+import GlobalBackdrop from '@/components/GlobalBackdrop';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // Основной шрифт для текста - более современный и читаемый
@@ -69,6 +70,7 @@ export default function RootLayout({
               <MaintenanceCheck>
                 <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 transition-colors duration-300">
                   <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+                  <GlobalBackdrop />
                   <SupportChatMinimalist />
                   <QuickViewProvider />
                 </div>
