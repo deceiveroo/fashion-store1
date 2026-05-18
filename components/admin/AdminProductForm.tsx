@@ -160,6 +160,8 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
 
       if (res.ok) {
         toast.success(mode === 'edit' ? 'Товар сохранён' : 'Товар создан');
+        // Принудительно обновляем кэш перед переходом
+        router.refresh();
         router.push('/admin/products');
       } else {
         toast.error(data.error || 'Ошибка сохранения');

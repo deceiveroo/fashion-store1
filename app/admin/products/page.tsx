@@ -79,6 +79,8 @@ export default function AdminProductsPage() {
       setProducts((prev) =>
         prev.map((p) => (p.id === id ? { ...p, ...patch } as Product : p))
       );
+      // Обновляем кэш сервера
+      router.refresh();
       return true;
     } catch {
       toast.error('Ошибка сети');
@@ -100,6 +102,8 @@ export default function AdminProductsPage() {
       if (res.ok) {
         setProducts((p) => p.filter((x) => x.id !== id));
         toast.success(data.message || 'Готово');
+        // Обновляем кэш сервера
+        router.refresh();
       } else {
         toast.error(data.error || 'Ошибка удаления');
       }
