@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Clock, AlertTriangle } from 'lucide-react';
+import { Mail, Clock, AlertTriangle, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import AdminLoginModal from '@/components/AdminLoginModal';
 
 interface MaintenanceConfig {
   maintenanceMode: boolean;
@@ -25,6 +26,7 @@ export default function MaintenancePage() {
     minutes: number;
     seconds: number;
   } | null>(null);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   // Fetch maintenance config
   useEffect(() => {
@@ -302,8 +304,23 @@ export default function MaintenancePage() {
           >
             © {new Date().getFullYear()} Fashion Store. Все права защищены.
           </motion.p>
+
+          {/* Secret admin login button */}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            onClick={() => setShowAdminLogin(true)}
+            className="mt-8 mx-auto flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/20 hover:text-white/40 text-xs transition-all group"
+          >
+            <Lock className="w-3 h-3" />
+            <span className="group-hover:underline">Admin</span>
+          </motion.button>
         </motion.div>
       </div>
+
+      {/* Admin Login Modal */}
+      <AdminLoginModal isOpen={showAdminLogin} onClose={() => setShowAdminLogin(false)} />
 
       {/* Meta tags for SEO */}
       <meta name="robots" content="noindex, nofollow" />
