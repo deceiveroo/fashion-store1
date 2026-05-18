@@ -7,6 +7,7 @@ import ClientLayoutWrapper from '@/components/ClientLayoutWrapper';
 import { Providers } from '@/components/providers/Providers';
 import SupportChatMinimalist from '@/components/SupportChatMinimalist';
 import QuickViewProvider from '@/components/QuickViewProvider';
+import MaintenanceCheck from '@/components/MaintenanceCheck';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // Основной шрифт для текста - более современный и читаемый
@@ -65,11 +66,13 @@ export default function RootLayout({
         <Providers>
           <AuthProvider>
             <CartProvider>
-              <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 transition-colors duration-300">
-                <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
-                <SupportChatMinimalist />
-                <QuickViewProvider />
-              </div>
+              <MaintenanceCheck>
+                <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 transition-colors duration-300">
+                  <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+                  <SupportChatMinimalist />
+                  <QuickViewProvider />
+                </div>
+              </MaintenanceCheck>
             </CartProvider>
           </AuthProvider>
         </Providers>

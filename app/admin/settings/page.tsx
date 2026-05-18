@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Save, Store, DollarSign, Percent } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
+import MaintenanceSettings from '@/components/admin/MaintenanceSettings';
 
 export default function AdminSettingsPage() {
   const [storeName, setStoreName] = useState('ELEVATE');
@@ -17,13 +18,15 @@ export default function AdminSettingsPage() {
 
   return (
     <AdminShell>
-      <div className="max-w-xl space-y-5">
+      <div className="max-w-4xl space-y-8">
         <div>
           <h1 className="text-xl font-bold text-white">Настройки</h1>
-          <p className="text-sm text-white/40">Общие параметры магазина</p>
+          <p className="text-sm text-white/40">Общие параметры магазина и режим обслуживания</p>
         </div>
 
+        {/* General Settings */}
         <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-5 space-y-4">
+          <h2 className="text-lg font-semibold text-white mb-4">Общие настройки</h2>
           {[
             { label: 'Название магазина', value: storeName, onChange: setStoreName, icon: Store, type: 'text' },
             { label: 'Валюта', value: currency, onChange: setCurrency, icon: DollarSign, type: 'text' },
@@ -45,6 +48,9 @@ export default function AdminSettingsPage() {
             Сохранить
           </button>
         </div>
+
+        {/* Maintenance Mode Settings */}
+        <MaintenanceSettings />
 
         <p className="text-xs text-white/20">
           Для production подключите API /api/site-config и сохраняйте настройки в БД.

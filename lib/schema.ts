@@ -732,3 +732,19 @@ export const productViewsRelations = relations(productViews, ({ one }) => ({
   product: one(products, { fields: [productViews.productId], references: [products.id] }),
   user: one(users, { fields: [productViews.userId], references: [users.id] }),
 }));
+
+// Maintenance subscriptions table
+export const maintenanceSubscriptions = pgTable('maintenance_subscriptions', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  email: text('email').notNull().unique(),
+  subscribedAt: timestamp('subscribed_at', { mode: 'date' }).defaultNow(),
+  notified: boolean('notified').default(false),
+  notifiedAt: timestamp('notified_at', { mode: 'date' }),
+}, (table) => {
+  return {
+    emailIdx: index('idx_maintenance_subscriptions_email').on(table.email),
+    notifiedIdx: index('idx_maintenance_subscriptions_notified').on(table.notified),
+  };
+});
+
+export const maintenanceSubscriptionsRelations = relations(maintenanceSubscriptions, ({}) => ({}));
