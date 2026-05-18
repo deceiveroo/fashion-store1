@@ -47,16 +47,45 @@ export default function SignIn() {
     setIsLoading(true);
 
     try {
+      // Сначала проверяем существует ли пользователь
+      const checkResponse = await fetch('/api/auth/check-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      
+      const checkData = await checkResponse.json();
+      
+      if (!checkData.exists) {
+        toast.error('Пользователь с таким email не найден');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Пользователь существует, пробуем войти
       await login(email, password);
       toast.success('С возвращением!');
       // Also sign in via NextAuth so admin proxy can see the session
       const { signIn } = await import('next-auth/react');
-      await signIn('credentials', { email, password, redirect: false });
+      const result = await signIn('credentials', { 
+        email, 
+        password, 
+        redirect: false 
+      });
+      
+      if (result?.error) {
+        // Ошибка аутентификации - неверный пароль
+        toast.error('Неверный пароль');
+        setIsLoading(false);
+        return;
+      }
+      
       router.push(callbackUrl);
     } catch (error: unknown) {
       console.error('Login error:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      // Проверяем, является ли ошибка сетевой
+      
+      // Проверяем тип ошибки
       if (errorMessage.includes('Failed to fetch') || 
           errorMessage.includes('сети') || 
           errorMessage.includes('connection') ||
@@ -64,9 +93,9 @@ export default function SignIn() {
           errorMessage.includes('Время ожидания запроса истекло')) {
         toast.error('Ошибка подключения. Проверьте интернет-соединение и повторите попытку.');
       } else if (errorMessage.includes('401')) {
-        toast.error('Неверный email или пароль');
+        toast.error('Неверный пароль');
       } else {
-        toast.error(errorMessage || 'Ошибка при входе в систему');
+        toast.error('Ошибка при входе в систему');
       }
     } finally {
       setIsLoading(false);
