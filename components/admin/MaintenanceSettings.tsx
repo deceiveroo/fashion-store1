@@ -139,7 +139,7 @@ export default function MaintenanceSettings() {
       galleryImages: [...config.galleryImages, url],
     });
     setGalleryUrlInput('');
-    toast.success('URL добавлен в галерею');
+    toast.success('URL добавлен! Не забудьте нажать "Сохранить настройки"');
   };
 
   const handleSave = async () => {
