@@ -9,6 +9,10 @@ import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 
+// Force dynamic rendering - never cache
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
 const secret = new TextEncoder().encode(JWT_SECRET);
 
@@ -133,15 +137,38 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     const storagePath = `avatars/${userId}/${uuidv4()}${ext}`;
 
+    console.log('[avatar] File size:', file.size, 'bytes');
+    console.log('[avatar] Storage path:', storagePath);
+
     let publicUrl: string | null = null;
+    
+    // Сначала пробуем загрузить в Supabase
     try {
+      console.log('[avatar] Attempting Supabase upload...');
       publicUrl = await uploadToSupabase(buffer, storagePath, file.type);
-    } catch (e) {
-      console.warn('[avatar] Supabase upload failed, using local storage', e);
+      console.log('[avatar] Supabase upload successful:', publicUrl);
+    } catch (e: any) {
+      console.error('[avatar] Supabase upload failed:', e.message);
+      console.warn('[avatar] Will try local storage as fallback');
     }
+    
+    // Fallback на локальное хранилище (только для development)
     if (!publicUrl) {
-      publicUrl = await uploadToLocal(buffer, userId, ext);
+      try {
+        console.log('[avatar] Attempting local storage...');
+        publicUrl = await uploadToLocal(buffer, userId, ext);
+        console.log('[avatar] Local storage successful:', publicUrl);
+      } catch (localError: any) {
+        console.error('[avatar] Local storage also failed:', localError.message);
+        throw new Error('Не удалось загрузить аватар. Проверьте настройки Supabase.');
+      }
     }
+
+    if (!publicUrl) {
+      throw new Error('Failed to upload avatar to any storage');
+    }
+
+    console.log('[avatar] Saving to database for user:', userId);
 
     const existing = await db
       .select()
@@ -150,6 +177,7 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (existing.length > 0) {
+      console.log('[avatar] Updating existing profile');
       await safeQuery(() =>
         db
           .update(userProfiles)
@@ -157,6 +185,7 @@ export async function POST(request: NextRequest) {
           .where(eq(userProfiles.userId, userId))
       );
     } else {
+      console.log('[avatar] Creating new profile');
       await safeQuery(() =>
         db.insert(userProfiles).values({
           id: crypto.randomUUID(),
@@ -166,10 +195,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('[avatar] Updating users table');
     await safeQuery(() =>
       db.update(users).set({ image: publicUrl, updatedAt: new Date() }).where(eq(users.id, userId))
     );
 
+    console.log('[avatar] Success! Avatar URL:', publicUrl);
     return NextResponse.json({ success: true, url: publicUrl, avatar: publicUrl });
   } catch (error) {
     console.error('[avatar]', error);
