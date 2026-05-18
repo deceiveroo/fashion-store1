@@ -7,6 +7,10 @@ import { jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { jsonWithNoCache } from '@/lib/no-cache';
 
+// Force dynamic rendering - never cache
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
 const secret = new TextEncoder().encode(JWT_SECRET);
 

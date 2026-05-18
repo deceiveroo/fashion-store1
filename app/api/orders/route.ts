@@ -8,6 +8,10 @@ import { randomUUID } from 'crypto';
 import { getSession } from '@/lib/server-auth';
 import { verifyAuth } from '@/lib/auth';
 
+// Force dynamic rendering - never cache
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Функция с повторными попытками для надежной работы с базой данных
 async function queryWithRetry<T>(queryFn: () => Promise<T>): Promise<T> {
   const maxRetries = 3;

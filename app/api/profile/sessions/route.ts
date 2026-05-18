@@ -5,6 +5,10 @@ import { eq, and, desc } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
 import { jsonWithNoCache } from '@/lib/no-cache';
 
+// Force dynamic rendering - never cache
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function isTableMissingError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return (

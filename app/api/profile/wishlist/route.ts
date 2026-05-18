@@ -6,6 +6,10 @@ import { eq, and, desc } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
 import { jsonWithNoCache } from '@/lib/no-cache';
 
+// Force dynamic rendering - never cache
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
