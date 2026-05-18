@@ -114,9 +114,9 @@ export default function ProfilePage() {
 
   const loadProfile = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
+      // Используем credentials для аутентификации через cookies
       const res = await fetch('/api/profile', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -128,6 +128,9 @@ export default function ProfilePage() {
           address: data.address || '',
           avatar: data.avatar || '',
         });
+      } else if (res.status === 401) {
+        // Не авторизован - перенаправляем на вход
+        router.push('/auth/signin');
       }
     } catch (error) {
       console.error('Failed to load profile:', error);
@@ -136,9 +139,8 @@ export default function ProfilePage() {
 
   const loadOrders = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
       const res = await fetch('/api/orders', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -151,9 +153,8 @@ export default function ProfilePage() {
 
   const loadWishlist = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
       const res = await fetch('/api/profile/wishlist', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -167,9 +168,8 @@ export default function ProfilePage() {
 
   const loadPaymentMethods = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
       const res = await fetch('/api/profile/payments', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -183,9 +183,8 @@ export default function ProfilePage() {
 
   const loadSessions = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
       const res = await fetch('/api/profile/sessions', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -199,9 +198,8 @@ export default function ProfilePage() {
 
   const loadNotificationSettings = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
       const res = await fetch('/api/profile/notifications', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -227,12 +225,10 @@ export default function ProfilePage() {
       fd.append('file', file);
       const oldAvatar = formData.avatar || user?.image;
       if (oldAvatar && oldAvatar.includes('supabase')) fd.append('oldUrl', oldAvatar);
-      const token = localStorage.getItem('auth-token');
       const res = await fetch('/api/profile/avatar', {
         method: 'POST',
         body: fd,
         credentials: 'include',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Ошибка загрузки'); }
       const data = await res.json();
