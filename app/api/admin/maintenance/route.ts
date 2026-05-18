@@ -44,8 +44,11 @@ export async function GET() {
       enableSubscription: config.maintenance_enable_subscription !== 'false',
       galleryImages: (() => {
         try {
-          return JSON.parse(config.maintenance_gallery_images || '[]');
-        } catch {
+          const parsed = JSON.parse(config.maintenance_gallery_images || '[]');
+          console.log('Loaded gallery images:', parsed, 'from raw value:', config.maintenance_gallery_images);
+          return parsed;
+        } catch (e) {
+          console.error('Error parsing gallery images:', e);
           return [];
         }
       })(),
@@ -86,6 +89,13 @@ export async function PUT(request: Request) {
       { key: 'maintenance_enable_subscription', value: String(enableSubscription ?? true) },
       { key: 'maintenance_gallery_images', value: JSON.stringify(galleryImages || []) },
     ];
+
+    console.log('Saving maintenance settings:', {
+      maintenanceMode,
+      galleryImages,
+      galleryImagesLength: galleryImages?.length || 0,
+      galleryImagesJSON: JSON.stringify(galleryImages || []),
+    });
 
     // Upsert each setting
     for (const update of updates) {

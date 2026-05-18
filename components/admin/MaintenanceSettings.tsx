@@ -146,20 +146,32 @@ export default function MaintenanceSettings() {
     setIsSaving(true);
 
     try {
+      console.log('Saving maintenance config:', JSON.stringify(config, null, 2));
+      
       const response = await fetch('/api/admin/maintenance', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
       });
 
+      const result = await response.json();
+      console.log('Save response:', result);
+
       if (response.ok) {
         toast.success('Настройки сохранены');
+        
+        // Reload settings to verify they were saved
+        const reloadResponse = await fetch('/api/admin/maintenance');
+        const reloadedData = await reloadResponse.json();
+        console.log('Reloaded config:', reloadedData);
+        setConfig(reloadedData);
         
         if (config.maintenanceMode) {
           toast.info('Режим обслуживания включен! Посетители увидят страницу-заглушку.');
         }
       } else {
-        toast.error('Ошибка сохранения');
+        console.error('Save error:', result);
+        toast.error(result.error || 'Ошибка сохранения');
       }
     } catch (error) {
       console.error('Error saving maintenance settings:', error);
