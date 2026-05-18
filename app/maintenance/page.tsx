@@ -259,18 +259,16 @@ export default function MaintenancePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
-                className="mt-8"
+                className="mt-8 -mx-8 md:-mx-12"
               >
-                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden shadow-xl">
-                  <img
-                    src={config.memeImage}
-                    alt="Meme"
-                    className="w-full h-auto object-contain max-h-96"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
+                <img
+                  src={config.memeImage}
+                  alt="Meme"
+                  className="w-full h-auto object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
               </motion.div>
             )}
           </div>

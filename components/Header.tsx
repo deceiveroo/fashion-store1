@@ -285,17 +285,6 @@ export default function Header() {
                   </motion.div>
                 </div>
               )}
-
-              {/* Mobile menu button - теперь всегда видимый на мобильных устройствах */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors flex items-center justify-center"
-                onClick={() => setIsOpen(!isOpen)}
-                aria-label={isOpen ? "Закрыть меню" : "Открыть меню"}
-              >
-                {isOpen ? <X size={20} className="text-purple-600" /> : <Menu size={20} className="text-purple-600" />}
-              </motion.button>
             </div>
           </div>
 
