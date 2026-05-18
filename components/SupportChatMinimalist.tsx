@@ -420,7 +420,9 @@ export default function SupportChatMinimalist() {
                             : 'bg-white/10 text-white/90 border border-white/10'
                         }`}
                       >
-                        <p className="text-sm leading-relaxed">{msg.text}</p>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {msg.text.replace(/\*\*/g, '').replace(/\*/g, '')}
+                        </p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className={`text-xs ${msg.sender === 'user' ? 'text-white/70' : 'text-white/40'}`}>
                             {msg.timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
