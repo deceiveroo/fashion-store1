@@ -72,8 +72,8 @@ export async function PUT(request: Request) {
       { key: 'maintenance_mode', value: String(maintenanceMode ?? false) },
       { key: 'maintenance_title', value: title || 'Сайт на обслуживании' },
       { key: 'maintenance_description', value: description || 'Мы проводим технические работы. Сайт скоро будет доступен.' },
-      { key: 'maintenance_end_time', value: endTime || null },
-      { key: 'maintenance_background_image', value: backgroundImage || null },
+      { key: 'maintenance_end_time', value: endTime || '' },
+      { key: 'maintenance_background_image', value: backgroundImage || '' },
       { key: 'maintenance_enable_subscription', value: String(enableSubscription ?? true) },
     ];
 
