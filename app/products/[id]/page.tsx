@@ -24,6 +24,7 @@ async function getProduct(id: string) {
         price: products.price,
         inStock: productInStock,
         featured: productFeatured,
+        isNew: products.isNew,
         createdAt: products.createdAt,
         images: productImages,
         categoryId: categories.id,
@@ -56,10 +57,11 @@ async function getProduct(id: string) {
       id: firstProduct.id,
       name: firstProduct.name,
       description: firstProduct.description,
-      price: firstProduct.price,
       inStock: firstProduct.inStock,
       featured: firstProduct.featured,
+      isNew: firstProduct.isNew ?? false,
       createdAt: firstProduct.createdAt,
+      price: parseFloat(String(firstProduct.price ?? '0')) || 0,
       images: productData
         .filter(item => item.images)
         .map(item => ({

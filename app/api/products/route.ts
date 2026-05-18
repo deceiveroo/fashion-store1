@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
         price: Number.isFinite(priceNum) ? priceNum : 0,
         inStock: product.inStock ?? true,
         featured: product.featured ?? false,
+        isNew: product.isNew ?? false,
         images: [],
         mainImage: mainImageMap[product.id] || '/placeholder-image.jpg'
       };
@@ -112,12 +113,26 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json();
 
-    // Валидация данных
-    if (!data.name || !data.description || !data.price) {
+    if (!data.name?.trim() || !data.description?.trim() || data.price === undefined) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, description, price' },
+        { error: 'Заполните название, описание и цену' },
         { status: 400 }
       );
+    }
+
+    const priceNum = parseFloat(String(data.price));
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      return NextResponse.json({ error: 'Некорректная цена' }, { status: 400 });
+    }
+
+    const categoryIds: string[] = (
+      data.categoryIds ??
+      data.categories ??
+      []
+    ).filter(Boolean);
+
+    if (categoryIds.length === 0) {
+      return NextResponse.json({ error: 'Выберите хотя бы одну категорию' }, { status: 400 });
     }
 
     const id = data.id || uuidv4();
@@ -127,47 +142,49 @@ export async function POST(request: NextRequest) {
       .replace(/^-|-$/g, '') || 'product';
     const slug = data.slug || `${slugBase}-${id.slice(0, 8)}`;
     const sku = data.sku || `SKU-${id.replace(/-/g, '').slice(0, 14)}`;
+    const inStock = data.inStock !== false;
+    const stock = inStock ? Math.max(Number(data.stock) || 10, 1) : 0;
 
     const [newProduct] = await db
       .insert(products)
       .values({
         id,
-        name: data.name,
-        description: data.description,
+        name: String(data.name).trim(),
+        description: String(data.description).trim(),
         slug,
         sku,
-        price: String(data.price),
-        inStock: data.inStock ?? true,
-        featured: data.featured ?? false,
+        price: String(priceNum),
+        stock,
+        inStock: stock > 0,
+        featured: Boolean(data.featured),
+        isNew: Boolean(data.isNew),
+        isActive: true,
+        categoryId: categoryIds[0],
       })
       .returning();
 
-    // Добавление категорий если указаны
-    if (data.categoryIds && Array.isArray(data.categoryIds)) {
-      const categoryLinks = data.categoryIds.map((categoryId: string) => ({
-        id: uuidv4(),
-        productId: newProduct.id,
-        categoryId,
-      }));
+    const categoryLinks = categoryIds.map((categoryId: string) => ({
+      id: uuidv4(),
+      productId: newProduct.id,
+      categoryId,
+    }));
+    await db.insert(productCategory).values(categoryLinks);
 
-      if (categoryLinks.length > 0) {
-        await db.insert(productCategory).values(categoryLinks);
-      }
-    }
+    const rawImages: unknown[] = Array.isArray(data.images) ? data.images : [];
+    const imageUrls = rawImages
+      .map((image) => (typeof image === 'string' ? image : (image as { url?: string })?.url))
+      .filter((url): url is string => Boolean(url));
 
-    // Добавление изображений если указаны
-    if (data.images && Array.isArray(data.images)) {
-      const imageValues = data.images.map((image: any) => ({
-        id: image.id || uuidv4(),
-        productId: newProduct.id,
-        url: image.url,
-        isMain: image.isMain || false,
-        order: image.order || 0,
-      }));
-
-      if (imageValues.length > 0) {
-        await db.insert(productImages).values(imageValues);
-      }
+    if (imageUrls.length > 0) {
+      await db.insert(productImages).values(
+        imageUrls.map((url, index) => ({
+          id: uuidv4(),
+          productId: newProduct.id,
+          url,
+          isMain: index === 0,
+          order: index,
+        }))
+      );
     }
 
     return NextResponse.json(newProduct);

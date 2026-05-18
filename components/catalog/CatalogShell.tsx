@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CATALOG_TABS, type CatalogTabId } from '@/lib/catalog-config';
 
@@ -12,70 +10,59 @@ type CatalogShellProps = {
 };
 
 export default function CatalogShell({ active, productCount, children }: CatalogShellProps) {
-  const pathname = usePathname();
   const page = CATALOG_TABS.find((t) => t.id === active)!;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-neutral-950 transition-colors duration-300">
-      {/* HERO SECTION - Минималистичный и элегантный */}
-      <section className="relative border-b border-gray-200 dark:border-neutral-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-          <div className="flex flex-col items-center text-center gap-8">
-            {/* Бейдж */}
-            <motion.span
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center px-4 py-2 text-xs font-medium tracking-[0.2em] uppercase text-gray-600 dark:text-neutral-400 border border-gray-300 dark:border-neutral-700"
-            >
+    <motion.div
+      className="min-h-screen bg-white dark:bg-neutral-950 transition-colors duration-300"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <section className="relative border-b border-gray-200 dark:border-neutral-800 overflow-hidden">
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-purple-600/[0.04] via-transparent to-pink-600/[0.06] dark:from-purple-500/[0.08] dark:to-pink-500/[0.05]"
+          aria-hidden
+        />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <motion.div
+            className="flex flex-col items-center text-center gap-6 md:gap-8"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span className="inline-flex items-center px-4 py-1.5 text-[10px] font-semibold tracking-[0.25em] uppercase text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 bg-white/60 dark:bg-neutral-900/40 backdrop-blur-sm">
               {page.badge}
-            </motion.span>
+            </span>
 
-            {/* Заголовок - элегантная типографика */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl md:text-6xl font-light tracking-tight text-gray-900 dark:text-white"
-            >
+            <h1 className="text-4xl md:text-6xl font-light tracking-tight text-gray-900 dark:text-white max-w-3xl">
               {page.title}
-            </motion.h1>
+            </h1>
 
-            {/* Подзаголовок */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base md:text-lg text-gray-600 dark:text-neutral-400 max-w-2xl font-light"
-            >
+            <p className="text-base md:text-lg font-light text-gray-600 dark:text-neutral-400 max-w-xl leading-relaxed">
               {page.subtitle}
-            </motion.p>
+            </p>
 
-            {/* Разделительная линия */}
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="w-24 h-px bg-gray-300 dark:bg-neutral-700"
-            />
+            <div className="h-px w-20 bg-gradient-to-r from-purple-600 to-pink-600" />
 
-            {/* Счётчик товаров */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-sm text-gray-500 dark:text-neutral-500 tracking-wide"
-            >
-              {productCount} {productCount === 1 ? 'товар' : productCount < 5 ? 'товара' : 'товаров'}
-            </motion.div>
-          </div>
+            <p className="text-sm text-gray-500 dark:text-neutral-500 tracking-wide">
+              {productCount}{' '}
+              {productCount === 1 ? 'товар' : productCount < 5 ? 'товара' : 'товаров'}
+            </p>
+          </motion.div>
         </div>
       </section>
 
-      {/* КОНТЕНТ */}
       <section className="py-12 md:py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">{children}</div>
+        <motion.div
+          className="max-w-7xl mx-auto"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+        >
+          {children}
+        </motion.div>
       </section>
-    </div>
+    </motion.div>
   );
 }

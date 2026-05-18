@@ -14,6 +14,7 @@ export const productListSelect = {
   price: products.price,
   inStock: productInStock,
   featured: productFeatured,
+  isNew: products.isNew,
   createdAt: products.createdAt,
   updatedAt: products.updatedAt,
 } as const;

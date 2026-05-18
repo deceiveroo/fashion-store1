@@ -1,11 +1,21 @@
-// app/api/admin/products/[id]/route.ts
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productImages, productCategory, categories } from '@/lib/schema';
+import { products, productImages, productCategory } from '@/lib/schema';
 import { productInStock, productFeatured } from '@/lib/product-query';
-import { eq, and, inArray, sql } from 'drizzle-orm';
-import { getSession, isStaff } from '@/lib/server-auth';
+import { eq, inArray } from 'drizzle-orm';
+import { getSession } from '@/lib/server-auth';
 import { canManageProducts } from '@/lib/admin-permissions';
+
+async function requireProductManager() {
+  const session = await getSession();
+  if (!session) {
+    return { error: NextResponse.json({ error: 'Необходимо авторизоваться' }, { status: 401 }) };
+  }
+  if (!canManageProducts(session.user.role)) {
+    return { error: NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 }) };
+  }
+  return { session };
+}
 
 async function queryWithRetry<T>(queryFn: () => Promise<T>, maxRetries = 3): Promise<T> {
   let lastError: unknown;
@@ -15,14 +25,12 @@ async function queryWithRetry<T>(queryFn: () => Promise<T>, maxRetries = 3): Pro
     } catch (error: unknown) {
       lastError = error;
       const err = error as { message?: string; code?: string };
-      const isConnectionError =
+      const retryable =
         err.message?.includes('Connection terminated') ||
         err.message?.includes('ECONNRESET') ||
-        err.message?.includes('Pool is draining and cannot accept new connections') ||
         err.code === 'ECONNRESET';
-      if (isConnectionError && i < maxRetries - 1) {
-        console.warn(`Query failed (attempt ${i + 1}), retrying...`, err.message);
-        await new Promise((resolve) => setTimeout(resolve, 500 * (i + 1)));
+      if (retryable && i < maxRetries - 1) {
+        await new Promise((r) => setTimeout(r, 500 * (i + 1)));
         continue;
       }
       throw error;
@@ -31,60 +39,44 @@ async function queryWithRetry<T>(queryFn: () => Promise<T>, maxRetries = 3): Pro
   throw lastError;
 }
 
-// GET - Get single product by ID
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await params before accessing properties
+    const auth = await requireProductManager();
+    if ('error' in auth && auth.error) return auth.error;
 
-    // Проверяем, является ли пользователь администратором
-    const session = await getSession();
-    
-    if (!session) {
-      return new Response(
-        JSON.stringify({ error: 'Необходимо авторизоваться.' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    const { id } = await params;
 
-    if (!(await isStaff())) {
-      return new Response(
-        JSON.stringify({ error: 'Доступ запрещен.' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    // Получаем информацию о продукте (оптимизированный запрос)
-    const productData = await queryWithRetry(() =>
+    const rows = await queryWithRetry(() =>
       db
         .select({
           id: products.id,
           name: products.name,
           description: products.description,
           price: products.price,
+          stock: products.stock,
           inStock: productInStock,
           featured: productFeatured,
+          isNew: products.isNew,
+          isActive: products.isActive,
+          slug: products.slug,
+          sku: products.sku,
           createdAt: products.createdAt,
-          mainImage: sql<string>`(SELECT url FROM ${productImages} WHERE ${productImages.productId} = ${products.id} AND ${productImages.isMain} = true LIMIT 1)`.as('mainImage'),
-          categories: sql<string[]>`(SELECT COALESCE(array_agg(${categories.id}), ARRAY[]::text[]) FROM ${productCategory} LEFT JOIN ${categories} ON ${categories.id} = ${productCategory.categoryId} WHERE ${productCategory.productId} = ${products.id})`.as('categories'),
         })
         .from(products)
         .where(eq(products.id, id))
+        .limit(1)
     );
 
-    if (productData.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Товар не найден' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (!rows.length) {
+      return NextResponse.json({ error: 'Товар не найден' }, { status: 404 });
     }
 
-    const product = productData[0];
+    const product = rows[0];
 
-    // Получаем все изображения продукта
-    const productImagesData = await queryWithRetry(() =>
+    const images = await queryWithRetry(() =>
       db
         .select({ url: productImages.url, isMain: productImages.isMain, order: productImages.order })
         .from(productImages)
@@ -92,224 +84,227 @@ export async function GET(
         .orderBy(productImages.order)
     );
 
-    // Получаем все категории для продукта
-    const productCategoryRecords = await queryWithRetry(() =>
+    const categoryRows = await queryWithRetry(() =>
       db
-        .select({ categoryId: categories.id })
+        .select({ categoryId: productCategory.categoryId })
         .from(productCategory)
-        .leftJoin(categories, eq(categories.id, productCategory.categoryId))
         .where(eq(productCategory.productId, id))
     );
 
-    const categoryIds = productCategoryRecords.map(record => record.categoryId);
+    const categoryIds = categoryRows.map((r) => r.categoryId).filter(Boolean);
 
-    return new Response(JSON.stringify({
+    return NextResponse.json({
       ...product,
-      mainImage: product.mainImage || '/placeholder-image.jpg',
-      images: productImagesData.map(img => img.url),
+      price: parseFloat(String(product.price ?? '0')) || 0,
       categories: categoryIds,
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      images: images.map((img) => img.url),
+      mainImage: images.find((img) => img.isMain)?.url ?? images[0]?.url ?? '/placeholder-image.jpg',
     });
   } catch (error) {
-    console.error('Ошибка получения товара:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка сервера при получении товара' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error('[admin/products GET]', error);
+    return NextResponse.json({ error: 'Ошибка загрузки товара' }, { status: 500 });
   }
 }
 
-// PUT - Update product by ID
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await requireProductManager();
+    if ('error' in auth && auth.error) return auth.error;
+
+    const { id } = await params;
+    const body = await request.json();
+
+    const existing = await db.select().from(products).where(eq(products.id, id)).limit(1);
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Товар не найден' }, { status: 404 });
+    }
+
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+
+    if (body.name !== undefined) patch.name = String(body.name);
+    if (body.description !== undefined) patch.description = String(body.description);
+    if (body.price !== undefined) patch.price = String(body.price);
+    if (body.featured !== undefined) patch.featured = Boolean(body.featured);
+    if (body.isNew !== undefined) patch.isNew = Boolean(body.isNew);
+    if (body.isActive !== undefined) patch.isActive = Boolean(body.isActive);
+
+    if (body.inStock !== undefined) {
+      const inStock = Boolean(body.inStock);
+      patch.inStock = inStock;
+      const currentStock = Number(existing[0].stock) || 0;
+      patch.stock = inStock ? Math.max(currentStock, 1) : 0;
+    }
+
+    if (body.stock !== undefined) {
+      const stock = Math.max(0, Number(body.stock) || 0);
+      patch.stock = stock;
+      patch.inStock = stock > 0;
+    }
+
+    await db.update(products).set(patch).where(eq(products.id, id));
+
+    return NextResponse.json({ success: true, message: 'Обновлено' });
+  } catch (error) {
+    console.error('[admin/products PATCH]', error);
+    return NextResponse.json({ error: 'Ошибка обновления' }, { status: 500 });
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await params before accessing properties
-    const { name, description, price, categories: categoryIds, inStock, featured, images } = await request.json();
+    const auth = await requireProductManager();
+    if ('error' in auth && auth.error) return auth.error;
 
-    // Проверяем, является ли пользователь администратором
-    const session = await getSession();
-    
-    if (!session) {
-      return new Response(
-        JSON.stringify({ error: 'Необходимо авторизоваться.' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+    const { id } = await params;
+    const body = await request.json();
+    const {
+      name,
+      description,
+      price,
+      categories: categoryIdsRaw,
+      categoryIds: categoryIdsAlt,
+      inStock,
+      featured,
+      isNew,
+      images,
+    } = body;
+
+    const categoryIds: string[] = (categoryIdsRaw ?? categoryIdsAlt ?? []).filter(Boolean);
+
+    if (!name?.trim() || !description?.trim() || price === undefined || price === '') {
+      return NextResponse.json({ error: 'Заполните название, описание и цену' }, { status: 400 });
     }
 
-    if (!canManageProducts(session.user.role)) {
-      return new Response(
-        JSON.stringify({ error: 'Недостаточно прав для изменения товаров.' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+    const priceNum = parseFloat(String(price));
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      return NextResponse.json({ error: 'Некорректная цена' }, { status: 400 });
     }
 
-    // Валидация данных
-    if (!name || !description || !price || !categoryIds || categoryIds.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Все обязательные поля должны быть заполнены, включая хотя бы одну категорию' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    const existing = await db.select().from(products).where(eq(products.id, id)).limit(1);
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Товар не найден' }, { status: 404 });
     }
 
-    const priceNum = parseFloat(price);
-    if (isNaN(priceNum) || priceNum <= 0) {
-      return new Response(
-        JSON.stringify({ error: 'Цена должна быть положительным числом' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (categoryIds.length > 0) {
+      const { categories } = await import('@/lib/schema');
+      const found = await db
+        .select({ id: categories.id })
+        .from(categories)
+        .where(inArray(categories.id, categoryIds));
+      const foundIds = new Set(found.map((c) => c.id));
+      const missing = categoryIds.filter((cid) => !foundIds.has(cid));
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: `Категории не найдены: ${missing.join(', ')}` },
+          { status: 400 }
+        );
+      }
     }
 
-    // Проверяем, что товар существует
-    const existingProduct = await db
-      .select()
-      .from(products)
-      .where(eq(products.id, id));
+    const stockValue =
+      inStock !== undefined
+        ? inStock
+          ? Math.max(Number(existing[0].stock) || 10, 1)
+          : 0
+        : Number(existing[0].stock) || 0;
 
-    if (existingProduct.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Товар не найден' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Проверяем, что все категории существуют
-    const categoryRecords = await db.select().from(categories).where(inArray(categories.id, categoryIds));
-    const existingCategoryIds = categoryRecords.map(cat => cat.id);
-    
-    const invalidCategories = categoryIds.filter((catId: string) => !existingCategoryIds.includes(catId));
-    if (invalidCategories.length > 0) {
-      return new Response(
-        JSON.stringify({ error: `Следующие категории не существуют: ${invalidCategories.join(', ')}` }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Обновляем товар
     await db
       .update(products)
       .set({
-        name: name || existingProduct[0].name,
-        description: description || existingProduct[0].description,
-        price: price !== undefined ? String(price) : existingProduct[0].price,
-        inStock: inStock !== undefined ? Boolean(inStock) : existingProduct[0].inStock,
-        featured: featured !== undefined ? Boolean(featured) : existingProduct[0].featured,
-        stock: inStock !== undefined ? (inStock ? Math.max(Number(existingProduct[0].stock) || 10, 1) : 0) : existingProduct[0].stock,
-        categoryId: categoryIds?.[0] || existingProduct[0].categoryId,
+        name: String(name).trim(),
+        description: String(description).trim(),
+        price: String(priceNum),
+        inStock: stockValue > 0,
+        stock: stockValue,
+        featured: featured !== undefined ? Boolean(featured) : existing[0].featured,
+        isNew: isNew !== undefined ? Boolean(isNew) : existing[0].isNew,
+        categoryId: categoryIds[0] ?? existing[0].categoryId,
         updatedAt: new Date(),
       })
       .where(eq(products.id, id));
 
-    // Удаляем старые связи с категориями
-    await db
-      .delete(productCategory)
-      .where(eq(productCategory.productId, id));
+    await db.delete(productCategory).where(eq(productCategory.productId, id));
 
-    // Создаем новые связи с категориями
-    if (categoryIds && categoryIds.length > 0) {
-      const categoryRecords = categoryIds.map((categoryId: string) => ({
-        id: crypto.randomUUID(),
-        productId: id,
-        categoryId,
-      }));
-      await db.insert(productCategory).values(categoryRecords);
+    if (categoryIds.length > 0) {
+      await db.insert(productCategory).values(
+        categoryIds.map((categoryId: string) => ({
+          id: crypto.randomUUID(),
+          productId: id,
+          categoryId,
+        }))
+      );
     }
 
-    // Удаляем старые изображения
-    await db
-      .delete(productImages)
-      .where(eq(productImages.productId, id));
+    await db.delete(productImages).where(eq(productImages.productId, id));
 
-    // Добавляем новые изображения
-    if (images && images.length > 0) {
-      const imageRecords = images.map((url: string, index: number) => ({
-        id: `${id}-img-${index}`, // Генерируем уникальный ID
-        productId: id,
-        url,
-        isMain: index === 0, // Первое изображение - главное
-        order: index,
-      }));
-      await db.insert(productImages).values(imageRecords);
+    const imageUrls: string[] = Array.isArray(images)
+      ? images.map((img: string | { url: string }) => (typeof img === 'string' ? img : img.url)).filter(Boolean)
+      : [];
+
+    if (imageUrls.length > 0) {
+      await db.insert(productImages).values(
+        imageUrls.map((url: string, index: number) => ({
+          id: `${id}-img-${index}-${crypto.randomUUID().slice(0, 8)}`,
+          productId: id,
+          url,
+          isMain: index === 0,
+          order: index,
+        }))
+      );
     }
 
-    return new Response(
-      JSON.stringify({ message: 'Товар успешно обновлен' }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return NextResponse.json({ success: true, message: 'Товар сохранён' });
   } catch (error) {
-    console.error('Ошибка обновления товара:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка сервера при обновлении товара' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error('[admin/products PUT]', error);
+    const message = error instanceof Error ? error.message : 'Ошибка сохранения';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-// DELETE - Delete product by ID
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await params before accessing properties
+    const auth = await requireProductManager();
+    if ('error' in auth && auth.error) return auth.error;
 
-    // Проверяем, является ли пользователь администратором
-    const session = await getSession();
-    
-    if (!session) {
-      return new Response(
-        JSON.stringify({ error: 'Необходимо авторизоваться.' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+    const { id } = await params;
+    const { searchParams } = new URL(_request.url);
+    const hard = searchParams.get('hard') === 'true';
+
+    const existing = await db.select().from(products).where(eq(products.id, id)).limit(1);
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Товар не найден' }, { status: 404 });
     }
 
-    if (!canManageProducts(session.user.role)) {
-      return new Response(
-        JSON.stringify({ error: 'Недостаточно прав для удаления товаров.' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (hard) {
+      await db.delete(productCategory).where(eq(productCategory.productId, id));
+      await db.delete(productImages).where(eq(productImages.productId, id));
+      await db.delete(products).where(eq(products.id, id));
+    } else {
+      await db
+        .update(products)
+        .set({
+          isActive: false,
+          deletedAt: new Date(),
+          stock: 0,
+          inStock: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(products.id, id));
     }
 
-    // Проверяем, что товар существует
-    const existingProduct = await db
-      .select()
-      .from(products)
-      .where(eq(products.id, id));
-
-    if (existingProduct.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Товар не найден' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Удаляем связи с категориями
-    await db
-      .delete(productCategory)
-      .where(eq(productCategory.productId, id));
-
-    // Удаляем изображения продукта
-    await db
-      .delete(productImages)
-      .where(eq(productImages.productId, id));
-
-    // Удаляем продукт
-    await db
-      .delete(products)
-      .where(eq(products.id, id));
-
-    return new Response(
-      JSON.stringify({ message: 'Товар успешно удален' }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return NextResponse.json({ success: true, message: hard ? 'Товар удалён' : 'Товар скрыт из каталога' });
   } catch (error) {
-    console.error('Ошибка удаления товара:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка сервера при удалении товара' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error('[admin/products DELETE]', error);
+    const message = error instanceof Error ? error.message : 'Ошибка удаления';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -15,10 +15,12 @@ async function loadProducts(tabId: CatalogTabId): Promise<CatalogProduct[]> {
 
 function ProductSection({
   products,
+  tab,
   emptyTitle,
   emptyMessage,
 }: {
   products: CatalogProduct[];
+  tab: CatalogTabId;
   emptyTitle: string;
   emptyMessage?: {
     title: string;
@@ -28,6 +30,7 @@ function ProductSection({
   return (
     <ProductGrid
       products={products}
+      variant={tab}
       emptyTitle={emptyTitle}
       emptyDescription="Проверьте подключение к базе или выполните migrations/supabase-reset-catalog.sql в Supabase"
       emptyMessage={emptyMessage}
@@ -66,9 +69,10 @@ export default async function CatalogPage({ tab }: CatalogPageProps) {
   return (
     <CatalogShell active={tab} productCount={products.length}>
       <Suspense fallback={<ProductGridSkeleton count={8} />}>
-        <ProductSection 
-          products={products} 
-          emptyTitle={`${config.title} — пока пусто`} 
+        <ProductSection
+          products={products}
+          tab={tab}
+          emptyTitle={`${config.title} — пока пусто`}
           emptyMessage={emptyMessages[tab]}
         />
       </Suspense>

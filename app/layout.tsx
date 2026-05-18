@@ -9,7 +9,11 @@ import SupportChatMinimalist from '@/components/SupportChatMinimalist';
 import QuickViewProvider from '@/components/QuickViewProvider';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'ELEVATE',
@@ -26,7 +30,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${inter.className} font-sans antialiased`}>
         <script
           dangerouslySetInnerHTML={{
             __html: `

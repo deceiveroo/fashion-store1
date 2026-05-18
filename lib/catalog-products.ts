@@ -11,6 +11,7 @@ export type CatalogProduct = {
   categories: string[];
   inStock: boolean;
   featured: boolean;
+  isNew: boolean;
   category?: string;
   images: { id: string; url: string; isMain: boolean }[];
   mainImage: string;
@@ -35,6 +36,7 @@ const productSelect = {
   price: products.price,
   inStock: productInStock,
   featured: productFeatured,
+  isNew: products.isNew,
 };
 
 async function resolveCategoryIds(slugs: string[], ids: string[]): Promise<string[]> {
@@ -86,6 +88,7 @@ async function attachImages(
     price: string;
     inStock: boolean;
     featured: boolean;
+    isNew: boolean | null;
   }>
 ): Promise<CatalogProduct[]> {
   if (rows.length === 0) return [];
@@ -125,6 +128,7 @@ async function attachImages(
       price: Number.isFinite(priceNum) ? priceNum : 0,
       inStock: product.inStock ?? true,
       featured: product.featured ?? false,
+      isNew: product.isNew ?? false,
       images: formatted,
       mainImage:
         formatted.find((img) => img.isMain)?.url ||

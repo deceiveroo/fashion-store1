@@ -9,9 +9,10 @@ import { useAuth } from '@/context/AuthContext';
 interface FavoriteButtonProps {
   productId: string;
   size?: number;
+  onToggle?: (isFavorite: boolean) => void;
 }
 
-export default function FavoriteButton({ productId, size = 20 }: FavoriteButtonProps) {
+export default function FavoriteButton({ productId, size = 20, onToggle }: FavoriteButtonProps) {
   const { user } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,6 +61,7 @@ export default function FavoriteButton({ productId, size = 20 }: FavoriteButtonP
         
         if (response.ok) {
           setIsFavorite(false);
+          onToggle?.(false);
           toast.success('Удалено из избранного');
         } else {
           const errorData = await response.json().catch(() => ({}));
@@ -77,6 +79,7 @@ export default function FavoriteButton({ productId, size = 20 }: FavoriteButtonP
         
         if (response.ok) {
           setIsFavorite(true);
+          onToggle?.(true);
           toast.success('Добавлено в избранное');
         } else {
           const errorData = await response.json().catch(() => ({}));

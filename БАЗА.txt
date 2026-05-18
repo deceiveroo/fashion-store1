@@ -425,6 +425,7 @@ CREATE TABLE public.products (
   updated_at timestamp without time zone DEFAULT now(),
   in_stock boolean DEFAULT true,
   featured boolean DEFAULT false,
+  short_description text,
   CONSTRAINT products_pkey PRIMARY KEY (id),
   CONSTRAINT products_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id)
 );
