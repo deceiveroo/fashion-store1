@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { userSessions } from '@/lib/db/schema';
+import { userSessions } from '@/lib/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
+import { jsonWithNoCache } from '@/lib/no-cache';
 
 function isTableMissingError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
       lastActive: getRelativeTime(session.lastActive),
     }));
 
-    return NextResponse.json({ sessions: sessionsWithCurrent });
+    return jsonWithNoCache({ sessions: sessionsWithCurrent });
   } catch (error) {
     console.error('Error fetching sessions:', error);
     if (isTableMissingError(error)) {

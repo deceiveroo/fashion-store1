@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
+import { jsonWithNoCache } from '@/lib/no-cache';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
 const secret = new TextEncoder().encode(JWT_SECRET);
@@ -16,7 +17,9 @@ async function getUserId(request: NextRequest): Promise<string | null> {
   const session = await auth();
   if (session?.user?.id) {
     userId = session.user.id;
+    console.log('[PROFILE AUTH] Got user ID from NextAuth session:', userId);
   } else {
+    console.log('[PROFILE AUTH] No NextAuth session found');
     // Try Bearer token
     const authHeader = request.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -24,9 +27,12 @@ async function getUserId(request: NextRequest): Promise<string | null> {
         const token = authHeader.substring(7);
         const { payload } = await jwtVerify(token, secret);
         userId = payload.userId as string;
+        console.log('[PROFILE AUTH] Got user ID from bearer token:', userId);
       } catch (error) {
-        console.error('Invalid token:', error);
+        console.error('[PROFILE AUTH] Invalid bearer token:', error);
       }
+    } else {
+      console.log('[PROFILE AUTH] No authorization header');
     }
   }
 
@@ -38,8 +44,11 @@ export async function GET(request: NextRequest) {
   const userId = await getUserId(request);
   
   if (!userId) {
+    console.log('[PROFILE GET] No user ID found');
     return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
   }
+
+  console.log('[PROFILE GET] Fetching profile for user:', userId);
 
   try {
     const userData = await safeQuery(() => db
@@ -59,17 +68,20 @@ export async function GET(request: NextRequest) {
       .where(eq(users.id, userId))
       .limit(1));
 
-    if (userData.length === 0) {
+    if (!userData || userData.length === 0) {
+      console.log('[PROFILE GET] User not found in database:', userId);
       return NextResponse.json({ message: 'Пользователь не найден' }, { status: 404 });
     }
 
     const user = userData[0];
+    console.log('[PROFILE GET] Returning profile for:', user.email);
+    
     const nameParts = user.name?.split(' ') || ['', ''];
 
     // Use avatar from userProfiles if available, otherwise fall back to users.image
     const avatarUrl = user.avatar || user.image;
     
-    return NextResponse.json({
+    return jsonWithNoCache({
       id: user.id,
       email: user.email,
       name: user.name,
@@ -81,7 +93,7 @@ export async function GET(request: NextRequest) {
       image: avatarUrl, // Return both for compatibility
     });
   } catch (error) {
-    console.error('Profile fetch error:', error);
+    console.error('[PROFILE GET] Error:', error);
     return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
   }
 }

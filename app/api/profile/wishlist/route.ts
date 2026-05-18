@@ -4,6 +4,7 @@ import { userWishlistItems, products, productImages } from '@/lib/schema';
 import { productInStock } from '@/lib/product-query';
 import { eq, and, desc } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
+import { jsonWithNoCache } from '@/lib/no-cache';
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json({ items: itemsWithImages });
+    return jsonWithNoCache({ items: itemsWithImages });
   } catch (error) {
     console.error('Error fetching wishlist:', error);
     return NextResponse.json({ error: 'Failed to fetch wishlist' }, { status: 500 });

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { paymentMethods } from '@/lib/db/schema';
+import { paymentMethods } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
+import { jsonWithNoCache } from '@/lib/no-cache';
 
 function isTableMissingError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
       .from(paymentMethods)
       .where(eq(paymentMethods.userId, user.id));
 
-    return NextResponse.json({ methods });
+    return jsonWithNoCache({ methods });
   } catch (error) {
     console.error('Error fetching payment methods:', error);
     if (isTableMissingError(error)) {
