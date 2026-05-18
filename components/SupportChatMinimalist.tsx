@@ -98,6 +98,21 @@ export default function SupportChatMinimalist() {
     return () => unsubscribeFromRealtime();
   }, [isOpen, view, sessionId]);
 
+  // Dispatch chat state changes for global backdrop
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('chatStateChange', { detail: { isOpen } }));
+  }, [isOpen]);
+
+  // Listen for closeChat event from global backdrop
+  useEffect(() => {
+    const handleCloseChat = () => {
+      setIsOpen(false);
+    };
+
+    window.addEventListener('closeChat', handleCloseChat as EventListener);
+    return () => window.removeEventListener('closeChat', handleCloseChat as EventListener);
+  }, []);
+
   const loadMessages = async () => {
     try {
       const res = await fetch(`/api/chat?sessionId=${sessionId}`);
@@ -287,13 +302,25 @@ export default function SupportChatMinimalist() {
       {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-24 right-6 w-[380px] max-h-[600px] bg-[#1A1A2E]/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 overflow-hidden z-50"
-          >
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[85]"
+              onClick={() => setIsOpen(false)}
+            />
+
+            {/* Chat Modal */}
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="fixed bottom-24 right-6 w-[380px] max-h-[600px] bg-[#1A1A2E]/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 overflow-hidden z-[90]"
+            >
             {/* Header */}
             <div className="bg-gradient-to-r from-[#9D4EDD]/20 to-[#FF6B9D]/20 border-b border-white/10 p-4">
               <div className="flex items-center justify-between">
@@ -510,6 +537,7 @@ export default function SupportChatMinimalist() {
               </div>
             )}
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

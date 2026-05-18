@@ -7,10 +7,12 @@ export default function GlobalBackdrop() {
     cart: boolean;
     userMenu: boolean;
     search: boolean;
+    chat: boolean;
   }>({
     cart: false,
     userMenu: false,
     search: false,
+    chat: false,
   });
 
   useEffect(() => {
@@ -38,19 +40,29 @@ export default function GlobalBackdrop() {
       }));
     };
 
+    // Listen for chat state changes
+    const handleChatStateChange = (e: CustomEvent) => {
+      setActiveBackdrops(prev => ({
+        ...prev,
+        chat: e.detail.isOpen,
+      }));
+    };
+
     window.addEventListener('cartStateChange', handleCartStateChange as EventListener);
     window.addEventListener('userMenuStateChange', handleUserMenuStateChange as EventListener);
     window.addEventListener('searchStateChange', handleSearchStateChange as EventListener);
+    window.addEventListener('chatStateChange', handleChatStateChange as EventListener);
 
     return () => {
       window.removeEventListener('cartStateChange', handleCartStateChange as EventListener);
       window.removeEventListener('userMenuStateChange', handleUserMenuStateChange as EventListener);
       window.removeEventListener('searchStateChange', handleSearchStateChange as EventListener);
+      window.removeEventListener('chatStateChange', handleChatStateChange as EventListener);
     };
   }, []);
 
   // Don't render if no backdrops are active
-  if (!activeBackdrops.cart && !activeBackdrops.userMenu && !activeBackdrops.search) {
+  if (!activeBackdrops.cart && !activeBackdrops.userMenu && !activeBackdrops.search && !activeBackdrops.chat) {
     return null;
   }
 
@@ -67,6 +79,9 @@ export default function GlobalBackdrop() {
         }
         if (activeBackdrops.search) {
           window.dispatchEvent(new CustomEvent('closeSearch'));
+        }
+        if (activeBackdrops.chat) {
+          window.dispatchEvent(new CustomEvent('closeChat'));
         }
       }}
       aria-hidden="true"
