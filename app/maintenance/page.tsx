@@ -256,19 +256,30 @@ export default function MaintenancePage() {
             {/* Meme Image */}
             {config.memeImage && config.memeImage.trim() !== '' && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                className="mt-8 -mx-8 md:-mx-12"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.7, type: 'spring', stiffness: 100 }}
+                className="mt-8 -mx-8 md:-mx-12 mb-4"
               >
-                <img
-                  src={config.memeImage}
-                  alt="Meme"
-                  className="w-full h-auto object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
+                <div className="relative group">
+                  {/* Glow effect */}
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
+                  
+                  {/* Image container */}
+                  <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                    <img
+                      src={config.memeImage}
+                      alt="Meme"
+                      className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    
+                    {/* Overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                  </div>
+                </div>
               </motion.div>
             )}
           </div>
