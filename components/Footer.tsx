@@ -217,23 +217,32 @@ export default function Footer() {
             
             {/* Mobile Quick Links - Visible only on mobile */}
             <div className="md:hidden mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <h4 className="font-bold text-xs mb-2 text-gray-800 dark:text-white">Магазин</h4>
-                  <ul className="space-y-1">
-                    <li><Link href="/new" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Новинки</Link></li>
-                    <li><Link href="/collections" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Коллекции</Link></li>
-                    <li><Link href="/men" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Мужское</Link></li>
-                    <li><Link href="/women" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Женское</Link></li>
+                  <h4 className="font-bold text-[10px] mb-2 text-gray-800 dark:text-white uppercase tracking-wide">Магазин</h4>
+                  <ul className="space-y-1.5">
+                    <li><Link href="/new" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Новинки</Link></li>
+                    <li><Link href="/collections" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Коллекции</Link></li>
+                    <li><Link href="/men" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Мужское</Link></li>
+                    <li><Link href="/women" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Женское</Link></li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-bold text-xs mb-2 text-gray-800 dark:text-white">Поддержка</h4>
-                  <ul className="space-y-1">
-                    <li><Link href="/support/contact" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Связаться</Link></li>
-                    <li><Link href="/support/delivery" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Доставка</Link></li>
-                    <li><Link href="/support/returns" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">Возвраты</Link></li>
-                    <li><Link href="/support/faq" className="text-[10px] text-gray-600 dark:text-gray-400 hover:text-purple-600">FAQ</Link></li>
+                  <h4 className="font-bold text-[10px] mb-2 text-gray-800 dark:text-white uppercase tracking-wide">Поддержка</h4>
+                  <ul className="space-y-1.5">
+                    <li><Link href="/support/contact" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Связаться</Link></li>
+                    <li><Link href="/support/delivery" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Доставка</Link></li>
+                    <li><Link href="/support/returns" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Возвраты</Link></li>
+                    <li><Link href="/support/sizes" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Размеры</Link></li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-bold text-[10px] mb-2 text-gray-800 dark:text-white uppercase tracking-wide">Компания</h4>
+                  <ul className="space-y-1.5">
+                    <li><Link href="/company/about" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">О Нас</Link></li>
+                    <li><Link href="/company/sustainability" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Устойчивость</Link></li>
+                    <li><Link href="/company/careers" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Карьера</Link></li>
+                    <li><Link href="/company/press" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Пресса</Link></li>
                   </ul>
                 </div>
               </div>
@@ -241,7 +250,7 @@ export default function Footer() {
           </motion.div>
 
           {/* Links Sections - Hidden on mobile, shown on md+ */}
-          <div className="hidden md:grid md:grid-cols-2 lg:col-span-3 gap-6 lg:gap-8">
+          <div className="hidden md:flex md:col-span-2 lg:col-span-3 gap-6 lg:gap-8">
             {footerSections.map((section, sectionIndex) => (
               <motion.div
                 key={section.title}
@@ -249,6 +258,7 @@ export default function Footer() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: sectionIndex * 0.1 }}
+                className="flex-1"
               >
                 <h4 className="font-bold text-sm mb-4 text-gray-800 dark:text-white">{section.title}</h4>
                 <ul className="space-y-2">
