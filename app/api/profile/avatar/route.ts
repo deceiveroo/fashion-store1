@@ -154,14 +154,9 @@ export async function POST(request: NextRequest) {
     
     // Fallback на локальное хранилище (только для development)
     if (!publicUrl) {
-      try {
-        console.log('[avatar] Attempting local storage...');
-        publicUrl = await uploadToLocal(buffer, userId, ext);
-        console.log('[avatar] Local storage successful:', publicUrl);
-      } catch (localError: any) {
-        console.error('[avatar] Local storage also failed:', localError.message);
-        throw new Error('Не удалось загрузить аватар. Проверьте настройки Supabase.');
-      }
+      console.error('[avatar] ERROR: Supabase upload failed and local storage is not available on production');
+      console.error('[avatar] Please add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to Vercel environment variables');
+      throw new Error('Не удалось загрузить аватар. Пожалуйста, настройте переменные окружения SUPABASE_URL и SUPABASE_SERVICE_ROLE_KEY в Vercel.');
     }
 
     if (!publicUrl) {
