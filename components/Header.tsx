@@ -219,7 +219,7 @@ export default function Header() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+                          className="fixed inset-0 bg-transparent z-[60]"
                           onClick={() => setIsUserMenuOpen(false)}
                         />
                         
