@@ -51,6 +51,38 @@ async function uploadToLocal(buffer: Buffer, userId: string, ext: string) {
   return `/uploads/avatars/${fileName}`;
 }
 
+async function deleteOldAvatar(oldUrl: string | null) {
+  if (!oldUrl) return;
+  
+  try {
+    // Проверяем что это URL из Supabase
+    if (oldUrl.includes('supabase.co/storage')) {
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (!supabaseUrl || !supabaseServiceRoleKey) return;
+      
+      const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+      
+      // Извлекаем путь к файлу из URL
+      // URL format: https://xxx.supabase.co/storage/v1/object/public/uploads/avatars/userId/file.jpg
+      const match = oldUrl.match(/\/storage\/v1\/object\/public\/uploads\/(.+)$/);
+      if (match && match[1]) {
+        const filePath = match[1];
+        const { error } = await supabase.storage.from('uploads').remove([filePath]);
+        
+        if (error) {
+          console.warn('[avatar] Failed to delete old avatar:', error.message);
+        } else {
+          console.log('[avatar] Old avatar deleted:', filePath);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[avatar] Error deleting old avatar:', error);
+  }
+}
+
 export async function POST(request: NextRequest) {
   const userId = await getUserId(request);
   if (!userId) {
@@ -62,6 +94,15 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
     if (!file) {
       return NextResponse.json({ error: 'Файл не предоставлен' }, { status: 400 });
+    }
+
+    // Получаем старый URL аватара для удаления
+    const oldUrl = formData.get('oldUrl') as string | null;
+    
+    // Удаляем старый аватар из Supabase Storage
+    if (oldUrl) {
+      console.log('[avatar] Deleting old avatar:', oldUrl);
+      await deleteOldAvatar(oldUrl);
     }
 
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
