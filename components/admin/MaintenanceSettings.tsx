@@ -77,6 +77,22 @@ export default function MaintenanceSettings() {
   const handleSave = async () => {
     setIsSaving(true);
 
+    // Validate background image URL if provided
+    if (config.backgroundImage && config.backgroundImage.trim() !== '') {
+      const url = config.backgroundImage.trim();
+      
+      // Check if it's a valid image URL
+      const isValidImageUrl = url.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i) || 
+                              url.includes('supabase.co/storage') ||
+                              url.includes('cloudinary.com') ||
+                              url.includes('imgur.com');
+      
+      if (!isValidImageUrl && !url.startsWith('data:image')) {
+        toast.warning('URL может быть не изображением. Убедитесь что ссылка прямая на картинку (заканчивается на .jpg, .png и т.д.)');
+        // Continue anyway - let user decide
+      }
+    }
+
     try {
       const response = await fetch('/api/admin/maintenance', {
         method: 'PUT',
@@ -247,8 +263,11 @@ export default function MaintenanceSettings() {
             value={config.backgroundImage || ''}
             onChange={(e) => setConfig({ ...config, backgroundImage: e.target.value || null })}
             className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none"
-            placeholder="Или вставьте URL: https://example.com/image.jpg"
+            placeholder="Или вставьте прямую ссылку на фото (https://...image.jpg)"
           />
+          <p className="text-xs text-white/30 mt-2">
+            💡 Совет: Используйте прямые ссылки на изображения (заканчиваются на .jpg, .png, .webp)
+          </p>
           
           {/* Preview */}
           {config.backgroundImage && config.backgroundImage.trim() !== '' && (
