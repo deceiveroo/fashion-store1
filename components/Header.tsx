@@ -196,24 +196,23 @@ export default function Header() {
                       />
                     </button>
 
-                    {/* Backdrop for closing on click outside */}
-                    {isUserMenuOpen && (
-                      <div
-                        className="fixed inset-0 z-40 bg-transparent"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        aria-hidden="true"
-                      />
-                    )}
-
                     {/* User Dropdown */}
                     {isUserMenuOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-50"
-                      >
+                      <>
+                        {/* Backdrop for closing on click outside */}
+                        <div
+                          className="fixed inset-0 z-[60] bg-transparent"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          aria-hidden="true"
+                        />
+                        
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-[70]"
+                        >
                         <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                           <p className="font-semibold text-gray-900 dark:text-gray-100">
                             {user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
@@ -263,6 +262,7 @@ export default function Header() {
                           </button>
                         </div>
                       </motion.div>
+                      </>
                     )}
                   </div>
                 </div>
