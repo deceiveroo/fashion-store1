@@ -21,7 +21,7 @@ export async function GET() {
       'maintenance_end_time',
       'maintenance_background_image',
       'maintenance_enable_subscription',
-      'maintenance_gallery_images',
+      'maintenance_meme_image',
     ];
 
     const result = await db.select().from(settings).where(
@@ -42,16 +42,7 @@ export async function GET() {
       endTime: config.maintenance_end_time || null,
       backgroundImage: config.maintenance_background_image || null,
       enableSubscription: config.maintenance_enable_subscription !== 'false',
-      galleryImages: (() => {
-        try {
-          const parsed = JSON.parse(config.maintenance_gallery_images || '[]');
-          console.log('Loaded gallery images:', parsed, 'from raw value:', config.maintenance_gallery_images);
-          return parsed;
-        } catch (e) {
-          console.error('Error parsing gallery images:', e);
-          return [];
-        }
-      })(),
+      memeImage: config.maintenance_meme_image || null,
     });
   } catch (error) {
     console.error('Error fetching maintenance settings:', error);
@@ -76,7 +67,7 @@ export async function PUT(request: Request) {
       endTime,
       backgroundImage,
       enableSubscription,
-      galleryImages,
+      memeImage,
     } = body;
 
     // Prepare updates
@@ -87,15 +78,8 @@ export async function PUT(request: Request) {
       { key: 'maintenance_end_time', value: endTime || '' },
       { key: 'maintenance_background_image', value: backgroundImage || '' },
       { key: 'maintenance_enable_subscription', value: String(enableSubscription ?? true) },
-      { key: 'maintenance_gallery_images', value: JSON.stringify(galleryImages || []) },
+      { key: 'maintenance_meme_image', value: memeImage || '' },
     ];
-
-    console.log('Saving maintenance settings:', {
-      maintenanceMode,
-      galleryImages,
-      galleryImagesLength: galleryImages?.length || 0,
-      galleryImagesJSON: JSON.stringify(galleryImages || []),
-    });
 
     // Upsert each setting
     for (const update of updates) {

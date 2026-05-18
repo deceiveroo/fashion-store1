@@ -12,7 +12,7 @@ interface MaintenanceConfig {
   endTime: string | null;
   backgroundImage: string | null;
   enableSubscription: boolean;
-  galleryImages: string[];
+  memeImage: string | null;
 }
 
 export default function MaintenanceSettings() {
@@ -23,14 +23,13 @@ export default function MaintenanceSettings() {
     endTime: null,
     backgroundImage: null,
     enableSubscription: true,
-    galleryImages: [],
+    memeImage: null,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const galleryFileInputRef = useRef<HTMLInputElement>(null);
-  const [galleryUrlInput, setGalleryUrlInput] = useState('');
+  const memeFileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch current settings
   useEffect(() => {
@@ -78,7 +77,7 @@ export default function MaintenanceSettings() {
     }
   };
 
-  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMemeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -96,50 +95,17 @@ export default function MaintenanceSettings() {
       const data = await response.json();
 
       if (response.ok) {
-        setConfig({ 
-          ...config, 
-          galleryImages: [...config.galleryImages, data.url] 
-        });
-        toast.success('Фото добавлено в галерею');
+        setConfig({ ...config, memeImage: data.url });
+        toast.success('Мем загружен');
       } else {
         toast.error(data.error || 'Ошибка загрузки');
       }
     } catch (error) {
-      console.error('Error uploading gallery image:', error);
+      console.error('Error uploading meme image:', error);
       toast.error('Произошла ошибка при загрузке');
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const removeGalleryImage = (index: number) => {
-    setConfig({
-      ...config,
-      galleryImages: config.galleryImages.filter((_, i) => i !== index),
-    });
-    toast.success('Фото удалено из галереи');
-  };
-
-  const addGalleryUrl = () => {
-    if (!galleryUrlInput || !galleryUrlInput.trim()) {
-      toast.error('Введите URL изображения');
-      return;
-    }
-
-    const url = galleryUrlInput.trim();
-    
-    // Basic validation
-    if (!url.startsWith('http')) {
-      toast.error('URL должен начинаться с http:// или https://');
-      return;
-    }
-
-    setConfig({
-      ...config,
-      galleryImages: [...config.galleryImages, url],
-    });
-    setGalleryUrlInput('');
-    toast.success('URL добавлен! Не забудьте нажать "Сохранить настройки"');
   };
 
   const handleSave = async () => {
@@ -349,77 +315,68 @@ export default function MaintenanceSettings() {
           )}
         </div>
 
-        {/* Gallery Images */}
+        {/* Meme Image */}
         <div>
           <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
             <ImageIcon className="inline w-3 h-3 mr-1" />
-            Галерея изображений ({config.galleryImages.length})
+            Картинка для мемов
           </label>
           
-          {/* Upload button for gallery */}
+          {/* Upload button */}
           <div className="flex gap-2 mb-3">
             <input
               type="file"
-              ref={galleryFileInputRef}
-              onChange={handleGalleryUpload}
+              ref={memeFileInputRef}
+              onChange={handleMemeUpload}
               accept="image/*"
               className="hidden"
             />
             <button
               type="button"
-              onClick={() => galleryFileInputRef.current?.click()}
+              onClick={() => memeFileInputRef.current?.click()}
               disabled={isUploading}
               className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm text-white transition-colors disabled:opacity-50"
             >
               <Upload className="w-4 h-4" />
-              {isUploading ? 'Загрузка...' : 'Загрузить фото'}
+              {isUploading ? 'Загрузка...' : 'Загрузить мем'}
             </button>
+            {config.memeImage && config.memeImage.trim() !== '' && (
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, memeImage: null })}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm text-white transition-colors"
+              >
+                Удалить
+              </button>
+            )}
           </div>
 
           {/* URL input */}
-          <div className="flex gap-2 mb-3">
-            <input
-              type="text"
-              value={galleryUrlInput}
-              onChange={(e) => setGalleryUrlInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addGalleryUrl()}
-              placeholder="Или вставьте URL: https://example.com/image.jpg"
-              className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={addGalleryUrl}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm text-white transition-colors"
-            >
-              Добавить
-            </button>
-          </div>
+          <input
+            type="text"
+            value={config.memeImage || ''}
+            onChange={(e) => setConfig({ ...config, memeImage: e.target.value || null })}
+            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none"
+            placeholder="Или вставьте прямую ссылку на мем (https://...image.jpg)"
+          />
+          <p className="text-xs text-white/30 mt-2">
+            💡 Одно изображение которое будет показано на странице обслуживания
+          </p>
 
-          {/* Gallery preview grid */}
-          {config.galleryImages.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              {config.galleryImages.map((img, index) => (
-                <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-white/10 group">
-                  <img
-                    src={img}
-                    alt={`Gallery ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeGalleryImage(index)}
-                    className="absolute top-1 right-1 p-1.5 bg-red-500/80 hover:bg-red-600 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+          {/* Preview */}
+          {config.memeImage && config.memeImage.trim() !== '' && (
+            <div className="mt-3 relative rounded-xl overflow-hidden border border-white/10">
+              <img
+                src={config.memeImage}
+                alt="Meme preview"
+                className="w-full h-auto max-h-64 object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  toast.error('Ошибка загрузки изображения');
+                }}
+              />
             </div>
           )}
-          
-          <p className="text-xs text-white/30 mt-2">
-            💡 Добавьте несколько фото которые будут показаны на странице обслуживания
-          </p>
         </div>
 
         {/* Enable Subscription */}

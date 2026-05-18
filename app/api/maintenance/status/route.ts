@@ -14,7 +14,7 @@ export async function GET() {
       'maintenance_end_time',
       'maintenance_background_image',
       'maintenance_enable_subscription',
-      'maintenance_gallery_images',
+      'maintenance_meme_image',
     ];
 
     const result = await db.select().from(settings).where(
@@ -34,13 +34,7 @@ export async function GET() {
       endTime: config.maintenance_end_time || null,
       backgroundImage: config.maintenance_background_image || null,
       enableSubscription: config.maintenance_enable_subscription !== 'false',
-      galleryImages: (() => {
-        try {
-          return JSON.parse(config.maintenance_gallery_images || '[]');
-        } catch {
-          return [];
-        }
-      })(),
+      memeImage: config.maintenance_meme_image || null,
     });
   } catch (error) {
     console.error('Error fetching maintenance status:', error);
