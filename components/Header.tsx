@@ -196,6 +196,14 @@ export default function Header() {
                       />
                     </button>
 
+                    {/* Backdrop for closing on click outside */}
+                    {isUserMenuOpen && (
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      />
+                    )}
+
                     {/* User Dropdown */}
                     {isUserMenuOpen && (
                       <motion.div
