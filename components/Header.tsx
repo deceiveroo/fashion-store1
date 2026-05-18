@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, User, Menu, X, Search, Plus, LogOut, ChevronDown, Package, Heart } from 'lucide-react';
+import { ShoppingBag, User, Menu, X, Search as SearchIcon, Plus, LogOut, ChevronDown, Package, Heart } from 'lucide-react';
 import SearchComponent from './SearchNew';
 import Cart from './Cart';
 import ThemeToggle from './ThemeToggle';
@@ -19,6 +20,7 @@ const navigation = [
 ];
 
 export default function Header() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -81,7 +83,7 @@ export default function Header() {
             >
               <Link
                 href="/" 
-                className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent"
+                className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent"
               >
                 ELEVATE
               </Link>
@@ -111,8 +113,8 @@ export default function Header() {
             </div>
 
             {/* Right Section */}
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Search Component */}
+            <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
+              {/* Search Component - Desktop only */}
               <div className="hidden md:block">
                 <SearchComponent />
               </div>
@@ -138,6 +140,17 @@ export default function Header() {
                     {itemCount}
                   </motion.span>
                 )}
+              </motion.button>
+
+              {/* Mobile Menu Button */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label={isOpen ? "Закрыть меню" : "Открыть меню"}
+                className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+              >
+                {isOpen ? <X size={20} /> : <Menu size={20} />}
               </motion.button>
 
               {isLoading ? (
@@ -275,12 +288,13 @@ export default function Header() {
 
               {/* Mobile menu button - теперь всегда видимый на мобильных устройствах */}
               <motion.button
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                className="md:hidden p-2 text-gray-600 flex items-center justify-center"
+                className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors flex items-center justify-center"
                 onClick={() => setIsOpen(!isOpen)}
                 aria-label={isOpen ? "Закрыть меню" : "Открыть меню"}
               >
-                {isOpen ? <X size={24} className="text-purple-600" /> : <Menu size={24} className="text-purple-600" />}
+                {isOpen ? <X size={20} className="text-purple-600" /> : <Menu size={20} className="text-purple-600" />}
               </motion.button>
             </div>
           </div>
@@ -294,9 +308,28 @@ export default function Header() {
                 exit={{ opacity: 0, height: 0 }}
                 className="md:hidden bg-white/95 backdrop-blur-lg rounded-lg mt-2 p-4 shadow-xl border border-gray-200 max-h-[70vh] overflow-y-auto"
               >
-                {/* Mobile Search Component */}
-                <div className="mb-4 md:hidden">
-                  <SearchComponent />
+                {/* Mobile Search Input - Simplified */}
+                <div className="mb-4">
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.currentTarget.querySelector('input') as HTMLInputElement;
+                    if (input.value.trim()) {
+                      router.push(`/search?q=${encodeURIComponent(input.value.trim())}`);
+                      setIsOpen(false);
+                    }
+                  }} className="relative">
+                    <input
+                      type="text"
+                      placeholder="Поиск..."
+                      className="w-full px-4 py-3 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <button
+                      type="submit"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-600"
+                    >
+                      <SearchIcon size={20} />
+                    </button>
+                  </form>
                 </div>
                 
                 <div className="flex flex-col space-y-3">
