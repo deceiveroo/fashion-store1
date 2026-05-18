@@ -29,6 +29,8 @@ export default function MaintenanceSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+  const [galleryUrlInput, setGalleryUrlInput] = useState('');
 
   // Fetch current settings
   useEffect(() => {
@@ -116,6 +118,28 @@ export default function MaintenanceSettings() {
       galleryImages: config.galleryImages.filter((_, i) => i !== index),
     });
     toast.success('Фото удалено из галереи');
+  };
+
+  const addGalleryUrl = () => {
+    if (!galleryUrlInput || !galleryUrlInput.trim()) {
+      toast.error('Введите URL изображения');
+      return;
+    }
+
+    const url = galleryUrlInput.trim();
+    
+    // Basic validation
+    if (!url.startsWith('http')) {
+      toast.error('URL должен начинаться с http:// или https://');
+      return;
+    }
+
+    setConfig({
+      ...config,
+      galleryImages: [...config.galleryImages, url],
+    });
+    setGalleryUrlInput('');
+    toast.success('URL добавлен в галерею');
   };
 
   const handleSave = async () => {
@@ -337,21 +361,42 @@ export default function MaintenanceSettings() {
           </label>
           
           {/* Upload button for gallery */}
-          <div className="mb-3">
+          <div className="flex gap-2 mb-3">
             <input
               type="file"
-              id="gallery-upload"
+              ref={galleryFileInputRef}
               onChange={handleGalleryUpload}
               accept="image/*"
               className="hidden"
             />
-            <label
-              htmlFor="gallery-upload"
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm text-white transition-colors cursor-pointer"
+            <button
+              type="button"
+              onClick={() => galleryFileInputRef.current?.click()}
+              disabled={isUploading}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm text-white transition-colors disabled:opacity-50"
             >
               <Upload className="w-4 h-4" />
-              {isUploading ? 'Загрузка...' : 'Добавить фото в галерею'}
-            </label>
+              {isUploading ? 'Загрузка...' : 'Загрузить фото'}
+            </button>
+          </div>
+
+          {/* URL input */}
+          <div className="flex gap-2 mb-3">
+            <input
+              type="text"
+              value={galleryUrlInput}
+              onChange={(e) => setGalleryUrlInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addGalleryUrl()}
+              placeholder="Или вставьте URL: https://example.com/image.jpg"
+              className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={addGalleryUrl}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm text-white transition-colors"
+            >
+              Добавить
+            </button>
           </div>
 
           {/* Gallery preview grid */}

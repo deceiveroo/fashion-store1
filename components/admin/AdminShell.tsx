@@ -464,48 +464,6 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     }
   }, [status, notifications.length, addNotification]);
 
-  const [isRedirecting, setIsRedirecting] = useState(false);
-
-  useEffect(() => {
-    // Ждём пока статус определится (не loading)
-    if (status === 'loading') {
-      return;
-    }
-    
-    // Только если статус точно unauthenticated И прошло достаточно времени
-    if (status === 'unauthenticated') {
-      // Даем время на загрузку сессии из cookies
-      const timeoutId = setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          setIsRedirecting(true);
-          router.replace(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
-        }
-      }, 500); // Ждём 500ms перед редиректом
-      
-      return () => clearTimeout(timeoutId);
-    }
-    
-    // Проверяем роль только если сессия есть
-    if (status === 'authenticated' && !['admin', 'manager', 'support'].includes(role)) {
-      if (typeof window !== 'undefined') {
-        setIsRedirecting(true);
-        router.replace('/'); // Не-админов перенаправляем на главную
-      }
-    }
-  }, [status, role, router, pathname]);
-
-  if (status === 'loading' || isRedirecting) {
-    return (
-      <div data-admin-theme className="flex min-h-screen items-center justify-center bg-[var(--admin-bg)]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated' || !['admin', 'manager', 'support'].includes(role)) {
-    return null;
-  }
-
   return (
     <Ctx.Provider value={{ open, toggle: () => setOpen(p => !p), mobile }}>
       <NotifContext.Provider value={{ notifications, unreadCount, addNotification, markAsRead, markAllAsRead, clearAll }}>
