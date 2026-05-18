@@ -215,14 +215,14 @@ function Header() {
       </button>
 
       {/* Search */}
-      <div className="flex-1 max-w-md">
+      <div className="flex-1 max-w-md relative">
         <button
           onClick={() => setShowCommandPalette(true)}
           className="w-full flex items-center gap-3 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] py-1.5 pl-3 pr-16 text-left text-xs text-[var(--admin-text-faint)] hover:border-violet-500/30 hover:bg-white/[0.07] transition-all"
         >
           <Search className="h-4 w-4" />
           <span>Поиск...</span>
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-1 rounded border border-[var(--admin-border)] bg-[var(--admin-card)] px-1.5 py-0.5 text-[10px]">
+          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-1 rounded border border-[var(--admin-border)] bg-[var(--admin-card)] px-1.5 py-0.5 text-[10px] font-mono">
             <Command className="h-3 w-3" />K
           </kbd>
         </button>
