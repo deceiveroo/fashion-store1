@@ -273,7 +273,7 @@ export default function AdminProductsPage() {
             <option value="in" className="bg-[#0f0f1a]">В наличии</option>
             <option value="out" className="bg-[#0f0f1a]">Нет в наличии</option>
           </select>
-        </motion.div>
+        </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
           {loading ? (
@@ -386,10 +386,10 @@ export default function AdminProductsPage() {
                   </AnimatePresence>
                 </tbody>
               </table>
-            </motion.div>
+            </div>
           )}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </AdminShell>
   );
 }
