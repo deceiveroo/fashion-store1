@@ -24,7 +24,7 @@ export default function SearchNew() {
     'Платье', 'Джинсы', 'Кроссовки', 'Куртка', 'Футболка', 'Сумка'
   ]);
   const router = useRouter();
-  const debounceTimer = useRef<NodeJS.Timeout>();
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Load search history from localStorage
   useEffect(() => {
@@ -108,6 +108,21 @@ export default function SearchNew() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
+  // Dispatch search state changes for global backdrop
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('searchStateChange', { detail: { isOpen } }));
+  }, [isOpen]);
+
+  // Listen for closeSearch event from global backdrop
+  useEffect(() => {
+    const handleCloseSearch = () => {
+      setIsOpen(false);
+    };
+
+    window.addEventListener('closeSearch', handleCloseSearch as EventListener);
+    return () => window.removeEventListener('closeSearch', handleCloseSearch as EventListener);
+  }, []);
+
   return (
     <>
       <motion.button
@@ -132,7 +147,7 @@ export default function SearchNew() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
               onClick={() => setIsOpen(false)}
             />
 
@@ -142,7 +157,8 @@ export default function SearchNew() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -50 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-3xl px-4"
+              onClick={(e) => e.stopPropagation()}
+              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[95] w-full max-w-3xl px-4"
             >
               <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-purple-100 dark:border-purple-900/50 overflow-hidden">
                 {/* Search Input */}

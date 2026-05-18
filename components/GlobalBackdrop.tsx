@@ -6,9 +6,11 @@ export default function GlobalBackdrop() {
   const [activeBackdrops, setActiveBackdrops] = useState<{
     cart: boolean;
     userMenu: boolean;
+    search: boolean;
   }>({
     cart: false,
     userMenu: false,
+    search: false,
   });
 
   useEffect(() => {
@@ -28,17 +30,27 @@ export default function GlobalBackdrop() {
       }));
     };
 
+    // Listen for search state changes
+    const handleSearchStateChange = (e: CustomEvent) => {
+      setActiveBackdrops(prev => ({
+        ...prev,
+        search: e.detail.isOpen,
+      }));
+    };
+
     window.addEventListener('cartStateChange', handleCartStateChange as EventListener);
     window.addEventListener('userMenuStateChange', handleUserMenuStateChange as EventListener);
+    window.addEventListener('searchStateChange', handleSearchStateChange as EventListener);
 
     return () => {
       window.removeEventListener('cartStateChange', handleCartStateChange as EventListener);
       window.removeEventListener('userMenuStateChange', handleUserMenuStateChange as EventListener);
+      window.removeEventListener('searchStateChange', handleSearchStateChange as EventListener);
     };
   }, []);
 
   // Don't render if no backdrops are active
-  if (!activeBackdrops.cart && !activeBackdrops.userMenu) {
+  if (!activeBackdrops.cart && !activeBackdrops.userMenu && !activeBackdrops.search) {
     return null;
   }
 
@@ -52,6 +64,9 @@ export default function GlobalBackdrop() {
         }
         if (activeBackdrops.userMenu) {
           window.dispatchEvent(new CustomEvent('closeUserMenu'));
+        }
+        if (activeBackdrops.search) {
+          window.dispatchEvent(new CustomEvent('closeSearch'));
         }
       }}
       aria-hidden="true"
