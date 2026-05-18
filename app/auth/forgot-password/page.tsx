@@ -32,6 +32,22 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
+      // Сначала проверяем существует ли пользователь
+      const checkResponse = await fetch('/api/auth/check-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      
+      const checkData = await checkResponse.json();
+      
+      if (!checkData.exists) {
+        toast.error('Пользователь с таким email не найден');
+        setIsLoading(false);
+        return;
+      }
+
+      // Пользователь существует, сбрасываем пароль
       const response = await fetch('/api/user/reset-password', {
         method: 'POST',
         headers: {
