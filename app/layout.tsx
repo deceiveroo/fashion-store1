@@ -30,7 +30,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={`${inter.variable} ${inter.className} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased text-gray-900 dark:text-gray-100`}>
         <script
           dangerouslySetInnerHTML={{
             __html: `
