@@ -96,6 +96,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
               damping: 25,
               stiffness: 200
             }}
+            onClick={(e) => e.stopPropagation()}
             className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-white to-gray-50/80 dark:from-gray-900 dark:to-gray-950/80 z-50 shadow-2xl border-l border-white/20 dark:border-gray-800 flex flex-col"
           >
             {/* Header with Gradient */}
