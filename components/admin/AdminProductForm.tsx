@@ -88,7 +88,9 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
         isNew: Boolean(data.isNew),
       });
       setSelectedCategories(data.categories ?? []);
-      setImages(data.images?.length ? data.images : data.mainImage ? [data.mainImage] : []);
+      const initialImages = data.images?.length ? data.images : data.mainImage ? [data.mainImage] : [];
+      console.log('[AdminProductForm] Loaded product images:', initialImages);
+      setImages(initialImages);
     } catch {
       toast.error('Ошибка загрузки');
       router.push('/admin/products');
@@ -111,7 +113,12 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
       const res = await fetch('/api/upload', { method: 'POST', credentials: 'include', body: fd });
       const data = await res.json();
       if (res.ok && data.url) {
-        setImages((prev) => [...prev, data.url]);
+        console.log('[AdminProductForm] Upload successful, URL:', data.url);
+        setImages((prev) => {
+          const newImages = [...prev, data.url];
+          console.log('[AdminProductForm] Updated images state:', newImages);
+          return newImages;
+        });
         toast.success('Фото загружено');
       } else {
         toast.error(data.error || 'Ошибка загрузки');
