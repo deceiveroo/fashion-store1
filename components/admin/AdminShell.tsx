@@ -189,7 +189,7 @@ function Header() {
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { notifications, unreadCount } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, clearAll } = useNotifications();
 
   const title = NAV.flatMap(s => s.items).find(i => pathname === i.href || pathname.startsWith(i.href + '/'))?.label ?? 'Админ';
 
@@ -271,7 +271,7 @@ function Header() {
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500 text-[9px] font-bold text-white">
+              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-500 px-1 text-[9px] font-bold text-white ring-2 ring-[var(--admin-bg)]">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -280,9 +280,24 @@ function Header() {
             <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] shadow-xl">
               <div className="flex items-center justify-between border-b border-[var(--admin-border)] px-4 py-3">
                 <span className="text-xs font-semibold text-[var(--admin-text)]">Уведомления</span>
-                {notifications.length > 0 && (
-                  <button className="text-[10px] text-violet-400 hover:text-violet-300">Отметить все прочитанными</button>
-                )}
+                <div className="flex gap-2">
+                  {notifications.length > 0 && (
+                    <>
+                      <button 
+                        onClick={markAllAsRead}
+                        className="text-[10px] text-violet-400 hover:text-violet-300 transition-colors"
+                      >
+                        Все прочитаны
+                      </button>
+                      <button 
+                        onClick={clearAll}
+                        className="text-[10px] text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        Очистить
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
               <div className="max-h-96 overflow-y-auto">
                 {notifications.length === 0 ? (
@@ -334,8 +349,24 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(true);
   const [mobile, setMobile] = useState(false);
   
-  // Notifications state
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  // Notifications state - load from localStorage on mount
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('admin-notifications');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return parsed.map((n: any) => ({
+            ...n,
+            timestamp: new Date(n.timestamp),
+          }));
+        }
+      } catch (e) {
+        console.error('Failed to load notifications:', e);
+      }
+    }
+    return [];
+  });
   
   useEffect(() => {
     const check = () => {
@@ -358,22 +389,80 @@ export default function AdminShell({ children }: { children: ReactNode }) {
       timestamp: new Date(),
       read: false,
     };
-    setNotifications(prev => [newNotif, ...prev].slice(0, 50)); // Keep last 50
+    setNotifications(prev => {
+      const updated = [newNotif, ...prev].slice(0, 50); // Keep last 50
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('admin-notifications', JSON.stringify(updated));
+        } catch (e) {
+          console.error('Failed to save notifications:', e);
+        }
+      }
+      return updated;
+    });
   }, []);
 
   const markAsRead = useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev => {
+      const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('admin-notifications', JSON.stringify(updated));
+        } catch (e) {
+          console.error('Failed to save notifications:', e);
+        }
+      }
+      return updated;
+    });
   }, []);
 
   const markAllAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => {
+      const updated = prev.map(n => ({ ...n, read: true }));
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('admin-notifications', JSON.stringify(updated));
+        } catch (e) {
+          console.error('Failed to save notifications:', e);
+        }
+      }
+      return updated;
+    });
   }, []);
 
   const clearAll = useCallback(() => {
     setNotifications([]);
+    // Clear from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('admin-notifications');
+      } catch (e) {
+        console.error('Failed to clear notifications:', e);
+      }
+    }
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Show welcome notification on first visit
+  useEffect(() => {
+    if (status === 'authenticated' && notifications.length === 0) {
+      const hasSeenWelcome = localStorage.getItem('admin-welcome-shown');
+      if (!hasSeenWelcome) {
+        setTimeout(() => {
+          addNotification({
+            type: 'info',
+            title: 'Добро пожаловать!',
+            message: 'Это система уведомлений админ-панели. Здесь будут отображаться важные события.',
+          });
+          localStorage.setItem('admin-welcome-shown', 'true');
+        }, 1000);
+      }
+    }
+  }, [status, notifications.length, addNotification]);
 
   const [isRedirecting, setIsRedirecting] = useState(false);
 
