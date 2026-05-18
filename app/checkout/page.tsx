@@ -365,7 +365,7 @@ export default function CheckoutPage() {
             transition={{ delay: 0.4 }}
           >
             <Link 
-              href="/products" 
+              href="/collections" 
               className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-10 py-4 rounded-2xl font-semibold hover:shadow-2xl hover:scale-105 transition-all duration-300"
             >
               <Sparkles size={20} />

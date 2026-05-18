@@ -42,11 +42,18 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
   switch (action.type) {
     case 'ADD_ITEM':
-      const existingItem = state.items.find(item => item.id === action.payload.id);
+      // Проверяем существующий товар с таким же ID, size и color
+      const existingItem = state.items.find(item => 
+        item.id === action.payload.id &&
+        item.size === action.payload.size &&
+        item.color === action.payload.color
+      );
 
       if (existingItem) {
         const newItems = state.items.map(item =>
-          item.id === action.payload.id
+          item.id === action.payload.id &&
+          item.size === action.payload.size &&
+          item.color === action.payload.color
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );

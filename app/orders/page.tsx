@@ -143,7 +143,7 @@ export default function OrdersPage() {
               Начните покупки, чтобы увидеть их здесь
             </p>
             <Link 
-              href="/products" 
+              href="/collections" 
               className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-2xl font-semibold hover:shadow-xl transition-all"
             >
               <ShoppingBag size={20} />

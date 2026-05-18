@@ -92,7 +92,7 @@ export default function OrdersPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Заказов пока нет</h1>
           <p className="text-gray-600 mb-8">Совершите первую покупку и она появится здесь.</p>
           <Link 
-            href="/products" 
+            href="/collections" 
             className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-2xl font-semibold hover:shadow-xl transition-all"
           >
             Начать покупки

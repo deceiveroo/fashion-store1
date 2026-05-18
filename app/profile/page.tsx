@@ -722,7 +722,7 @@ export default function ProfilePage() {
                                 <Package size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
                                 <p className="text-gray-600 dark:text-gray-400 mb-4">У вас пока нет заказов</p>
                                 <Link
-                                  href="/products"
+                                  href="/collections"
                                   className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
                                 >
                                   Начать покупки
