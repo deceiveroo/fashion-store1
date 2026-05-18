@@ -97,7 +97,7 @@ function Sidebar() {
       `}>
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-[var(--admin-border)]">
-          <Link href="/admin/dashboard" className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/30">
               <Zap className="h-4 w-4 text-white" />
             </div>

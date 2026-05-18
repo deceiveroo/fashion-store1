@@ -16,7 +16,8 @@ export default function SignIn() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  // Всегда перенаправляем на главную после входа
+  const callbackUrl = '/';
   const { login } = useAuth();
 
   const validateForm = () => {
