@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
           stock: products.stock,
           featured: products.featured,
           isActive: products.isActive,
+          inStock: products.inStock,
           slug: products.slug,
           createdAt: products.createdAt,
           updatedAt: products.updatedAt,
