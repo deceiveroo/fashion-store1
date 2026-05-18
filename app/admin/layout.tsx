@@ -2,18 +2,21 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function AdminSegmentLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    // Only redirect if we're sure user is not authenticated AND we haven't already redirected
+    if (status === 'unauthenticated' && !hasRedirected) {
+      setHasRedirected(true);
       router.push(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
     }
-  }, [status, router, pathname]);
+  }, [status, router, pathname, hasRedirected]);
 
   if (status === 'loading') {
     return (
