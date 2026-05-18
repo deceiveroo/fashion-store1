@@ -978,7 +978,7 @@ export default function CheckoutPage() {
               <div className="space-y-4 mb-6 max-h-96 overflow-y-auto custom-scrollbar">
                 {cart.items.map((item, index) => (
                   <motion.div
-                    key={item.id}
+                    key={`${item.id}-${item.size}-${item.color}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -1001,6 +1001,23 @@ export default function CheckoutPage() {
                     
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-2 mb-1">{item.name}</h4>
+                      
+                      {/* Size and Color */}
+                      {(item.size || item.color) && (
+                        <div className="flex gap-2 mb-2">
+                          {item.size && (
+                            <span className="text-xs text-purple-600 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded-full">
+                              {item.size}
+                            </span>
+                          )}
+                          {item.color && (
+                            <span className="text-xs text-pink-600 bg-pink-100 dark:bg-pink-900/30 px-2 py-0.5 rounded-full">
+                              {item.color}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-600 dark:text-gray-400">
                           {item.quantity} × {item.price.toLocaleString('ru-RU')} ₽
