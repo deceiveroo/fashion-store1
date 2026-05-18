@@ -21,6 +21,11 @@ export default function Cart({ isOpen, onClose }: CartProps) {
   const total = state?.total || 0;
   const itemCount = state?.itemCount || 0;
 
+  // Dispatch custom event when cart opens/closes
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('cartStateChange', { detail: { isOpen } }));
+  }, [isOpen]);
+
   // Анимация при изменении количества товаров
   // useEffect(() => {
   //   if (items.length > 0) {

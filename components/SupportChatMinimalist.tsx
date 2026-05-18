@@ -64,9 +64,24 @@ export default function SupportChatMinimalist() {
   const [view, setView] = useState<'search' | 'chat'>('search'); // search or chat view
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState(false); // Track cart state
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const realtimeChannelRef = useRef<any>(null);
+
+  // Listen for cart state changes
+  useEffect(() => {
+    const handleCartStateChange = (e: CustomEvent) => {
+      setIsCartOpen(e.detail.isOpen);
+      // Close chat when cart opens
+      if (e.detail.isOpen && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('cartStateChange', handleCartStateChange as EventListener);
+    return () => window.removeEventListener('cartStateChange', handleCartStateChange as EventListener);
+  }, [isOpen]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -242,7 +257,9 @@ export default function SupportChatMinimalist() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] rounded-full shadow-lg hover:shadow-xl flex items-center justify-center z-50"
+        className={`fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] rounded-full shadow-lg hover:shadow-xl flex items-center justify-center z-50 transition-all duration-300 ${
+          isCartOpen ? 'opacity-0 pointer-events-none scale-0' : 'opacity-100 pointer-events-auto scale-100'
+        }`}
       >
         <AnimatePresence mode="wait">
           {isOpen ? (
