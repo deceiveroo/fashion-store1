@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import MaintenancePage from '@/app/maintenance/page';
 
@@ -13,15 +13,15 @@ export default function MaintenanceCheck({ children }: { children: React.ReactNo
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session, status } = useSession();
 
   // Check if user is admin/manager (can always access site)
   const isAdmin = status === 'authenticated' && 
     ['admin', 'manager'].includes(session?.user?.role as string);
 
-  // Skip check for admin routes, maintenance page, and admins
+  // Skip check for maintenance page and API routes only
   const isExemptPath = 
-    pathname?.startsWith('/admin') ||
     pathname?.startsWith('/api/') ||
     pathname?.startsWith('/maintenance');
 
@@ -44,6 +44,12 @@ export default function MaintenanceCheck({ children }: { children: React.ReactNo
         .then((data: MaintenanceStatus) => {
           console.log('Maintenance status:', data.maintenanceMode);
           setIsMaintenanceMode(data.maintenanceMode);
+          
+          // If maintenance mode is ON and user is on admin page, redirect to maintenance
+          if (data.maintenanceMode && pathname?.startsWith('/admin')) {
+            router.push('/maintenance');
+          }
+          
           setIsLoading(false);
         })
         .catch((error) => {
@@ -58,7 +64,7 @@ export default function MaintenanceCheck({ children }: { children: React.ReactNo
     const interval = setInterval(checkStatus, 30000);
     
     return () => clearInterval(interval);
-  }, [isExemptPath, isAdmin]);
+  }, [isExemptPath, isAdmin, pathname, router]);
 
   if (isLoading) {
     return null; // or a loading spinner

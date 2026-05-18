@@ -11,12 +11,32 @@ export default function AdminSegmentLayout({ children }: { children: React.React
   const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    // Only redirect if we're sure user is not authenticated AND we haven't already redirected
+    // Redirect if not authenticated
     if (status === 'unauthenticated' && !hasRedirected) {
       setHasRedirected(true);
       router.push(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
+      return;
     }
-  }, [status, router, pathname, hasRedirected]);
+
+    // Redirect if authenticated but not admin/manager
+    if (status === 'authenticated' && session?.user?.role !== 'admin' && session?.user?.role !== 'manager' && !hasRedirected) {
+      console.log('[Admin Layout] Unauthorized access attempt by user:', session.user.email, 'with role:', session.user.role);
+      setHasRedirected(true);
+      // Check maintenance mode and redirect accordingly
+      fetch('/api/maintenance/status', { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.maintenanceMode) {
+            router.push('/maintenance');
+          } else {
+            router.push('/');
+          }
+        })
+        .catch(() => {
+          router.push('/');
+        });
+    }
+  }, [status, router, pathname, hasRedirected, session]);
 
   if (status === 'loading') {
     return (
