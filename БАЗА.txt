@@ -122,8 +122,8 @@ CREATE TABLE public.collection_items (
   added_by text,
   created_at timestamp without time zone NOT NULL DEFAULT now(),
   CONSTRAINT collection_items_pkey PRIMARY KEY (id),
-  CONSTRAINT collection_items_collection_id_fkey FOREIGN KEY (collection_id) REFERENCES public.curated_collections(id),
-  CONSTRAINT collection_items_added_by_fkey FOREIGN KEY (added_by) REFERENCES public.users(id)
+  CONSTRAINT collection_items_added_by_fkey FOREIGN KEY (added_by) REFERENCES public.users(id),
+  CONSTRAINT collection_items_collection_id_fkey FOREIGN KEY (collection_id) REFERENCES public.curated_collections(id)
 );
 CREATE TABLE public.coupons (
   id text NOT NULL,
@@ -198,6 +198,14 @@ CREATE TABLE public.link_events (
   new_values jsonb,
   created_at timestamp without time zone DEFAULT now(),
   CONSTRAINT link_events_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.maintenance_subscriptions (
+  id text NOT NULL DEFAULT gen_random_uuid(),
+  email text NOT NULL UNIQUE,
+  subscribed_at timestamp with time zone DEFAULT now(),
+  notified boolean DEFAULT false,
+  notified_at timestamp with time zone,
+  CONSTRAINT maintenance_subscriptions_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.media (
   id text NOT NULL,
@@ -285,8 +293,8 @@ CREATE TABLE public.orders (
   crypto_tx_id text,
   crypto_amount numeric,
   CONSTRAINT orders_pkey PRIMARY KEY (id),
-  CONSTRAINT orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT orders_cancelled_by_fkey FOREIGN KEY (cancelled_by) REFERENCES public.users(id)
+  CONSTRAINT orders_cancelled_by_fkey FOREIGN KEY (cancelled_by) REFERENCES public.users(id),
+  CONSTRAINT orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.product_attribute_values (
   id text NOT NULL,
@@ -426,6 +434,9 @@ CREATE TABLE public.products (
   in_stock boolean DEFAULT true,
   featured boolean DEFAULT false,
   short_description text,
+  deleted_at timestamp with time zone,
+  seo_title text,
+  seo_desc text,
   CONSTRAINT products_pkey PRIMARY KEY (id),
   CONSTRAINT products_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id)
 );
@@ -463,6 +474,15 @@ CREATE TABLE public.sessions (
   expires timestamp without time zone NOT NULL,
   CONSTRAINT sessions_pkey PRIMARY KEY (id),
   CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.settings (
+  id integer NOT NULL DEFAULT nextval('settings_id_seq'::regclass),
+  key text NOT NULL UNIQUE,
+  value text NOT NULL,
+  description text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT settings_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.site_config (
   id text NOT NULL,
@@ -527,11 +547,11 @@ CREATE TABLE public.support_chat_sessions (
   created_at timestamp without time zone NOT NULL DEFAULT now(),
   updated_at timestamp without time zone NOT NULL DEFAULT now(),
   CONSTRAINT support_chat_sessions_pkey PRIMARY KEY (id),
-  CONSTRAINT support_chat_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT support_chat_sessions_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(id),
+  CONSTRAINT support_chat_sessions_operator_rated_by_fkey FOREIGN KEY (operator_rated_by) REFERENCES public.users(id),
   CONSTRAINT support_chat_sessions_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES public.users(id),
   CONSTRAINT support_chat_sessions_taken_over_by_fkey FOREIGN KEY (taken_over_by) REFERENCES public.users(id),
-  CONSTRAINT support_chat_sessions_operator_rated_by_fkey FOREIGN KEY (operator_rated_by) REFERENCES public.users(id)
+  CONSTRAINT support_chat_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.tags (
   id text NOT NULL,
