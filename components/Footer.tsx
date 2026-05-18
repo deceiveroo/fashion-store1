@@ -246,28 +246,6 @@ export default function Footer() {
               </motion.div>
             ))}
           </div>
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-          >
-            <h4 className="font-bold text-sm mb-4 text-gray-800 dark:text-white">{footerSections[2].title}</h4>
-            <ul className="space-y-2">
-              {footerSections[2].links.slice(0, 4).map((link) => (  // Limiting to 4 links for compactness
-                <motion.li
-                  key={link.name}
-                  whileHover={{ x: 3 }}
-                >
-                  <Link
-                    href={link.href}
-                    className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200 text-sm inline-flex items-center gap-2 group"
-                  >
-                    <span>{link.name}</span>
-                    <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Link>
-                </motion.li>
-              ))}
-            </ul>
-          </motion.div>
         </div>
 
         {/* Contact Info - Hidden on mobile */}

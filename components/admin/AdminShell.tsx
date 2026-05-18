@@ -378,10 +378,29 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (status === 'unauthenticated' || !['admin', 'manager', 'support'].includes(role)) {
+    // Ждём пока статус определится (не loading)
+    if (status === 'loading') {
+      return;
+    }
+    
+    // Только если статус точно unauthenticated И прошло достаточно времени
+    if (status === 'unauthenticated') {
+      // Даем время на загрузку сессии из cookies
+      const timeoutId = setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          setIsRedirecting(true);
+          router.replace(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
+        }
+      }, 500); // Ждём 500ms перед редиректом
+      
+      return () => clearTimeout(timeoutId);
+    }
+    
+    // Проверяем роль только если сессия есть
+    if (status === 'authenticated' && !['admin', 'manager', 'support'].includes(role)) {
       if (typeof window !== 'undefined') {
         setIsRedirecting(true);
-        router.replace(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
+        router.replace('/'); // Не-админов перенаправляем на главную
       }
     }
   }, [status, role, router, pathname]);
