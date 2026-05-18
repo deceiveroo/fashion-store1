@@ -137,7 +137,7 @@ export default function MaintenancePage() {
       </div>
 
       {/* Background image if provided */}
-      {config.backgroundImage && (
+      {config.backgroundImage && config.backgroundImage.trim() !== '' && (
         <div
           className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{ backgroundImage: `url(${config.backgroundImage})` }}

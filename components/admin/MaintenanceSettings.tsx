@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Save, AlertTriangle, Calendar, Image as ImageIcon, Mail } from 'lucide-react';
+import { Save, AlertTriangle, Calendar, Image as ImageIcon, Mail, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MaintenanceConfig {
@@ -25,6 +25,8 @@ export default function MaintenanceSettings() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch current settings
   useEffect(() => {
@@ -40,6 +42,37 @@ export default function MaintenanceSettings() {
         setIsLoading(false);
       });
   }, []);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/admin/maintenance/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setConfig({ ...config, backgroundImage: data.url });
+        toast.success('Изображение загружено');
+      } else {
+        toast.error(data.error || 'Ошибка загрузки');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Произошла ошибка при загрузке');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -176,15 +209,61 @@ export default function MaintenanceSettings() {
         <div>
           <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
             <ImageIcon className="inline w-3 h-3 mr-1" />
-            Фоновое изображение (URL)
+            Фоновое изображение
           </label>
+          
+          {/* Upload button */}
+          <div className="flex gap-2 mb-3">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Upload className="w-4 h-4" />
+              {isUploading ? 'Загрузка...' : 'Загрузить фото'}
+            </button>
+            {config.backgroundImage && config.backgroundImage.trim() !== '' && (
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, backgroundImage: null })}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm text-white transition-colors"
+              >
+                Удалить
+              </button>
+            )}
+          </div>
+
+          {/* URL input */}
           <input
             type="text"
             value={config.backgroundImage || ''}
             onChange={(e) => setConfig({ ...config, backgroundImage: e.target.value || null })}
             className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none"
-            placeholder="https://example.com/image.jpg"
+            placeholder="Или вставьте URL: https://example.com/image.jpg"
           />
+          
+          {/* Preview */}
+          {config.backgroundImage && config.backgroundImage.trim() !== '' && (
+            <div className="mt-3 relative rounded-xl overflow-hidden border border-white/10">
+              <img
+                src={config.backgroundImage}
+                alt="Preview"
+                className="w-full h-32 object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  toast.error('Ошибка загрузки изображения');
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Enable Subscription */}
