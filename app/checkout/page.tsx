@@ -49,6 +49,15 @@ export default function CheckoutPage() {
     comment: ''
   });
 
+  // Payment form data
+  const [paymentData, setPaymentData] = useState({
+    cardNumber: '',
+    cardHolder: '',
+    cardExpiry: '',
+    cardCVV: '',
+    sbpPhone: user?.phone || ''
+  });
+
   // Calculate finalTotal early in the component
   const getDiscount = () => {
     if (cart.total > 5000) return 500;
@@ -78,8 +87,51 @@ export default function CheckoutPage() {
         phone: user.phone || prev.phone || '',
         email: user.email || prev.email || ''
       }));
+      
+      // Обновляем телефон для СБП
+      if (user.phone) {
+        setPaymentData(prev => ({
+          ...prev,
+          sbpPhone: user.phone || prev.sbpPhone
+        }));
+      }
     }
   }, [user?.id, user?.firstName, user?.lastName, user?.phone, user?.email]);
+
+  // Загружаем данные профиля при монтировании
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch('/api/user/profile', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) {
+            setFormData(prev => ({
+              ...prev,
+              firstName: data.profile.firstName || prev.firstName,
+              lastName: data.profile.lastName || prev.lastName,
+              phone: data.profile.phone || prev.phone,
+              email: data.profile.email || prev.email,
+              address: data.profile.address || prev.address
+            }));
+            
+            if (data.profile.phone) {
+              setPaymentData(prev => ({
+                ...prev,
+                sbpPhone: data.profile.phone
+              }));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+    
+    if (user) {
+      loadProfile();
+    }
+  }, [user?.id]);
 
   // Загружаем список магазинов
   useEffect(() => {
@@ -149,14 +201,6 @@ export default function CheckoutPage() {
       available: true,
       badge: 'Мгновенно',
       color: 'from-green-500 to-teal-500'
-    },
-    {
-      id: 'online',
-      title: 'Онлайн-банкинг',
-      icon: Wallet,
-      description: 'Qiwi, ЮMoney',
-      available: !!deliveryMethod,
-      color: 'from-orange-500 to-red-500'
     },
     {
       id: 'crypto',
@@ -890,6 +934,94 @@ export default function CheckoutPage() {
                         );
                       })}
                     </div>
+
+                    {/* Card Payment Form */}
+                    {paymentMethod === 'card' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800"
+                      >
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          <CreditCard size={20} className="text-blue-600" />
+                          Данные карты
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Номер карты</label>
+                            <input
+                              type="text"
+                              value={paymentData.cardNumber}
+                              onChange={(e) => setPaymentData({...paymentData, cardNumber: e.target.value})}
+                              placeholder="0000 0000 0000 0000"
+                              maxLength={19}
+                              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Имя владельца</label>
+                            <input
+                              type="text"
+                              value={paymentData.cardHolder}
+                              onChange={(e) => setPaymentData({...paymentData, cardHolder: e.target.value.toUpperCase()})}
+                              placeholder="IVAN IVANOV"
+                              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Срок действия</label>
+                              <input
+                                type="text"
+                                value={paymentData.cardExpiry}
+                                onChange={(e) => setPaymentData({...paymentData, cardExpiry: e.target.value})}
+                                placeholder="MM/YY"
+                                maxLength={5}
+                                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CVV</label>
+                              <input
+                                type="password"
+                                value={paymentData.cardCVV}
+                                onChange={(e) => setPaymentData({...paymentData, cardCVV: e.target.value})}
+                                placeholder="***"
+                                maxLength={3}
+                                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* SBP Payment Form */}
+                    {paymentMethod === 'sbp' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-6 p-6 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-xl border border-green-200 dark:border-green-800"
+                      >
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          <Wallet size={20} className="text-green-600" />
+                          Оплата через СБП
+                        </h3>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Телефон для СБП</label>
+                          <input
+                            type="tel"
+                            value={paymentData.sbpPhone}
+                            onChange={(e) => setPaymentData({...paymentData, sbpPhone: e.target.value})}
+                            placeholder="+7 (___) ___-__-__"
+                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                          />
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            На этот номер придёт уведомление для подтверждения платежа
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
 
                     {/* Payment Progress Bar */}
                     {isSubmitting && (
