@@ -269,8 +269,8 @@ export default function Header() {
                     >
                       {(user.avatar || user.image) ? (
                         <div className="relative">
-                          {/* Bouncing Avatar Animation */}
-                          <div className={unreadCount > 0 ? 'animate-bounce' : ''} style={{ animationDuration: '1s', animationIterationCount: 'infinite' }}>
+                          {/* Pulsing Avatar Animation */}
+                          <div className={unreadCount > 0 ? 'animate-pulse' : ''}>
                             <Image 
                               src={user.avatar || user.image} 
                               alt="Avatar" 
@@ -287,10 +287,10 @@ export default function Header() {
                         </div>
                       ) : (
                         <div className="relative">
-                          {/* Bouncing Avatar Animation */}
+                          {/* Pulsing Avatar Animation */}
                           <div className={`w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ${
-                            unreadCount > 0 ? 'animate-bounce' : ''
-                          }`} style={unreadCount > 0 ? { animationDuration: '1s', animationIterationCount: 'infinite' } : {}}>
+                            unreadCount > 0 ? 'animate-pulse' : ''
+                          }`}>
                             {user?.name?.[0] || user?.email?.[0] || 'U'}
                           </div>
                           {/* Small notification dot */}
