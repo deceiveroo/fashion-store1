@@ -353,7 +353,7 @@ export default function Header() {
                           className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg group"
                         >
                           <div className="relative">
-                            <Bell size={20} className="text-purple-600 dark:text-purple-400" />
+                            <Bell size={20} className="text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
                             {unreadCount > 0 && (
                               <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] rounded-full font-bold flex items-center justify-center animate-pulse">
                                 {unreadCount > 9 ? '9+' : unreadCount}
