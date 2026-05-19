@@ -470,7 +470,7 @@ export default function DashboardPage() {
               <ul className="space-y-2">
                 {analytics.topProducts.map((p, i) => (
                   <li
-                    key={p.id}
+                    key={`${p.id}-${i}`}
                     className="group flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-[var(--admin-card-hover)]"
                   >
                     <span className="w-6 text-center text-xs font-bold text-[var(--admin-text-faint)]">
