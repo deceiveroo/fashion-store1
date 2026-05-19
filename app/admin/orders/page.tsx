@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Package, Clock, CheckCircle, XCircle, Truck, Download, Eye, ChevronDown, RefreshCw, ShoppingBag, TrendingUp, AlertCircle, Filter, Edit2, Trash2, X, Save, Zap, DollarSign, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
+import OrderReceipt from '@/components/receipts/OrderReceipt';
+import html2canvas from 'html2canvas';
 
 interface Order {
   id: string; userId: string; total: number; status: string; createdAt: string;
@@ -39,6 +41,8 @@ export default function AdminOrdersPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null);
+  const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
 
   const loadOrders = useCallback(async (p = 1) => {
     setLoading(true);
@@ -74,6 +78,58 @@ export default function AdminOrdersPage() {
       if (res.ok) { setOrders(o => o.filter(x => x.id !== id)); toast.success('Удалён'); }
       else toast.error('Ошибка удаления');
     } catch { toast.error('Ошибка'); }
+  };
+
+  const downloadReceipt = async (order: Order) => {
+    setIsGeneratingReceipt(true);
+    setReceiptOrderId(order.id);
+    
+    try {
+      // Небольшая задержка чтобы React отрендерил компонент
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const element = document.getElementById(`admin-order-receipt-${order.id}`);
+      
+      if (!element) {
+        throw new Error('Элемент чека не найден');
+      }
+
+      const canvas = await html2canvas(element, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        allowTaint: true,
+        foreignObjectRendering: false,
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          throw new Error('Не удалось создать изображение');
+        }
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const orderNumber = order.id.slice(0, 8).toUpperCase();
+        link.download = `чек_${orderNumber}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        toast.success('Чек скачан');
+      }, 'image/png', 1.0);
+
+    } catch (error) {
+      console.error('Ошибка при создании чека:', error);
+      toast.error('Не удалось создать чек');
+    } finally {
+      setIsGeneratingReceipt(false);
+      setReceiptOrderId(null);
+    }
   };
 
   const saveOrder = async () => {
@@ -283,6 +339,18 @@ export default function AdminOrdersPage() {
                                 className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-500/10 transition-all">
                                 <Eye className="h-3.5 w-3.5" />
                               </button>
+                              <button 
+                                onClick={() => downloadReceipt(order)}
+                                disabled={isGeneratingReceipt && receiptOrderId === order.id}
+                                className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-100 dark:hover:bg-green-500/10 transition-all disabled:opacity-50"
+                                title="Скачать чек"
+                              >
+                                {isGeneratingReceipt && receiptOrderId === order.id ? (
+                                  <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Download className="h-3.5 w-3.5" />
+                                )}
+                              </button>
                               <button onClick={() => setEditingOrder({ ...order })}
                                 className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/10 transition-all">
                                 <Edit2 className="h-3.5 w-3.5" />
@@ -469,6 +537,26 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Hidden Receipt Components for Download */}
+      <div className="fixed left-[-9999px] top-[-9999px]">
+        {orders.map(order => (
+          <div key={order.id} id={`admin-order-receipt-${order.id}`}>
+            <OrderReceipt order={{
+              id: order.id,
+              items: order.items || [],
+              total: order.total,
+              discount: 0,
+              deliveryPrice: 0,
+              deliveryMethod: order.deliveryMethod || 'pickup',
+              paymentMethod: order.paymentMethod || 'card',
+              status: order.status as any,
+              createdAt: order.createdAt,
+              recipient: order.recipient
+            }} />
+          </div>
+        ))}
+      </div>
     </AdminShell>
   );
 }
