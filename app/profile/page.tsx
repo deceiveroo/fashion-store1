@@ -53,6 +53,42 @@ interface WishlistItem {
   image?: string;
 }
 
+interface OrderItem {
+  id: string;
+  productId?: string;
+  variantId?: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  size?: string;
+  color?: string;
+}
+
+interface OrderRecipient {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address?: string;
+}
+
+interface Order {
+  id: string;
+  userId: string;
+  total: number;
+  discount: number;
+  deliveryPrice: number;
+  deliveryMethod: string;
+  paymentMethod: string;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  createdAt: string;
+  updatedAt?: string;
+  recipient?: OrderRecipient;
+  comment?: string;
+  items?: OrderItem[];
+}
+
 interface UserSession {
   id: string;
   device: string;
@@ -84,7 +120,7 @@ export default function ProfilePage() {
   const [isUploading, setIsUploading] = useState(false);
 
   // Real data states
-  const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [sessions, setSessions] = useState<UserSession[]>([]);
@@ -235,10 +271,12 @@ export default function ProfilePage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setOrders(data.orders || []);
+        // API returns array directly, not { orders: [] }
+        setOrders(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error('Failed to load orders:', error);
+      setOrders([]);
     }
   };
 
@@ -842,7 +880,7 @@ export default function ProfilePage() {
                                       </span>
                                     </div>
                                     <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                                      {parseFloat(order.total).toLocaleString('ru-RU')} ₽
+                                      {order.total.toLocaleString('ru-RU')} ₽
                                     </p>
                                   </div>
                                 ))}
