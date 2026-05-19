@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import ReceiptPreview from '@/components/receipts/ReceiptPreview';
 import DownloadButton from '@/components/receipts/DownloadButton';
 import OrderReceipt from '@/components/receipts/OrderReceipt';
+import OrderDownloadButton from '@/components/receipts/OrderDownloadButton';
 import OrderTrackingModal from '@/components/orders/OrderTrackingModal';
 import { receiptService, Receipt } from '@/lib/receipt-client';
 
@@ -356,7 +357,10 @@ export default function OrdersPage() {
                               <Truck size={18} />
                               Отслеживать
                             </button>
-                            <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">
+                            <button 
+                              onClick={() => setShowReceiptModal(order.id)}
+                              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                            >
                               <Download size={18} />
                               Скачать чек
                             </button>
@@ -441,6 +445,19 @@ export default function OrdersPage() {
               
               <div className="p-6">
                 <OrderReceipt order={orders.find(o => o.id === showReceiptModal)!} />
+              </div>
+              
+              <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowReceiptModal(null)}
+                  className="px-6 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Закрыть
+                </button>
+                <OrderDownloadButton 
+                  orderId={showReceiptModal} 
+                  orderNumber={showReceiptModal.slice(0, 8).toUpperCase()} 
+                />
               </div>
             </motion.div>
           </motion.div>
