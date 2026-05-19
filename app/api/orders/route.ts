@@ -78,13 +78,24 @@ interface OrderData {
 }
 
 async function resolveRequestUser(request: NextRequest): Promise<{ id: string; role: string } | null> {
+  console.log('[ORDERS AUTH] Attempting to resolve user...');
+  
   const session = await getSession();
+  console.log('[ORDERS AUTH] Session from cookies:', session ? `User ID: ${session.user?.id}, Role: ${session.user?.role}` : 'NULL');
+  
   if (session?.user?.id) {
+    console.log('[ORDERS AUTH] User authenticated via session cookie');
     return { id: session.user.id, role: session.user.role ?? 'user' };
   }
 
+  console.log('[ORDERS AUTH] No session found, trying bearer token...');
   const bearerUser = await verifyAuth(request);
-  if (!bearerUser) return null;
+  if (!bearerUser) {
+    console.log('[ORDERS AUTH] No bearer token found or invalid');
+    return null;
+  }
+  
+  console.log('[ORDERS AUTH] User authenticated via bearer token');
   return { id: bearerUser.id, role: bearerUser.role ?? 'user' };
 }
 
@@ -280,12 +291,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[ORDERS POST] Starting order creation...');
+    
     const currentUser = await resolveRequestUser(request);
+    console.log('[ORDERS POST] Current user:', currentUser ? `ID: ${currentUser.id}, Role: ${currentUser.role}` : 'NULL');
+    
     if (!currentUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.error('[ORDERS POST] No authenticated user found');
+      return NextResponse.json({ error: 'Unauthorized - Please log in' }, { status: 401 });
     }
 
-    const { items, total, discount, deliveryPrice, deliveryMethod, paymentMethod, recipient, comment } = await request.json();
+    const body = await request.json();
+    console.log('[ORDERS POST] Request body received:', JSON.stringify(body, null, 2).substring(0, 500));
+    
+    const { items, total, discount, deliveryPrice, deliveryMethod, paymentMethod, recipient, comment } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Items are required' }, { status: 400 });
