@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { jsonWithNoCache } from '@/lib/no-cache';
+import { checkAchievements, awardXP } from '@/lib/gamification';
 
 // Force dynamic rendering - never cache
 export const dynamic = 'force-dynamic';
@@ -188,6 +189,76 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ message: 'Профиль успешно обновлен' });
     }
+  } catch (error) {
+    console.error('Profile update error:', error);
+    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
+  }
+}
+
+// POST - обновить профиль с проверкой достижений
+export async function PUT(request: NextRequest) {
+  const userId = await getUserId(request);
+  
+  if (!userId) {
+    return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { firstName, lastName, phone, address, avatar } = body;
+
+    // Проверяем, заполнен ли профиль полностью
+    const isProfileComplete = firstName && lastName && phone && address;
+
+    const existingProfile = await db
+      .select()
+      .from(userProfiles)
+      .where(eq(userProfiles.userId, userId))
+      .limit(1);
+
+    if (existingProfile.length > 0) {
+      await safeQuery(() => db
+        .update(userProfiles)
+        .set({
+          firstName: firstName || existingProfile[0].firstName,
+          lastName: lastName || existingProfile[0].lastName,
+          phone: phone !== undefined ? phone : existingProfile[0].phone,
+          address: address !== undefined ? address : existingProfile[0].address,
+          avatar: avatar !== undefined ? avatar : existingProfile[0].avatar,
+          updatedAt: new Date(),
+        })
+        .where(eq(userProfiles.userId, userId)));
+    } else {
+      await safeQuery(() => db.insert(userProfiles).values({
+        id: crypto.randomUUID(),
+        userId,
+        firstName,
+        lastName,
+        phone,
+        address,
+        avatar,
+      }));
+    }
+
+    const avatarUrl = avatar !== undefined ? avatar : existingProfile[0]?.avatar;
+    if (avatarUrl) {
+      await safeQuery(() => db
+        .update(users)
+        .set({ image: avatarUrl, updatedAt: new Date() })
+        .where(eq(users.id, userId)));
+    }
+
+    // Gamification: Check if profile is complete and award achievement
+    if (isProfileComplete) {
+      try {
+        await awardXP(userId, 30, 'Profile completed', { firstName, lastName });
+        await checkAchievements(userId, 'profile_complete');
+      } catch (gamificationError) {
+        console.error('Gamification error:', gamificationError);
+      }
+    }
+
+    return NextResponse.json({ message: 'Профиль успешно обновлен' });
   } catch (error) {
     console.error('Profile update error:', error);
     return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });

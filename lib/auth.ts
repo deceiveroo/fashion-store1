@@ -7,6 +7,7 @@ import { db } from './db';
 import { users } from './schema';
 import type { NextAuthConfig } from 'next-auth';
 import { jwtVerify } from 'jose';
+import { checkAchievements, awardXP } from './gamification';
 
 // NextAuth v5 конфигурация
 export const authConfig: NextAuthConfig = {
@@ -103,9 +104,13 @@ export const authConfig: NextAuthConfig = {
             .update(users)
             .set({ lastSignIn: new Date() })
             .where(eq(users.id, user.id));
+          
+          // Gamification: Award XP for daily login and check achievements
+          await awardXP(user.id, 5, 'Daily login');
+          await checkAchievements(user.id, 'login');
         } catch (error) {
-          console.error('Failed to update lastSignIn:', error);
-          // Не блокируем вход если не удалось обновить lastSignIn
+          console.error('Failed to update lastSignIn or gamification:', error);
+          // Не блокируем вход если не удалось обновить
         }
       }
 

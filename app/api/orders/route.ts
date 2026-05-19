@@ -7,6 +7,7 @@ import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
 import { getSession } from '@/lib/server-auth';
 import { verifyAuth } from '@/lib/auth';
+import { checkAchievements, awardXP } from '@/lib/gamification';
 
 // Force dynamic rendering - never cache
 export const dynamic = 'force-dynamic';
@@ -328,6 +329,15 @@ export async function POST(request: NextRequest) {
         return order;
       });
     });
+
+    // Gamification: Award XP for purchase and check achievements
+    try {
+      await awardXP(currentUser.id, 50, 'Purchase completed', { orderId: newOrder.id });
+      await checkAchievements(currentUser.id, 'purchase');
+    } catch (gamificationError) {
+      console.error('Gamification error:', gamificationError);
+      // Don't fail the order if gamification fails
+    }
 
     return NextResponse.json(newOrder, { status: 201 });
   } catch (error: unknown) {

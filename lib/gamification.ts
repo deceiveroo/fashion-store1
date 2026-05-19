@@ -15,7 +15,7 @@ export async function awardXP(userId: string, amount: number, reason: string, me
     // Add XP to history
     await db.execute(sql`
       INSERT INTO xp_history (user_id, amount, reason, metadata)
-      VALUES (${userId}::uuid, ${amount}, ${reason}, ${metadata ? JSON.stringify(metadata) : null}::jsonb)
+      VALUES (${userId}, ${amount}, ${reason}, ${metadata ? JSON.stringify(metadata) : null}::jsonb)
     `);
 
     // Update user level
@@ -23,7 +23,7 @@ export async function awardXP(userId: string, amount: number, reason: string, me
       UPDATE user_levels
       SET xp = xp + ${amount},
           updated_at = NOW()
-      WHERE user_id = ${userId}::uuid
+      WHERE user_id = ${userId}
       RETURNING xp, xp_to_next_level, level
     `);
 
@@ -64,7 +64,7 @@ async function levelUp(userId: string, currentLevel: number) {
         title = ${newTitle},
         coins = coins + ${newLevel * 10},
         updated_at = NOW()
-    WHERE user_id = ${userId}::uuid
+    WHERE user_id = ${userId}
   `);
 
   // Award bonus coins for leveling up
@@ -92,7 +92,7 @@ export async function unlockAchievement(userId: string, achievementCode: string)
     // Check if already unlocked
     const checkResult = await db.execute(sql`
       SELECT id FROM user_achievements
-      WHERE user_id = ${userId}::uuid AND achievement_id = ${achievement.id}::uuid
+      WHERE user_id = ${userId} AND achievement_id = ${achievement.id}::uuid
     `);
 
     if (checkResult.rows && checkResult.rows.length > 0) {
@@ -102,7 +102,7 @@ export async function unlockAchievement(userId: string, achievementCode: string)
     // Unlock achievement
     await db.execute(sql`
       INSERT INTO user_achievements (user_id, achievement_id, unlocked_at, seen)
-      VALUES (${userId}::uuid, ${achievement.id}::uuid, NOW(), false)
+      VALUES (${userId}, ${achievement.id}::uuid, NOW(), false)
     `);
 
     // Award XP and coins
@@ -113,7 +113,7 @@ export async function unlockAchievement(userId: string, achievementCode: string)
     await db.execute(sql`
       UPDATE user_levels
       SET coins = coins + ${achievement.coins_reward}
-      WHERE user_id = ${userId}::uuid
+      WHERE user_id = ${userId}
     `);
 
     return {
@@ -141,7 +141,7 @@ export async function checkAchievements(userId: string, action: string, value?: 
         const purchaseResult = await db.execute(sql`
           SELECT COUNT(*) as count, SUM(total) as total_spent
           FROM orders
-          WHERE user_id = ${userId}::uuid AND status != 'cancelled'
+          WHERE user_id = ${userId} AND status != 'cancelled'
         `);
         
         if (purchaseResult.rows && purchaseResult.rows.length > 0) {
@@ -150,7 +150,7 @@ export async function checkAchievements(userId: string, action: string, value?: 
           if (count >= 1) achievements.push('first_purchase');
           if (count >= 10) achievements.push('fashionista');
           if (count >= 50) achievements.push('shopaholic');
-          if (parseFloat(total_spent) >= 100000) achievements.push('vip_member');
+          if (parseFloat(total_spent || 0) >= 100000) achievements.push('vip_member');
         }
         break;
 
@@ -158,13 +158,14 @@ export async function checkAchievements(userId: string, action: string, value?: 
         // Check favorites count
         const favResult = await db.execute(sql`
           SELECT COUNT(*) as count
-          FROM favorites
-          WHERE user_id = ${userId}::uuid
+          FROM wishlist
+          WHERE user_id = ${userId}
         `);
         
         if (favResult.rows && favResult.rows.length > 0) {
           const count = (favResult.rows[0] as any).count;
           if (count >= 10) achievements.push('collector');
+          if (count >= 50) achievements.push('wishlist_master');
         }
         break;
 
@@ -173,12 +174,13 @@ export async function checkAchievements(userId: string, action: string, value?: 
         const reviewResult = await db.execute(sql`
           SELECT COUNT(*) as count
           FROM reviews
-          WHERE user_id = ${userId}::uuid
+          WHERE user_id = ${userId}
         `);
         
         if (reviewResult.rows && reviewResult.rows.length > 0) {
           const count = (reviewResult.rows[0] as any).count;
           if (count >= 5) achievements.push('reviewer');
+          if (count >= 20) achievements.push('top_reviewer');
         }
         break;
 
@@ -187,6 +189,11 @@ export async function checkAchievements(userId: string, action: string, value?: 
         const hour = new Date().getHours();
         if (hour === 6) achievements.push('early_bird');
         if (hour === 2) achievements.push('night_owl');
+        break;
+
+      case 'profile_complete':
+        // Check if profile is complete
+        achievements.push('profile_complete');
         break;
     }
 
@@ -216,10 +223,10 @@ export async function getUserStats(userId: string) {
         ul.xp_to_next_level,
         ul.title,
         ul.coins,
-        (SELECT COUNT(*) FROM user_achievements WHERE user_id = ${userId}::uuid) as achievements_unlocked,
+        (SELECT COUNT(*) FROM user_achievements WHERE user_id = ${userId}) as achievements_unlocked,
         (SELECT COUNT(*) FROM achievements) as total_achievements
       FROM user_levels ul
-      WHERE ul.user_id = ${userId}::uuid
+      WHERE ul.user_id = ${userId}
     `);
 
     if (result.rows && result.rows.length > 0) {

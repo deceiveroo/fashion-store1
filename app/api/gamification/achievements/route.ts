@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
-import { cookies } from 'next/headers';
+import { auth } from '@/lib/auth';
 
 export async function GET() {
   try {
-    // Получаем userId из сессии или используем demo
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session');
+    const session = await auth();
     
-    // Для демо используем фиксированный UUID
-    const userId = sessionCookie?.value || '00000000-0000-0000-0000-000000000000';
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
 
     // Получаем все достижения с информацией о разблокировке
     const result = await db.execute(sql`

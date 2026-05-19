@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db, safeQuery } from '@/lib/db';
 import { userWishlistItems, products, productImages } from '@/lib/schema';
 import { eq, and, inArray } from 'drizzle-orm';
+import { checkAchievements, awardXP } from '@/lib/gamification';
 
 async function getUserId(request: NextRequest): Promise<string | null> {
   const session = await auth();
@@ -85,6 +86,15 @@ export async function POST(request: NextRequest) {
     }
 
     const [result] = await db.insert(userWishlistItems).values({ userId, productId }).returning();
+
+    // Gamification: Award XP for adding to favorites and check achievements
+    try {
+      await awardXP(userId, 5, 'Added to wishlist', { productId });
+      await checkAchievements(userId, 'favorite');
+    } catch (gamificationError) {
+      console.error('Gamification error:', gamificationError);
+    }
+
     return NextResponse.json(result, { status: 201 });
   } catch (error: unknown) {
     console.error('Error adding favorite:', error);

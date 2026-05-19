@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { awardXP } from '@/lib/gamification';
-import { cookies } from 'next/headers';
+import { auth } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session');
+    const session = await auth();
     
-    // For demo, use fixed UUID
-    const userId = sessionCookie?.value || '00000000-0000-0000-0000-000000000000';
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
 
     const body = await request.json();
     const { amount, reason, metadata } = body;

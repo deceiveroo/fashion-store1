@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import GamificationProfileWidget from '@/components/gamification/GamificationProfileWidget';
 
+
 type Section = 'personal' | 'security' | 'payments' | 'notifications' | 'orders' | 'wishlist' | 'privacy';
 
 interface PaymentMethod {
@@ -1004,92 +1005,7 @@ export default function ProfilePage() {
                           </div>
                         )}
 
-                        {/* Notifications Section */}
-                        {section.id === 'notifications' && (
-                          <div className="space-y-6">
-                            {isLoadingData ? (
-                              <div className="flex items-center justify-center py-8">
-                                <Loader className="animate-spin text-purple-600" size={32} />
-                              </div>
-                            ) : (
-                              <>
-                                {/* Orders Notifications */}
-                                <div className="space-y-3">
-                                  <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <Package size={18} className="text-purple-600" />
-                                    Заказы
-                                  </h4>
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                      <input
-                                        type="checkbox"
-                                        checked={notifications.ordersEmail || false}
-                                        onChange={(e) => {
-                                          const newSettings = { ...notifications, ordersEmail: e.target.checked };
-                                          setNotifications(newSettings);
-                                          fetch('/api/profile/notifications', {
-                                            method: 'POST',
-                                            headers: {
-                                              'Content-Type': 'application/json',
-                                              Authorization: `Bearer ${localStorage.getItem('auth-token')}`,
-                                            },
-                                            body: JSON.stringify(newSettings),
-                                          });
-                                        }}
-                                        className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                                      />
-                                      <div className="flex items-center gap-2">
-                                        <Mail size={16} className="text-gray-500" />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">Email</span>
-                                      </div>
-                                    </label>
-                                    <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                      <input
-                                        type="checkbox"
-                                        checked={notifications.ordersPush || false}
-                                        onChange={(e) => {
-                                          const newSettings = { ...notifications, ordersPush: e.target.checked };
-                                          setNotifications(newSettings);
-                                          fetch('/api/profile/notifications', {
-                                            method: 'POST',
-                                            headers: {
-                                              'Content-Type': 'application/json',
-                                              Authorization: `Bearer ${localStorage.getItem('auth-token')}`,
-                                            },
-                                            body: JSON.stringify(newSettings),
-                                          });
-                                        }}
-                                        className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                                      />
-                                      <div className="flex items-center gap-2">
-                                        <Bell size={16} className="text-gray-500" />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">Push</span>
-                                      </div>
-                                    </label>
-                                    <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                      <input
-                                        type="checkbox"
-                                        checked={notifications.ordersSms || false}
-                                        onChange={(e) => {
-                                          const newSettings = { ...notifications, ordersSms: e.target.checked };
-                                          setNotifications(newSettings);
-                                          fetch('/api/profile/notifications', {
-                                            method: 'POST',
-                                            headers: {
-                                              'Content-Type': 'application/json',
-                                              Authorization: `Bearer ${localStorage.getItem('auth-token')}`,
-                                            },
-                                            body: JSON.stringify(newSettings),
-                                          });
-                                        }}
-                                        className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                                      />
-                                      <div className="flex items-center gap-2">
-                                        <Phone size={16} className="text-gray-500" />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">SMS</span>
-                                      </div>
-                                    </label>
-                                  </div>
+              
                                 </div>
 
                                 {/* Promotions Notifications */}
@@ -1328,10 +1244,7 @@ export default function ProfilePage() {
                                     </label>
                                   </div>
                                 </div>
-                              </>
-                            )}
                           </div>
-                        )}
 
                         {/* Privacy Section */}
                         {section.id === 'privacy' && (
