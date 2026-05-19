@@ -317,9 +317,13 @@ export async function POST(request: NextRequest) {
     // Create order transaction with retry logic
     const newOrder = await queryWithRetry(async () => {
       return await db.transaction(async (trx) => {
+        // Calculate subtotal (total before discount and delivery)
+        const subtotalValue = total - (discount || 0);
+        
         // Create the order
         const [order] = await trx.insert(orders).values({
           userId: currentUser.id,
+          subtotal: subtotalValue.toString(), // Subtotal before discount and delivery
           total: total.toString(), // Convert to string to match decimal field
           discount: discount ? discount.toString() : '0',
           deliveryPrice: deliveryPrice ? deliveryPrice.toString() : '0',
