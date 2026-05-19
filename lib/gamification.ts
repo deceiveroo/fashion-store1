@@ -146,11 +146,20 @@ export async function checkAchievements(userId: string, action: string, value?: 
         
         if (purchaseResult.rows && purchaseResult.rows.length > 0) {
           const { count, total_spent } = purchaseResult.rows[0] as any;
+          const purchaseCount = parseInt(count || 0);
+          const totalSpent = parseFloat(total_spent || 0);
           
-          if (count >= 1) achievements.push('first_purchase');
-          if (count >= 10) achievements.push('fashionista');
-          if (count >= 50) achievements.push('shopaholic');
-          if (parseFloat(total_spent || 0) >= 100000) achievements.push('vip_member');
+          if (purchaseCount >= 1) achievements.push('first_purchase');
+          if (purchaseCount >= 2) achievements.push('second_chance');
+          if (purchaseCount >= 5) achievements.push('regular_customer');
+          if (purchaseCount >= 10) achievements.push('fashionista');
+          if (purchaseCount >= 25) achievements.push('loyal_shopper');
+          if (purchaseCount >= 50) achievements.push('shopaholic');
+          if (totalSpent >= 100000) achievements.push('vip_member');
+          if (totalSpent >= 500000) achievements.push('whale');
+          
+          // Check single purchase amount if value provided
+          if (value && value >= 10000) achievements.push('big_spender');
         }
         break;
 
@@ -163,37 +172,125 @@ export async function checkAchievements(userId: string, action: string, value?: 
         `);
         
         if (favResult.rows && favResult.rows.length > 0) {
-          const count = (favResult.rows[0] as any).count;
+          const count = parseInt((favResult.rows[0] as any).count || 0);
+          if (count >= 1) achievements.push('first_favorite');
           if (count >= 10) achievements.push('collector');
           if (count >= 50) achievements.push('wishlist_master');
+          if (count >= 100) achievements.push('wishlist_hoarder');
         }
         break;
 
-      case 'review':
-        // Check reviews count
-        const reviewResult = await db.execute(sql`
-          SELECT COUNT(*) as count
-          FROM reviews
+      case 'profile_complete':
+        // Check profile completion
+        const profileResult = await db.execute(sql`
+          SELECT first_name, last_name, phone, address, avatar_url
+          FROM users
+          WHERE id = ${userId}
+        `);
+        
+        if (profileResult.rows && profileResult.rows.length > 0) {
+          const profile = profileResult.rows[0] as any;
+          const hasName = profile.first_name && profile.last_name;
+          const hasPhone = profile.phone;
+          const hasAddress = profile.address;
+          const hasAvatar = profile.avatar_url;
+          
+          if (hasName && hasPhone && hasAddress && hasAvatar) {
+            achievements.push('profile_complete');
+          }
+          if (hasAvatar) achievements.push('avatar_setter');
+          if (hasPhone) achievements.push('phone_verified');
+          if (hasAddress) achievements.push('address_setter');
+        }
+        break;
+
+      case 'coupon_used':
+        // Check coupon usage
+        const couponResult = await db.execute(sql`
+          SELECT COUNT(DISTINCT coupon_id) as count
+          FROM orders
+          WHERE user_id = ${userId} AND coupon_id IS NOT NULL
+        `);
+        
+        if (couponResult.rows && couponResult.rows.length > 0) {
+          const count = parseInt((couponResult.rows[0] as any).count || 0);
+          if (count >= 1) achievements.push('coupon_hunter');
+          if (count >= 5) achievements.push('smart_shopper');
+          if (count >= 20) achievements.push('discount_master');
+        }
+        
+        // Check total savings
+        const savingsResult = await db.execute(sql`
+          SELECT COALESCE(SUM(discount), 0) as total_saved
+          FROM orders
           WHERE user_id = ${userId}
         `);
         
-        if (reviewResult.rows && reviewResult.rows.length > 0) {
-          const count = (reviewResult.rows[0] as any).count;
-          if (count >= 5) achievements.push('reviewer');
-          if (count >= 20) achievements.push('top_reviewer');
+        if (savingsResult.rows && savingsResult.rows.length > 0) {
+          const totalSaved = parseFloat((savingsResult.rows[0] as any).total_saved || 0);
+          if (totalSaved >= 5000) achievements.push('saver');
+          if (totalSaved >= 20000) achievements.push('super_saver');
         }
+        break;
+
+      case 'receipt_download':
+        // Track receipt downloads (would need a receipts table)
+        // For now, skip this check
+        break;
+
+      case 'support_chat':
+        // User contacted support
+        achievements.push('support_user');
+        break;
+
+      case 'order_check':
+        // Track order checks (would need tracking table)
+        // For now, skip this check
+        break;
+
+      case 'product_view':
+        // Track product views (would need analytics table)
+        // For now, skip this check
         break;
 
       case 'login':
         // Check login time achievements
-        const hour = new Date().getHours();
+        const now = new Date();
+        const hour = now.getHours();
+        const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
+        
         if (hour === 6) achievements.push('early_bird');
         if (hour === 2) achievements.push('night_owl');
+        if (dayOfWeek === 0 || dayOfWeek === 6) achievements.push('weekend_warrior');
+        
+        // Check special months
+        const month = now.getMonth() + 1; // 1-12
+        if (month === 12) achievements.push('new_year_shopper');
+        if (month >= 6 && month <= 8) achievements.push('summer_sale');
         break;
 
-      case 'profile_complete':
-        // Check if profile is complete
-        achievements.push('profile_complete');
+      case 'level_up':
+        // Check level milestones
+        if (value) {
+          if (value >= 5) achievements.push('level_5');
+          if (value >= 10) achievements.push('level_10');
+          if (value >= 25) achievements.push('level_25');
+        }
+        break;
+
+      case 'achievement_unlocked':
+        // Check achievement count milestones
+        const achievementCountResult = await db.execute(sql`
+          SELECT COUNT(*) as count
+          FROM user_achievements
+          WHERE user_id = ${userId}
+        `);
+        
+        if (achievementCountResult.rows && achievementCountResult.rows.length > 0) {
+          const count = parseInt((achievementCountResult.rows[0] as any).count || 0);
+          if (count >= 10) achievements.push('achievement_hunter');
+          if (count >= 50) achievements.push('completionist');
+        }
         break;
     }
 

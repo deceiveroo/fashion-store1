@@ -128,6 +128,16 @@ export default function CheckoutPage() {
       });
       
       toast.success(`✅ ${data.message}`);
+      
+      // Check coupon achievements (in background, don't block UI)
+      if (user?.id) {
+        fetch('/api/gamification/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'coupon_used' }),
+          credentials: 'include'
+        }).catch(err => console.error('Achievement check failed:', err));
+      }
       setPromoCode('');
     } catch (error) {
       console.error('Error validating coupon:', error);

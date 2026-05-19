@@ -378,7 +378,8 @@ export async function POST(request: NextRequest) {
     // Gamification: Award XP for purchase and check achievements
     try {
       await awardXP(currentUser.id, 50, 'Purchase completed', { orderId: newOrder.id });
-      await checkAchievements(currentUser.id, 'purchase');
+      // Pass order total to check for big_spender achievement
+      await checkAchievements(currentUser.id, 'purchase', parseFloat(newOrder.total));
     } catch (gamificationError) {
       console.error('Gamification error:', gamificationError);
       // Don't fail the order if gamification fails

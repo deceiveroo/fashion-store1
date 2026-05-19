@@ -81,6 +81,14 @@ export default function FavoriteButton({ productId, size = 20, onToggle }: Favor
           setIsFavorite(true);
           onToggle?.(true);
           toast.success('Добавлено в избранное');
+          
+          // Check favorite achievements
+          fetch('/api/gamification/check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'favorite' }),
+            credentials: 'include'
+          }).catch(err => console.error('Achievement check failed:', err));
         } else {
           const errorData = await response.json().catch(() => ({}));
           if (errorData.message === 'Product already in favorites') {

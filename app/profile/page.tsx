@@ -365,6 +365,14 @@ export default function ProfilePage() {
       await saveProfile({ avatar: data.url });
       await refreshUser();
       toast.success('Аватар обновлен');
+      
+      // Check avatar achievement
+      fetch('/api/gamification/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'profile_complete' }),
+        credentials: 'include'
+      }).catch(err => console.error('Achievement check failed:', err));
     } catch (error: any) {
       toast.error(error.message || 'Ошибка при загрузке аватара');
     } finally {
@@ -399,6 +407,14 @@ export default function ProfilePage() {
       if (updateSession) await updateSession();
       toast.success('Профиль успешно обновлен');
       setIsEditing(false);
+      
+      // Check profile completion achievements
+      fetch('/api/gamification/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'profile_complete' }),
+        credentials: 'include'
+      }).catch(err => console.error('Achievement check failed:', err));
     } catch (error: any) {
       toast.error(error.message || 'Ошибка при сохранении');
     } finally {
