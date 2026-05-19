@@ -116,7 +116,7 @@ interface UserCoupon {
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, logout, refreshUser } = useAuth();
-  const { update: updateSession } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -238,10 +238,48 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.push('/auth/signin'); return; }
+    // Ждем завершения загрузки аутентификации
+    if (authLoading || sessionStatus === 'loading') {
+      console.log('Auth still loading...', { authLoading, sessionStatus });
+      return;
+    }
+    
+    console.log('Auth loaded', { 
+      hasUser: !!user, 
+      hasSession: !!session,
+      sessionStatus,
+      authLoading 
+    });
+    
+    // Если нет ни user из AuthContext, ни session из NextAuth - проверяем через API
+    if (!user && !session) {
+      console.log('No user or session, checking via API...');
+      // Проверяем напрямую через API, может быть cookie сессия есть
+      fetch('/api/profile', {
+        credentials: 'include',
+      })
+        .then(res => {
+          if (res.ok) {
+            // Пользователь авторизован на сервере, но клиент еще не синхронизировался
+            console.log('API returned OK, refreshing user...');
+            refreshUser();
+          } else {
+            // Действительно не авторизован
+            console.log('API returned error, redirecting to signin...');
+            router.push('/auth/signin');
+          }
+        })
+        .catch(err => {
+          console.error('Error checking auth via API:', err);
+          router.push('/auth/signin');
+        });
+      return;
+    }
+    
+    // Пользователь авторизован - загружаем данные
+    console.log('User authenticated, loading profile data...');
     loadAllData();
-  }, [user, authLoading]);
+  }, [user, authLoading, session, sessionStatus]);
 
   const loadAllData = async () => {
     setIsLoadingData(true);
@@ -469,7 +507,7 @@ export default function ProfilePage() {
         address: formData.address,
       });
       await refreshUser();
-      if (updateSession) await updateSession();
+      // NextAuth session will update automatically
       toast.success('Профиль успешно обновлен');
       setIsEditing(false);
       
