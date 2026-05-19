@@ -11,10 +11,11 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import ReceiptPreview from '@/components/receipts/ReceiptPreview';
 import DownloadButton from '@/components/receipts/DownloadButton';
+import OrderReceipt from '@/components/receipts/OrderReceipt';
 import OrderTrackingModal from '@/components/orders/OrderTrackingModal';
 import { receiptService, Receipt } from '@/lib/receipt-client';
 
-interface OrderItem {
+export interface OrderItem {
   id: string;
   name: string;
   price: number;
@@ -24,7 +25,7 @@ interface OrderItem {
   color?: string;
 }
 
-interface Order {
+export interface Order {
   id: string;
   items: OrderItem[];
   total: number;
@@ -163,79 +164,6 @@ export default function OrdersPage() {
               {status === 'all' ? 'Все' : getStatusInfo(status).label}
             </button>
           ))}
-        </motion.div>
-
-        {/* Receipts Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-12 bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border border-gray-200 dark:border-gray-700"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                <CreditCard className="text-purple-600" size={28} />
-                Банковские чеки
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Учебные чеки от ООО «ДипломБанк»</p>
-            </div>
-            <button
-              onClick={createTestReceipt}
-              className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
-            >
-              <RefreshCw size={18} />
-              Создать тестовый платёж
-            </button>
-          </div>
-
-          {receipts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <Package size={48} className="mx-auto mb-4 opacity-50" />
-              <p>Нет созданных чеков. Нажмите кнопку выше для создания тестового чека.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {receipts.slice(0, 6).map((receipt) => (
-                <div
-                  key={receipt.id}
-                  className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200 dark:border-purple-700 hover:shadow-lg transition-all"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-bold text-gray-900 dark:text-white text-sm">
-                        #{receipt.order_number}
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        {new Date(receipt.created_at).toLocaleDateString('ru-RU')}
-                      </p>
-                    </div>
-                    <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-semibold">
-                      Выполнено
-                    </span>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <p className="text-2xl font-black text-gray-900 dark:text-white">
-                      {receipt.amount.toLocaleString('ru-RU')} ₽
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      {receipt.payer_name}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowReceiptModal(receipt.id)}
-                      className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:shadow-md transition-all"
-                    >
-                      Просмотр
-                    </button>
-                    <DownloadButton receipt={receipt} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </motion.div>
 
         {/* Orders List */}
@@ -456,8 +384,24 @@ export default function OrdersPage() {
                         <span>•</span>
                         <span>{order.deliveryMethod === 'pickup' ? 'Самовывоз' : 'Доставка'}</span>
                       </div>
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {order.total.toLocaleString('ru-RU')} ₽
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setShowTrackingModal(order.id)}
+                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg text-sm font-semibold hover:shadow-md transition-all flex items-center gap-2"
+                        >
+                          <Truck size={16} />
+                          Отслеживать
+                        </button>
+                        <button
+                          onClick={() => setShowReceiptModal(order.id)}
+                          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-semibold hover:shadow-md transition-all flex items-center gap-2"
+                        >
+                          <Download size={16} />
+                          Чек
+                        </button>
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {order.total.toLocaleString('ru-RU')} ₽
+                        </div>
                       </div>
                     </div>
                   )}
@@ -470,7 +414,7 @@ export default function OrdersPage() {
 
       {/* Receipt Modal */}
       <AnimatePresence>
-        {showReceiptModal && (
+        {showReceiptModal && orders.find(o => o.id === showReceiptModal) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -486,7 +430,7 @@ export default function OrdersPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Просмотр чека</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Чек заказа #{showReceiptModal.slice(0, 8).toUpperCase()}</h3>
                 <button
                   onClick={() => setShowReceiptModal(null)}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
@@ -496,9 +440,7 @@ export default function OrdersPage() {
               </div>
               
               <div className="p-6">
-                {receipts.find(r => r.id === showReceiptModal) && (
-                  <ReceiptPreview receipt={receipts.find(r => r.id === showReceiptModal)!} />
-                )}
+                <OrderReceipt order={orders.find(o => o.id === showReceiptModal)!} />
               </div>
             </motion.div>
           </motion.div>
