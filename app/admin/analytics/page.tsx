@@ -7,6 +7,8 @@ import AdminShell from '@/components/admin/AdminShell';
 import { RevenueChart } from '@/components/admin/charts/RevenueChart';
 import { OrdersDonutChart } from '@/components/admin/charts/OrdersDonutChart';
 import { CategoryBarChart } from '@/components/admin/charts/CategoryBarChart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useChartTheme } from '@/hooks/useChartTheme';
 
 interface Analytics {
   revenueByMonth: { month: string; revenue: number; orders: number }[];
@@ -25,6 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AnalyticsPage() {
+  const chart = useChartTheme();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -178,17 +181,35 @@ export default function AnalyticsPage() {
                 </span>
               </div>
             </div>
-            <div className="flex items-end gap-1 h-24">
-              {analytics.customerGrowth.chartData.map((d, i) => {
-                const max = Math.max(...analytics.customerGrowth.chartData.map(x => x.customers));
-                const h = max > 0 ? (d.customers / max) * 100 : 0;
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-                    <div className="w-full rounded-t-md bg-violet-500/30 hover:bg-violet-500/50 transition-colors cursor-pointer" style={{ height: `${h}%` }} title={`${d.customers}`} />
-                    <span className="text-[9px] text-gray-400 dark:text-white/20 group-hover:text-gray-600 dark:group-hover:text-white/40 transition-colors">{d.month}</span>
-                  </div>
-                );
-              })}
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={analytics.customerGrowth.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke={chart.axis} 
+                    tick={{ fill: chart.axis, fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    stroke={chart.axis} 
+                    tick={{ fill: chart.axis, fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={chart.tooltip}
+                    labelStyle={{ color: chart.tooltip.color, fontWeight: 600 }}
+                    formatter={(value) => [`${Number(value)} клиентов`, 'Новые']}
+                  />
+                  <Bar 
+                    dataKey="customers" 
+                    fill="#8b5cf6"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}
