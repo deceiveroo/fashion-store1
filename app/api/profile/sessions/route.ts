@@ -4,6 +4,7 @@ import { userSessions } from '@/lib/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
 import { jsonWithNoCache } from '@/lib/no-cache';
+import { parseUserAgent } from '@/lib/user-agent';
 
 // Force dynamic rendering - never cache
 export const dynamic = 'force-dynamic';
@@ -72,6 +73,7 @@ export async function GET(request: NextRequest) {
       ...session,
       isCurrent: session.token === currentToken,
       lastActive: getRelativeTime(session.lastActive),
+      parsedUA: parseUserAgent(session.userAgent || ''),
     }));
 
     return jsonWithNoCache({ sessions: sessionsWithCurrent });
