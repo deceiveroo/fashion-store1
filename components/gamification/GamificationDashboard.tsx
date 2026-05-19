@@ -33,6 +33,8 @@ export default function GamificationDashboard() {
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'unlocked' | 'locked'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchGamificationData();
@@ -91,6 +93,48 @@ export default function GamificationDashboard() {
   const xpProgress = userLevel ? (userLevel.xp / userLevel.xp_to_next_level) * 100 : 0;
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   const totalCount = achievements.length;
+
+  // Фильтрация достижений
+  const filteredAchievements = achievements.filter(achievement => {
+    // Фильтр по статусу
+    if (filter === 'unlocked' && !achievement.unlocked) return false;
+    if (filter === 'locked' && achievement.unlocked) return false;
+    
+    // Фильтр по категории
+    if (categoryFilter !== 'all' && achievement.category !== categoryFilter) return false;
+    
+    return true;
+  });
+
+  // Сортировка: сначала разблокированные, потом по редкости
+  const sortedAchievements = [...filteredAchievements].sort((a, b) => {
+    // Сначала разблокированные
+    if (a.unlocked && !b.unlocked) return -1;
+    if (!a.unlocked && b.unlocked) return 1;
+    
+    // Потом по редкости
+    const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
+    return (rarityOrder[a.rarity as keyof typeof rarityOrder] || 5) - 
+           (rarityOrder[b.rarity as keyof typeof rarityOrder] || 5);
+  });
+
+  // Получаем уникальные категории
+  const categories = Array.from(new Set(achievements.map(a => a.category)));
+
+  const getCategoryName = (category: string) => {
+    const names: Record<string, string> = {
+      shopping: '🛍️ Покупки',
+      orders: '📦 Заказы',
+      wishlist: '❤️ Избранное',
+      browsing: '🔍 Просмотры',
+      savings: '💰 Экономия',
+      profile: '📱 Профиль',
+      security: '🔐 Безопасность',
+      special: '🎯 События',
+      milestone: '🚀 Вехи',
+    };
+    return names[category] || category;
+  };
 
   return (
     <div className="space-y-6">
@@ -195,8 +239,83 @@ export default function GamificationDashboard() {
           </span>
         </div>
 
+        {/* Фильтры */}
+        <div className="mb-6 space-y-4">
+          {/* Фильтр по статусу */}
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-full font-medium transition-all ${
+                filter === 'all'
+                  ? 'bg-purple-600 text-white shadow-lg'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Все ({totalCount})
+            </button>
+            <button
+              onClick={() => setFilter('unlocked')}
+              className={`px-4 py-2 rounded-full font-medium transition-all ${
+                filter === 'unlocked'
+                  ? 'bg-green-600 text-white shadow-lg'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              ✅ Разблокировано ({unlockedCount})
+            </button>
+            <button
+              onClick={() => setFilter('locked')}
+              className={`px-4 py-2 rounded-full font-medium transition-all ${
+                filter === 'locked'
+                  ? 'bg-gray-600 text-white shadow-lg'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              🔒 Заблокировано ({totalCount - unlockedCount})
+            </button>
+          </div>
+
+          {/* Фильтр по категории */}
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setCategoryFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                categoryFilter === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Все категории
+            </button>
+            {categories.map(category => (
+              <button
+                key={category}
+                onClick={() => setCategoryFilter(category)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  categoryFilter === category
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                {getCategoryName(category)}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {achievements.map((achievement, index) => (
+          {sortedAchievements.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400 text-lg">
+                {filter === 'unlocked' 
+                  ? '🎯 У вас пока нет разблокированных достижений в этой категории'
+                  : filter === 'locked'
+                  ? '🎉 Поздравляем! Вы разблокировали все достижения в этой категории'
+                  : '😕 Достижения не найдены'}
+              </p>
+            </div>
+          ) : (
+            sortedAchievements.map((achievement, index) => (
             <motion.div
               key={achievement.id}
               initial={{ opacity: 0, y: 20 }}
@@ -255,7 +374,8 @@ export default function GamificationDashboard() {
                 )}
               </div>
             </motion.div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
