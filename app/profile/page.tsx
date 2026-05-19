@@ -1414,11 +1414,8 @@ export default function ProfilePage() {
                         )}
                       </div>
                     </motion.div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                  );
+                })}
           </div>
         </HolographicTabs>
       </div>
