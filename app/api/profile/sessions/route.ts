@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { userSessions } from '@/lib/schema';
-import { eq, and, desc } from 'drizzle-orm';
 import { verifyAuth } from '@/lib/auth';
 import { jsonWithNoCache } from '@/lib/no-cache';
 import { parseUserAgent } from '@/lib/user-agent';
@@ -10,14 +7,10 @@ import { parseUserAgent } from '@/lib/user-agent';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-function isTableMissingError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return (
-    (message.includes('relation') && message.includes('does not exist')) ||
-    message.includes('"user_sessions"')
-  );
-}
-
+/**
+ * GET /api/profile/sessions - Получить информацию о текущей сессии пользователя
+ * Примечание: Supabase Auth не предоставляет список всех сессий пользователя
+ */
 export async function GET(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
@@ -25,80 +18,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get current session token
-    const authHeader = request.headers.get('authorization');
-    const currentToken = authHeader?.replace('Bearer ', '') || '';
+    // Получаем информацию о текущем запросе
+    const userAgent = request.headers.get('user-agent') || 'Unknown';
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+               request.headers.get('x-real-ip') || 'Unknown';
 
-    // Get or create current session
-    let currentSession = await db
-      .select()
-      .from(userSessions)
-      .where(eq(userSessions.token, currentToken))
-      .limit(1);
+    // Создаем mock-сессию для текущего пользователя
+    // Так как Supabase не предоставляет список сессий, показываем только текущую
+    const session = {
+      id: `current_${user.id}_${Date.now()}`,
+      userId: user.id,
+      token: '', // Не доступен на клиенте
+      device: parseUserAgent(userAgent).device,
+      location: 'Россия', // Можно добавить геолокацию по IP
+      ip,
+      userAgent,
+      lastActive: new Date(),
+      createdAt: new Date(),
+      isCurrent: true,
+      parsedUA: parseUserAgent(userAgent),
+      lastActiveRelative: 'только что',
+    };
 
-    if (currentSession.length === 0 && currentToken) {
-      // Create session for current request
-      const userAgent = request.headers.get('user-agent') || 'Unknown';
-      const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'Unknown';
-      
-      // Parse device from user agent
-      let device = 'Unknown Device';
-      if (userAgent.includes('Chrome')) device = 'Chrome на ' + (userAgent.includes('Windows') ? 'Windows' : userAgent.includes('Mac') ? 'MacOS' : 'Linux');
-      else if (userAgent.includes('Safari')) device = 'Safari на ' + (userAgent.includes('iPhone') ? 'iPhone' : 'MacOS');
-      else if (userAgent.includes('Firefox')) device = 'Firefox на ' + (userAgent.includes('Windows') ? 'Windows' : 'Linux');
-
-      await db.insert(userSessions).values({
-        userId: user.id,
-        token: currentToken,
-        device,
-        location: 'Россия', // You can use IP geolocation service here
-        ip,
-        userAgent,
-      });
-    } else if (currentSession.length > 0) {
-      // Update last active time
-      await db
-        .update(userSessions)
-        .set({ lastActive: new Date() })
-        .where(eq(userSessions.token, currentToken));
-    }
-
-    const sessions = await db
-      .select()
-      .from(userSessions)
-      .where(eq(userSessions.userId, user.id))
-      .orderBy(desc(userSessions.lastActive));
-
-    const sessionsWithCurrent = sessions.map(session => ({
-      ...session,
-      isCurrent: session.token === currentToken,
-      lastActive: getRelativeTime(session.lastActive),
-      parsedUA: parseUserAgent(session.userAgent || ''),
-    }));
-
-    return jsonWithNoCache({ sessions: sessionsWithCurrent });
+    return jsonWithNoCache({ sessions: [session] });
   } catch (error) {
     console.error('Error fetching sessions:', error);
-    if (isTableMissingError(error)) {
-      return NextResponse.json({ sessions: [] });
-    }
     return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 });
   }
 }
 
-function getRelativeTime(date: Date): string {
-  const now = new Date();
-  const diff = now.getTime() - new Date(date).getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'только что';
-  if (minutes < 60) return `${minutes} мин назад`;
-  if (hours < 24) return `${hours} ч назад`;
-  return `${days} дн назад`;
-}
-
+/**
+ * DELETE /api/profile/sessions - Завершить сессии
+ * Для завершения всех других сессий предлагаем сменить пароль
+ */
 export async function DELETE(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
@@ -111,37 +63,24 @@ export async function DELETE(request: NextRequest) {
     const terminateAll = searchParams.get('all') === 'true';
 
     if (terminateAll) {
-      // Get current session token
-      const authHeader = request.headers.get('authorization');
-      const currentToken = authHeader?.replace('Bearer ', '') || '';
-
-      // Delete all sessions except current
-      await db
-        .delete(userSessions)
-        .where(
-          and(
-            eq(userSessions.userId, user.id),
-            // SQL: token != currentToken
-          )
-        );
-
-      return NextResponse.json({ success: true });
+      // Для завершения всех других сессий нужно сменить пароль
+      // Это инвалидирует все старые токены
+      return NextResponse.json({ 
+        success: false,
+        message: 'Для завершения всех сессий пожалуйста смените пароль в настройках профиля' 
+      }, { status: 400 });
     }
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
-    await db
-      .delete(userSessions)
-      .where(
-        and(
-          eq(userSessions.id, sessionId),
-          eq(userSessions.userId, user.id)
-        )
-      );
+    // Удаление конкретной сессии невозможно без доступа к auth.sessions
+    // Supabase Admin API требует и userId и sessionId, но мы не можем получить список сессий
+    return NextResponse.json({ 
+      error: 'Невозможно завершить отдельную сессию. Используйте функцию "Завершить все другие сессии" в настройках безопасности.' 
+    }, { status: 400 });
 
-    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting session:', error);
     return NextResponse.json({ error: 'Failed to delete session' }, { status: 500 });

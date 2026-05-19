@@ -179,14 +179,14 @@ export default function AdminSessionsManager() {
         ) : sessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-white/20">
             <Monitor className="h-10 w-10 mb-2 opacity-40" />
-            <p className="text-sm">Нет активных сессий</p>
+            <p className="text-sm">Нет активных пользователей</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/5">
-                  {['Пользователь', 'Устройство', 'Локация', 'IP', 'Активность', ''].map(h => (
+                  {['Пользователь', 'Email', 'Последний вход', 'Создан', ''].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider last:text-right">{h}</th>
                   ))}
                 </tr>
@@ -195,7 +195,7 @@ export default function AdminSessionsManager() {
                 <AnimatePresence mode="popLayout">
                   {sessions.map(session => (
                     <motion.tr
-                      key={session.id}
+                      key={session.userId}
                       layout
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -205,44 +205,18 @@ export default function AdminSessionsManager() {
                       {/* User */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${getDeviceColor(session.parsedUA.icon)}`}>
-                            {getDeviceIcon(session.parsedUA.icon)}
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/20 text-violet-400">
+                            <Users className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-xs font-semibold text-white">{session.userEmail}</p>
-                            <p className="text-[10px] text-white/30">{session.userName || 'Без имени'}</p>
+                            <p className="text-xs font-semibold text-white">{session.userName || 'Без имени'}</p>
                           </div>
                         </div>
                       </td>
 
-                      {/* Device */}
+                      {/* Email */}
                       <td className="px-4 py-3">
-                        <p className="text-xs text-white/60">{session.parsedUA.browser}</p>
-                        <p className="text-[10px] text-white/30">{session.parsedUA.os}</p>
-                      </td>
-
-                      {/* Location */}
-                      <td className="px-4 py-3">
-                        {session.location ? (
-                          <p className="text-xs text-white/60 flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-white/20" />
-                            {session.location}
-                          </p>
-                        ) : (
-                          <span className="text-xs text-white/20">—</span>
-                        )}
-                      </td>
-
-                      {/* IP */}
-                      <td className="px-4 py-3">
-                        {session.ip ? (
-                          <p className="text-xs text-white/60 font-mono flex items-center gap-1">
-                            <Shield className="h-3 w-3 text-white/20" />
-                            {session.ip}
-                          </p>
-                        ) : (
-                          <span className="text-xs text-white/20">—</span>
-                        )}
+                        <p className="text-xs text-white/60">{session.userEmail}</p>
                       </td>
 
                       {/* Last Active */}
@@ -253,33 +227,18 @@ export default function AdminSessionsManager() {
                         </p>
                       </td>
 
-                      {/* Actions */}
+                      {/* Created */}
+                      <td className="px-4 py-3">
+                        <p className="text-xs text-white/40">
+                          {session.createdAtRelative}
+                        </p>
+                      </td>
+
+                      {/* Actions - Not available for mock sessions */}
                       <td className="px-4 py-3 text-right">
-                        {confirmDelete === session.id ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleDeleteSession(session.id, session.userId)}
-                              disabled={deletingId === session.id}
-                              className="rounded-lg px-2 py-1 text-[10px] font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50"
-                            >
-                              {deletingId === session.id ? '...' : 'Да'}
-                            </button>
-                            <button
-                              onClick={() => setConfirmDelete(null)}
-                              className="rounded-lg px-2 py-1 text-[10px] font-medium bg-white/5 text-white/40 hover:bg-white/10 transition-colors"
-                            >
-                              Нет
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmDelete(session.id)}
-                            className="rounded-lg p-1.5 text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                            title="Завершить сессию"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                        <span className="text-[10px] text-white/20 italic">
+                          Недоступно
+                        </span>
                       </td>
                     </motion.tr>
                   ))}
@@ -288,6 +247,14 @@ export default function AdminSessionsManager() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Info Banner */}
+      <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4">
+        <p className="text-sm text-blue-300">
+          <strong>Примечание:</strong> Supabase Auth не предоставляет прямой доступ к списку всех сессий через Admin API.
+          Отображается информация о последнем входе пользователей. Для завершения сессии используйте функцию смены пароля пользователя.
+        </p>
       </div>
     </div>
   );

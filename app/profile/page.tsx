@@ -914,21 +914,6 @@ export default function ProfilePage() {
                           <div className="space-y-6">
                             <div className="flex justify-between items-center">
                               <h4 className="font-semibold text-gray-900 dark:text-white">Активные сессии</h4>
-                              {sessions.length > 1 && (
-                                <button
-                                  onClick={() => {
-                                    if (confirm('Завершить все другие сессии?')) {
-                                      fetch('/api/profile/sessions?all=true', {
-                                        method: 'DELETE',
-                                        headers: { Authorization: `Bearer ${localStorage.getItem('auth-token')}` },
-                                      }).then(() => loadSessions());
-                                    }
-                                  }}
-                                  className="text-sm text-red-600 hover:text-red-700 font-medium"
-                                >
-                                  Завершить все другие
-                                </button>
-                              )}
                             </div>
                             
                             {isLoadingData ? (
@@ -995,17 +980,6 @@ export default function ProfilePage() {
                                             </div>
                                           </div>
                                         </div>
-
-                                        {/* Action Button */}
-                                        {!session.isCurrent && (
-                                          <button
-                                            onClick={() => handleTerminateSession(session.id)}
-                                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
-                                            title="Завершить сессию"
-                                          >
-                                            <LogOut size={18} />
-                                          </button>
-                                        )}
                                       </div>
                                     </motion.div>
                                   );
@@ -1013,17 +987,29 @@ export default function ProfilePage() {
                               </div>
                             )}
 
-                            {/* Security Tips */}
+                            {/* Info Banner */}
                             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
                               <h5 className="font-semibold text-blue-900 dark:text-blue-300 mb-2 flex items-center gap-2">
                                 <Shield size={16} />
+                                Информация о сессиях
+                              </h5>
+                              <p className="text-sm text-blue-800 dark:text-blue-400">
+                                Supabase Auth не предоставляет список всех ваших сессий. Отображается информация о текущем устройстве.
+                                Для завершения всех других сессий используйте функцию смены пароля.
+                              </p>
+                            </div>
+
+                            {/* Security Tips */}
+                            <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl">
+                              <h5 className="font-semibold text-purple-900 dark:text-purple-300 mb-2 flex items-center gap-2">
+                                <Shield size={16} />
                                 Советы по безопасности
                               </h5>
-                              <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1 list-disc list-inside">
+                              <ul className="text-sm text-purple-800 dark:text-purple-400 space-y-1 list-disc list-inside">
                                 <li>Регулярно проверяйте активные сессии</li>
-                                <li>Завершайте сессии на незнакомых устройствах</li>
                                 <li>Используйте надежные пароли</li>
                                 <li>Включите двухфакторную аутентификацию</li>
+                                <li>Не входите с чужих устройств</li>
                               </ul>
                             </div>
                           </div>
