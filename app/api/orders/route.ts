@@ -1,7 +1,7 @@
 // app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { orders, orderItems, users, coupons } from '@/lib/schema';
+import { orders, orderItems, users, coupons, userCouponUsage } from '@/lib/schema';
 import { eq, desc } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
@@ -358,22 +358,31 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    // TODO: Increment coupon usage count after adding coupon_id column to orders table
-    // if (couponId) {
-    //   try {
-    //     const coupon = await db.select().from(coupons).where(eq(coupons.id, couponId)).limit(1);
-    //     if (coupon.length > 0) {
-    //       await db.update(coupons)
-    //         .set({ 
-    //           usedCount: (coupon[0].usedCount || 0) + 1,
-    //           updatedAt: new Date()
-    //         })
-    //         .where(eq(coupons.id, couponId));
-    //     }
-    //   } catch (couponError) {
-    //     console.error('Error updating coupon usage count:', couponError);
-    //   }
-    // }
+    // Record coupon usage
+    if (couponId && discount > 0) {
+      try {
+        await db.insert(userCouponUsage).values({
+          userId: currentUser.id,
+          couponId: couponId,
+          orderId: newOrder.id,
+          discountAmount: String(discount),
+        });
+        
+        // Increment coupon usedCount
+        await db.update(coupons)
+          .set({ 
+            usedCount: db.raw('COALESCE(used_count, 0) + 1'),
+            updatedAt: new Date()
+          })
+          .where(eq(coupons.id, couponId));
+          
+        // Check coupon achievements
+        await checkAchievements(currentUser.id, 'coupon_used');
+      } catch (couponError) {
+        console.error('Error recording coupon usage:', couponError);
+        // Don't fail the order if coupon tracking fails
+      }
+    }
 
     // Gamification: Award XP for purchase and check achievements
     try {

@@ -346,6 +346,26 @@ export const coupons = pgTable('coupons', {
   };  
 });
 
+// User Coupon Usage table (история использования промокодов)
+export const userCouponUsage = pgTable('user_coupon_usage', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  couponId: text('coupon_id')
+    .notNull()
+    .references(() => coupons.id, { onDelete: 'cascade' }),
+  orderId: text('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  discountAmount: decimal('discount_amount', { precision: 10, scale: 2 }).notNull(),
+  usedAt: timestamp('used_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: index('user_coupon_usage_user_idx').on(table.userId),
+    couponIdx: index('user_coupon_usage_coupon_idx').on(table.couponId),
+    usedAtIdx: index('user_coupon_usage_used_at_idx').on(table.usedAt),
+  };
+});
+
 // Installment Plans table (рассрочка)
 export const installmentPlans = pgTable('installment_plans', {
   id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),

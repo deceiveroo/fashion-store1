@@ -70,6 +70,9 @@ async function levelUp(userId: string, currentLevel: number) {
   // Award bonus coins for leveling up
   await awardXP(userId, 0, `Достигнут уровень ${newLevel}`, { level: newLevel });
   
+  // Check level achievements
+  await checkAchievements(userId, 'level_up', newLevel);
+  
   return { newLevel, newTitle, coinsAwarded: newLevel * 10 };
 }
 
