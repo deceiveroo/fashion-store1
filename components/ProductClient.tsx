@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import AddToCartButton from './AddToCartButton';
@@ -217,8 +218,15 @@ export default function ProductClient({ product }: ProductClientProps) {
                         : 'opacity-70 hover:opacity-100 ring-1 ring-gray-200 dark:ring-neutral-800'
                     }`}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={image.url} alt="" className="h-full w-full object-cover" />
+                    <Image
+                      src={image.url}
+                      alt=""
+                      fill
+                      sizes="(max-width: 640px) 25vw, 15vw"
+                      loading="lazy"
+                      quality={60}
+                      className="object-cover"
+                    />
                   </button>
                 ))}
               </motion.div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, User, Menu, X, Search as SearchIcon, Plus, LogOut, ChevronDown, Package, Heart, Bell } from 'lucide-react';
@@ -247,10 +248,13 @@ export default function Header() {
                     >
                       {(user.avatar || user.image) ? (
                         <div className="relative">
-                          <img 
+                          <Image 
                             src={user.avatar || user.image} 
                             alt="Avatar" 
-                            className="w-8 h-8 rounded-full object-cover"
+                            width={32}
+                            height={32}
+                            className="rounded-full object-cover"
+                            priority
                           />
                           {/* Notification Indicator */}
                           {unreadCount > 0 && (
@@ -489,7 +493,13 @@ export default function Header() {
                         {/* Mobile profile avatar */}
                         <div className="flex items-center gap-3 py-2 mb-2">
                           {(user.avatar || user.image) ? (
-                            <img src={user.avatar || user.image} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
+                            <Image 
+                              src={user.avatar || user.image} 
+                              alt="Avatar" 
+                              width={36}
+                              height={36}
+                              className="rounded-full object-cover"
+                            />
                           ) : (
                             <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
                               {user?.name?.[0] || user?.email?.[0] || 'U'}

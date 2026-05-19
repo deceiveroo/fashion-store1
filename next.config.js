@@ -7,6 +7,11 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'mgprrbrevhzsvgizypov.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'sjxepisvuthynvixpwii.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
@@ -21,6 +26,10 @@ const nextConfig = {
     ],
     // Optimize image formats
     formats: ['image/avif', 'image/webp'],
+    // Better caching for mobile
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days cache
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // Expose only necessary env vars to server
   env: {

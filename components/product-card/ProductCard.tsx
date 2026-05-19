@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase-client';
@@ -84,25 +85,32 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
           transition={{ type: 'spring', stiffness: 400, damping: 32 }}
         >
           {/* Primary */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={primaryImage}
             alt={product.name}
-            onLoad={() => setImageLoaded(true)}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            priority={false}
+            loading="lazy"
+            quality={75}
+            onLoadingComplete={() => setImageLoaded(true)}
             onError={() => setImageLoaded(true)}
-            className={`absolute inset-0 h-full w-full object-cover transition-all duration-700 ease-out ${
+            className={`object-cover transition-all duration-700 ease-out ${
               imageLoaded ? 'opacity-100' : 'opacity-0'
             } ${hovered && showHoverImage ? 'scale-105 opacity-0' : 'scale-100 opacity-100'}`}
           />
 
           {/* Hover image */}
-          {showHoverImage && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
+          {showHoverImage && hoverImage && (
+            <Image
               src={hoverImage}
               alt=""
               aria-hidden
-              className={`absolute inset-0 h-full w-full object-cover transition-all duration-700 ease-out ${
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              loading="lazy"
+              quality={75}
+              className={`object-cover transition-all duration-700 ease-out ${
                 hovered ? 'scale-105 opacity-100' : 'scale-100 opacity-0'
               }`}
             />
