@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import {
   ShoppingCart, UserPlus, Package, CreditCard,
-  Star, AlertCircle, CheckCircle2, TrendingUp, Clock, X,
+  Star, AlertCircle, CheckCircle2, TrendingUp, Clock, X, RefreshCw,
 } from 'lucide-react';
 import { AdminCard } from './AdminCard';
+import { toast } from 'sonner';
 
 interface Activity {
   id: string;
@@ -13,47 +14,43 @@ interface Activity {
   title: string;
   description: string;
   timestamp: Date;
-  metadata?: { amount?: number; status?: string };
+  metadata?: { amount?: number; status?: string; paymentStatus?: string };
 }
 
 export default function ActivityFeed() {
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
 
+  const loadActivities = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/admin/activity', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('auth-token')}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to load activity');
+      }
+
+      const data = await res.json();
+      setActivities(data.activities || []);
+    } catch (err) {
+      console.error('Error loading activity:', err);
+      toast.error('Не удалось загрузить ленту активности');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const mock: Activity[] = [
-      {
-        id: '1',
-        type: 'order',
-        title: 'Новый заказ',
-        description: 'Клиент оформил заказ в каталоге',
-        timestamp: new Date(Date.now() - 5 * 60_000),
-        metadata: { amount: 12500, status: 'pending' },
-      },
-      {
-        id: '2',
-        type: 'user',
-        title: 'Новый клиент',
-        description: 'Регистрация на сайте',
-        timestamp: new Date(Date.now() - 15 * 60_000),
-      },
-      {
-        id: '3',
-        type: 'payment',
-        title: 'Оплата получена',
-        description: 'Заказ успешно оплачен',
-        timestamp: new Date(Date.now() - 30 * 60_000),
-        metadata: { amount: 8900, status: 'completed' },
-      },
-      {
-        id: '4',
-        type: 'alert',
-        title: 'Низкий остаток',
-        description: 'Проверьте складские позиции',
-        timestamp: new Date(Date.now() - 90 * 60_000),
-      },
-    ];
-    setActivities(mock);
+    loadActivities();
+    
+    // Автообновление каждые 30 секунд
+    const interval = setInterval(loadActivities, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const getIcon = (type: Activity['type']) => {
@@ -83,12 +80,12 @@ export default function ActivityFeed() {
   };
 
   const formatTime = (date: Date) => {
-    const m = Math.floor((Date.now() - date.getTime()) / 60_000);
+    const m = Math.floor((Date.now() - new Date(date).getTime()) / 60_000);
     if (m < 1) return 'только что';
     if (m < 60) return `${m} мин назад`;
     const h = Math.floor(m / 60);
     if (h < 24) return `${h} ч назад`;
-    return date.toLocaleDateString('ru-RU');
+    return new Date(date).toLocaleDateString('ru-RU');
   };
 
   return (
@@ -97,57 +94,83 @@ export default function ActivityFeed() {
         <div className="flex items-center gap-3">
           <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--admin-accent-soft)]">
             <TrendingUp className="h-4 w-4 text-[var(--admin-accent)]" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-60" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-violet-500" />
-            </span>
+            {activities.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-60" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-violet-500" />
+              </span>
+            )}
           </div>
           <div>
             <h3 className="text-sm font-semibold text-[var(--admin-text)]">Лента активности</h3>
-            <p className="text-[10px] text-[var(--admin-text-faint)]">Демо-данные · обновляется</p>
+            <p className="text-[10px] text-[var(--admin-text-faint)]">
+              {loading ? 'Загрузка...' : `${activities.length} событий`}
+            </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setCollapsed(!collapsed)}
-          className="rounded-lg p-1.5 text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)] hover:text-[var(--admin-text)]"
-          aria-label={collapsed ? 'Развернуть' : 'Свернуть'}
-        >
-          {collapsed ? <Clock className="h-4 w-4" /> : <X className="h-4 w-4" />}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={loadActivities}
+            disabled={loading}
+            className="rounded-lg p-1.5 text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)] hover:text-[var(--admin-text)] disabled:opacity-50"
+            aria-label="Обновить"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            className="rounded-lg p-1.5 text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)] hover:text-[var(--admin-text)]"
+            aria-label={collapsed ? 'Развернуть' : 'Свернуть'}
+          >
+            {collapsed ? <Clock className="h-4 w-4" /> : <X className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
       {!collapsed && (
         <div className="custom-scrollbar max-h-[420px] space-y-2 overflow-y-auto p-3">
-          {activities.map((activity) => {
-            const Icon = getIcon(activity.type);
-            return (
-              <div
-                key={activity.id}
-                className="group flex gap-3 rounded-xl border border-[var(--admin-border-subtle)] bg-[var(--admin-bg-muted)]/40 p-3 transition-colors hover:bg-[var(--admin-card-hover)]"
-              >
+          {loading && activities.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-[var(--admin-text-faint)]">
+              <Clock className="h-10 w-10 mb-2 opacity-40" />
+              <p className="text-xs">Нет активности</p>
+            </div>
+          ) : (
+            activities.map((activity) => {
+              const Icon = getIcon(activity.type);
+              return (
                 <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${colorClass(activity.type)}`}
+                  key={activity.id}
+                  className="group flex gap-3 rounded-xl border border-[var(--admin-border-subtle)] bg-[var(--admin-bg-muted)]/40 p-3 transition-colors hover:bg-[var(--admin-card-hover)]"
                 >
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-xs font-medium text-[var(--admin-text)]">{activity.title}</p>
-                    <span className="shrink-0 text-[10px] text-[var(--admin-text-faint)]">
-                      {formatTime(activity.timestamp)}
-                    </span>
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${colorClass(activity.type)}`}
+                  >
+                    <Icon className="h-4 w-4" />
                   </div>
-                  <p className="mt-0.5 text-[11px] text-[var(--admin-text-muted)]">{activity.description}</p>
-                  {activity.metadata?.amount != null && (
-                    <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      {activity.metadata.amount.toLocaleString('ru-RU')} ₽
-                    </p>
-                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs font-medium text-[var(--admin-text)]">{activity.title}</p>
+                      <span className="shrink-0 text-[10px] text-[var(--admin-text-faint)]">
+                        {formatTime(activity.timestamp)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-[var(--admin-text-muted)]">{activity.description}</p>
+                    {activity.metadata?.amount != null && (
+                      <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        {activity.metadata.amount.toLocaleString('ru-RU')} ₽
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       )}
     </AdminCard>
