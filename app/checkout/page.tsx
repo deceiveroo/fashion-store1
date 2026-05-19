@@ -662,12 +662,6 @@ export default function CheckoutPage() {
                                 : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 bg-white dark:bg-gray-900'
                             }`}
                           >
-                            {option.badge && (
-                              <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r ${option.color} text-white shadow-md`}>
-                                {option.badge}
-                              </div>
-                            )}
-                            
                             <div className="flex items-start gap-5">
                               <motion.div
                                 animate={deliveryMethod === option.id ? { scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] } : {}}
@@ -700,11 +694,12 @@ export default function CheckoutPage() {
                               {deliveryMethod === option.id && (
                                 <motion.div
                                   initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
+                                  animate={{ scale: 1, rotate: [0, 15, -15, 0] }}
+                                  transition={{ duration: 0.4, delay: 0.1 }}
                                   className="flex-shrink-0 ml-2"
                                 >
-                                  <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
-                                    <Check size={20} className="text-white" strokeWidth={3} />
+                                  <div className="w-7 h-7 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center shadow-md">
+                                    <Check size={16} className="text-white" strokeWidth={3.5} />
                                   </div>
                                 </motion.div>
                               )}

@@ -243,7 +243,7 @@ export default function AdminProductsPage() {
             { label: 'Нет в наличии', value: products.filter((p) => !p.inStock).length, icon: ToggleLeft, c: 'bg-gradient-to-br from-red-500 to-pink-600 dark:from-red-500/20 dark:to-pink-600/20 text-white dark:text-red-400' },
             { label: 'Хиты', value: products.filter((p) => p.featured).length, icon: Eye, c: 'bg-gradient-to-br from-blue-500 to-cyan-600 dark:from-blue-500/20 dark:to-cyan-600/20 text-white dark:text-blue-400' },
           ].map(({ label, value, icon: Icon, c }) => (
-            <div key={label} className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-gray-50 to-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div key={label} className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-gray-50 to-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-white/40">{label}</p>

@@ -49,9 +49,9 @@ const timeline = [
 ];
 
 const team = [
-  { name: 'Анна Иванова', role: 'Главный дизайнер', initials: 'АИ', color: 'from-purple-500 to-pink-500' },
-  { name: 'Максим Петров', role: 'Технический директор', initials: 'МП', color: 'from-blue-500 to-purple-500' },
-  { name: 'Елена Смирнова', role: 'Директор по развитию', initials: 'ЕС', color: 'from-pink-500 to-rose-500' },
+  { name: 'Афанасьев Кирилл', role: 'Главный дизайнер', initials: 'АИ', color: 'from-purple-500 to-pink-500' },
+  { name: 'Ахтеркин Никита', role: 'Технический директор', initials: 'МП', color: 'from-blue-500 to-purple-500' },
+  { name: 'Петров Вадим', role: 'Директор по развитию', initials: 'ЕС', color: 'from-pink-500 to-rose-500' },
 ];
 
 export default function AboutPage() {

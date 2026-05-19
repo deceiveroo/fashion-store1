@@ -141,7 +141,7 @@ export default function CustomersPage() {
             { label: 'С менеджерами', value: customers.filter(c => c.phone).length, icon: Phone, color: 'bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-500/20 dark:to-teal-600/20 text-white dark:text-emerald-400' },
             { label: 'Верифицированы', value: customers.filter(c => c.emailVerified).length, icon: Mail, color: 'bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-500/20 dark:to-orange-600/20 text-white dark:text-amber-400' },
           ].map(({ label, value, icon: Icon, color, trend }) => (
-            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-gray-50 to-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 hover:from-gray-100 hover:to-gray-50 dark:hover:bg-white/[0.08] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-gray-50 to-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 hover:from-gray-100 hover:to-gray-50 dark:hover:from-[#12121f] dark:hover:to-[#1a1a2e] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
               {trend && (
                 <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 px-2 py-1 shadow-sm">
                   <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />

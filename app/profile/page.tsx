@@ -106,6 +106,33 @@ export default function ProfilePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
+  // Phone mask formatter
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return '';
+    
+    let formatted = '+7';
+    if (digits.length > 1) {
+      formatted += ' (' + digits.substring(1, 4);
+    }
+    if (digits.length >= 4) {
+      formatted += ') ' + digits.substring(4, 7);
+    }
+    if (digits.length >= 7) {
+      formatted += '-' + digits.substring(7, 9);
+    }
+    if (digits.length >= 9) {
+      formatted += '-' + digits.substring(9, 11);
+    }
+    
+    return formatted;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setFormData({ ...formData, phone: formatted });
+  };
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.push('/auth/signin'); return; }
@@ -669,7 +696,7 @@ export default function ProfilePage() {
                                   <input
                                     type="tel"
                                     value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    onChange={handlePhoneChange}
                                     className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                     placeholder="+7 (___) ___-__-__"
                                   />

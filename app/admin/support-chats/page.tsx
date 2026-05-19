@@ -225,7 +225,7 @@ function SupportChatsPage() {
             { label: 'Решенные', value: sessions.filter(s => s.status === 'resolved').length, icon: CheckCircle, color: 'bg-gradient-to-br from-blue-500 to-cyan-600 dark:from-blue-500/20 dark:to-cyan-600/20 text-white dark:text-blue-400' },
             { label: 'Перехвачено', value: sessions.filter(s => s.aiDisabled).length, icon: Shield, color: 'bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-500/20 dark:to-orange-600/20 text-white dark:text-amber-400' },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-gray-50 to-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 hover:from-gray-100 hover:to-gray-50 dark:hover:bg-white/[0.08] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-gray-50 to-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 hover:from-gray-100 hover:to-gray-50 dark:hover:from-[#12121f] dark:hover:to-[#1a1a2e] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">{label}</p>
@@ -242,7 +242,7 @@ function SupportChatsPage() {
         {/* Main Content - Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-320px)] min-h-[600px]">
           {/* Left Column - Chat List */}
-          <div className="lg:col-span-1 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] backdrop-blur-sm flex flex-col overflow-hidden">
+          <div className="lg:col-span-1 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] backdrop-blur-sm flex flex-col overflow-hidden shadow-sm">
             {/* Filter Tabs */}
             <div className="p-4 border-b border-gray-200 dark:border-white/10 flex gap-2">
               {(['all','active','resolved'] as const).map(f => (
@@ -320,7 +320,7 @@ function SupportChatsPage() {
           </div>
 
           {/* Right Column - Chat Area */}
-          <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] backdrop-blur-sm flex flex-col overflow-hidden">
+          <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] backdrop-blur-sm flex flex-col overflow-hidden shadow-sm">
             {sel ? (
               <>
                 {/* Chat Header */}
