@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/server-auth';
 
 export async function GET() {
   try {
     // Получаем userId из сессии NextAuth
-    const session = await auth();
+    const session = await getSession();
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -30,7 +30,7 @@ export async function GET() {
         created_at,
         updated_at
       FROM user_levels 
-      WHERE user_id = ${userId}::uuid
+      WHERE user_id = ${userId}
     `);
 
     if (!result.rows || result.rows.length === 0) {
@@ -38,7 +38,7 @@ export async function GET() {
       try {
         await db.execute(sql`
           INSERT INTO user_levels (user_id, level, xp, xp_to_next_level, title, coins)
-          VALUES (${userId}::uuid, 1, 0, 100, 'Новичок', 0)
+          VALUES (${userId}, 1, 0, 100, 'Новичок', 0)
           ON CONFLICT (user_id) DO NOTHING
         `);
 
@@ -54,7 +54,7 @@ export async function GET() {
             created_at,
             updated_at
           FROM user_levels 
-          WHERE user_id = ${userId}::uuid
+          WHERE user_id = ${userId}
         `);
 
         if (newResult.rows && newResult.rows.length > 0) {
