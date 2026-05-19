@@ -14,12 +14,12 @@ interface Order {
 }
 
 const STATUS = {
-  pending:    { label: 'Ожидает',   cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20',   dot: 'bg-amber-400',   icon: Clock },
-  processing: { label: 'Обработка', cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20',       dot: 'bg-blue-400',    icon: Package },
-  shipped:    { label: 'Отправлен', cls: 'bg-violet-500/10 text-violet-400 border-violet-500/20', dot: 'bg-violet-400',  icon: Truck },
-  delivered:  { label: 'Доставлен', cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', dot: 'bg-emerald-400', icon: CheckCircle },
-  cancelled:  { label: 'Отменён',   cls: 'bg-red-500/10 text-red-400 border-red-500/20',          dot: 'bg-red-400',     icon: XCircle },
-  returned:   { label: 'Возврат',   cls: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',       dot: 'bg-zinc-400',    icon: XCircle },
+  pending:    { label: 'Ожидает',   cls: 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 dark:border-amber-500/20',   dot: 'bg-amber-500',   icon: Clock },
+  processing: { label: 'Обработка', cls: 'bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-500/30 dark:border-blue-500/20',       dot: 'bg-blue-500',    icon: Package },
+  shipped:    { label: 'Отправлен', cls: 'bg-violet-500/20 text-violet-700 dark:text-violet-400 border border-violet-500/30 dark:border-violet-500/20', dot: 'bg-violet-500',  icon: Truck },
+  delivered:  { label: 'Доставлен', cls: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 dark:border-emerald-500/20', dot: 'bg-emerald-500', icon: CheckCircle },
+  cancelled:  { label: 'Отменён',   cls: 'bg-red-500/20 text-red-700 dark:text-red-400 border border-red-500/30 dark:border-red-500/20',          dot: 'bg-red-500',     icon: XCircle },
+  returned:   { label: 'Возврат',   cls: 'bg-zinc-500/20 text-zinc-700 dark:text-zinc-400 border border-zinc-500/30 dark:border-zinc-500/20',       dot: 'bg-zinc-500',    icon: XCircle },
 } as const;
 
 const LIMIT = 50;
@@ -144,25 +144,25 @@ export default function AdminOrdersPage() {
         {/* Enhanced Stats Cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { label: 'Всего заказов', value: stats.total, icon: ShoppingBag, color: 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400', trend: '+12%' },
-            { label: 'Выручка', value: `${stats.revenue.toLocaleString('ru-RU')} ₽`, icon: DollarSign, color: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400', trend: '+8.5%' },
-            { label: 'Ожидают', value: stats.pending, icon: Clock, color: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' },
-            { label: 'Доставлено', value: stats.delivered, icon: CheckCircle, color: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400', trend: '+15%' },
+            { label: 'Всего заказов', value: stats.total, icon: ShoppingBag, color: 'bg-gradient-to-br from-violet-500 to-purple-600 dark:from-violet-500/20 dark:to-purple-600/20 text-white dark:text-violet-400', trend: '+12%' },
+            { label: 'Выручка', value: `${stats.revenue.toLocaleString('ru-RU')} ₽`, icon: DollarSign, color: 'bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-500/20 dark:to-teal-600/20 text-white dark:text-emerald-400', trend: '+8.5%' },
+            { label: 'Ожидают', value: stats.pending, icon: Clock, color: 'bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-500/20 dark:to-orange-600/20 text-white dark:text-amber-400' },
+            { label: 'Доставлено', value: stats.delivered, icon: CheckCircle, color: 'bg-gradient-to-br from-blue-500 to-cyan-600 dark:from-blue-500/20 dark:to-cyan-600/20 text-white dark:text-blue-400', trend: '+15%' },
           ].map(({ label, value, icon: Icon, color, trend }) => (
-            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 hover:bg-gray-50 dark:hover:bg-white/[0.08] transition-all backdrop-blur-sm">
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 hover:bg-gray-50 dark:hover:bg-white/[0.08] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
               {trend && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 px-2 py-1">
+                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 px-2 py-1 shadow-sm">
                   <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{trend}</span>
                 </div>
               )}
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">{label}</p>
-                  <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-                </div>
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
-                  <Icon className="h-6 w-6" />
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-3">{label}</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
+                    <Icon className="h-6 w-6" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -185,8 +185,8 @@ export default function AdminOrdersPage() {
               value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
               className="appearance-none rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 pl-9 pr-8 text-sm text-gray-900 dark:text-white focus:border-violet-500/50 focus:outline-none"
             >
-              <option value="all" className="bg-white dark:bg-[#0f0f1a]">Все статусы</option>
-              {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k} className="bg-white dark:bg-[#0f0f1a]">{v.label}</option>)}
+              <option value="all" className="bg-white dark:bg-[#0f0f1a] text-gray-900 dark:text-white">Все статусы</option>
+              {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k} className="bg-white dark:bg-[#0f0f1a] text-gray-900 dark:text-white">{v.label}</option>)}
             </select>
           </div>
         </div>
@@ -229,15 +229,15 @@ export default function AdminOrdersPage() {
                               </div>
                               <div>
                                 <p className="font-semibold text-gray-900 dark:text-white text-xs">#{order.id.slice(0,8).toUpperCase()}</p>
-                                <p className="text-[10px] text-gray-400 dark:text-white/30">{order.items?.length || 0} товар(ов)</p>
+                                <p className="text-[10px] text-gray-500 dark:text-white/30">{order.items?.length || 0} товар(ов)</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-3">
                             <p className="text-xs font-medium text-gray-900 dark:text-white">{name}</p>
-                            <p className="text-[10px] text-gray-400 dark:text-white/30 truncate max-w-[160px]">{email}</p>
+                            <p className="text-[10px] text-gray-500 dark:text-white/30 truncate max-w-[160px]">{email}</p>
                           </td>
-                          <td className="px-4 py-3 text-xs text-gray-500 dark:text-white/40 whitespace-nowrap">
+                          <td className="px-4 py-3 text-xs text-gray-600 dark:text-white/40 whitespace-nowrap">
                             {new Date(order.createdAt).toLocaleDateString('ru-RU', { day:'numeric', month:'short' })}
                           </td>
                           <td className="px-4 py-3">
@@ -250,7 +250,7 @@ export default function AdminOrdersPage() {
                               <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block w-36 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f0f1a] shadow-xl py-1">
                                 {Object.entries(STATUS).map(([k, v]) => (
                                   <button key={k} onClick={() => updateStatus(order.id, k)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${order.status === k ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-500 dark:text-white/50'}`}>
+                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${order.status === k ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-600 dark:text-white/50'}`}>
                                     <span className={`h-1.5 w-1.5 rounded-full ${v.dot}`} />
                                     {v.label}
                                   </button>

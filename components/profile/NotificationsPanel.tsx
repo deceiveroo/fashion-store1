@@ -84,19 +84,7 @@ export default function NotificationsPanel({ notifications, setNotifications }: 
     <div className="space-y-4">
       {/* Main Panel */}
       <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500 rounded-lg">
-              <Bell size={20} className="text-white" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Уведомления</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Настройте способы получения уведомлений</p>
-            </div>
-          </div>
-        </div>
-
+       
         {/* Categories */}
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {categories.map((category) => (

@@ -103,17 +103,7 @@ export default function NotificationSettings() {
       transition={{ duration: 0.6 }}
       className="bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-red-500/10 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-red-900/20 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-amber-200/50 dark:border-amber-700/50"
     >
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl">
-          <Bell className="text-white" size={24} />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Уведомления</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Настройте способы получения уведомлений</p>
-        </div>
-      </div>
-
+    
       {/* Channel Headers */}
       <div className="flex items-center justify-end gap-4 mb-4 px-4">
         {channels.map((channel) => (
