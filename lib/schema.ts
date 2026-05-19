@@ -208,6 +208,7 @@ export const orderItems = pgTable('order_items', {
   name: text('name').notNull(), // Product name at time of order
   productName: text('product_name').notNull(), // Duplicate of name for compatibility
   price: decimal('price', { precision: 10, scale: 2 }).notNull(), // Price at time of order
+  total: decimal('total', { precision: 12, scale: 2 }).notNull(), // Total price (price * quantity)
   quantity: integer('quantity').notNull().default(1),
   image: text('image'), // Product image at time of order
   size: text('size'), // Size from variant

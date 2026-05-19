@@ -336,6 +336,7 @@ export async function POST(request: NextRequest) {
 
         // Add items to the order
         for (const item of items) {
+          const itemTotal = item.price * item.quantity;
           await trx.insert(orderItems).values({
             orderId: order.id,
             productId: item.id,
@@ -343,6 +344,7 @@ export async function POST(request: NextRequest) {
             name: item.name,
             productName: item.name, // Duplicate for database compatibility
             price: item.price.toString(), // Convert to string to match decimal field
+            total: itemTotal.toString(), // Total price for this line item
             quantity: item.quantity,
             image: item.image || '',
             size: item.size || null,
