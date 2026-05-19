@@ -312,40 +312,40 @@ export default function Header() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         data-user-menu
-                        className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-[70]"
+                        className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-[70]"
                       >
-                        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-                          <p className="font-semibold text-gray-900 dark:text-gray-100">
+                        <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                          <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
                             {user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
                           </p>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{user?.email}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
                         </div>
                         
-                        <div className="py-2">
+                        <div className="py-1">
                           <Link 
                             href="/profile"
-                            className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             onClick={() => setIsUserMenuOpen(false)}
                           >
-                            <User size={18} />
+                            <User size={16} />
                             <span>Профиль</span>
                           </Link>
                           
                           <Link 
                             href="/orders"
-                            className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             onClick={() => setIsUserMenuOpen(false)}
                           >
-                            <Package size={18} />
+                            <Package size={16} />
                             <span>Мои заказы</span>
                           </Link>
                           
                           <Link 
                             href="/favorites"
-                            className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             onClick={() => setIsUserMenuOpen(false)}
                           >
-                            <Heart size={18} />
+                            <Heart size={16} />
                             <span>Избранное</span>
                           </Link>
                         </div>
@@ -356,12 +356,12 @@ export default function Header() {
                             setIsUserMenuOpen(false);
                             setIsNotificationsModalOpen(true);
                           }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg group"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                         >
                           <div className="relative">
-                            <Bell size={20} className="text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
+                            <Bell size={16} className="text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
                             {unreadCount > 0 && (
-                              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] rounded-full font-bold flex items-center justify-center animate-pulse">
+                              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[9px] rounded-full font-bold flex items-center justify-center animate-pulse">
                                 {unreadCount > 9 ? '9+' : unreadCount}
                               </span>
                             )}
@@ -369,22 +369,22 @@ export default function Header() {
                           <div className="flex-1">
                             <span className="text-sm font-medium text-gray-900 dark:text-white">Уведомления</span>
                             {unreadCount > 0 && (
-                              <p className="text-xs text-purple-600 dark:text-purple-400 mt-0.5">
+                              <p className="text-[10px] text-purple-600 dark:text-purple-400 mt-0.5">
                                 {unreadCount} непрочитан{unreadCount === 1 ? 'ное' : unreadCount < 5 ? 'ных' : 'ных'}
                               </p>
                             )}
                           </div>
                         </button>
                         
-                        <div className="border-t border-gray-100 dark:border-gray-700 py-2">
+                        <div className="border-t border-gray-100 dark:border-gray-700 py-1">
                           <button
                             onClick={() => {
                               logout();
                               setIsUserMenuOpen(false);
                             }}
-                            className="flex items-center gap-3 px-4 py-3 w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-red-600 dark:text-red-400"
+                            className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-red-600 dark:text-red-400 text-sm"
                           >
-                            <LogOut size={18} />
+                            <LogOut size={16} />
                             <span>Выйти</span>
                           </button>
                         </div>
