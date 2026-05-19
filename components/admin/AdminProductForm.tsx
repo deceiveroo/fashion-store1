@@ -102,19 +102,23 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
       // Load media (images and videos)
       const initialMedia: MediaItem[] = [];
       if (data.images && data.images.length > 0) {
+        console.log('[AdminProductForm] Raw images from API:', data.images);
         data.images.forEach((img: any) => {
-          initialMedia.push({
+          const mediaItem: MediaItem = {
             id: img.id,
             url: img.url,
-            type: img.mediaType || 'image',
+            type: (img.mediaType as 'image' | 'video') || 'image',
             thumbnailUrl: img.thumbnailUrl,
             duration: img.duration,
-          });
+          };
+          console.log('[AdminProductForm] Processing media item:', mediaItem);
+          initialMedia.push(mediaItem);
         });
       } else if (data.mainImage) {
+        console.log('[AdminProductForm] Using mainImage fallback:', data.mainImage);
         initialMedia.push({ url: data.mainImage, type: 'image' });
       }
-      console.log('[AdminProductForm] Loaded product media:', initialMedia);
+      console.log('[AdminProductForm] Final media array:', initialMedia);
       setMedia(initialMedia);
     } catch {
       toast.error('Ошибка загрузки');
@@ -451,14 +455,21 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
               {media.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {media.map((item, i) => (
-                    <div key={`${item.url}-${i}`} className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-white/10">
+                    <div key={`${item.url}-${i}`} className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-white/10 bg-gray-800">
                       {item.type === 'video' ? (
                         <>
                           {item.thumbnailUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                            <img 
+                              src={item.thumbnailUrl} 
+                              alt="" 
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder-image.jpg';
+                              }}
+                            />
                           ) : (
-                            <div className="h-full w-full bg-gray-800 flex items-center justify-center">
+                            <div className="h-full w-full flex items-center justify-center">
                               <Play className="h-12 w-12 text-white/50" />
                             </div>
                           )}
@@ -475,7 +486,15 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                         </>
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.url} alt="" className="h-full w-full object-cover" />
+                        <img 
+                          src={item.url} 
+                          alt="" 
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            console.error('Failed to load image:', item.url);
+                            e.currentTarget.src = '/placeholder-image.jpg';
+                          }}
+                        />
                       )}
                       <button
                         type="button"

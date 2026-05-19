@@ -82,7 +82,15 @@ export async function GET(
 
     const images = await queryWithRetry(() =>
       db
-        .select({ url: productImages.url, isMain: productImages.isMain, order: productImages.order })
+        .select({ 
+          id: productImages.id,
+          url: productImages.url, 
+          isMain: productImages.isMain, 
+          order: productImages.order,
+          mediaType: productImages.mediaType,
+          duration: productImages.duration,
+          thumbnailUrl: productImages.thumbnailUrl,
+        })
         .from(productImages)
         .where(eq(productImages.productId, id))
         .orderBy(productImages.order)
@@ -104,7 +112,7 @@ export async function GET(
         ...product,
         price: parseFloat(String(product.price ?? '0')) || 0,
         categories: categoryIds,
-        images: images.map((img) => img.url),
+        images: images, // Возвращаем полные объекты, не только URL
         mainImage: images.find((img) => img.isMain)?.url ?? images[0]?.url ?? '/placeholder-image.jpg',
       },
       {
