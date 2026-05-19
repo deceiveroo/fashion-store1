@@ -158,19 +158,22 @@ export default function ProfilePage() {
     
     // Восстанавливаем позицию курсора с учётом изменений
     setTimeout(() => {
-      if (input) {
-        // Если удаляем символы, корректируем позицию
+      if (input && document.activeElement === input) {
         let newCursorPos = cursorPos;
         
         // Если длина уменьшилась (удаление)
-        if (newLength < oldLength) {
-          // Проверяем, не попали ли мы на спецсимвол
-          const charAtCursor = newValue[newCursorPos];
+        if (newLength < oldLength && newLength > 0) {
+          // Проверяем символ на текущей позиции курсора
+          const charAtCursor = newValue[newCursorPos - 1];
+          
+          // Если перед курсором спецсимвол, перескакиваем через него
           if (charAtCursor && [' ', '(', ')', '-'].includes(charAtCursor)) {
-            // Перескакиваем через спецсимвол назад
-            newCursorPos = Math.max(0, newCursorPos - 1);
+            newCursorPos = Math.max(3, newCursorPos - 1);
           }
         }
+        
+        // Ограничиваем позицию в допустимых пределах
+        newCursorPos = Math.min(newCursorPos, newValue.length);
         
         input.setSelectionRange(newCursorPos, newCursorPos);
       }
