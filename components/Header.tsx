@@ -374,7 +374,6 @@ export default function Header() {
                               </p>
                             )}
                           </div>
-                          <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors rotate-[-90deg]" />
                         </button>
                         
                         <div className="border-t border-gray-100 dark:border-gray-700 py-2">
