@@ -11,6 +11,11 @@ interface Order {
   userEmail?: string; userName?: string;
   recipient?: { firstName: string; lastName: string; email: string; phone: string; address?: string };
   items?: { id: string; name: string; quantity: number; price: number; image?: string }[];
+  trackingNumber?: string;
+  trackingStatus?: string;
+  currentLocation?: string;
+  estimatedDelivery?: string;
+  trackingHistory?: any[];
 }
 
 const STATUS = {
@@ -78,7 +83,18 @@ export default function AdminOrdersPage() {
       const res = await fetch(`/api/admin/orders/${editingOrder.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ status: editingOrder.status, recipient: editingOrder.recipient, comment: editingOrder.comment, deliveryMethod: editingOrder.deliveryMethod, paymentMethod: editingOrder.paymentMethod }),
+        body: JSON.stringify({ 
+          status: editingOrder.status, 
+          recipient: editingOrder.recipient, 
+          comment: editingOrder.comment, 
+          deliveryMethod: editingOrder.deliveryMethod, 
+          paymentMethod: editingOrder.paymentMethod,
+          trackingNumber: editingOrder.trackingNumber,
+          trackingStatus: editingOrder.trackingStatus,
+          currentLocation: editingOrder.currentLocation,
+          estimatedDelivery: editingOrder.estimatedDelivery,
+          trackingHistory: editingOrder.trackingHistory
+        }),
       });
       if (res.ok) { setOrders(o => o.map(x => x.id === editingOrder.id ? editingOrder : x)); setEditingOrder(null); toast.success('Сохранено'); }
       else toast.error('Ошибка сохранения');
@@ -388,6 +404,55 @@ export default function AdminOrdersPage() {
                   onChange={e => setEditingOrder({...editingOrder, comment:e.target.value})}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50 resize-none"
                 />
+              </div>
+              
+              {/* Tracking Section */}
+              <div className="border-t border-white/5 pt-4 mt-4">
+                <h3 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-blue-400" />
+                  Отслеживание доставки
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Трек-номер</label>
+                      <input type="text" placeholder="TRK-XXXXXXXX"
+                        value={editingOrder.trackingNumber||''}
+                        onChange={e => setEditingOrder({...editingOrder, trackingNumber:e.target.value})}
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Статус</label>
+                      <select value={editingOrder.trackingStatus||'pending'}
+                        onChange={e => setEditingOrder({...editingOrder, trackingStatus:e.target.value})}
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50">
+                        <option value="pending" className="bg-[#0f0f1a]">Ожидает</option>
+                        <option value="in_transit" className="bg-[#0f0f1a]">В пути</option>
+                        <option value="out_for_delivery" className="bg-[#0f0f1a]">Доставляется</option>
+                        <option value="delivered" className="bg-[#0f0f1a]">Доставлен</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Текущее местоположение</label>
+                      <input type="text" placeholder="Москва, склад"
+                        value={editingOrder.currentLocation||''}
+                        onChange={e => setEditingOrder({...editingOrder, currentLocation:e.target.value})}
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Ожидаемая доставка</label>
+                      <input type="date"
+                        value={editingOrder.estimatedDelivery? editingOrder.estimatedDelivery.split('T')[0] : ''}
+                        onChange={e => setEditingOrder({...editingOrder, estimatedDelivery:e.target.value ? new Date(e.target.value).toISOString() : undefined})}
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex gap-3 p-5 border-t border-white/5">

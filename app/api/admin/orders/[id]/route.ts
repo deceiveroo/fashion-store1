@@ -9,14 +9,15 @@ type OrderStatus = typeof VALID_STATUSES[number];
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const staff = await isStaff();
     if (!staff) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const { id } = await params;
     const body = await request.json();
-    const { status, recipient, comment, deliveryMethod, paymentMethod } = body;
+    const { status, recipient, comment, deliveryMethod, paymentMethod, trackingNumber, trackingStatus, currentLocation, estimatedDelivery, trackingHistory } = body;
 
     if (status && !VALID_STATUSES.includes(status as OrderStatus)) {
       return NextResponse.json(
@@ -31,8 +32,13 @@ export async function PATCH(
     if (comment !== undefined) updateData.comment = comment;
     if (deliveryMethod) updateData.deliveryMethod = deliveryMethod;
     if (paymentMethod) updateData.paymentMethod = paymentMethod;
+    if (trackingNumber !== undefined) updateData.trackingNumber = trackingNumber;
+    if (trackingStatus) updateData.trackingStatus = trackingStatus;
+    if (currentLocation !== undefined) updateData.currentLocation = currentLocation;
+    if (estimatedDelivery !== undefined) updateData.estimatedDelivery = estimatedDelivery;
+    if (trackingHistory !== undefined) updateData.trackingHistory = trackingHistory;
 
-    await db.update(orders).set(updateData).where(eq(orders.id, params.id));
+    await db.update(orders).set(updateData).where(eq(orders.id, id));
 
     // Cache auto-expires by TTL
 
@@ -45,15 +51,17 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const admin = await isAdmin();
     if (!admin) return NextResponse.json({ error: 'Unauthorized — admin only' }, { status: 403 });
 
+    const { id } = await params;
+
     await db.transaction(async (tx) => {
-      await tx.delete(orderItems).where(eq(orderItems.orderId, params.id));
-      await tx.delete(orders).where(eq(orders.id, params.id));
+      await tx.delete(orderItems).where(eq(orderItems.orderId, id));
+      await tx.delete(orders).where(eq(orders.id, id));
     });
 
     // Cache auto-expires by TTL
