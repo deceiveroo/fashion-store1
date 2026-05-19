@@ -253,59 +253,69 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                             {group.name}
                           </h3>
                           
-                          {/* Все варианты размеров/цветов */}
-                          <div className="space-y-1.5 mb-2">
-                            {group.variants.map((variant, vIdx) => (
-                              <div key={vIdx} className="flex items-center gap-2 text-xs">
-                                {variant.size && (
-                                  <span className="text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full font-medium">
-                                    {variant.size}
-                                  </span>
-                                )}
-                                {variant.color && (
-                                  <span className="text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full font-medium">
-                                    {variant.color}
-                                  </span>
-                                )}
-                                <span className="text-gray-500 dark:text-gray-400 ml-auto">
-                                  × {variant.quantity}
-                                </span>
-                              </div>
-                            ))}
+                          {/* Все варианты размеров/цветов с управлением количеством */}
+                          <div className="space-y-2 mb-3">
+                            {group.variants.map((variant, vIdx) => {
+                              // Находим реальный item ID для этого варианта
+                              const variantItem = items.find(item => 
+                                item.id === group.id && 
+                                item.size === variant.size && 
+                                item.color === variant.color
+                              );
+                              
+                              if (!variantItem) return null;
+                              
+                              return (
+                                <div key={vIdx} className="flex items-center justify-between gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    {variant.size && (
+                                      <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full font-medium">
+                                        {variant.size}
+                                      </span>
+                                    )}
+                                    {variant.color && (
+                                      <span className="text-xs text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full font-medium">
+                                        {variant.color}
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Quantity Controls для каждого варианта */}
+                                  <div className="flex items-center gap-2">
+                                    <motion.button
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                      onClick={() => handleUpdateQuantity(variantItem.id, variant.quantity - 1)}
+                                      className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-600 transition-colors"
+                                    >
+                                      <Minus size={12} />
+                                    </motion.button>
+                                    
+                                    <motion.span
+                                      key={`${variantItem.id}-${variant.quantity}`}
+                                      animate={{ scale: [1, 1.2, 1] }}
+                                      className="text-sm font-bold text-gray-900 dark:text-gray-100 min-w-5 text-center"
+                                    >
+                                      {variant.quantity}
+                                    </motion.span>
+                                    
+                                    <motion.button
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                      onClick={() => handleUpdateQuantity(variantItem.id, variant.quantity + 1)}
+                                      className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-600 transition-colors"
+                                    >
+                                      <Plus size={12} />
+                                    </motion.button>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                           
                           <p className="text-lg font-bold text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">
                             {Math.round(group.price)} ₽
                           </p>
-
-                          {/* Quantity Controls - работают для первого варианта */}
-                          <div className="flex items-center gap-3 mt-3">
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => handleUpdateQuantity(group.id, group.variants[0].quantity - 1)}
-                              className="w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-                            >
-                              <Minus size={14} />
-                            </motion.button>
-                            
-                            <motion.span
-                              key={group.variants[0].quantity}
-                              animate={{ scale: [1, 1.2, 1] }}
-                              className="text-sm font-bold text-gray-900 dark:text-gray-100 min-w-6 text-center"
-                            >
-                              {group.variants[0].quantity}
-                            </motion.span>
-                            
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => handleUpdateQuantity(group.id, group.variants[0].quantity + 1)}
-                              className="w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
-                            >
-                              <Plus size={14} />
-                            </motion.button>
-                          </div>
                         </div>
 
                         {/* Remove Button - удаляет весь товар */}
