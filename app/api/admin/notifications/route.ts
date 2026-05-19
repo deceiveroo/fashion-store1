@@ -1,292 +1,97 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { systemNotifications } from '@/lib/schema';
-import { eq, desc } from 'drizzle-orm';
+import { systemNotifications, userNotificationReads, userNotificationDismissals } from '@/lib/schema';
+import { eq, desc, gt, lt, or, and, sql, count } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
-// GET /api/admin/notifications - Get all notifications (for admin panel)
-export async function GET() {
+// GET /api/admin/notifications - Get all notifications with stats
+export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
     
-    if (!session?.user?.id) {
+    if (!session?.user?.id || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRole = (session.user as any).role;
-    if (userRole !== 'admin' && userRole !== 'manager') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const status = searchParams.get('status'); // active, inactive
+    const type = searchParams.get('type'); // info, success, warning, error
+    
+    const offset = (page - 1) * limit;
+
+    // Build where clause
+    let whereClause = undefined;
+    if (status === 'active') {
+      whereClause = eq(systemNotifications.isActive, true);
+    } else if (status === 'inactive') {
+      whereClause = eq(systemNotifications.isActive, false);
     }
 
+    // Get notifications with pagination
     const notifications = await db
       .select()
       .from(systemNotifications)
-      .orderBy(desc(systemNotifications.createdAt));
+      .where(whereClause)
+      .orderBy(desc(systemNotifications.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    // Get total count
+    const [{ totalCount }] = await db
+      .select({ totalCount: count() })
+      .from(systemNotifications)
+      .where(whereClause);
+
+    // Get stats
+    const [activeCount, inactiveCount] = await Promise.all([
+      db
+        .select({ count: count() })
+        .from(systemNotifications)
+        .where(eq(systemNotifications.isActive, true)),
+      db
+        .select({ count: count() })
+        .from(systemNotifications)
+        .where(eq(systemNotifications.isActive, false)),
+    ]);
+
+    // Get read stats for each notification (sample of recent users)
+    const notificationsWithStats = await Promise.all(
+      notifications.map(async (notification) => {
+        const readCount = await db
+          .select({ count: count() })
+          .from(userNotificationReads)
+          .where(eq(userNotificationReads.notificationId, notification.id));
+
+        const dismissCount = await db
+          .select({ count: count() })
+          .from(userNotificationDismissals)
+          .where(eq(userNotificationDismissals.notificationId, notification.id));
+
+        return {
+          ...notification,
+          readCount: readCount[0]?.count || 0,
+          dismissCount: dismissCount[0]?.count || 0,
+        };
+      })
+    );
 
     return NextResponse.json({
-      success: true,
-      notifications,
+      notifications: notificationsWithStats,
+      total: totalCount,
+      page,
+      limit,
+      stats: {
+        active: activeCount[0]?.count || 0,
+        inactive: inactiveCount[0]?.count || 0,
+        total: totalCount,
+      },
     });
   } catch (error) {
-    console.error('Error fetching admin notifications:', error);
+    console.error('Error fetching notifications:', error);
     return NextResponse.json(
       { error: 'Failed to fetch notifications' },
-      { status: 500 }
-    );
-  }
-}
-
-// POST /api/admin/notifications - Create new notification
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userRole = (session.user as any).role;
-    if (userRole !== 'admin' && userRole !== 'manager') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const body = await request.json();
-    const { title, message, type, targetAudience, targetUserIds, expiresAt } = body;
-
-    // Validate required fields
-    if (!title || !message) {
-      return NextResponse.json(
-        { error: 'Title and message are required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate type
-    const validTypes = ['info', 'warning', 'success', 'error'];
-    if (type && !validTypes.includes(type)) {
-      return NextResponse.json(
-        { error: 'Invalid notification type' },
-        { status: 400 }
-      );
-    }
-
-    // Validate target audience
-    const validAudiences = ['all', 'registered', 'admins', 'specific'];
-    if (targetAudience && !validAudiences.includes(targetAudience)) {
-      return NextResponse.json(
-        { error: 'Invalid target audience' },
-        { status: 400 }
-      );
-    }
-
-    // Create notification
-    const [notification] = await db
-      .insert(systemNotifications)
-      .values({
-        title,
-        message,
-        type: type || 'info',
-        targetAudience: targetAudience || 'all',
-        targetUserIds: targetUserIds || null,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        createdBy: session.user.id,
-      })
-      .returning();
-
-    return NextResponse.json({
-      success: true,
-      notification,
-    });
-  } catch (error) {
-    console.error('Error creating notification:', error);
-    return NextResponse.json(
-      { error: 'Failed to create notification' },
-      { status: 500 }
-    );
-  }
-}
-
-// PATCH /api/admin/notifications/:id - Update notification (partial update)
-export async function PATCH(request: NextRequest) {
-  try {
-    const session = await getSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userRole = (session.user as any).role;
-    if (userRole !== 'admin' && userRole !== 'manager') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const url = new URL(request.url);
-    const id = url.pathname.split('/').pop();
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Notification ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const body = await request.json();
-    const { isActive, title, message } = body;
-
-    const updateData: any = {};
-    if (isActive !== undefined) updateData.isActive = isActive;
-    if (title) updateData.title = title;
-    if (message) updateData.message = message;
-
-    const [updated] = await db
-      .update(systemNotifications)
-      .set(updateData)
-      .where(eq(systemNotifications.id, id))
-      .returning();
-
-    if (!updated) {
-      return NextResponse.json(
-        { error: 'Notification not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      notification: updated,
-    });
-  } catch (error) {
-    console.error('Error updating notification:', error);
-    return NextResponse.json(
-      { error: 'Failed to update notification' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT /api/admin/notifications/:id - Full update notification
-export async function PUT(request: NextRequest) {
-  try {
-    const session = await getSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userRole = (session.user as any).role;
-    if (userRole !== 'admin' && userRole !== 'manager') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const url = new URL(request.url);
-    const id = url.pathname.split('/').pop();
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Notification ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const body = await request.json();
-    const { title, message, type, targetAudience, expiresAt, isActive } = body;
-
-    // Validate required fields
-    if (!title || !message) {
-      return NextResponse.json(
-        { error: 'Title and message are required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate type
-    const validTypes = ['info', 'warning', 'success', 'error'];
-    if (type && !validTypes.includes(type)) {
-      return NextResponse.json(
-        { error: 'Invalid notification type' },
-        { status: 400 }
-      );
-    }
-
-    // Validate target audience
-    const validAudiences = ['all', 'registered', 'admins', 'specific'];
-    if (targetAudience && !validAudiences.includes(targetAudience)) {
-      return NextResponse.json(
-        { error: 'Invalid target audience' },
-        { status: 400 }
-      );
-    }
-
-    const updateData: any = {
-      title,
-      message,
-      type: type || 'info',
-      targetAudience: targetAudience || 'all',
-      updatedAt: new Date(),
-    };
-
-    if (expiresAt) updateData.expiresAt = new Date(expiresAt);
-    if (isActive !== undefined) updateData.isActive = isActive;
-
-    const [updated] = await db
-      .update(systemNotifications)
-      .set(updateData)
-      .where(eq(systemNotifications.id, id))
-      .returning();
-
-    if (!updated) {
-      return NextResponse.json(
-        { error: 'Notification not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      notification: updated,
-    });
-  } catch (error) {
-    console.error('Error updating notification:', error);
-    return NextResponse.json(
-      { error: 'Failed to update notification' },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE /api/admin/notifications/:id - Delete notification
-export async function DELETE(request: NextRequest) {
-  try {
-    const session = await getSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userRole = (session.user as any).role;
-    if (userRole !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const url = new URL(request.url);
-    const id = url.pathname.split('/').pop();
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Notification ID is required' },
-        { status: 400 }
-      );
-    }
-
-    await db
-      .delete(systemNotifications)
-      .where(eq(systemNotifications.id, id));
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting notification:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete notification' },
       { status: 500 }
     );
   }
