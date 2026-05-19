@@ -165,18 +165,18 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
 
           {/* Bottom CTA strip - always visible on mobile, hover on desktop */}
           <motion.div
-            className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between gap-2 p-3 sm:opacity-0 sm:pointer-events-none"
+            className="absolute inset-x-0 bottom-0 z-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 sm:opacity-0 sm:pointer-events-none"
             initial={false}
             animate={{ opacity: hovered ? 1 : 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 28 }}
           >
             <Link
               href={`/products/${product.id}`}
-              className="flex-1 inline-flex items-center justify-center gap-1 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm px-3 py-2 text-[11px] font-medium uppercase tracking-wider text-gray-900 dark:text-white rounded-lg shadow-lg active:scale-95 transition-transform"
+              className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white rounded-xl shadow-lg active:scale-95 transition-transform border border-gray-200 dark:border-gray-700"
               onClick={(e) => e.stopPropagation()}
             >
               Смотреть
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+              <ArrowUpRight className="h-4 w-4" aria-hidden />
             </Link>
             {currentStock && (
               <button
@@ -187,9 +187,9 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
                   addItem(cartPayload);
                   toast.success(`${product.name} в корзине`);
                 }}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-2 text-[11px] font-medium uppercase tracking-wider text-white rounded-lg shadow-lg active:scale-95 transition-transform"
+                className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white rounded-xl shadow-lg shadow-purple-500/30 active:scale-95 transition-transform"
               >
-                <ShoppingBag className="h-3.5 w-3.5" aria-hidden />
+                <ShoppingBag className="h-4 w-4" aria-hidden />
                 В корзину
               </button>
             )}
