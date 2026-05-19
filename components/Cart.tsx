@@ -21,6 +21,33 @@ export default function Cart({ isOpen, onClose }: CartProps) {
   const total = state?.total || 0;
   const itemCount = state?.itemCount || 0;
 
+  // Группируем товары по ID (одинаковые товары с разными размерами)
+  const groupedItems = items.reduce((acc, item) => {
+    if (!acc[item.id]) {
+      acc[item.id] = {
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        image: item.image,
+        variants: []
+      };
+    }
+    acc[item.id].variants.push({
+      size: item.size,
+      color: item.color,
+      quantity: item.quantity
+    });
+    return acc;
+  }, {} as Record<string, {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    variants: Array<{ size?: string; color?: string; quantity: number }>;
+  }>);
+
+  const groupedItemsList = Object.values(groupedItems);
+
   // Close cart when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -173,9 +200,9 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                   layout
                   className="p-4 space-y-4"
                 >
-                  {items.map((item, index) => (
+                  {groupedItemsList.map((group, index) => (
                     <motion.div
-                      key={`${item.id}-${item.size}-${item.color}`}
+                      key={group.id}
                       layout
                       initial={{ opacity: 0, x: 50 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -193,10 +220,10 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                           className="relative flex-shrink-0"
                         >
                           <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-0.5 overflow-hidden">
-                            {item.image ? (
+                            {group.image ? (
                               <img
-                                src={item.image}
-                                alt={item.name}
+                                src={group.image}
+                                alt={group.name}
                                 className="w-full h-full object-cover rounded-lg"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
@@ -208,13 +235,14 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                               </div>
                             )}
                           </div>
+                          {/* Общее количество всех вариантов */}
                           <motion.div
                             animate={{ scale: [1, 1.1, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                             className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center"
                           >
                             <span className="text-white text-xs font-bold">
-                              {item.quantity}
+                              {group.variants.reduce((sum, v) => sum + v.quantity, 0)}
                             </span>
                           </motion.div>
                         </motion.div>
@@ -222,52 +250,57 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight line-clamp-2 mb-1">
-                            {item.name}
+                            {group.name}
                           </h3>
                           
-                          {/* Attributes */}
-                          {(item.size || item.color) && (
-                            <div className="flex gap-1 mb-2">
-                              {item.size && (
-                                <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
-                                  {item.size}
+                          {/* Все варианты размеров/цветов */}
+                          <div className="space-y-1.5 mb-2">
+                            {group.variants.map((variant, vIdx) => (
+                              <div key={vIdx} className="flex items-center gap-2 text-xs">
+                                {variant.size && (
+                                  <span className="text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full font-medium">
+                                    {variant.size}
+                                  </span>
+                                )}
+                                {variant.color && (
+                                  <span className="text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full font-medium">
+                                    {variant.color}
+                                  </span>
+                                )}
+                                <span className="text-gray-500 dark:text-gray-400 ml-auto">
+                                  × {variant.quantity}
                                 </span>
-                              )}
-                              {item.color && (
-                                <span className="text-xs text-pink-600 bg-pink-100 px-2 py-1 rounded-full">
-                                  {item.color}
-                                </span>
-                              )}
-                            </div>
-                          )}
+                              </div>
+                            ))}
+                          </div>
                           
                           <p className="text-lg font-bold text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">
-                            {Math.round(item.price)} ₽
+                            {Math.round(group.price)} ₽
                           </p>
 
-                          {/* Quantity Controls */}
+                          {/* Quantity Controls - работают для первого варианта */}
                           <div className="flex items-center gap-3 mt-3">
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => handleUpdateQuantity(group.id, group.variants[0].quantity - 1)}
                               className="w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
                             >
                               <Minus size={14} />
                             </motion.button>
                             
                             <motion.span
-                              key={item.quantity}
+                              key={group.variants[0].quantity}
                               animate={{ scale: [1, 1.2, 1] }}
                               className="text-sm font-bold text-gray-900 dark:text-gray-100 min-w-6 text-center"
                             >
-                              {item.quantity}
+                              {group.variants[0].quantity}
                             </motion.span>
                             
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => handleUpdateQuantity(group.id, group.variants[0].quantity + 1)}
                               className="w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
                             >
                               <Plus size={14} />
@@ -275,11 +308,11 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                           </div>
                         </div>
 
-                        {/* Remove Button */}
+                        {/* Remove Button - удаляет весь товар */}
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => handleRemoveItem(item.id)}
+                          onClick={() => handleRemoveItem(group.id)}
                           className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
                         >
                           <X size={16} />
