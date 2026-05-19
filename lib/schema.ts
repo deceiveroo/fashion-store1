@@ -178,6 +178,7 @@ export const orders = pgTable('orders', {
   paymentStatus: text('payment_status', { enum: paymentStatusEnum }).default('pending'),
   paymentIntentId: text('payment_intent_id'), // Stripe payment intent ID
   transactionId: text('transaction_id'), // External transaction ID
+  couponId: text('coupon_id').references(() => coupons.id, { onDelete: 'set null' }), // Applied coupon
   cryptoCurrency: text('crypto_currency'), // Cryptocurrency used for payment
   cryptoAddress: text('crypto_address'), // Address to which payment was sent
   cryptoTxId: text('crypto_tx_id'), // Transaction ID for crypto payment

@@ -109,6 +109,11 @@ export default function OrderReceipt({ order }: OrderReceiptProps) {
               <span>-{order.discount.toLocaleString('ru-RU')} ₽</span>
             </div>
           )}
+          {/* НДС 20% */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', marginBottom: '8px', fontSize: '11px' }}>
+            <span>НДС (20%):</span>
+            <span>{Math.round((order.total - order.deliveryPrice) * 0.20).toLocaleString('ru-RU')} ₽</span>
+          </div>
           {order.deliveryPrice > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', marginBottom: '8px' }}>
               <span>Доставка:</span>

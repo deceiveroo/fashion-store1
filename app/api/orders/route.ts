@@ -1,7 +1,7 @@
 // app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { orders, orderItems, users } from '@/lib/schema';
+import { orders, orderItems, users, coupons } from '@/lib/schema';
 import { eq, desc } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
@@ -75,6 +75,7 @@ interface OrderData {
   paymentMethod: string;
   recipient: Recipient;
   comment?: string;
+  couponId?: string; // Added coupon ID
 }
 
 async function resolveRequestUser(request: NextRequest): Promise<{ id: string; role: string } | null> {
@@ -304,7 +305,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('[ORDERS POST] Request body received:', JSON.stringify(body, null, 2).substring(0, 500));
     
-    const { items, total, discount, deliveryPrice, deliveryMethod, paymentMethod, recipient, comment } = body;
+    const { items, total, discount, deliveryPrice, deliveryMethod, paymentMethod, recipient, comment, couponId } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Items are required' }, { status: 400 });
@@ -329,6 +330,7 @@ export async function POST(request: NextRequest) {
           deliveryPrice: deliveryPrice ? deliveryPrice.toString() : '0',
           deliveryMethod,
           paymentMethod,
+          couponId: couponId || null, // Save coupon ID if provided
           status: 'processing', // Changed from 'pending' to 'processing'
           recipient,
           comment: comment || ''
@@ -355,6 +357,24 @@ export async function POST(request: NextRequest) {
         return order;
       });
     });
+
+    // Increment coupon usage count if coupon was used
+    if (couponId) {
+      try {
+        const coupon = await db.select().from(coupons).where(eq(coupons.id, couponId)).limit(1);
+        if (coupon.length > 0) {
+          await db.update(coupons)
+            .set({ 
+              usedCount: (coupon[0].usedCount || 0) + 1,
+              updatedAt: new Date()
+            })
+            .where(eq(coupons.id, couponId));
+        }
+      } catch (couponError) {
+        console.error('Error updating coupon usage count:', couponError);
+        // Don't fail the order if coupon update fails
+      }
+    }
 
     // Gamification: Award XP for purchase and check achievements
     try {

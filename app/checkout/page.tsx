@@ -58,12 +58,31 @@ export default function CheckoutPage() {
     sbpPhone: user?.phone || ''
   });
 
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    id: string;
+    code: string;
+    discount: number;
+    type: 'percent' | 'fixed';
+    discountAmount: number;
+  } | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
   // Calculate finalTotal early in the component
   const getDiscount = () => {
-    if (cart.total > 5000) return 500;
-    if (cart.total > 3000) return 300;
-    if (cart.total > 1000) return 100;
-    return 0;
+    let discount = 0;
+    // Автоматические скидки
+    if (cart.total > 5000) discount = 500;
+    else if (cart.total > 3000) discount = 300;
+    else if (cart.total > 1000) discount = 100;
+    
+    // Добавляем скидку от промокода
+    if (appliedCoupon) {
+      discount += appliedCoupon.discountAmount;
+    }
+    
+    return discount;
   };
 
   const getDeliveryPrice = () => {
@@ -73,6 +92,55 @@ export default function CheckoutPage() {
   };
 
   const finalTotal = Math.max(0, cart.total - getDiscount() + getDeliveryPrice());
+  
+  // Validate promo code
+  const validatePromoCode = async () => {
+    if (!promoCode.trim()) {
+      toast.error('Введите промокод');
+      return;
+    }
+
+    setValidatingCoupon(true);
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: promoCode.trim(),
+          orderTotal: cart.total
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.valid) {
+        toast.error(data.error || 'Неверный промокод');
+        setAppliedCoupon(null);
+        return;
+      }
+
+      setAppliedCoupon({
+        id: data.coupon.id,
+        code: data.coupon.code,
+        discount: data.coupon.discount,
+        type: data.coupon.type,
+        discountAmount: data.discountAmount
+      });
+      
+      toast.success(`✅ ${data.message}`);
+      setPromoCode('');
+    } catch (error) {
+      console.error('Error validating coupon:', error);
+      toast.error('Ошибка проверки промокода');
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    toast.info('Промокод удалён');
+  };
   
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
@@ -329,7 +397,8 @@ export default function CheckoutPage() {
           email: formData.email,
           address: deliveryMethod === 'pickup' ? selectedStoreId : formData.address
         },
-        comment: formData.comment
+        comment: formData.comment,
+        couponId: appliedCoupon?.id // Pass coupon ID if applied
       };
 
       const createdOrder = await addOrder(order);
@@ -1186,6 +1255,62 @@ export default function CheckoutPage() {
                     <span className="font-semibold">-{getDiscount().toLocaleString('ru-RU')} ₽</span>
                   </motion.div>
                 )}
+
+                {/* Promo Code Section */}
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  {!appliedCoupon ? (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <Gift size={16} className="text-purple-600" />
+                        Промокод
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          placeholder="Введите код"
+                          className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm uppercase"
+                          onKeyDown={(e) => e.key === 'Enter' && validatePromoCode()}
+                        />
+                        <button
+                          onClick={validatePromoCode}
+                          disabled={validatingCoupon}
+                          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 text-sm font-medium whitespace-nowrap"
+                        >
+                          {validatingCoupon ? '...' : 'Применить'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-xl p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Check size={18} className="text-green-600" />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{appliedCoupon.code}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {appliedCoupon.type === 'percent' 
+                                ? `Скидка ${appliedCoupon.discount}%` 
+                                : `Скидка ${appliedCoupon.discount} ₽`}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={removeCoupon}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="Удалить промокод"
+                        >
+                          <ArrowLeft size={16} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
                 
                 <div className="flex justify-between text-2xl font-bold text-gray-900 dark:text-white pt-3 border-t border-gray-200 dark:border-gray-700">
                   <span>Итого:</span>
