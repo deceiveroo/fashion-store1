@@ -452,34 +452,34 @@ export default function CheckoutPage() {
                   className="absolute top-6 left-0 h-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"
                 />
 
-                <div className="relative flex justify-between">
+                <div className="relative flex justify-between gap-4 sm:gap-8">
                   {steps.map((step, index) => (
                     <motion.div
                       key={step.id}
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex flex-col items-center z-10"
+                      className="flex flex-col items-center z-10 flex-1 min-w-0"
                     >
                       <motion.div
                         animate={{
                           scale: step.id === currentStep ? [1, 1.1, 1] : 1,
                         }}
                         transition={{ duration: 0.5 }}
-                        className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 transition-all duration-300 ${
+                        className={`w-16 h-16 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 transition-all duration-300 ${
                           step.completed || step.id === currentStep
                             ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
                         }`}
                       >
                         {step.completed ? (
-                          <Check size={24} className="animate-bounce" />
+                          <Check size={28} className="sm:size-6 animate-bounce" />
                         ) : (
-                          <step.icon size={24} />
+                          <step.icon size={28} className="sm:size-6" />
                         )}
                       </motion.div>
                       
-                      <span className={`text-sm font-semibold transition-colors ${
+                      <span className={`text-sm font-semibold transition-colors text-center ${
                         step.completed || step.id === currentStep 
                           ? 'text-purple-600 dark:text-purple-400' 
                           : 'text-gray-500 dark:text-gray-400'
@@ -487,7 +487,7 @@ export default function CheckoutPage() {
                         {step.name}
                       </span>
                       
-                      <span className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      <span className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-center hidden sm:block">
                         {step.description}
                       </span>
                     </motion.div>
@@ -652,47 +652,47 @@ export default function CheckoutPage() {
                         return (
                           <motion.div
                             key={option.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
                             onClick={() => handleDeliverySelect(option.id as 'pickup' | 'courier' | 'express')}
-                            className={`relative p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden ${
+                            className={`relative p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden ${
                               deliveryMethod === option.id
                                 ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 shadow-lg shadow-purple-500/20'
                                 : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 bg-white dark:bg-gray-900'
                             }`}
                           >
                             {option.badge && (
-                              <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r ${option.color} text-white`}>
+                              <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r ${option.color} text-white shadow-md`}>
                                 {option.badge}
                               </div>
                             )}
                             
-                            <div className="flex items-start gap-4">
+                            <div className="flex items-start gap-5">
                               <motion.div
-                                animate={deliveryMethod === option.id ? { scale: [1, 1.1, 1] } : {}}
-                                transition={{ duration: 0.3 }}
-                                className={`p-3 rounded-xl shadow-md bg-gradient-to-br ${option.color}`}
+                                animate={deliveryMethod === option.id ? { scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] } : {}}
+                                transition={{ duration: 0.5 }}
+                                className={`p-4 rounded-xl shadow-lg bg-gradient-to-br ${option.color} flex-shrink-0`}
                               >
-                                <IconComponent size={28} className="text-white" />
+                                <IconComponent size={32} className="text-white" strokeWidth={2.5} />
                               </motion.div>
                               
-                              <div className="flex-1">
-                                <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start mb-3">
                                   <h3 className="font-bold text-lg text-gray-900 dark:text-white">{option.title}</h3>
-                                  <span className="font-bold text-lg text-purple-600 dark:text-purple-400">{option.price}</span>
+                                  <span className="font-bold text-lg text-purple-600 dark:text-purple-400 whitespace-nowrap ml-4">{option.price}</span>
                                 </div>
                                 
-                                <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{option.description}</p>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{option.description}</p>
                                 
-                                <div className="flex items-center gap-4 text-sm">
-                                  <div className="flex items-center gap-1 text-gray-500 dark:text-gray-500">
+                                <div className="flex flex-wrap items-center gap-3 text-sm">
+                                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                                     <Clock size={16} />
                                     <span>{option.time}</span>
                                   </div>
-                                  <div className="flex items-center gap-1 text-gray-500 dark:text-gray-500">
+                                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                                     <MapPin size={16} />
-                                    <span>{option.details}</span>
+                                    <span className="truncate max-w-[200px]">{option.details}</span>
                                   </div>
                                 </div>
                               </div>
@@ -701,10 +701,10 @@ export default function CheckoutPage() {
                                 <motion.div
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
-                                  className="flex-shrink-0"
+                                  className="flex-shrink-0 ml-2"
                                 >
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
-                                    <Check size={18} className="text-white" />
+                                  <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
+                                    <Check size={20} className="text-white" strokeWidth={3} />
                                   </div>
                                 </motion.div>
                               )}
