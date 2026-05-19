@@ -81,26 +81,18 @@ export default function GamificationProfileWidget() {
 
       <div className="relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="p-3 bg-white/20 backdrop-blur-sm rounded-xl"
-            >
-              <Trophy className="w-6 h-6 text-white" />
-            </motion.div>
-            <div>
-              <h3 className="text-white text-xl font-black">Уровень {userLevel.level}</h3>
-              <p className="text-white/80 text-sm font-medium">{userLevel.title}</p>
-            </div>
-          </div>
-          <Link
-            href="/gamification"
-            className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white text-sm font-medium transition-all"
+        <div className="flex items-center gap-3 mb-4">
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="p-3 bg-white/20 backdrop-blur-sm rounded-xl"
           >
-            Подробнее
-          </Link>
+            <Trophy className="w-6 h-6 text-white" />
+          </motion.div>
+          <div>
+            <h3 className="text-white text-xl font-black">Уровень {userLevel.level}</h3>
+            <p className="text-white/80 text-sm font-medium">{userLevel.title}</p>
+          </div>
         </div>
 
         {/* XP Progress */}
