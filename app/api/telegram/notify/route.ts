@@ -19,10 +19,11 @@ async function sendTelegramMessage(chatId: string, text: string, replyMarkup?: o
   return res.json();
 }
 
-// Called when user clicks "Позвать оператора"
+// Called when user clicks "Позвать оператора" or creates order support request
 export async function POST(request: NextRequest) {
   try {
-    const { sessionId, userMessage, userName, userEmail } = await request.json();
+    const body = await request.json();
+    const { sessionId, userMessage, userName, userEmail, title, message, priority, chatLink, orderId, orderNumber } = body;
 
     if (!BOT_TOKEN || !ADMIN_CHAT_ID) {
       return NextResponse.json({ error: 'Telegram not configured' }, { status: 500 });
@@ -30,6 +31,33 @@ export async function POST(request: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fashion-store1-seven.vercel.app';
 
+    // New format for order support
+    if (title && message) {
+      const isHighPriority = priority === 'high';
+      const emoji = isHighPriority ? '🚨' : '🔔';
+      const priorityText = isHighPriority ? '<b>СРОЧНО!</b>' : '';
+      
+      const text = [
+        `${emoji} <b>${title}</b> ${priorityText}`,
+        '',
+        message,
+        '',
+        chatLink ? `🔗 <a href="${chatLink}">Открыть чат</a>` : '',
+        orderId ? `📦 Заказ: #${orderNumber || orderId.slice(0, 8).toUpperCase()}` : '',
+      ].filter(Boolean).join('\n');
+
+      const keyboard = {
+        inline_keyboard: [[
+          { text: '✅ Ответить', url: chatLink || `${appUrl}/admin/support-chats` },
+          { text: '📋 Все чаты', url: `${appUrl}/admin/support-chats` },
+        ]],
+      };
+
+      await sendTelegramMessage(ADMIN_CHAT_ID, text, keyboard);
+      return NextResponse.json({ success: true });
+    }
+
+    // Legacy format
     const text = [
       '🔔 <b>Новый запрос оператора!</b>',
       '',

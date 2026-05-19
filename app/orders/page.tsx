@@ -14,6 +14,7 @@ import DownloadButton from '@/components/receipts/DownloadButton';
 import OrderReceipt from '@/components/receipts/OrderReceipt';
 import OrderDownloadButton from '@/components/receipts/OrderDownloadButton';
 import OrderTrackingModal from '@/components/orders/OrderTrackingModal';
+import OrderSupportModal from '@/components/orders/OrderSupportModal';
 import { receiptService, Receipt } from '@/lib/receipt-client';
 
 export interface OrderItem {
@@ -47,6 +48,7 @@ export default function OrdersPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [showReceiptModal, setShowReceiptModal] = useState<string | null>(null);
   const [showTrackingModal, setShowTrackingModal] = useState<string | null>(null);
+  const [showSupportModal, setShowSupportModal] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrders();
@@ -364,7 +366,10 @@ export default function OrdersPage() {
                               <Download size={18} />
                               Скачать чек
                             </button>
-                            <button className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-xl font-semibold hover:shadow-md transition-all">
+                            <button 
+                              onClick={() => setShowSupportModal(order.id)}
+                              className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-xl font-semibold hover:shadow-md transition-all"
+                            >
                               <MessageCircle size={18} />
                               Поддержка
                             </button>
@@ -499,6 +504,15 @@ export default function OrdersPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Support Modal */}
+      {showSupportModal && (
+        <OrderSupportModal
+          orderId={showSupportModal}
+          orderNumber={showSupportModal.slice(0, 8).toUpperCase()}
+          onClose={() => setShowSupportModal(null)}
+        />
+      )}
     </div>
   );
 }
