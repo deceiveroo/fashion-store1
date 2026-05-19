@@ -366,6 +366,43 @@ export const userCouponUsage = pgTable('user_coupon_usage', {
   };
 });
 
+// User Notifications table (системные уведомления от админа)
+export const systemNotifications = pgTable('system_notifications', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  type: text('type', { enum: ['info', 'warning', 'success', 'error'] }).default('info'),
+  targetAudience: text('target_audience', { enum: ['all', 'registered', 'admins', 'specific'] }).default('all'),
+  targetUserIds: text('target_user_ids').array(), // для specific audience
+  isActive: boolean('is_active').default(true),
+  expiresAt: timestamp('expires_at', { mode: 'date' }),
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    activeIdx: index('system_notifications_active_idx').on(table.isActive),
+    createdAtIdx: index('system_notifications_created_at_idx').on(table.createdAt),
+  };
+});
+
+// User Notification Reads table (кто прочитал уведомление)
+export const userNotificationReads = pgTable('user_notification_reads', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  notificationId: text('notification_id')
+    .notNull()
+    .references(() => systemNotifications.id, { onDelete: 'cascade' }),
+  readAt: timestamp('read_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: index('user_notification_reads_user_idx').on(table.userId),
+    notificationIdx: index('user_notification_reads_notification_idx').on(table.notificationId),
+    uniqueRead: uniqueIndex('user_notification_reads_unique').on(table.userId, table.notificationId),
+  };
+});
+
 // Installment Plans table (рассрочка)
 export const installmentPlans = pgTable('installment_plans', {
   id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),

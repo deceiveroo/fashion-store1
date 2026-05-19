@@ -8,6 +8,7 @@ import { ShoppingBag, User, Menu, X, Search as SearchIcon, Plus, LogOut, Chevron
 import SearchComponent from './SearchNew';
 import Cart from './Cart';
 import ThemeToggle from './ThemeToggle';
+import NotificationsBell from './NotificationsBell';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -142,6 +143,9 @@ export default function Header() {
 
               {/* Theme Toggle */}
               <ThemeToggle />
+
+              {/* Notifications Bell */}
+              {user && <NotificationsBell />}
 
               {/* Cart Button */}
               <motion.button
