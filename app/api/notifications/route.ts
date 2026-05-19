@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { systemNotifications, userNotificationReads } from '@/lib/schema';
-import { eq, desc, or, and, isNull, gt, inArray } from 'drizzle-orm';
+import { systemNotifications, userNotificationReads, userNotificationDismissals } from '@/lib/schema';
+import { eq, desc, or, and, isNull, gt, inArray, notInArray } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
 // GET /api/notifications - Get user's notifications
@@ -74,11 +74,21 @@ export async function GET(request: NextRequest) {
 
     const readIds = new Set(readStatuses.map(r => r.notificationId));
 
-    // Mark notifications with read status
-    const notificationsWithStatus = notifications.map(n => ({
-      ...n,
-      isRead: readIds.has(n.id),
-    }));
+    // Get dismissed notifications for this user
+    const dismissedStatuses = await db
+      .select({ notificationId: userNotificationDismissals.notificationId })
+      .from(userNotificationDismissals)
+      .where(eq(userNotificationDismissals.userId, userId));
+
+    const dismissedIds = new Set(dismissedStatuses.map(r => r.notificationId));
+
+    // Filter out dismissed notifications and mark with read status
+    const notificationsWithStatus = notifications
+      .filter(n => !dismissedIds.has(n.id)) // Исключаем скрытые уведомления
+      .map(n => ({
+        ...n,
+        isRead: readIds.has(n.id),
+      }));
 
     // Count unread
     const unreadCount = notificationsWithStatus.filter(n => !n.isRead).length;

@@ -407,6 +407,24 @@ export const userNotificationReads = pgTable('user_notification_reads', {
   };
 });
 
+// User Notification Dismissals table (уведомления скрытые пользователем навсегда)
+export const userNotificationDismissals = pgTable('user_notification_dismissals', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  notificationId: text('notification_id')
+    .notNull()
+    .references(() => systemNotifications.id, { onDelete: 'cascade' }),
+  dismissedAt: timestamp('dismissed_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: index('user_notification_dismissals_user_idx').on(table.userId),
+    notificationIdx: index('user_notification_dismissals_notification_idx').on(table.notificationId),
+    uniqueDismissal: uniqueIndex('user_notification_dismissals_unique').on(table.userId, table.notificationId),
+  };
+});
+
 // Installment Plans table (рассрочка)
 export const installmentPlans = pgTable('installment_plans', {
   id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),

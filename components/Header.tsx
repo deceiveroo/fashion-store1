@@ -269,53 +269,33 @@ export default function Header() {
                     >
                       {(user.avatar || user.image) ? (
                         <div className="relative">
-                          {/* Animated Ring for Unread Notifications */}
+                          {/* Bouncing Avatar Animation */}
+                          <div className={unreadCount > 0 ? 'animate-bounce' : ''} style={{ animationDuration: '1s', animationIterationCount: 'infinite' }}>
+                            <Image 
+                              src={user.avatar || user.image} 
+                              alt="Avatar" 
+                              width={32}
+                              height={32}
+                              className="rounded-full object-cover"
+                              priority
+                            />
+                          </div>
+                          {/* Small notification dot */}
                           {unreadCount > 0 && (
-                            <>
-                              {/* Outer rotating ring */}
-                              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 opacity-75 animate-spin" style={{ animationDuration: '3s' }} />
-                              {/* Inner pulsing ring */}
-                              <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 opacity-50 animate-pulse" />
-                            </>
-                          )}
-                          <Image 
-                            src={user.avatar || user.image} 
-                            alt="Avatar" 
-                            width={32}
-                            height={32}
-                            className={`rounded-full object-cover relative z-10 transition-all duration-300 ${
-                              unreadCount > 0 ? 'ring-2 ring-purple-500/50 scale-105' : ''
-                            }`}
-                            priority
-                          />
-                          {/* Small badge for count */}
-                          {unreadCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] rounded-full font-bold flex items-center justify-center z-20 animate-bounce shadow-lg">
-                              {unreadCount > 9 ? '9+' : unreadCount}
-                            </span>
+                            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full border-2 border-white dark:border-gray-900 shadow-md"></span>
                           )}
                         </div>
                       ) : (
                         <div className="relative">
-                          {/* Animated Ring for Unread Notifications */}
-                          {unreadCount > 0 && (
-                            <>
-                              {/* Outer rotating ring */}
-                              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 opacity-75 animate-spin" style={{ animationDuration: '3s' }} />
-                              {/* Inner pulsing ring */}
-                              <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 opacity-50 animate-pulse" />
-                            </>
-                          )}
-                          <div className={`w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm relative z-10 transition-all duration-300 ${
-                            unreadCount > 0 ? 'ring-2 ring-purple-500/50 scale-105' : ''
-                          }`}>
+                          {/* Bouncing Avatar Animation */}
+                          <div className={`w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ${
+                            unreadCount > 0 ? 'animate-bounce' : ''
+                          }`} style={unreadCount > 0 ? { animationDuration: '1s', animationIterationCount: 'infinite' } : {}}>
                             {user?.name?.[0] || user?.email?.[0] || 'U'}
                           </div>
-                          {/* Small badge for count */}
+                          {/* Small notification dot */}
                           {unreadCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] rounded-full font-bold flex items-center justify-center z-20 animate-bounce shadow-lg">
-                              {unreadCount > 9 ? '9+' : unreadCount}
-                            </span>
+                            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full border-2 border-white dark:border-gray-900 shadow-md"></span>
                           )}
                         </div>
                       )}
