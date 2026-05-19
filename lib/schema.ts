@@ -206,6 +206,7 @@ export const orderItems = pgTable('order_items', {
     .references(() => products.id, { onDelete: 'restrict' }),
   variantId: text('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
   name: text('name').notNull(), // Product name at time of order
+  productName: text('product_name').notNull(), // Duplicate of name for compatibility
   price: decimal('price', { precision: 10, scale: 2 }).notNull(), // Price at time of order
   quantity: integer('quantity').notNull().default(1),
   image: text('image'), // Product image at time of order

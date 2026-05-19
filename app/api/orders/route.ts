@@ -341,6 +341,7 @@ export async function POST(request: NextRequest) {
             productId: item.id,
             variantId: item.variantId || null,
             name: item.name,
+            productName: item.name, // Duplicate for database compatibility
             price: item.price.toString(), // Convert to string to match decimal field
             quantity: item.quantity,
             image: item.image || '',
