@@ -79,17 +79,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (session?.user) {
-      setUser({
-        id: session.user.id || '',
-        email: session.user.email || '',
-        name: session.user.name || '',
-        firstName: session.user.name?.split(' ')[0] || '',
-        lastName: session.user.name?.split(' ').slice(1).join(' ') || '',
-        phone: '',
-        image: session.user.image || undefined,
-        role: session.user.role || 'customer',
-        orders: [],
-      });
+      // Загружаем полные данные пользователя из API
+      fetch('/api/profile', {
+        method: 'GET',
+        credentials: 'include'
+      })
+        .then(res => res.json())
+        .then(profileData => {
+          setUser({
+            id: session.user.id || '',
+            email: session.user.email || '',
+            name: session.user.name || '',
+            firstName: profileData.firstName || session.user.name?.split(' ')[0] || '',
+            lastName: profileData.lastName || session.user.name?.split(' ').slice(1).join(' ') || '',
+            phone: profileData.phone || '',
+            address: profileData.address || '',
+            image: session.user.image || undefined,
+            avatar: profileData.avatar,
+            role: session.user.role || 'customer',
+            orders: [],
+          });
+        })
+        .catch(err => {
+          console.error('Error loading user profile:', err);
+          // Fallback to session data only
+          setUser({
+            id: session.user.id || '',
+            email: session.user.email || '',
+            name: session.user.name || '',
+            firstName: session.user.name?.split(' ')[0] || '',
+            lastName: session.user.name?.split(' ').slice(1).join(' ') || '',
+            phone: '',
+            image: session.user.image || undefined,
+            role: session.user.role || 'customer',
+            orders: [],
+          });
+        });
     } else {
       setUser(null);
     }

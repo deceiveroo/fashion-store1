@@ -73,13 +73,13 @@ export default function CheckoutPage() {
     if (user) {
       setFormData(prev => ({
         ...prev,
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        phone: user.phone || '',
-        email: user.email || ''
+        firstName: user.firstName || prev.firstName || '',
+        lastName: user.lastName || prev.lastName || '',
+        phone: user.phone || prev.phone || '',
+        email: user.email || prev.email || ''
       }));
     }
-  }, [user]);
+  }, [user?.id, user?.firstName, user?.lastName, user?.phone, user?.email]);
 
   // Загружаем список магазинов
   useEffect(() => {
