@@ -123,14 +123,14 @@ export default function AdminOrdersPage() {
         {/* Enhanced Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <ShoppingBag className="h-7 w-7 text-violet-400" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <ShoppingBag className="h-7 w-7 text-violet-600 dark:text-violet-400" />
               Заказы
             </h1>
-            <p className="text-sm text-white/40 mt-1">Управление заказами магазина</p>
+            <p className="text-sm text-gray-500 dark:text-white/40 mt-1">Управление заказами магазина</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => loadOrders(page)} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+            <button onClick={() => loadOrders(page)} className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2.5 text-sm text-gray-700 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
               <RefreshCw className="h-4 w-4" />
               Обновить
             </button>
@@ -144,22 +144,22 @@ export default function AdminOrdersPage() {
         {/* Enhanced Stats Cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { label: 'Всего заказов', value: stats.total, icon: ShoppingBag, color: 'bg-violet-500/20 text-violet-400', trend: '+12%' },
-            { label: 'Выручка', value: `${stats.revenue.toLocaleString('ru-RU')} ₽`, icon: DollarSign, color: 'bg-emerald-500/20 text-emerald-400', trend: '+8.5%' },
-            { label: 'Ожидают', value: stats.pending, icon: Clock, color: 'bg-amber-500/20 text-amber-400' },
-            { label: 'Доставлено', value: stats.delivered, icon: CheckCircle, color: 'bg-blue-500/20 text-blue-400', trend: '+15%' },
+            { label: 'Всего заказов', value: stats.total, icon: ShoppingBag, color: 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400', trend: '+12%' },
+            { label: 'Выручка', value: `${stats.revenue.toLocaleString('ru-RU')} ₽`, icon: DollarSign, color: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400', trend: '+8.5%' },
+            { label: 'Ожидают', value: stats.pending, icon: Clock, color: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' },
+            { label: 'Доставлено', value: stats.delivered, icon: CheckCircle, color: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400', trend: '+15%' },
           ].map(({ label, value, icon: Icon, color, trend }) => (
-            <div key={label} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-5 hover:bg-white/[0.08] transition-all backdrop-blur-sm">
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 hover:bg-gray-50 dark:hover:bg-white/[0.08] transition-all backdrop-blur-sm">
               {trend && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-400" />
-                  <span className="text-xs font-medium text-emerald-400">{trend}</span>
+                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 px-2 py-1">
+                  <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{trend}</span>
                 </div>
               )}
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-white/50 uppercase tracking-wider">{label}</p>
-                  <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">{label}</p>
+                  <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
                 </div>
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
                   <Icon className="h-6 w-6" />
@@ -172,33 +172,33 @@ export default function AdminOrdersPage() {
         {/* Filters */}
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-white/20" />
             <input
               type="text" placeholder="Поиск по ID, email, имени..." value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-white placeholder-white/20 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+              className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 pl-9 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
             />
           </div>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
+            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-white/20" />
             <select
               value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-              className="appearance-none rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-8 text-sm text-white focus:border-violet-500/50 focus:outline-none"
+              className="appearance-none rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 pl-9 pr-8 text-sm text-gray-900 dark:text-white focus:border-violet-500/50 focus:outline-none"
             >
-              <option value="all" className="bg-[#0f0f1a]">Все статусы</option>
-              {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k} className="bg-[#0f0f1a]">{v.label}</option>)}
+              <option value="all" className="bg-white dark:bg-[#0f0f1a]">Все статусы</option>
+              {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k} className="bg-white dark:bg-[#0f0f1a]">{v.label}</option>)}
             </select>
           </div>
         </div>
 
         {/* Table */}
-        <div className="rounded-2xl border border-white/5 bg-white/[0.03] overflow-hidden">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.03] overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center h-48">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-white/20">
+            <div className="flex flex-col items-center justify-center h-48 text-gray-400 dark:text-white/20">
               <Package className="h-10 w-10 mb-2 opacity-40" />
               <p className="text-sm">Заказов не найдено</p>
             </div>
@@ -206,9 +206,9 @@ export default function AdminOrdersPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/5">
+                  <tr className="border-b border-gray-200 dark:border-white/5">
                     {['Заказ','Клиент','Дата','Статус','Сумма',''].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider last:text-center">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-gray-400 dark:text-white/30 uppercase tracking-wider last:text-center">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -221,23 +221,23 @@ export default function AdminOrdersPage() {
                     const email = order.recipient?.email || order.userEmail || '—';
                     return (
                       <>
-                        <tr key={order.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                        <tr key={order.id} className="border-b border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10">
-                                <ShoppingBag className="h-4 w-4 text-violet-400" />
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/10">
+                                <ShoppingBag className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                               </div>
                               <div>
-                                <p className="font-semibold text-white text-xs">#{order.id.slice(0,8).toUpperCase()}</p>
-                                <p className="text-[10px] text-white/30">{order.items?.length || 0} товар(ов)</p>
+                                <p className="font-semibold text-gray-900 dark:text-white text-xs">#{order.id.slice(0,8).toUpperCase()}</p>
+                                <p className="text-[10px] text-gray-400 dark:text-white/30">{order.items?.length || 0} товар(ов)</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <p className="text-xs font-medium text-white">{name}</p>
-                            <p className="text-[10px] text-white/30 truncate max-w-[160px]">{email}</p>
+                            <p className="text-xs font-medium text-gray-900 dark:text-white">{name}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-white/30 truncate max-w-[160px]">{email}</p>
                           </td>
-                          <td className="px-4 py-3 text-xs text-white/40 whitespace-nowrap">
+                          <td className="px-4 py-3 text-xs text-gray-500 dark:text-white/40 whitespace-nowrap">
                             {new Date(order.createdAt).toLocaleDateString('ru-RU', { day:'numeric', month:'short' })}
                           </td>
                           <td className="px-4 py-3">
@@ -247,10 +247,10 @@ export default function AdminOrdersPage() {
                                 {cfg.label}
                                 <ChevronDown className="h-3 w-3 opacity-60" />
                               </span>
-                              <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block w-36 rounded-xl border border-white/10 bg-[#0f0f1a] shadow-xl py-1">
+                              <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block w-36 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f0f1a] shadow-xl py-1">
                                 {Object.entries(STATUS).map(([k, v]) => (
                                   <button key={k} onClick={() => updateStatus(order.id, k)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/5 transition-colors ${order.status === k ? 'text-white font-semibold' : 'text-white/50'}`}>
+                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${order.status === k ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-500 dark:text-white/50'}`}>
                                     <span className={`h-1.5 w-1.5 rounded-full ${v.dot}`} />
                                     {v.label}
                                   </button>
@@ -259,45 +259,45 @@ export default function AdminOrdersPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <span className="text-xs font-bold text-white">{Number(order.total).toLocaleString('ru-RU')} ₽</span>
+                            <span className="text-xs font-bold text-gray-900 dark:text-white">{Number(order.total).toLocaleString('ru-RU')} ₽</span>
                           </td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-1">
                               <button onClick={() => setExpandedId(isExp ? null : order.id)}
-                                className="rounded-lg p-1.5 text-white/30 hover:text-violet-400 hover:bg-violet-500/10 transition-all">
+                                className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-500/10 transition-all">
                                 <Eye className="h-3.5 w-3.5" />
                               </button>
                               <button onClick={() => setEditingOrder({ ...order })}
-                                className="rounded-lg p-1.5 text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all">
+                                className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/10 transition-all">
                                 <Edit2 className="h-3.5 w-3.5" />
                               </button>
                               <button onClick={() => deleteOrder(order.id)}
-                                className="rounded-lg p-1.5 text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                                className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/10 transition-all">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
                           </td>
                         </tr>
                         {isExp && (
-                          <tr key={`${order.id}-exp`} className="border-b border-white/5 bg-white/[0.01]">
+                          <tr key={`${order.id}-exp`} className="border-b border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.01]">
                             <td colSpan={6} className="px-4 py-4">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                  <p className="text-[10px] font-semibold text-white/30 uppercase mb-2">Получатель</p>
-                                  <div className="space-y-1 text-xs text-white/60">
+                                  <p className="text-[10px] font-semibold text-gray-400 dark:text-white/30 uppercase mb-2">Получатель</p>
+                                  <div className="space-y-1 text-xs text-gray-700 dark:text-white/60">
                                     <p>{name}</p><p>{email}</p>
                                     {order.recipient?.phone && <p>{order.recipient.phone}</p>}
-                                    {order.recipient?.address && <p className="text-white/30">{order.recipient.address}</p>}
+                                    {order.recipient?.address && <p className="text-gray-400 dark:text-white/30">{order.recipient.address}</p>}
                                   </div>
                                 </div>
                                 {order.items?.length ? (
                                   <div>
-                                    <p className="text-[10px] font-semibold text-white/30 uppercase mb-2">Товары</p>
+                                    <p className="text-[10px] font-semibold text-gray-400 dark:text-white/30 uppercase mb-2">Товары</p>
                                     <div className="space-y-1">
                                       {order.items.map(item => (
                                         <div key={item.id} className="flex justify-between text-xs">
-                                          <span className="text-white/60">{item.name} × {item.quantity}</span>
-                                          <span className="text-white/80 font-medium">{(item.price * item.quantity).toLocaleString('ru-RU')} ₽</span>
+                                          <span className="text-gray-700 dark:text-white/60">{item.name} × {item.quantity}</span>
+                                          <span className="text-gray-900 dark:text-white/80 font-medium">{(item.price * item.quantity).toLocaleString('ru-RU')} ₽</span>
                                         </div>
                                       ))}
                                     </div>
