@@ -108,29 +108,73 @@ export default function ProfilePage() {
 
   // Phone mask formatter
   const formatPhone = (value: string) => {
+    // Удаляем все нецифровые символы
     const digits = value.replace(/\D/g, '');
+    
+    // Если нет цифр, возвращаем пустую строку
     if (!digits) return '';
     
+    // Первая цифра должна быть 7 или 8, заменяем на 7
+    let cleanDigits = digits;
+    if (cleanDigits[0] === '8') {
+      cleanDigits = '7' + cleanDigits.substring(1);
+    }
+    if (cleanDigits[0] !== '7') {
+      cleanDigits = '7' + cleanDigits;
+    }
+    
+    // Ограничиваем до 11 цифр
+    cleanDigits = cleanDigits.substring(0, 11);
+    
+    // Форматируем
     let formatted = '+7';
-    if (digits.length > 1) {
-      formatted += ' (' + digits.substring(1, 4);
+    if (cleanDigits.length > 1) {
+      formatted += ' (' + cleanDigits.substring(1, 4);
     }
-    if (digits.length >= 4) {
-      formatted += ') ' + digits.substring(4, 7);
+    if (cleanDigits.length >= 4) {
+      formatted += ') ' + cleanDigits.substring(4, 7);
     }
-    if (digits.length >= 7) {
-      formatted += '-' + digits.substring(7, 9);
+    if (cleanDigits.length >= 7) {
+      formatted += '-' + cleanDigits.substring(7, 9);
     }
-    if (digits.length >= 9) {
-      formatted += '-' + digits.substring(9, 11);
+    if (cleanDigits.length >= 9) {
+      formatted += '-' + cleanDigits.substring(9, 11);
     }
     
     return formatted;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhone(e.target.value);
-    setFormData({ ...formData, phone: formatted });
+    const input = e.target;
+    const oldValue = formData.phone;
+    const newValue = formatPhone(input.value);
+    
+    // Вычисляем позицию курсора
+    const cursorPos = input.selectionStart || 0;
+    const oldLength = oldValue.length;
+    const newLength = newValue.length;
+    
+    setFormData({ ...formData, phone: newValue });
+    
+    // Восстанавливаем позицию курсора с учётом изменений
+    setTimeout(() => {
+      if (input) {
+        // Если удаляем символы, корректируем позицию
+        let newCursorPos = cursorPos;
+        
+        // Если длина уменьшилась (удаление)
+        if (newLength < oldLength) {
+          // Проверяем, не попали ли мы на спецсимвол
+          const charAtCursor = newValue[newCursorPos];
+          if (charAtCursor && [' ', '(', ')', '-'].includes(charAtCursor)) {
+            // Перескакиваем через спецсимвол назад
+            newCursorPos = Math.max(0, newCursorPos - 1);
+          }
+        }
+        
+        input.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
   };
 
   useEffect(() => {
