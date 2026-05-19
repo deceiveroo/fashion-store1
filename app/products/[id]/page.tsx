@@ -71,7 +71,11 @@ async function getProduct(id: string) {
           mediaType: ((item.images as any)?.mediaType as 'image' | 'video') || 'image',
           duration: (item.images as any)?.duration || undefined,
           thumbnailUrl: (item.images as any)?.thumbnailUrl || undefined,
-        })),
+        }))
+        // Удаляем дубликаты по ID изображения
+        .filter((img, index, self) => 
+          img.id && self.findIndex(i => i.id === img.id) === index
+        ),
       categories: categoryNames.length > 0 ? categoryNames : ['Без категории'],
       mainImage: productData.find(item => item.images?.isMain)?.images?.url || 
                  productData[0]?.images?.url || 

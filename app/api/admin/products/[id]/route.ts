@@ -260,24 +260,43 @@ export async function PUT(
 
     await db.delete(productImages).where(eq(productImages.productId, id));
 
-    const imageUrls: string[] = Array.isArray(images)
-      ? images.map((img: string | { url: string }) => (typeof img === 'string' ? img : img.url)).filter(Boolean)
+    // Обрабатываем изображения/видео - могут быть строки или объекты
+    const mediaItems: Array<{
+      url: string;
+      mediaType?: 'image' | 'video';
+      duration?: number;
+      thumbnailUrl?: string;
+    }> = Array.isArray(images)
+      ? images.map((img: string | { url: string; mediaType?: string; duration?: number; thumbnailUrl?: string }) => {
+          if (typeof img === 'string') {
+            return { url: img, mediaType: 'image' as const };
+          }
+          return {
+            url: img.url,
+            mediaType: (img.mediaType as 'image' | 'video') || 'image',
+            duration: img.duration,
+            thumbnailUrl: img.thumbnailUrl,
+          };
+        }).filter(item => item.url)
       : [];
 
-    if (imageUrls.length > 0) {
-      console.log('[admin/products PUT] Saving images:', imageUrls);
+    if (mediaItems.length > 0) {
+      console.log('[admin/products PUT] Saving media:', mediaItems);
       await db.insert(productImages).values(
-        imageUrls.map((url: string, index: number) => ({
-          id: `${id}-img-${index}-${crypto.randomUUID().slice(0, 8)}`,
+        mediaItems.map((item, index) => ({
+          id: `${id}-media-${index}-${crypto.randomUUID().slice(0, 8)}`,
           productId: id,
-          url,
+          url: item.url,
           isMain: index === 0,
           order: index,
+          mediaType: item.mediaType || 'image',
+          duration: item.duration || null,
+          thumbnailUrl: item.thumbnailUrl || null,
         }))
       );
-      console.log('[admin/products PUT] Images saved successfully');
+      console.log('[admin/products PUT] Media saved successfully');
     } else {
-      console.log('[admin/products PUT] No images to save');
+      console.log('[admin/products PUT] No media to save');
     }
 
     return NextResponse.json({ success: true, message: 'Товар сохранён' });

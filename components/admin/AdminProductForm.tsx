@@ -180,7 +180,7 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
       ...form,
       price: parseFloat(form.price),
       categories: selectedCategories,
-      images: media.length > 0 ? media.map(m => m.url) : ['/placeholder-image.jpg'],
+      images: media.length > 0 ? media : [{ url: '/placeholder-image.jpg', type: 'image' }],
     };
     console.log('[AdminProductForm] Sending payload:', JSON.stringify(data, null, 2));
     return data;
