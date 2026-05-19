@@ -161,8 +161,12 @@ export default function ProfilePage() {
       if (input && document.activeElement === input) {
         let newCursorPos = cursorPos;
         
+        // Если длина увеличилась (ввод), ставим курсор в конец
+        if (newLength > oldLength) {
+          newCursorPos = newLength;
+        }
         // Если длина уменьшилась (удаление)
-        if (newLength < oldLength && newLength > 0) {
+        else if (newLength < oldLength && newLength > 0) {
           // Проверяем символ на текущей позиции курсора
           const charAtCursor = newValue[newCursorPos - 1];
           
