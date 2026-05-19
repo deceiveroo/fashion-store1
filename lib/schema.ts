@@ -6,6 +6,8 @@ export const rolesEnum = ['admin', 'manager', 'support', 'customer'] as const;
 export const orderStatusEnum = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'] as const;
 export const paymentStatusEnum = ['pending', 'paid', 'failed', 'refunded'] as const;
 export const couponTypeEnum = ['percentage', 'fixed', 'free_shipping'] as const;
+export const installmentStatusEnum = ['pending', 'active', 'completed', 'cancelled', 'overdue'] as const;
+export const installmentPaymentStatusEnum = ['pending', 'paid', 'overdue', 'cancelled'] as const;
 
 // Users table
 export const users = pgTable('users', {
@@ -341,6 +343,61 @@ export const coupons = pgTable('coupons', {
     codeIdx: uniqueIndex('coupons_code_idx').on(table.code),
     activeIdx: index('coupons_active_idx').on(table.active),
     expiresIdx: index('coupons_expires_idx').on(table.expiresAt),
+  };  
+});
+
+// Installment Plans table (рассрочка)
+export const installmentPlans = pgTable('installment_plans', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  orderId: text('order_id')
+    .notNull()
+    .references(() => orders.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  totalAmount: decimal('total_amount', { precision: 12, scale: 2 }).notNull(), // Общая сумма заказа
+  downPayment: decimal('down_payment', { precision: 12, scale: 2 }).default('0'), // Первоначальный взнос
+  remainingAmount: decimal('remaining_amount', { precision: 12, scale: 2 }).notNull(), // Остаток для рассрочки
+  months: integer('months').notNull(), // Срок в месяцах (3, 6, 12)
+  monthlyPayment: decimal('monthly_payment', { precision: 10, scale: 2 }).notNull(), // Ежемесячный платеж
+  interestRate: decimal('interest_rate', { precision: 5, scale: 2 }).default('0'), // Процентная ставка (%)
+  totalInterest: decimal('total_interest', { precision: 10, scale: 2 }).default('0'), // Общая переплата
+  status: text('status', { enum: installmentStatusEnum }).default('pending').notNull(),
+  startDate: timestamp('start_date', { mode: 'date' }).notNull(),
+  endDate: timestamp('end_date', { mode: 'date' }).notNull(),
+  nextPaymentDate: timestamp('next_payment_date', { mode: 'date' }), // Дата следующего платежа
+  paidAmount: decimal('paid_amount', { precision: 12, scale: 2 }).default('0'), // Уже выплачено
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: index('installment_plans_user_idx').on(table.userId),
+    orderIdIdx: index('installment_plans_order_idx').on(table.orderId),
+    statusIdx: index('installment_plans_status_idx').on(table.status),
+  };
+});
+
+// Installment Payments table (платежи по рассрочке)
+export const installmentPayments = pgTable('installment_payments', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  planId: text('plan_id')
+    .notNull()
+    .references(() => installmentPlans.id, { onDelete: 'cascade' }),
+  paymentNumber: integer('payment_number').notNull(), // Номер платежа (1, 2, 3...)
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(), // Сумма платежа
+  dueDate: timestamp('due_date', { mode: 'date' }).notNull(), // Дата оплаты
+  paidDate: timestamp('paid_date', { mode: 'date' }), // Фактическая дата оплаты
+  status: text('status', { enum: installmentPaymentStatusEnum }).default('pending').notNull(),
+  paymentMethod: text('payment_method'), // Способ оплаты
+  transactionId: text('transaction_id'), // ID транзакции
+  notes: text('notes'), // Заметки
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    planIdIdx: index('installment_payments_plan_idx').on(table.planId),
+    dueDateIdx: index('installment_payments_due_date_idx').on(table.dueDate),
+    statusIdx: index('installment_payments_status_idx').on(table.status),
   };
 });
 
@@ -503,6 +560,17 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   order: one(orders, { fields: [orderItems.orderId], references: [orders.id] }),
   product: one(products, { fields: [orderItems.productId], references: [products.id] }),
   variant: one(productVariants, { fields: [orderItems.variantId], references: [productVariants.id] }),
+}));
+
+// Installment relations
+export const installmentPlansRelations = relations(installmentPlans, ({ one, many }) => ({
+  order: one(orders, { fields: [installmentPlans.orderId], references: [orders.id] }),
+  user: one(users, { fields: [installmentPlans.userId], references: [users.id] }),
+  payments: many(installmentPayments),
+}));
+
+export const installmentPaymentsRelations = relations(installmentPayments, ({ one }) => ({
+  plan: one(installmentPlans, { fields: [installmentPayments.planId], references: [installmentPlans.id] }),
 }));
 
 export const cartItemsRelations = relations(cartItems, ({ one }) => ({
