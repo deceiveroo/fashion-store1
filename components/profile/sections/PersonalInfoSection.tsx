@@ -1,0 +1,155 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { Edit3, Mail, Phone, MapPin, Loader } from 'lucide-react';
+import { ProfileFormData } from '@/app/profile/hooks/useProfileData';
+import { handlePhoneChangeWithCursor } from '@/app/profile/utils/formatPhone';
+
+interface PersonalInfoSectionProps {
+  formData: ProfileFormData;
+  setFormData: (data: ProfileFormData) => void;
+  isEditing: boolean;
+  setIsEditing: (editing: boolean) => void;
+  isSaving: boolean;
+  handleSave: () => Promise<void>;
+  loadProfile: () => Promise<void>;
+  handlePhoneChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+export default function PersonalInfoSection({
+  formData,
+  setFormData,
+  isEditing,
+  setIsEditing,
+  isSaving,
+  handleSave,
+  loadProfile,
+}: PersonalInfoSectionProps) {
+  // Handle phone change with cursor management
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handlePhoneChangeWithCursor(e, formData.phone, (value: string) => {
+      setFormData({ ...formData, phone: value });
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end mb-4">
+        {!isEditing ? (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+          >
+            <Edit3 size={16} />
+            Редактировать
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* First Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Имя</label>
+          {isEditing ? (
+            <input
+              type="text"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          ) : (
+            <p className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-gray-900 dark:text-white">{formData.firstName || '—'}</p>
+          )}
+        </div>
+
+        {/* Last Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Фамилия</label>
+          {isEditing ? (
+            <input
+              type="text"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          ) : (
+            <p className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-gray-900 dark:text-white">{formData.lastName || '—'}</p>
+          )}
+        </div>
+
+        {/* Email */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+          <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+            <Mail size={16} className="text-gray-500" />
+            <span className="text-gray-900 dark:text-white">{formData.email}</span>
+          </div>
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Телефон</label>
+          {isEditing ? (
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={handlePhoneChange}
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="+7 (___) ___-__-__"
+            />
+          ) : (
+            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+              <Phone size={16} className="text-gray-500" />
+              <span className="text-gray-900 dark:text-white">{formData.phone || 'Не указан'}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Address */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Адрес</label>
+        {isEditing ? (
+          <input
+            type="text"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="Город, улица, дом, квартира"
+          />
+        ) : (
+          <div className="flex items-start gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+            <MapPin size={16} className="text-gray-500 mt-1" />
+            <span className="text-gray-900 dark:text-white">{formData.address || 'Адрес не указан'}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Save/Cancel Buttons */}
+      {isEditing && (
+        <div className="flex gap-3 pt-4">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader className="animate-spin" size={18} />
+                Сохранение...
+              </>
+            ) : (
+              'Сохранить'
+            )}
+          </button>
+          <button
+            onClick={() => { setIsEditing(false); loadProfile(); }}
+            className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+          >
+            Отмена
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
