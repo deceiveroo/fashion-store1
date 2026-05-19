@@ -169,6 +169,7 @@ export const orders = pgTable('orders', {
     .notNull()
     .references(() => users.id, { onDelete: 'restrict' }),
   status: text('status', { enum: orderStatusEnum }).default('pending').notNull(),
+  subtotal: decimal('subtotal', { precision: 12, scale: 2 }).notNull(), // Subtotal before discount and delivery
   total: decimal('total', { precision: 12, scale: 2 }).notNull(),
   discount: decimal('discount', { precision: 10, scale: 2 }).default('0'),
   deliveryPrice: decimal('delivery_price', { precision: 10, scale: 2 }).default('0'),
