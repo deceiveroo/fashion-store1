@@ -2,6 +2,9 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 
+// Загружаем переменные из .env.migration
+require('dotenv').config({ path: '.env.migration' });
+
 // Конфигурация
 const OLD_SUPABASE_URL = process.env.OLD_SUPABASE_URL;
 const OLD_SUPABASE_KEY = process.env.OLD_SUPABASE_SERVICE_ROLE_KEY;
