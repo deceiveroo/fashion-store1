@@ -306,7 +306,11 @@ export default function ProductClient({ product }: ProductClientProps) {
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 {product.inStock ? (
                   <div className="flex-1">
-                    <AddToCartButton product={cartItemData} disabled={!product.inStock} />
+                    <AddToCartButton 
+                      product={cartItemData} 
+                      size={selectedSize || undefined}
+                      disabled={!product.inStock} 
+                    />
                   </div>
                 ) : (
                   <button
@@ -324,8 +328,8 @@ export default function ProductClient({ product }: ProductClientProps) {
               </div>
 
               {!selectedSize && product.inStock && (
-                <p className="text-xs text-gray-400 dark:text-neutral-500">
-                  Выберите размер перед добавлением в корзину
+                <p className="text-xs text-orange-500 dark:text-orange-400 font-medium mt-2">
+                  ⚠️ Выберите размер перед добавлением в корзину
                 </p>
               )}
             </div>

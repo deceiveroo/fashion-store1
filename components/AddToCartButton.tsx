@@ -11,20 +11,33 @@ interface AddToCartButtonProps {
     price: number;
     image: string;
   };
+  size?: string;
+  color?: string;
   disabled?: boolean;
 }
 
-export default function AddToCartButton({ product, disabled }: AddToCartButtonProps) {
+export default function AddToCartButton({ product, size, color, disabled }: AddToCartButtonProps) {
   const { addItem } = useCart();
 
   const handleAddToCart = () => {
+    // Проверка обязательного размера
+    if (!size) {
+      toast.error('⚠️ Выберите размер перед добавлением в корзину');
+      return;
+    }
+
     addItem({
       id: product.id,
       name: product.name,
       price: product.price,
       image: product.image,
+      size: size,
+      color: color,
     });
-    toast.success(`${product.name} добавлен в корзину`);
+    
+    const sizeText = size ? ` (Размер: ${size})` : '';
+    const colorText = color ? `, Цвет: ${color}` : '';
+    toast.success(`${product.name}${sizeText}${colorText} добавлен в корзину`);
   };
 
   return (
