@@ -85,17 +85,32 @@ export default function ProductClient({ product }: ProductClientProps) {
           price: string | number;
           stock?: number;
           featured?: boolean;
-        }) => ({
-          id: p.id,
-          name: p.name,
-          description: p.description ?? '',
-          price: toNumberPrice(p.price),
-          categories: product.categories,
-          inStock: (p.stock ?? 0) > 0,
-          featured: p.featured ?? false,
-          mainImage: getPlaceholderImage(p.id),
-          images: [],
-        })
+          images?: Array<{ url: string; isMain?: boolean }>;
+          mainImage?: string;
+        }) => {
+          // Получаем главное изображение
+          let mainImage = p.mainImage || getPlaceholderImage(p.id);
+          
+          // Если есть images массив, используем первое изображение
+          if (p.images && p.images.length > 0) {
+            const mainImg = p.images.find(img => img.isMain) || p.images[0];
+            if (mainImg?.url) {
+              mainImage = mainImg.url;
+            }
+          }
+          
+          return {
+            id: p.id,
+            name: p.name,
+            description: p.description ?? '',
+            price: toNumberPrice(p.price),
+            categories: product.categories,
+            inStock: (p.stock ?? 0) > 0,
+            featured: p.featured ?? false,
+            mainImage,
+            images: p.images || [],
+          };
+        }
       );
       setRelated(items);
     } catch {
@@ -144,16 +159,25 @@ export default function ProductClient({ product }: ProductClientProps) {
           <div className="lg:col-span-7 space-y-4">
             <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 dark:bg-neutral-900 group/gallery">
               <AnimatePresence mode="wait">
-                <motion.img
+                <motion.div
                   key={allImages[selectedImage]?.id ?? selectedImage}
-                  src={allImages[selectedImage]?.url}
-                  alt={product.name}
+                  className="absolute inset-0"
                   initial={{ opacity: 0, scale: 1.02 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
+                >
+                  <Image
+                    src={allImages[selectedImage]?.url || getPlaceholderImage(product.id)}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    priority={selectedImage === 0}
+                    loading={selectedImage === 0 ? 'eager' : 'lazy'}
+                    quality={85}
+                    className="object-cover"
+                  />
+                </motion.div>
               </AnimatePresence>
 
               <motion.div
