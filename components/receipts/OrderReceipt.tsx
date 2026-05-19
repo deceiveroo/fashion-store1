@@ -78,8 +78,15 @@ export default function OrderReceipt({ order }: OrderReceiptProps) {
         <div>
           <span style={{ color: '#6b7280', fontWeight: '600', display: 'block', marginBottom: '8px' }}>Товары:</span>
           {order.items.map((item: OrderItem, index: number) => (
-            <div key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
-              <div style={{ fontWeight: '600' }}>{item.name}</div>
+            <div key={index} style={{ fontSize: '12px', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px dotted #d1d5db' }}>
+              <div style={{ fontWeight: '600', marginBottom: '4px' }}>{item.name}</div>
+              {(item.size || item.color) && (
+                <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>
+                  {item.size && <span>Размер: {item.size}</span>}
+                  {item.size && item.color && <span>, </span>}
+                  {item.color && <span>Цвет: {item.color}</span>}
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280' }}>
                 <span>{item.quantity} x {item.price.toLocaleString('ru-RU')} ₽</span>
                 <span>{(item.price * item.quantity).toLocaleString('ru-RU')} ₽</span>

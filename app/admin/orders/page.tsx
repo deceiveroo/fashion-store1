@@ -12,7 +12,7 @@ interface Order {
   comment?: string; deliveryMethod?: string; paymentMethod?: string;
   userEmail?: string; userName?: string;
   recipient?: { firstName: string; lastName: string; email: string; phone: string; address?: string };
-  items?: { id: string; name: string; quantity: number; price: number; image?: string }[];
+  items?: { id: string; name: string; quantity: number; price: number; image?: string; size?: string; color?: string }[];
   trackingNumber?: string;
   trackingStatus?: string;
   currentLocation?: string;
@@ -377,11 +377,27 @@ export default function AdminOrdersPage() {
                                 {order.items?.length ? (
                                   <div>
                                     <p className="text-[10px] font-semibold text-gray-400 dark:text-white/30 uppercase mb-2">Товары</p>
-                                    <div className="space-y-1">
+                                    <div className="space-y-2">
                                       {order.items.map(item => (
-                                        <div key={item.id} className="flex justify-between text-xs">
-                                          <span className="text-gray-700 dark:text-white/60">{item.name} × {item.quantity}</span>
-                                          <span className="text-gray-900 dark:text-white/80 font-medium">{(item.price * item.quantity).toLocaleString('ru-RU')} ₽</span>
+                                        <div key={item.id}>
+                                          <div className="flex justify-between text-xs">
+                                            <span className="text-gray-700 dark:text-white/60">{item.name} × {item.quantity}</span>
+                                            <span className="text-gray-900 dark:text-white/80 font-medium">{(item.price * item.quantity).toLocaleString('ru-RU')} ₽</span>
+                                          </div>
+                                          {(item.size || item.color) && (
+                                            <div className="flex gap-2 mt-1">
+                                              {item.size && (
+                                                <span className="text-[10px] px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full">
+                                                  {item.size}
+                                                </span>
+                                              )}
+                                              {item.color && (
+                                                <span className="text-[10px] px-2 py-0.5 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400 rounded-full">
+                                                  {item.color}
+                                                </span>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
@@ -544,7 +560,15 @@ export default function AdminOrdersPage() {
           <div key={order.id} id={`admin-order-receipt-${order.id}`}>
             <OrderReceipt order={{
               id: order.id,
-              items: order.items || [],
+              items: (order.items || []).map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                image: item.image || '',
+                size: item.size,
+                color: item.color
+              })),
               total: order.total,
               discount: 0,
               deliveryPrice: 0,
