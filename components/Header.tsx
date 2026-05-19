@@ -85,6 +85,24 @@ export default function Header() {
     }
   };
 
+  const clearAllNotifications = async () => {
+    if (!confirm('Очистить все уведомления?')) return;
+    
+    try {
+      const res = await fetch('/api/notifications/clear', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (res.ok) {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+    }
+  };
+
   // Закрытие меню при изменении размера экрана
   useEffect(() => {
     const handleResize = () => {
@@ -325,25 +343,39 @@ export default function Header() {
                         
                         {/* Notifications Section */}
                         <div className="border-t border-gray-100 dark:border-gray-700">
-                          <div className="px-4 py-3 flex items-center justify-between">
+                          <div className="px-4 py-3 flex items-center justify-between bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10">
                             <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                               <Bell size={16} className="text-purple-600" />
                               Уведомления
                             </h3>
-                            {unreadCount > 0 && (
-                              <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full font-bold">
-                                {unreadCount}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {unreadCount > 0 && (
+                                <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full font-bold animate-pulse">
+                                  {unreadCount}
+                                </span>
+                              )}
+                              {notifications.length > 0 && (
+                                <button
+                                  onClick={clearAllNotifications}
+                                  className="text-xs text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  title="Очистить все"
+                                >
+                                  Очистить
+                                </button>
+                              )}
+                            </div>
                           </div>
                           
                           {notifications.length === 0 ? (
-                            <div className="px-4 py-6 text-center">
-                              <Bell size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Нет новых уведомлений</p>
+                            <div className="px-4 py-8 text-center">
+                              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 flex items-center justify-center">
+                                <Bell size={28} className="text-purple-400 dark:text-purple-500" />
+                              </div>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Нет новых уведомлений</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Все прочитано ✓</p>
                             </div>
                           ) : (
-                            <div className="max-h-64 overflow-y-auto">
+                            <div className="max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                               {notifications.map((notification) => (
                                 <button
                                   key={notification.id}
@@ -352,26 +384,47 @@ export default function Header() {
                                       markAsRead(notification.id);
                                     }
                                   }}
-                                  className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
-                                    !notification.isRead ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
+                                  className={`w-full px-4 py-3 text-left transition-all border-b border-gray-100 dark:border-gray-700 last:border-b-0 group ${
+                                    !notification.isRead 
+                                      ? 'bg-gradient-to-r from-purple-50/70 to-pink-50/70 dark:from-purple-900/15 dark:to-pink-900/15 hover:from-purple-100/80 hover:to-pink-100/80 dark:hover:from-purple-900/25 dark:hover:to-pink-900/25' 
+                                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                                   }`}
                                 >
                                   <div className="flex items-start gap-3">
                                     {!notification.isRead && (
-                                      <span className="w-2 h-2 bg-purple-600 rounded-full mt-1.5 flex-shrink-0"></span>
+                                      <span className="w-2 h-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mt-1.5 flex-shrink-0 animate-pulse shadow-lg shadow-purple-500/50"></span>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                      <p className={`text-sm font-medium ${
-                                        !notification.isRead ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
-                                      }`}>
-                                        {notification.title}
-                                      </p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <p className={`text-sm font-semibold ${
+                                          !notification.isRead ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
+                                        }`}>
+                                          {notification.title}
+                                        </p>
+                                        {!notification.isRead && (
+                                          <span className="text-[10px] px-1.5 py-0.5 bg-purple-600 text-white rounded font-medium flex-shrink-0">
+                                            New
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
                                         {notification.message}
                                       </p>
-                                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                        {new Date(notification.createdAt).toLocaleDateString('ru-RU')}
-                                      </p>
+                                      <div className="flex items-center gap-2 mt-2">
+                                        <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                                          {new Date(notification.createdAt).toLocaleDateString('ru-RU', {
+                                            day: 'numeric',
+                                            month: 'short',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </p>
+                                        {!notification.isRead && (
+                                          <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                            Нажмите чтобы отметить
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </button>
@@ -382,7 +435,7 @@ export default function Header() {
                           <Link
                             href="/profile?section=notifications"
                             onClick={() => setIsUserMenuOpen(false)}
-                            className="block px-4 py-3 text-center text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors font-medium"
+                            className="block px-4 py-3 text-center text-sm font-semibold bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 text-purple-700 dark:text-purple-300 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 transition-all border-t border-gray-100 dark:border-gray-700"
                           >
                             Смотреть все уведомления →
                           </Link>
