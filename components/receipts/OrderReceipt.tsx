@@ -20,63 +20,67 @@ export default function OrderReceipt({ order }: OrderReceiptProps) {
   return (
     <div 
       id="order-receipt"
-      className="bg-white text-black p-8 max-w-md mx-auto font-mono text-sm leading-relaxed"
-      style={{ fontFamily: 'Courier New, monospace' }}
+      className="p-8 max-w-md mx-auto font-mono text-sm leading-relaxed"
+      style={{ 
+        fontFamily: 'Courier New, monospace',
+        backgroundColor: '#ffffff',
+        color: '#000000'
+      }}
     >
       {/* Header */}
-      <div className="text-center mb-6 border-b-2 border-black pb-4">
-        <h1 className="text-xl font-bold mb-2">ООО «ДипломБанк»</h1>
-        <p className="text-xs">ЭЛЕКТРОННЫЙ ЧЕК</p>
-        <p className="text-xs">О ПЛАТЕЖЕ</p>
+      <div style={{ textAlign: 'center', marginBottom: '24px', borderBottom: '2px solid #000000', paddingBottom: '16px' }}>
+        <h1 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>ООО «ДипломБанк»</h1>
+        <p style={{ fontSize: '12px' }}>ЭЛЕКТРОННЫЙ ЧЕК</p>
+        <p style={{ fontSize: '12px' }}>О ПЛАТЕЖЕ</p>
       </div>
 
       {/* Receipt Details */}
-      <div className="space-y-3 mb-6">
-        <div className="flex justify-between">
-          <span className="text-gray-600">Дата:</span>
-          <span className="font-semibold">{formattedDate}</span>
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span style={{ color: '#6b7280' }}>Дата:</span>
+          <span style={{ fontWeight: '600' }}>{formattedDate}</span>
         </div>
         
-        <div className="flex justify-between">
-          <span className="text-gray-600">Номер заказа:</span>
-          <span className="font-semibold">#{order.id.substring(0, 8).toUpperCase()}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span style={{ color: '#6b7280' }}>Номер заказа:</span>
+          <span style={{ fontWeight: '600' }}>#{order.id.substring(0, 8).toUpperCase()}</span>
         </div>
 
-        <div className="flex justify-between">
-          <span className="text-gray-600">Способ оплаты:</span>
-          <span className="font-semibold">{paymentText}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span style={{ color: '#6b7280' }}>Способ оплаты:</span>
+          <span style={{ fontWeight: '600' }}>{paymentText}</span>
         </div>
 
-        <div className="border-t border-dashed border-gray-400 my-4"></div>
+        <div style={{ borderTop: '1px dashed #9ca3af', margin: '16px 0' }}></div>
 
         <div>
-          <span className="text-gray-600 block mb-1">Плательщик:</span>
-          <span className="font-semibold">
+          <span style={{ color: '#6b7280', display: 'block', marginBottom: '4px' }}>Плательщик:</span>
+          <span style={{ fontWeight: '600' }}>
             {order.recipient ? `${order.recipient.firstName} ${order.recipient.lastName}`.trim() : '—'}
           </span>
         </div>
 
         <div>
-          <span className="text-gray-600 block mb-1">Email:</span>
-          <span className="font-semibold">{order.recipient?.email || '—'}</span>
+          <span style={{ color: '#6b7280', display: 'block', marginBottom: '4px' }}>Email:</span>
+          <span style={{ fontWeight: '600' }}>{order.recipient?.email || '—'}</span>
         </div>
 
         {order.recipient?.phone && (
           <div>
-            <span className="text-gray-600 block mb-1">Телефон:</span>
-            <span className="font-semibold">{order.recipient.phone}</span>
+            <span style={{ color: '#6b7280', display: 'block', marginBottom: '4px' }}>Телефон:</span>
+            <span style={{ fontWeight: '600' }}>{order.recipient.phone}</span>
           </div>
         )}
 
-        <div className="border-t border-dashed border-gray-400 my-4"></div>
+        <div style={{ borderTop: '1px dashed #9ca3af', margin: '16px 0' }}></div>
 
         {/* Items */}
-        <div className="space-y-2">
-          <span className="text-gray-600 font-semibold block mb-2">Товары:</span>
+        <div>
+          <span style={{ color: '#6b7280', fontWeight: '600', display: 'block', marginBottom: '8px' }}>Товары:</span>
           {order.items.map((item: OrderItem, index: number) => (
-            <div key={index} className="text-xs">
-              <div className="font-semibold">{item.name}</div>
-              <div className="flex justify-between text-gray-600">
+            <div key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
+              <div style={{ fontWeight: '600' }}>{item.name}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280' }}>
                 <span>{item.quantity} x {item.price.toLocaleString('ru-RU')} ₽</span>
                 <span>{(item.price * item.quantity).toLocaleString('ru-RU')} ₽</span>
               </div>
@@ -84,41 +88,42 @@ export default function OrderReceipt({ order }: OrderReceiptProps) {
           ))}
         </div>
 
-        <div className="border-t border-dashed border-gray-400 my-4"></div>
+        <div style={{ borderTop: '1px dashed #9ca3af', margin: '16px 0' }}></div>
 
         {/* Total */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-gray-600">
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', marginBottom: '8px' }}>
             <span>Подитог:</span>
             <span>{(order.total - order.deliveryPrice + order.discount).toLocaleString('ru-RU')} ₽</span>
           </div>
           {order.discount > 0 && (
-            <div className="flex justify-between text-green-600">
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', marginBottom: '8px' }}>
               <span>Скидка:</span>
               <span>-{order.discount.toLocaleString('ru-RU')} ₽</span>
             </div>
           )}
           {order.deliveryPrice > 0 && (
-            <div className="flex justify-between text-gray-600">
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', marginBottom: '8px' }}>
               <span>Доставка:</span>
               <span>{order.deliveryPrice.toLocaleString('ru-RU')} ₽</span>
             </div>
           )}
-          <div className="flex justify-between items-center pt-2 border-t-2 border-black">
-            <span className="text-lg font-bold">ИТОГО:</span>
-            <span className="text-2xl font-bold">{order.total.toLocaleString('ru-RU')} ₽</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '2px solid #000000' }}>
+            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>ИТОГО:</span>
+            <span style={{ fontSize: '24px', fontWeight: 'bold' }}>{order.total.toLocaleString('ru-RU')} ₽</span>
           </div>
         </div>
 
-        <div className="border-t border-dashed border-gray-400 my-4"></div>
+        <div style={{ borderTop: '1px dashed #9ca3af', margin: '16px 0' }}></div>
 
-        <div className="flex justify-between">
-          <span className="text-gray-600">Статус:</span>
-          <span className={`font-semibold ${
-            order.status === 'delivered' ? 'text-green-600' :
-            order.status === 'cancelled' ? 'text-red-600' :
-            'text-blue-600'
-          }`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#6b7280' }}>Статус:</span>
+          <span style={{ 
+            fontWeight: '600',
+            color: order.status === 'delivered' ? '#16a34a' :
+                   order.status === 'cancelled' ? '#dc2626' :
+                   '#2563eb'
+          }}>
             {order.status === 'delivered' ? '✓ Выполнено' :
              order.status === 'cancelled' ? '✗ Отменено' :
              '⏳ В обработке'}
@@ -127,29 +132,33 @@ export default function OrderReceipt({ order }: OrderReceiptProps) {
       </div>
 
       {/* QR Code Placeholder */}
-      <div className="flex justify-center mb-6">
-        <div className="w-32 h-32 bg-gray-100 border-2 border-black flex items-center justify-center">
-          <div className="text-center">
-            <div className="grid grid-cols-5 gap-1 mb-2">
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+        <div style={{ width: '128px', height: '128px', backgroundColor: '#f3f4f6', border: '2px solid #000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginBottom: '8px' }}>
               {[...Array(25)].map((_, i) => (
                 <div 
                   key={i} 
-                  className={`w-4 h-4 ${Math.random() > 0.5 ? 'bg-black' : 'bg-white'}`}
+                  style={{ 
+                    width: '16px', 
+                    height: '16px', 
+                    backgroundColor: Math.random() > 0.5 ? '#000000' : '#ffffff'
+                  }}
                 ></div>
               ))}
             </div>
-            <p className="text-[10px] text-gray-600">QR-код</p>
+            <p style={{ fontSize: '10px', color: '#6b7280' }}>QR-код</p>
           </div>
         </div>
       </div>
 
       {/* Footer Disclaimer */}
-      <div className="border-t-2 border-black pt-4 mt-6">
-        <p className="text-xs text-center text-gray-600 leading-tight">
+      <div style={{ borderTop: '2px solid #000000', paddingTop: '16px', marginTop: '24px' }}>
+        <p style={{ fontSize: '12px', textAlign: 'center', color: '#6b7280', lineHeight: '1.4' }}>
           Документ сформирован в учебных целях.<br />
           Не является платёжным документом.
         </p>
-        <p className="text-[10px] text-center text-gray-500 mt-2">
+        <p style={{ fontSize: '10px', textAlign: 'center', color: '#6b7280', marginTop: '8px' }}>
           ID: {order.id.slice(0, 8)}
         </p>
       </div>
