@@ -1,6 +1,6 @@
 'use client';
 
-import { Moon, Sun, Monitor } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 
@@ -15,16 +15,11 @@ export function AdminThemeToggle() {
   }
 
   const cycle = () => {
-    if (theme === 'light') setTheme('dark');
-    else if (theme === 'dark') setTheme('system');
-    else setTheme('light');
+    setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  const Icon =
-    theme === 'system' ? Monitor : resolvedTheme === 'dark' ? Sun : Moon;
-
-  const label =
-    theme === 'system' ? 'Системная тема' : resolvedTheme === 'dark' ? 'Светлая тема' : 'Тёмная тема';
+  const Icon = resolvedTheme === 'dark' ? Sun : Moon;
+  const label = resolvedTheme === 'dark' ? 'Светлая тема' : 'Тёмная тема';
 
   return (
     <button
