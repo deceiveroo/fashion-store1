@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Users, Package, ShoppingCart, DollarSign, TrendingUp, TrendingDown,
   RefreshCw, ArrowUpRight, Zap, Activity, Plus, Download,
-  MessageCircle, LineChart, Clock, Sparkles, CreditCard, BarChart3,
+  MessageCircle, LineChart, Clock, Sparkles, CreditCard, BarChart3, Bell,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -57,6 +57,7 @@ const QUICK_ACTIONS = [
   { label: 'Новый товар', href: '/admin/products/new', icon: Plus, accent: 'violet' },
   { label: 'Заказы', href: '/admin/orders', icon: ShoppingCart, accent: 'emerald' },
   { label: 'Чаты', href: '/admin/support-chats', icon: MessageCircle, accent: 'blue' },
+  { label: 'Уведомления', href: '/admin/notifications', icon: Bell, accent: 'amber' },
   { label: 'Аналитика', href: '/admin/analytics', icon: LineChart, accent: 'amber' },
 ] as const;
 

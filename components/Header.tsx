@@ -26,6 +26,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, isLoading } = useAuth();
   const { state: cart } = useCart();
 
@@ -39,6 +40,29 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Fetch unread notifications count
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await fetch('/api/notifications', {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   // Закрытие меню при изменении размера экрана
   useEffect(() => {
@@ -202,17 +226,29 @@ export default function Header() {
                   <div className="relative" data-user-menu>
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
                     >
                       {(user.avatar || user.image) ? (
-                        <img 
-                          src={user.avatar || user.image} 
-                          alt="Avatar" 
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
+                        <div className="relative">
+                          <img 
+                            src={user.avatar || user.image} 
+                            alt="Avatar" 
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                          {/* Notification Indicator */}
+                          {unreadCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse shadow-lg shadow-red-500/50"></span>
+                          )}
+                        </div>
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
-                          {user?.name?.[0] || user?.email?.[0] || 'U'}
+                        <div className="relative">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
+                            {user?.name?.[0] || user?.email?.[0] || 'U'}
+                          </div>
+                          {/* Notification Indicator */}
+                          {unreadCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse shadow-lg shadow-red-500/50"></span>
+                          )}
                         </div>
                       )}
                       <ChevronDown 
