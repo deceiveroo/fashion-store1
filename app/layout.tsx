@@ -9,6 +9,7 @@ import SupportChatMinimalist from '@/components/SupportChatMinimalist';
 import QuickViewProvider from '@/components/QuickViewProvider';
 import MaintenanceCheck from '@/components/MaintenanceCheck';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from '@vercel/analytics/react';
 
 // Основной шрифт для текста - более современный и читаемый
 const inter = Inter({
@@ -76,6 +77,7 @@ export default function RootLayout({
             </CartProvider>
           </AuthProvider>
         </Providers>
+        <Analytics />
         <SpeedInsights />
       </body>
     </html>
