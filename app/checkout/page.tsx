@@ -656,37 +656,37 @@ export default function CheckoutPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
                             onClick={() => handleDeliverySelect(option.id as 'pickup' | 'courier' | 'express')}
-                            className={`relative p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden ${
+                            className={`relative p-4 sm:p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden ${
                               deliveryMethod === option.id
                                 ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 shadow-lg shadow-purple-500/20'
                                 : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 bg-white dark:bg-gray-900'
                             }`}
                           >
-                            <div className="flex items-start gap-5">
+                            <div className="flex flex-col sm:flex-row items-start gap-4">
                               <motion.div
                                 animate={deliveryMethod === option.id ? { scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] } : {}}
                                 transition={{ duration: 0.5 }}
-                                className={`p-4 rounded-xl shadow-lg bg-gradient-to-br ${option.color} flex-shrink-0`}
+                                className={`p-3 sm:p-4 rounded-xl shadow-lg bg-gradient-to-br ${option.color} flex-shrink-0 w-full sm:w-auto flex justify-center`}
                               >
-                                <IconComponent size={32} className="text-white" strokeWidth={2.5} />
+                                <IconComponent size={28} className="text-white sm:text-[32px]" strokeWidth={2.5} />
                               </motion.div>
                               
-                              <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-start mb-3">
-                                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">{option.title}</h3>
-                                  <span className="font-bold text-lg text-purple-600 dark:text-purple-400 whitespace-nowrap ml-4">{option.price}</span>
+                              <div className="flex-1 min-w-0 w-full">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
+                                  <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">{option.title}</h3>
+                                  <span className="font-bold text-base sm:text-lg text-purple-600 dark:text-purple-400 whitespace-nowrap">{option.price}</span>
                                 </div>
                                 
                                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{option.description}</p>
                                 
-                                <div className="flex flex-wrap items-center gap-3 text-sm">
+                                <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                                   <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                                    <Clock size={16} />
+                                    <Clock size={14} className="sm:w-4 sm:h-4" />
                                     <span>{option.time}</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                                    <MapPin size={16} />
-                                    <span className="truncate max-w-[200px]">{option.details}</span>
+                                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 w-full sm:w-auto">
+                                    <MapPin size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span className="truncate">{option.details}</span>
                                   </div>
                                 </div>
                               </div>
@@ -696,10 +696,10 @@ export default function CheckoutPage() {
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1, rotate: [0, 15, -15, 0] }}
                                   transition={{ duration: 0.4, delay: 0.1 }}
-                                  className="flex-shrink-0 ml-2"
+                                  className="flex-shrink-0 self-end sm:self-start"
                                 >
-                                  <div className="w-7 h-7 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center shadow-md">
-                                    <Check size={16} className="text-white" strokeWidth={3.5} />
+                                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center shadow-md">
+                                    <Check size={14} className="sm:w-4 sm:h-4 text-white" strokeWidth={3.5} />
                                   </div>
                                 </motion.div>
                               )}
