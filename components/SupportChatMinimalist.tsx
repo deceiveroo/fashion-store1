@@ -309,47 +309,47 @@ export default function SupportChatMinimalist() {
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             data-chat-panel
-            className="fixed bottom-24 right-6 w-[380px] max-h-[600px] bg-[#1A1A2E]/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 overflow-hidden z-[90]"
+            className="fixed bottom-24 right-6 w-[380px] max-h-[600px] bg-white/95 dark:bg-[#1A1A2E]/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden z-[90]"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#9D4EDD]/20 to-[#FF6B9D]/20 border-b border-white/10 p-4">
+            <div className="bg-gradient-to-r from-[#9D4EDD]/10 to-[#FF6B9D]/10 dark:from-[#9D4EDD]/20 dark:to-[#FF6B9D]/20 border-b border-gray-200 dark:border-white/10 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <div className="w-10 h-10 bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] rounded-full flex items-center justify-center">
                       <Sparkles className="w-5 h-5 text-white" />
                     </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1A1A2E]" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#1A1A2E]" />
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold text-sm">ELEVATE Help</h3>
-                    <p className="text-white/60 text-xs">Онлайн</p>
+                    <h3 className="text-gray-900 dark:text-white font-semibold text-sm">ELEVATE Help</h3>
+                    <p className="text-gray-500 dark:text-white/60 text-xs">Онлайн</p>
                   </div>
                 </div>
                 {view === 'chat' && (
                   <button
                     onClick={() => setView('search')}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
                   >
-                    <ArrowLeft className="w-5 h-5 text-white/70" />
+                    <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-white/70" />
                   </button>
                 )}
               </div>
             </div>
 
             {/* Content */}
-            <div className="bg-[#1A1A2E] max-h-[480px] overflow-y-auto">
+            <div className="bg-white dark:bg-[#1A1A2E] max-h-[480px] overflow-y-auto">
               {view === 'search' ? (
                 <div className="p-4 space-y-4">
                   {/* Search Input */}
                   <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-white/40" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search for help..."
-                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#9D4EDD]/50 focus:border-[#9D4EDD]/50 transition-all text-sm"
+                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#9D4EDD]/50 focus:border-[#9D4EDD]/50 transition-all text-sm"
                     />
                   </div>
 
@@ -364,23 +364,23 @@ export default function SupportChatMinimalist() {
                           key={category.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden"
+                          className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden"
                         >
                           <button
                             onClick={() => handleCategoryClick(category.id)}
-                            className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+                            className="w-full p-4 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                           >
                             <div className="flex items-center gap-3">
                               <div className={`w-10 h-10 bg-gradient-to-br ${category.color} rounded-xl flex items-center justify-center`}>
                                 <Icon className="w-5 h-5 text-white" />
                               </div>
-                              <span className="text-white font-medium text-sm">{category.title}</span>
+                              <span className="text-gray-900 dark:text-white font-medium text-sm">{category.title}</span>
                             </div>
                             <motion.div
                               animate={{ rotate: isExpanded ? 180 : 0 }}
                               transition={{ duration: 0.2 }}
                             >
-                              <ChevronDown className="w-5 h-5 text-white/40" />
+                              <ChevronDown className="w-5 h-5 text-gray-400 dark:text-white/40" />
                             </motion.div>
                           </button>
                           
@@ -401,7 +401,7 @@ export default function SupportChatMinimalist() {
                                       animate={{ opacity: 1, x: 0 }}
                                       transition={{ delay: idx * 0.05 }}
                                       onClick={() => handleQuestionClick(question)}
-                                      className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white/80 hover:text-white text-sm transition-all flex items-center gap-2 group"
+                                      className="w-full text-left px-4 py-3 bg-white dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl text-gray-700 dark:text-white/80 hover:text-gray-900 dark:hover:text-white text-sm transition-all flex items-center gap-2 group"
                                     >
                                       <div className="w-1.5 h-1.5 bg-[#9D4EDD] rounded-full group-hover:scale-125 transition-transform" />
                                       {question}
@@ -436,7 +436,7 @@ export default function SupportChatMinimalist() {
                       <div className="w-16 h-16 bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] rounded-full flex items-center justify-center mx-auto mb-4">
                         <Sparkles className="w-8 h-8 text-white" />
                       </div>
-                      <p className="text-white/60 text-sm">Начните диалог...</p>
+                      <p className="text-gray-500 dark:text-white/60 text-sm">Начните диалог...</p>
                     </div>
                   )}
                   
@@ -451,14 +451,14 @@ export default function SupportChatMinimalist() {
                         className={`max-w-[80%] px-4 py-3 rounded-2xl ${
                           msg.sender === 'user'
                             ? 'bg-gradient-to-r from-[#9D4EDD] to-[#FF6B9D] text-white'
-                            : 'bg-white/10 text-white/90 border border-white/10'
+                            : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white/90 border border-gray-200 dark:border-white/10'
                         }`}
                       >
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">
                           {msg.text.replace(/\*\*/g, '').replace(/\*/g, '')}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className={`text-xs ${msg.sender === 'user' ? 'text-white/70' : 'text-white/40'}`}>
+                          <span className={`text-xs ${msg.sender === 'user' ? 'text-white/70' : 'text-gray-500 dark:text-white/40'}`}>
                             {msg.timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           {msg.sender === 'user' && (
@@ -475,7 +475,7 @@ export default function SupportChatMinimalist() {
                       animate={{ opacity: 1 }}
                       className="flex justify-start"
                     >
-                      <div className="bg-white/10 border border-white/10 rounded-2xl px-4 py-3">
+                      <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3">
                         <div className="flex gap-1">
                           {[0, 1, 2].map((i) => (
                             <motion.div
@@ -497,7 +497,7 @@ export default function SupportChatMinimalist() {
 
             {/* Input Area (only in chat view) */}
             {view === 'chat' && (
-              <div className="bg-[#1A1A2E] border-t border-white/10 p-4">
+              <div className="bg-white dark:bg-[#1A1A2E] border-t border-gray-200 dark:border-white/10 p-4">
                 <div className="flex gap-2">
                   <input
                     ref={inputRef}
@@ -512,7 +512,7 @@ export default function SupportChatMinimalist() {
                     }}
                     placeholder="Напишите сообщение..."
                     disabled={loading}
-                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#9D4EDD]/50 disabled:opacity-50 text-sm"
+                    className="flex-1 px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#9D4EDD]/50 disabled:opacity-50 text-sm"
                   />
                   <motion.button
                     whileHover={{ scale: 1.05 }}
