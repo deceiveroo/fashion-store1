@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import GamificationProfileWidget from '@/components/gamification/GamificationProfileWidget';
 import NotificationsPanel from '@/components/profile/NotificationsPanel';
+import HolographicTabs from '@/components/profile/HolographicTabs';
 
 interface NotificationSettings {
   ordersEmail?: boolean;
@@ -689,6 +690,18 @@ export default function ProfilePage() {
     { id: 'privacy' as Section, icon: FileText, title: 'Конфиденциальность', count: null },
   ];
 
+  // Holographic tabs configuration
+  const holographicTabs = [
+    { id: 'personal', label: 'Личные данные', icon: User, color: '#8B5CF6', colorRGB: '139, 92, 246' },
+    { id: 'orders', label: 'Заказы', icon: Package, color: '#EC4899', colorRGB: '236, 72, 153' },
+    { id: 'wishlist', label: 'Избранное', icon: Heart, color: '#F59E0B', colorRGB: '245, 158, 11' },
+    { id: 'coupons', label: 'Промокоды', icon: Ticket, color: '#10B981', colorRGB: '16, 185, 129' },
+    { id: 'payments', label: 'Оплата', icon: CreditCard, color: '#3B82F6', colorRGB: '59, 130, 246' },
+    { id: 'security', label: 'Безопасность', icon: Shield, color: '#EF4444', colorRGB: '239, 68, 68' },
+    { id: 'notifications', label: 'Уведомления', icon: Bell, color: '#8B5CF6', colorRGB: '139, 92, 246' },
+    { id: 'privacy', label: 'Конфиденциальность', icon: FileText, color: '#6366F1', colorRGB: '99, 102, 241' },
+  ];
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pt-20 pb-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -776,48 +789,31 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
-        <nav className="flex gap-2 overflow-x-auto mb-4 pb-1">
-          {sections.map((section) => {
-            const Icon = section.icon;
-            const isActive = activeSection === section.id;
-            return (
-              <button
-                key={`nav-${section.id}`}
-                type="button"
-                onClick={() => setActiveSection(section.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                <Icon size={15} />
-                {section.title}
-              </button>
-            );
-          })}
-        </nav>
+        {/* Holographic Tab Universe */}
+        <HolographicTabs
+          tabs={holographicTabs}
+          activeTab={activeSection}
+          onTabChange={(tabId) => setActiveSection(tabId as Section)}
+        >
+          <div className="space-y-6">
+            {/* Content for each tab */}
+            {sections.map((section, index) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+              
+              if (!isActive) return null;
 
-        <div className="space-y-4">
-          {sections.map((section, index) => {
-            const Icon = section.icon;
-            const isExpanded = activeSection === section.id;
-            if (!isExpanded) return null;
-
-            return (
-              <motion.div
-                key={section.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-purple-100 dark:border-purple-900/50 overflow-hidden"
-              >
-                {/* Section Header */}
-                <button
-                  onClick={() => setActiveSection(section.id)}
-                  className="w-full p-6 flex items-center justify-between hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-colors"
+              return (
+                <motion.div
+                  key={section.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <div className="flex items-center gap-4">
+                {/* Section Header */}
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-purple-100 dark:border-purple-900/50 overflow-hidden mb-6">
+                  <div className="w-full p-6 flex items-center gap-4">
                     <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl">
                       <Icon className="text-white" size={24} />
                     </div>
@@ -828,25 +824,10 @@ export default function ProfilePage() {
                       )}
                     </div>
                   </div>
-                  <motion.div
-                    animate={{ rotate: isExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <ChevronDown size={24} className="text-gray-400" />
-                  </motion.div>
-                </button>
+                </div>
 
                 {/* Section Content */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="border-t border-purple-100 dark:border-purple-900/50"
-                    >
-                      <div className="p-6">
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-purple-100 dark:border-purple-900/50 overflow-hidden">
                         {/* Personal Info Section */}
                         {section.id === 'personal' && (
                           <div className="space-y-4">
@@ -1433,12 +1414,13 @@ export default function ProfilePage() {
                         )}
                       </div>
                     </motion.div>
-                  )}
-                </AnimatePresence>
+                  </div>
+                </div>
               </motion.div>
             );
           })}
-        </div>
+          </div>
+        </HolographicTabs>
       </div>
     </div>
   );
