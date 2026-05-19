@@ -121,13 +121,13 @@ export default function CustomersPage() {
         {/* Enhanced Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Users className="h-7 w-7 text-violet-400" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Users className="h-7 w-7 text-violet-600 dark:text-violet-400" />
               Клиенты
             </h1>
-            <p className="text-sm text-white/40 mt-1">Управление клиентами магазина</p>
+            <p className="text-sm text-gray-500 dark:text-white/40 mt-1">Управление клиентами магазина</p>
           </div>
-          <button onClick={load} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+          <button onClick={load} className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2.5 text-sm text-gray-700 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Обновить
           </button>
@@ -136,25 +136,25 @@ export default function CustomersPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Всего клиентов', value: customers.length, icon: Users, color: 'bg-violet-500/20 text-violet-400', trend: '+8%' },
-            { label: 'Администраторы', value: customers.filter(c => c.role === 'admin').length, icon: User, color: 'bg-blue-500/20 text-blue-400' },
-            { label: 'С менеджерами', value: customers.filter(c => c.phone).length, icon: Phone, color: 'bg-emerald-500/20 text-emerald-400' },
-            { label: 'Верифицированы', value: customers.filter(c => c.emailVerified).length, icon: Mail, color: 'bg-amber-500/20 text-amber-400' },
+            { label: 'Всего клиентов', value: customers.length, icon: Users, color: 'bg-gradient-to-br from-violet-500 to-purple-600 dark:from-violet-500/20 dark:to-purple-600/20 text-white dark:text-violet-400', trend: '+8%' },
+            { label: 'Администраторы', value: customers.filter(c => c.role === 'admin').length, icon: User, color: 'bg-gradient-to-br from-blue-500 to-cyan-600 dark:from-blue-500/20 dark:to-cyan-600/20 text-white dark:text-blue-400' },
+            { label: 'С менеджерами', value: customers.filter(c => c.phone).length, icon: Phone, color: 'bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-500/20 dark:to-teal-600/20 text-white dark:text-emerald-400' },
+            { label: 'Верифицированы', value: customers.filter(c => c.emailVerified).length, icon: Mail, color: 'bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-500/20 dark:to-orange-600/20 text-white dark:text-amber-400' },
           ].map(({ label, value, icon: Icon, color, trend }) => (
-            <div key={label} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-5 hover:bg-white/[0.08] transition-all backdrop-blur-sm">
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 hover:bg-gray-50 dark:hover:bg-white/[0.08] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
               {trend && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-400" />
-                  <span className="text-xs font-medium text-emerald-400">{trend}</span>
+                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 px-2 py-1 shadow-sm">
+                  <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{trend}</span>
                 </div>
               )}
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-white/50 uppercase tracking-wider">{label}</p>
-                  <p className="mt-2 text-2xl font-bold text-white">{value}</p>
-                </div>
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
-                  <Icon className="h-6 w-6" />
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-3">{label}</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
+                    <Icon className="h-6 w-6" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -163,19 +163,19 @@ export default function CustomersPage() {
 
         {/* Enhanced Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-white/20" />
           <input type="text" placeholder="Поиск по имени, фамилии или email..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-white placeholder-white/20 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30" />
+            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 pl-9 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30" />
         </div>
 
         {/* Table */}
-        <div className="rounded-2xl border border-white/5 bg-white/[0.03] overflow-hidden">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.03] overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center h-48">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-white/20">
+            <div className="flex flex-col items-center justify-center h-48 text-gray-400 dark:text-white/20">
               <User className="h-10 w-10 mb-2 opacity-40" />
               <p className="text-sm">Клиентов не найдено</p>
             </div>
@@ -183,34 +183,34 @@ export default function CustomersPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/5">
+                  <tr className="border-b border-gray-200 dark:border-white/5">
                     {['Клиент','Email','Роль','Последний вход','Дата регистрации',''].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider last:text-right">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-gray-400 dark:text-white/30 uppercase tracking-wider last:text-right">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(c => (
-                    <tr key={c.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                    <tr key={c.id} className="border-b border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {avatar(c) ? (
-                            <img src={avatar(c)} alt="" className="h-10 w-10 rounded-xl object-cover ring-2 ring-white/10" />
+                            <img src={avatar(c)} alt="" className="h-10 w-10 rounded-xl object-cover ring-2 ring-gray-200 dark:ring-white/10" />
                           ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-sm font-bold text-violet-400">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/10 text-sm font-bold text-violet-600 dark:text-violet-400">
                               {(c.firstName||c.email||'?')[0].toUpperCase()}
                             </div>
                           )}
-                          <span className="text-xs font-semibold text-white">{displayName(c)}</span>
+                          <span className="text-xs font-semibold text-gray-900 dark:text-white">{displayName(c)}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-xs text-white/60 flex items-center gap-1">
-                          <Mail className="h-3 w-3 text-white/20" />
+                        <p className="text-xs text-gray-600 dark:text-white/60 flex items-center gap-1">
+                          <Mail className="h-3 w-3 text-gray-400 dark:text-white/20" />
                           {c.email}
                         </p>
                         {c.phone && (
-                          <p className="text-[10px] text-white/30 flex items-center gap-1 mt-0.5">
+                          <p className="text-[10px] text-gray-500 dark:text-white/30 flex items-center gap-1 mt-0.5">
                             <Phone className="h-2.5 w-2.5" />
                             {c.phone}
                           </p>
@@ -222,21 +222,21 @@ export default function CustomersPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-xs text-white/60 whitespace-nowrap">
+                        <p className="text-xs text-gray-600 dark:text-white/60 whitespace-nowrap">
                           {formatLastSignIn(c.lastSignIn)}
                         </p>
                       </td>
-                      <td className="px-4 py-3 text-xs text-white/30 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-white/30 whitespace-nowrap">
                         {new Date(c.createdAt).toLocaleDateString('ru-RU')}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => setEditing({ ...c })}
-                            className="rounded-lg p-1.5 text-white/30 hover:text-violet-400 hover:bg-violet-500/10 transition-all">
+                            className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-500/10 transition-all">
                             <Edit3 className="h-3.5 w-3.5" />
                           </button>
                           <button onClick={() => deleteCustomer(c.id)}
-                            className="rounded-lg p-1.5 text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                            className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/10 transition-all">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
