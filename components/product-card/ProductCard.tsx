@@ -163,20 +163,20 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
             <FavoriteButton productId={product.id} />
           </motion.div>
 
-          {/* Bottom CTA strip - always visible on mobile, hover on desktop */}
+          {/* Bottom CTA strip - appears on hover */}
           <motion.div
-            className="absolute inset-x-0 bottom-0 z-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 sm:opacity-0 sm:pointer-events-none"
+            className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between gap-2 p-3 opacity-0 pointer-events-none"
             initial={false}
-            animate={{ opacity: hovered ? 1 : 1, y: 0 }}
+            animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 8 }}
             transition={{ type: 'spring', stiffness: 380, damping: 28 }}
           >
             <Link
               href={`/products/${product.id}`}
-              className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white rounded-xl shadow-lg active:scale-95 transition-transform border border-gray-200 dark:border-gray-700"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-all border border-white/20"
               onClick={(e) => e.stopPropagation()}
             >
               Смотреть
-              <ArrowUpRight className="h-4 w-4" aria-hidden />
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
             {currentStock && (
               <button
@@ -187,9 +187,9 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
                   addItem(cartPayload);
                   toast.success(`${product.name} в корзине`);
                 }}
-                className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white rounded-xl shadow-lg shadow-purple-500/30 active:scale-95 transition-transform"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-xs font-semibold uppercase tracking-wider text-white rounded-full shadow-lg shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 active:scale-95 transition-all"
               >
-                <ShoppingBag className="h-4 w-4" aria-hidden />
+                <ShoppingBag className="h-3.5 w-3.5" aria-hidden />
                 В корзину
               </button>
             )}
