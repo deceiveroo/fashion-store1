@@ -43,12 +43,27 @@ export default function CustomersPage() {
   useEffect(() => { load(); }, []);
 
   const deleteCustomer = async (id: string) => {
-    if (!confirm('Удалить клиента?')) return;
+    if (!confirm('Удалить клиента? Это действие нельзя отменить.')) return;
     try {
+      console.log('[DELETE] Attempting to delete customer:', id);
       const res = await fetch(`/api/admin/users?id=${id}`, { method: 'DELETE', credentials: 'include' });
-      if (res.ok) { setCustomers(c => c.filter(x => x.id !== id)); toast.success('Удалён'); if (editing?.id === id) setEditing(null); }
-      else { const d = await res.json(); toast.error(d.error || 'Ошибка'); }
-    } catch { toast.error('Ошибка'); }
+      const data = await res.json();
+      
+      console.log('[DELETE] Response:', res.status, data);
+      
+      if (res.ok) { 
+        setCustomers(c => c.filter(x => x.id !== id)); 
+        toast.success('Клиент удален'); 
+        if (editing?.id === id) setEditing(null); 
+      } else { 
+        const errorMsg = data.details || data.error || 'Ошибка удаления';
+        console.error('[DELETE] Error:', errorMsg);
+        toast.error(errorMsg); 
+      }
+    } catch (err) { 
+      console.error('[DELETE] Exception:', err);
+      toast.error('Произошла ошибка при удалении'); 
+    }
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

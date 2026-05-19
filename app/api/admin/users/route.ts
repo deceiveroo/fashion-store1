@@ -240,6 +240,7 @@ export async function DELETE(request: NextRequest) {
     const isAdminUser = await isAdmin();
     
     if (!isAdminUser) {
+      console.log('[DELETE USER] Access denied for user:', session.user.id, 'role:', session.user.role);
       return new Response(
         JSON.stringify({ error: 'Доступ запрещен. Требуются права администратора.' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
@@ -256,6 +257,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    console.log('[DELETE USER] Attempting to delete user:', id);
+
     // Нельзя удалить самого себя
     if (session?.user?.id === id) {
       return new Response(
@@ -264,19 +267,52 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Удаляем пользователя (каскадно удалит связанные данные)
+    // Проверяем существование пользователя
+    const existingUser = await queryWithRetry(() =>
+      db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, id)).limit(1)
+    );
+
+    if (existingUser.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Пользователь не найден' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('[DELETE USER] Found user:', existingUser[0].email);
+
+    // Удаляем связанные данные перед удалением пользователя
+    try {
+      // Удаляем профиль пользователя
+      await queryWithRetry(() =>
+        db.delete(userProfiles).where(eq(userProfiles.userId, id))
+      );
+      console.log('[DELETE USER] Deleted user profile');
+    } catch (profileError) {
+      console.warn('[DELETE USER] Error deleting profile (may not exist):', profileError);
+    }
+
+    // Удаляем пользователя (каскадно удалит остальные связанные данные)
     await queryWithRetry(() =>
       db.delete(users).where(eq(users.id, id))
     );
+
+    console.log('[DELETE USER] Successfully deleted user:', id);
 
     return new Response(
       JSON.stringify({ message: 'Пользователь удален успешно' }), 
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error('[DELETE USER] Error deleting user:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(
-      JSON.stringify({ error: 'Ошибка при удалении пользователя' }),
+      JSON.stringify({ 
+        error: 'Ошибка при удалении пользователя',
+        details: errorMessage.includes('violates foreign key') 
+          ? 'Невозможно удалить: у пользователя есть связанные заказы или данные'
+          : errorMessage
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
