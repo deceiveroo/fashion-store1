@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/server-auth';
 
 export async function GET() {
   try {
-    const session = await auth();
+    const session = await getSession();
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -33,7 +33,7 @@ export async function GET() {
         ua.seen,
         CASE WHEN ua.id IS NOT NULL THEN true ELSE false END as unlocked
       FROM achievements a
-      LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ${userId}::uuid
+      LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ${userId}
       ORDER BY 
         CASE a.rarity
           WHEN 'legendary' THEN 1

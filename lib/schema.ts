@@ -593,6 +593,7 @@ export const supportChatMessages = pgTable('support_chat_messages', {
   imageUrl: text('image_url'),
   sender: text('sender', { enum: ['user', 'ai', 'admin'] }).notNull(),
   isRead: boolean('is_read').default(false),
+  readByAdmin: boolean('read_by_admin').default(false),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
   return {
