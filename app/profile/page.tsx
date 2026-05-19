@@ -237,6 +237,9 @@ export default function ProfilePage() {
       loadNotificationSettings(),
     ]);
     setIsLoadingData(false);
+    
+    // Check achievements after loading profile (in background)
+    checkAchievements();
   };
 
   const loadProfile = async () => {
@@ -292,6 +295,35 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Failed to load wishlist:', error);
       setWishlist([]);
+    }
+  };
+
+  const checkAchievements = async () => {
+    try {
+      // Check all achievements in background
+      const res = await fetch('/api/gamification/check-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.unlocked && data.unlocked.length > 0) {
+          console.log(`🏆 Unlocked ${data.count} achievements:`, data.unlocked);
+          // Show toast for each unlocked achievement
+          data.unlocked.forEach((achievement: any) => {
+            if (achievement.achievement) {
+              toast.success(
+                `🎉 Достижение разблокировано: ${achievement.achievement.name}! +${achievement.achievement.xp} XP, +${achievement.achievement.coins} монет`,
+                { duration: 5000 }
+              );
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check achievements:', error);
     }
   };
 

@@ -183,9 +183,9 @@ export async function checkAchievements(userId: string, action: string, value?: 
       case 'profile_complete':
         // Check profile completion
         const profileResult = await db.execute(sql`
-          SELECT first_name, last_name, phone, address, avatar_url
-          FROM users
-          WHERE id = ${userId}
+          SELECT first_name, last_name, phone, address, avatar
+          FROM user_profiles
+          WHERE user_id = ${userId}
         `);
         
         if (profileResult.rows && profileResult.rows.length > 0) {
@@ -193,7 +193,7 @@ export async function checkAchievements(userId: string, action: string, value?: 
           const hasName = profile.first_name && profile.last_name;
           const hasPhone = profile.phone;
           const hasAddress = profile.address;
-          const hasAvatar = profile.avatar_url;
+          const hasAvatar = profile.avatar;
           
           if (hasName && hasPhone && hasAddress && hasAvatar) {
             achievements.push('profile_complete');
@@ -292,6 +292,8 @@ export async function checkAchievements(userId: string, action: string, value?: 
           if (count >= 50) achievements.push('completionist');
         }
         break;
+
+
     }
 
     // Unlock all eligible achievements
