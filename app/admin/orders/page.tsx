@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Package, Clock, CheckCircle, XCircle, Truck, Download, Eye, ChevronDown, RefreshCw, ShoppingBag, TrendingUp, AlertCircle, Filter, Edit2, Trash2, X, Save, Zap, DollarSign, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
@@ -220,8 +220,8 @@ export default function AdminOrdersPage() {
                     const name = order.recipient ? `${order.recipient.firstName} ${order.recipient.lastName}`.trim() : order.userName || '—';
                     const email = order.recipient?.email || order.userEmail || '—';
                     return (
-                      <>
-                        <tr key={order.id} className="border-b border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
+                      <React.Fragment key={order.id}>
+                        <tr className="border-b border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/10">
@@ -307,7 +307,7 @@ export default function AdminOrdersPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })}
                 </tbody>

@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import ReceiptPreview from '@/components/receipts/ReceiptPreview';
 import DownloadButton from '@/components/receipts/DownloadButton';
+import OrderTrackingModal from '@/components/orders/OrderTrackingModal';
 import { receiptService, Receipt } from '@/lib/receipt-client';
 
 interface OrderItem {
@@ -43,6 +44,7 @@ export default function OrdersPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [showReceiptModal, setShowReceiptModal] = useState<string | null>(null);
+  const [showTrackingModal, setShowTrackingModal] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrders();
@@ -419,6 +421,13 @@ export default function OrdersPage() {
 
                           {/* Actions */}
                           <div className="flex flex-wrap gap-3">
+                            <button 
+                              onClick={() => setShowTrackingModal(order.id)}
+                              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                            >
+                              <Truck size={18} />
+                              Отслеживать
+                            </button>
                             <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">
                               <Download size={18} />
                               Скачать чек
@@ -493,6 +502,42 @@ export default function OrdersPage() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Tracking Modal */}
+      <AnimatePresence>
+        {showTrackingModal && (
+          <OrderTrackingModal
+            trackingNumber={`TRK-${showTrackingModal.slice(0, 8).toUpperCase()}`}
+            trackingStatus="in_transit"
+            currentLocation="Чебоксары, сортировочный центр"
+            estimatedDelivery={new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()}
+            trackingHistory={[
+              {
+                id: '1',
+                status: 'pending',
+                location: 'Москва, склад отправителя',
+                description: 'Заказ оформлен и передан в службу доставки',
+                timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+              },
+              {
+                id: '2',
+                status: 'in_transit',
+                location: 'Нижний Новгород, транзитный пункт',
+                description: 'Посылка прибыла в транзитный пункт',
+                timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+              },
+              {
+                id: '3',
+                status: 'in_transit',
+                location: 'Чебоксары, сортировочный центр',
+                description: 'Посылка проходит сортировку',
+                timestamp: new Date().toISOString()
+              }
+            ]}
+            onClose={() => setShowTrackingModal(null)}
+          />
         )}
       </AnimatePresence>
     </div>
