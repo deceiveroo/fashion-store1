@@ -20,31 +20,53 @@ interface NotificationsPanelProps {
 }
 
 export default function NotificationsPanel({ notifications, setNotifications }: NotificationsPanelProps) {
-  const updateNotification = (key: string, value: boolean) => {
+  const updateNotification = async (key: string, value: boolean) => {
     const newSettings = { ...notifications, [key]: value };
     setNotifications(newSettings);
-    fetch('/api/profile/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('auth-token')}`,
-      },
-      body: JSON.stringify(newSettings),
-    });
+    
+    try {
+      const res = await fetch('/api/profile/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Use cookies for auth
+        body: JSON.stringify({ [key]: value }),
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to update settings');
+      }
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      // Revert on error
+      setNotifications(notifications);
+    }
   };
 
-  const toggleAll = (enable: boolean) => {
+  const toggleAll = async (enable: boolean) => {
     const allKeys = Object.keys(notifications);
     const newSettings = allKeys.reduce((acc, key) => ({ ...acc, [key]: enable }), {});
     setNotifications(newSettings);
-    fetch('/api/profile/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('auth-token')}`,
-      },
-      body: JSON.stringify(newSettings),
-    });
+    
+    try {
+      const res = await fetch('/api/profile/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(newSettings),
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to update settings');
+      }
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      // Revert on error
+      setNotifications(notifications);
+    }
   };
 
   const categories = [

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, decimal, timestamp, boolean, json, varchar, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, decimal, timestamp, boolean, json, jsonb, varchar, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // Enum types for PostgreSQL
@@ -722,6 +722,34 @@ export const notificationSettings = pgTable('notification_settings', {
   };
 });
 
+// User Notifications table (история уведомлений)
+export const userNotifications = pgTable('user_notifications', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(), // Заголовок уведомления
+  message: text('message').notNull(), // Текст уведомления
+  type: text('type', { enum: ['order', 'promotion', 'wishlist', 'price_drop', 'security', 'system'] }).notNull(),
+  category: text('category', { enum: ['orders', 'promotions', 'wishlist', 'price_drops', 'newsletter', 'security'] }).notNull(),
+  channel: text('channel', { enum: ['email', 'push', 'sms', 'in_app'] }).notNull(), // Канал доставки
+  read: boolean('read').default(false), // Прочитано ли
+  clicked: boolean('clicked').default(false), // Кликнуто ли
+  actionUrl: text('action_url'), // URL для перехода при клике
+  metadata: jsonb('metadata'), // Дополнительные данные (orderId, productId и т.д.)
+  sentAt: timestamp('sent_at', { mode: 'date' }).defaultNow(), // Когда отправлено
+  readAt: timestamp('read_at', { mode: 'date' }), // Когда прочитано
+  clickedAt: timestamp('clicked_at', { mode: 'date' }), // Когда кликнут
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: index('user_notifications_user_idx').on(table.userId),
+    typeIdx: index('user_notifications_type_idx').on(table.type),
+    readIdx: index('user_notifications_read_idx').on(table.read),
+    createdAtIdx: index('user_notifications_created_at_idx').on(table.createdAt),
+  };
+});
+
 // Relations for new tables
 export const paymentMethodsRelations = relations(paymentMethods, ({ one }) => ({
   user: one(users, { fields: [paymentMethods.userId], references: [users.id] }),
@@ -733,6 +761,10 @@ export const userSessionsRelations = relations(userSessions, ({ one }) => ({
 
 export const notificationSettingsRelations = relations(notificationSettings, ({ one }) => ({
   user: one(users, { fields: [notificationSettings.userId], references: [users.id] }),
+}));
+
+export const userNotificationsRelations = relations(userNotifications, ({ one }) => ({
+  user: one(users, { fields: [userNotifications.userId], references: [users.id] }),
 }));
 
 // Curated Collections table (for manual product selections by admins)

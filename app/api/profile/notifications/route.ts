@@ -2,115 +2,127 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { notificationSettings } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { verifyAuth } from '@/lib/auth';
-import { jsonWithNoCache } from '@/lib/no-cache';
+import { getSession } from '@/lib/server-auth';
 
-// Force dynamic rendering - never cache
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-function isTableMissingError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return (
-    (message.includes('relation') && message.includes('does not exist')) ||
-    message.includes('"notification_settings"')
-  );
-}
-
-const defaultSettings = {
-  ordersEmail: true,
-  ordersPush: true,
-  ordersSms: true,
-  promotionsEmail: true,
-  promotionsPush: false,
-  promotionsSms: false,
-  wishlistEmail: true,
-  wishlistPush: true,
-  wishlistSms: false,
-  priceDropsEmail: true,
-  priceDropsPush: true,
-  priceDropsSms: false,
-  newsletterEmail: true,
-  newsletterPush: false,
-  newsletterSms: false,
-  securityEmail: true,
-  securityPush: true,
-  securitySms: true,
-};
-
+// GET /api/profile/notifications - Get user notification settings
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyAuth(request);
-    if (!user) {
+    const session = await getSession();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+
+    // Try to get existing settings
     const settings = await db
       .select()
       .from(notificationSettings)
-      .where(eq(notificationSettings.userId, user.id))
+      .where(eq(notificationSettings.userId, userId))
       .limit(1);
 
+    // If no settings exist, create default ones
     if (settings.length === 0) {
-      // Create default settings
-      const [createdSettings] = await db
+      const [newSettings] = await db
         .insert(notificationSettings)
         .values({
-          userId: user.id,
-          ...defaultSettings,
+          userId,
+          ordersEmail: true,
+          ordersPush: true,
+          ordersSms: false,
+          promotionsEmail: true,
+          promotionsPush: false,
+          promotionsSms: false,
+          wishlistEmail: true,
+          wishlistPush: true,
+          wishlistSms: false,
+          priceDropsEmail: true,
+          priceDropsPush: true,
+          priceDropsSms: false,
+          newsletterEmail: true,
+          newsletterPush: false,
+          newsletterSms: false,
+          securityEmail: true,
+          securityPush: true,
+          securitySms: true,
         })
         .returning();
 
-      return jsonWithNoCache({ settings: createdSettings });
+      return NextResponse.json({ settings: newSettings });
     }
 
-    return jsonWithNoCache({ settings: settings[0] });
+    return NextResponse.json({ settings: settings[0] });
   } catch (error) {
     console.error('Error fetching notification settings:', error);
-    if (isTableMissingError(error)) {
-      return NextResponse.json({ settings: defaultSettings });
-    }
-    return NextResponse.json({ error: 'Failed to fetch notification settings' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch notification settings' },
+      { status: 500 }
+    );
   }
 }
 
+// POST /api/profile/notifications - Update user notification settings
 export async function POST(request: NextRequest) {
   try {
-    const user = await verifyAuth(request);
-    if (!user) {
+    const session = await getSession();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
     const body = await request.json();
 
-    // Update or insert settings
-    const existing = await db
-      .select()
-      .from(notificationSettings)
-      .where(eq(notificationSettings.userId, user.id))
-      .limit(1);
+    // Validate input
+    const allowedFields = [
+      'ordersEmail', 'ordersPush', 'ordersSms',
+      'promotionsEmail', 'promotionsPush', 'promotionsSms',
+      'wishlistEmail', 'wishlistPush', 'wishlistSms',
+      'priceDropsEmail', 'priceDropsPush', 'priceDropsSms',
+      'newsletterEmail', 'newsletterPush', 'newsletterSms',
+      'securityEmail', 'securityPush', 'securitySms',
+    ];
 
-    if (existing.length === 0) {
-      const [settings] = await db
-        .insert(notificationSettings)
-        .values({
-          userId: user.id,
-          ...body,
-        })
-        .returning();
-
-      return NextResponse.json({ settings });
+    const updates: any = {};
+    for (const field of allowedFields) {
+      if (body[field] !== undefined && typeof body[field] === 'boolean') {
+        updates[field] = body[field];
+      }
     }
 
-    const [settings] = await db
-      .update(notificationSettings)
-      .set(body)
-      .where(eq(notificationSettings.userId, user.id))
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: 'No valid fields to update' },
+        { status: 400 }
+      );
+    }
+
+    // Upsert settings
+    const [updatedSettings] = await db
+      .insert(notificationSettings)
+      .values({
+        userId,
+        ...updates,
+      })
+      .onConflictDoUpdate({
+        target: notificationSettings.userId,
+        set: {
+          ...updates,
+          updatedAt: new Date(),
+        },
+      })
       .returning();
 
-    return NextResponse.json({ settings });
+    return NextResponse.json({ 
+      message: 'Notification settings updated',
+      settings: updatedSettings 
+    });
   } catch (error) {
     console.error('Error updating notification settings:', error);
-    return NextResponse.json({ error: 'Failed to update notification settings' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update notification settings' },
+      { status: 500 }
+    );
   }
 }
