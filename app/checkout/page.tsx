@@ -309,10 +309,51 @@ export default function CheckoutPage() {
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    // Маска для телефона
+    if (name === 'phone') {
+      const formatted = formatPhone(value);
+      setFormData(prev => ({ ...prev, phone: formatted }));
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
+  };
+
+  // Форматирование телефона
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return '';
+    
+    let cleanDigits = digits;
+    if (cleanDigits[0] === '8') {
+      cleanDigits = '7' + cleanDigits.substring(1);
+    }
+    if (cleanDigits[0] !== '7') {
+      cleanDigits = '7' + cleanDigits;
+    }
+    
+    cleanDigits = cleanDigits.substring(0, 11);
+    
+    let formatted = '+7';
+    if (cleanDigits.length > 1) {
+      formatted += ' (' + cleanDigits.substring(1, 4);
+    }
+    if (cleanDigits.length >= 4) {
+      formatted += ') ' + cleanDigits.substring(4, 7);
+    }
+    if (cleanDigits.length >= 7) {
+      formatted += '-' + cleanDigits.substring(7, 9);
+    }
+    if (cleanDigits.length >= 9) {
+      formatted += '-' + cleanDigits.substring(9, 11);
+    }
+    
+    return formatted;
   };
 
   const handleDeliverySelect = (method: 'pickup' | 'courier' | 'express') => {
@@ -1091,7 +1132,7 @@ export default function CheckoutPage() {
                           <input
                             type="tel"
                             value={paymentData.sbpPhone}
-                            onChange={(e) => setPaymentData({...paymentData, sbpPhone: e.target.value})}
+                            onChange={(e) => setPaymentData({...paymentData, sbpPhone: formatPhone(e.target.value)})}
                             placeholder="+7 (___) ___-__-__"
                             className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                           />

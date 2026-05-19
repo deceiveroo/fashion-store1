@@ -443,7 +443,7 @@ export default function Header() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="md:hidden bg-white/95 backdrop-blur-lg rounded-lg mt-2 p-4 shadow-xl border border-gray-200 max-h-[70vh] overflow-y-auto"
+                className="md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg rounded-lg mt-2 p-4 shadow-xl border border-gray-200 dark:border-gray-800 max-h-[70vh] overflow-y-auto"
               >
                 {/* Mobile Search Input - Simplified */}
                 <div className="mb-4">
@@ -478,7 +478,7 @@ export default function Header() {
                     >
                       <Link
                         href={item.href}
-                        className="block py-2 text-gray-700 hover:text-purple-600 font-medium transition-colors"
+                        className="block py-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors"
                         onClick={closeMobileMenu}
                       >
                         {item.name}
@@ -489,7 +489,7 @@ export default function Header() {
                   {/* Mobile User Links */}
                   {user ? (
                     <>
-                      <div className="border-t border-gray-200 pt-3 mt-2">
+                      <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-2">
                         {/* Mobile profile avatar */}
                         <div className="flex items-center gap-3 py-2 mb-2">
                           {(user.avatar || user.image) ? (
@@ -506,14 +506,14 @@ export default function Header() {
                             </div>
                           )}
                           <div>
-                            <p className="font-medium text-gray-900 text-sm">{user?.name || user?.email}</p>
-                            <p className="text-xs text-gray-500">{user?.email}</p>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">{user?.name || user?.email}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
                           </div>
                         </div>
-                        <Link href="/profile" className="block py-2 text-gray-700 hover:text-purple-600 font-medium" onClick={closeMobileMenu}>Мой профиль</Link>
-                        <Link href="/orders" className="block py-2 text-gray-700 hover:text-purple-600 font-medium" onClick={closeMobileMenu}>Мои заказы</Link>
-                        <Link href="/favorites" className="block py-2 text-gray-700 hover:text-purple-600 font-medium" onClick={closeMobileMenu}>Избранное</Link>
-                        <button onClick={() => { logout(); closeMobileMenu(); }} className="block w-full text-left py-2 text-red-600 hover:text-red-700 font-medium">Выйти</button>
+                        <Link href="/profile" className="block py-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 font-medium" onClick={closeMobileMenu}>Мой профиль</Link>
+                        <Link href="/orders" className="block py-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 font-medium" onClick={closeMobileMenu}>Мои заказы</Link>
+                        <Link href="/favorites" className="block py-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 font-medium" onClick={closeMobileMenu}>Избранное</Link>
+                        <button onClick={() => { logout(); closeMobileMenu(); }} className="block w-full text-left py-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium">Выйти</button>
                       </div>
                       
                       {/* Mobile Admin Link */}
