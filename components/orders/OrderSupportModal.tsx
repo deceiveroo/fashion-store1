@@ -37,7 +37,9 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
       });
 
       if (!res.ok) {
-        throw new Error('Failed to create support chat');
+        const errorData = await res.json().catch(() => ({}));
+        console.error('API Error:', errorData);
+        throw new Error(errorData.details || errorData.error || 'Failed to create support chat');
       }
 
       const data = await res.json();
@@ -52,7 +54,8 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
       
     } catch (error) {
       console.error('Error creating support chat:', error);
-      toast.error('❌ Не удалось отправить запрос. Попробуйте позже.');
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось отправить запрос. Попробуйте позже.';
+      toast.error(`❌ ${errorMessage}`);
     } finally {
       setIsSending(false);
     }

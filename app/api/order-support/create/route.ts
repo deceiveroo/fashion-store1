@@ -44,7 +44,11 @@ export async function POST(request: NextRequest) {
     if (sessionError) {
       console.error('Error creating chat session:', sessionError);
       return NextResponse.json(
-        { error: 'Failed to create chat session' },
+        { 
+          error: 'Failed to create chat session',
+          details: sessionError.message,
+          code: sessionError.code
+        },
         { status: 500 }
       );
     }
@@ -66,7 +70,11 @@ export async function POST(request: NextRequest) {
     if (messageError) {
       console.error('Error creating message:', messageError);
       return NextResponse.json(
-        { error: 'Failed to create message' },
+        { 
+          error: 'Failed to create message',
+          details: messageError.message,
+          code: messageError.code
+        },
         { status: 500 }
       );
     }
@@ -97,7 +105,11 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[ORDER SUPPORT] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to create support chat' },
+      { 
+        error: 'Failed to create support chat',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
