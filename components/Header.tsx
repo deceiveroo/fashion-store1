@@ -4,11 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, User, Menu, X, Search as SearchIcon, Plus, LogOut, ChevronDown, Package, Heart } from 'lucide-react';
+import { ShoppingBag, User, Menu, X, Search as SearchIcon, Plus, LogOut, ChevronDown, Package, Heart, Bell } from 'lucide-react';
 import SearchComponent from './SearchNew';
 import Cart from './Cart';
 import ThemeToggle from './ThemeToggle';
-import NotificationsBell from './NotificationsBell';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -27,6 +26,7 @@ export default function Header() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const { user, isLoading } = useAuth();
   const { state: cart } = useCart();
 
@@ -58,9 +58,29 @@ export default function Header() {
       if (res.ok) {
         const data = await res.json();
         setUnreadCount(data.unreadCount || 0);
+        setNotifications(data.notifications?.slice(0, 5) || []); // Загружаем только последние 5
       }
     } catch (error) {
       console.error('Error fetching unread count:', error);
+    }
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      // Обновляем локальное состояние
+      setNotifications(prev =>
+        prev.map(n =>
+          n.id === notificationId ? { ...n, isRead: true } : n
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking as read:', error);
     }
   };
 
@@ -168,9 +188,6 @@ export default function Header() {
               {/* Theme Toggle */}
               <ThemeToggle />
 
-              {/* Notifications Bell */}
-              {user && <NotificationsBell />}
-
               {/* Cart Button */}
               <motion.button
                 whileHover={{ scale: 1.1 }}
@@ -264,7 +281,7 @@ export default function Header() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         data-user-menu
-                        className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-[70]"
+                        className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-[70]"
                       >
                         <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                           <p className="font-semibold text-gray-900 dark:text-gray-100">
@@ -299,6 +316,71 @@ export default function Header() {
                           >
                             <Heart size={18} />
                             <span>Избранное</span>
+                          </Link>
+                        </div>
+                        
+                        {/* Notifications Section */}
+                        <div className="border-t border-gray-100 dark:border-gray-700">
+                          <div className="px-4 py-3 flex items-center justify-between">
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                              <Bell size={16} className="text-purple-600" />
+                              Уведомления
+                            </h3>
+                            {unreadCount > 0 && (
+                              <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full font-bold">
+                                {unreadCount}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {notifications.length === 0 ? (
+                            <div className="px-4 py-6 text-center">
+                              <Bell size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Нет новых уведомлений</p>
+                            </div>
+                          ) : (
+                            <div className="max-h-64 overflow-y-auto">
+                              {notifications.map((notification) => (
+                                <button
+                                  key={notification.id}
+                                  onClick={() => {
+                                    if (!notification.isRead) {
+                                      markAsRead(notification.id);
+                                    }
+                                  }}
+                                  className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+                                    !notification.isRead ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    {!notification.isRead && (
+                                      <span className="w-2 h-2 bg-purple-600 rounded-full mt-1.5 flex-shrink-0"></span>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-sm font-medium ${
+                                        !notification.isRead ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
+                                      }`}>
+                                        {notification.title}
+                                      </p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                                        {notification.message}
+                                      </p>
+                                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                        {new Date(notification.createdAt).toLocaleDateString('ru-RU')}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <Link
+                            href="/profile?section=notifications"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="block px-4 py-3 text-center text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors font-medium"
+                          >
+                            Смотреть все уведомления →
                           </Link>
                         </div>
                         
