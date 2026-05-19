@@ -72,6 +72,7 @@ const NAV = [
     items: [
       { label: 'Команда',   href: '/admin/users',           icon: Shield,          roles: ['admin'] },
       { label: 'Категории', href: '/admin/categories',      icon: Tag,             roles: ['admin','manager'] },
+      { label: 'Промокоды', href: '/admin/coupons',         icon: Sparkles,        roles: ['admin','manager'] },
       { label: 'Настройки', href: '/admin/settings',        icon: Settings,        roles: ['admin'] },
     ],
   },

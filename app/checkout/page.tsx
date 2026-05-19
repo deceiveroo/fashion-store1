@@ -1264,23 +1264,15 @@ export default function CheckoutPage() {
                         <Gift size={16} className="text-purple-600" />
                         Промокод
                       </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                          placeholder="Введите код"
-                          className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm uppercase"
-                          onKeyDown={(e) => e.key === 'Enter' && validatePromoCode()}
-                        />
-                        <button
-                          onClick={validatePromoCode}
-                          disabled={validatingCoupon}
-                          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 text-sm font-medium whitespace-nowrap"
-                        >
-                          {validatingCoupon ? '...' : 'Применить'}
-                        </button>
-                      </div>
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => e.key === 'Enter' && validatePromoCode()}
+                        onBlur={() => promoCode.trim() && validatePromoCode()}
+                        placeholder="Введите код и нажмите Enter"
+                        className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm uppercase transition-all placeholder:text-gray-400"
+                      />
                     </div>
                   ) : (
                     <motion.div

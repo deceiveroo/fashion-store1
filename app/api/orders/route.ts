@@ -330,7 +330,7 @@ export async function POST(request: NextRequest) {
           deliveryPrice: deliveryPrice ? deliveryPrice.toString() : '0',
           deliveryMethod,
           paymentMethod,
-          couponId: couponId || null, // Save coupon ID if provided
+          // couponId: couponId || null, // TODO: Add coupon_id column to orders table first
           status: 'processing', // Changed from 'pending' to 'processing'
           recipient,
           comment: comment || ''
@@ -358,23 +358,22 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    // Increment coupon usage count if coupon was used
-    if (couponId) {
-      try {
-        const coupon = await db.select().from(coupons).where(eq(coupons.id, couponId)).limit(1);
-        if (coupon.length > 0) {
-          await db.update(coupons)
-            .set({ 
-              usedCount: (coupon[0].usedCount || 0) + 1,
-              updatedAt: new Date()
-            })
-            .where(eq(coupons.id, couponId));
-        }
-      } catch (couponError) {
-        console.error('Error updating coupon usage count:', couponError);
-        // Don't fail the order if coupon update fails
-      }
-    }
+    // TODO: Increment coupon usage count after adding coupon_id column to orders table
+    // if (couponId) {
+    //   try {
+    //     const coupon = await db.select().from(coupons).where(eq(coupons.id, couponId)).limit(1);
+    //     if (coupon.length > 0) {
+    //       await db.update(coupons)
+    //         .set({ 
+    //           usedCount: (coupon[0].usedCount || 0) + 1,
+    //           updatedAt: new Date()
+    //         })
+    //         .where(eq(coupons.id, couponId));
+    //     }
+    //   } catch (couponError) {
+    //     console.error('Error updating coupon usage count:', couponError);
+    //   }
+    // }
 
     // Gamification: Award XP for purchase and check achievements
     try {
