@@ -1,33 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { coupons } from '@/lib/schema';
-import { eq, and, or, lte, gte, isNull } from 'drizzle-orm';
-import { isStaff } from '@/lib/server-auth';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+import { eq, or, lte, gte, isNull } from 'drizzle-orm';
+import { getSession } from '@/lib/server-auth';
 
 // GET /api/admin/coupons - Get all coupons
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const session = await getSession();
     
-    if (!token) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let userId: string;
-    try {
-      const { payload } = await jwtVerify(token, JWT_SECRET);
-      userId = payload.userId as string;
-    } catch (error) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-
-    const staffUser = await isStaff();
-    if (!staffUser) {
+    // Check if user is admin or manager
+    const userRole = (session.user as any).role;
+    if (userRole !== 'admin' && userRole !== 'manager') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -71,25 +59,19 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/coupons - Create new coupon
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const session = await getSession();
     
-    if (!token) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let userId: string;
-    try {
-      const { payload } = await jwtVerify(token, JWT_SECRET);
-      userId = payload.userId as string;
-    } catch (error) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-
-    const staffUser = await isStaff();
-    if (!staffUser) {
+    // Check if user is admin or manager
+    const userRole = (session.user as any).role;
+    if (userRole !== 'admin' && userRole !== 'manager') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    const userId = session.user.id;
 
     const body = await request.json();
     const { code, discount, type, minOrder, maxUses, expiresAt, active } = body;
