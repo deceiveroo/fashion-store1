@@ -123,6 +123,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, status]);
 
   const getToken = (): string | null => {
+    // NextAuth uses cookies for authentication, not localStorage
+    // We can check if user is authenticated by checking the user state
+    if (user && session?.accessToken) {
+      return session.accessToken as string;
+    }
+    // Fallback to localStorage for legacy tokens
     if (typeof window !== 'undefined') {
       return localStorage.getItem('auth-token');
     }
@@ -341,8 +347,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const addOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'status'>): Promise<Order> => {
-    const token = getToken();
-    if (!token) {
+    // NextAuth uses cookies for authentication
+    if (!user) {
       throw new Error('User not authenticated. Please log in to complete your order.');
     }
 
@@ -364,9 +370,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include', // Include cookies for NextAuth session
         body: JSON.stringify(order),
         signal: controller.signal,
       });
