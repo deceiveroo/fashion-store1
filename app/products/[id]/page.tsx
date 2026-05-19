@@ -65,9 +65,12 @@ async function getProduct(id: string) {
       images: productData
         .filter(item => item.images)
         .map(item => ({
-          id: item.images?.id,
-          url: item.images?.url,
-          isMain: item.images?.isMain,
+          id: item.images?.id || '',
+          url: item.images?.url || '',
+          isMain: item.images?.isMain || false,
+          mediaType: ((item.images as any)?.mediaType as 'image' | 'video') || 'image',
+          duration: (item.images as any)?.duration || undefined,
+          thumbnailUrl: (item.images as any)?.thumbnailUrl || undefined,
         })),
       categories: categoryNames.length > 0 ? categoryNames : ['Без категории'],
       mainImage: productData.find(item => item.images?.isMain)?.images?.url || 

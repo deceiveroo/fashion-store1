@@ -12,9 +12,19 @@ import {
   Trash2,
   ExternalLink,
   Sparkles,
+  Play,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
+
+type MediaItem = {
+  id?: string;
+  url: string;
+  type: 'image' | 'video';
+  thumbnailUrl?: string;
+  duration?: number;
+};
 
 export type CategoryOption = { id: string; name: string; slug: string };
 
@@ -46,11 +56,12 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
   });
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [images, setImages] = useState<string[]>([]);
+  const [media, setMedia] = useState<MediaItem[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadType, setUploadType] = useState<'image' | 'video'>('image');
   const [loading, setLoading] = useState(mode === 'edit');
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     void loadCategories();
@@ -88,9 +99,23 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
         isNew: Boolean(data.isNew),
       });
       setSelectedCategories(data.categories ?? []);
-      const initialImages = data.images?.length ? data.images : data.mainImage ? [data.mainImage] : [];
-      console.log('[AdminProductForm] Loaded product images:', initialImages);
-      setImages(initialImages);
+      // Load media (images and videos)
+      const initialMedia: MediaItem[] = [];
+      if (data.images && data.images.length > 0) {
+        data.images.forEach((img: any) => {
+          initialMedia.push({
+            id: img.id,
+            url: img.url,
+            type: img.mediaType || 'image',
+            thumbnailUrl: img.thumbnailUrl,
+            duration: img.duration,
+          });
+        });
+      } else if (data.mainImage) {
+        initialMedia.push({ url: data.mainImage, type: 'image' });
+      }
+      console.log('[AdminProductForm] Loaded product media:', initialMedia);
+      setMedia(initialMedia);
     } catch {
       toast.error('Ошибка загрузки');
       router.push('/admin/products');
@@ -102,24 +127,43 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast.error('Нужен файл изображения');
+    
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+    
+    if (!isVideo && !isImage) {
+      toast.error('Нужен файл изображения или видео');
       return;
     }
+    
     setUploading(true);
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/api/upload', { method: 'POST', credentials: 'include', body: fd });
+      fd.append('productId', productId || 'temp');
+      fd.append('mediaType', uploadType);
+      
+      const res = await fetch(`/api/admin/products/${productId}/media`, { 
+        method: 'POST', 
+        credentials: 'include', 
+        body: fd 
+      });
       const data = await res.json();
-      if (res.ok && data.url) {
-        console.log('[AdminProductForm] Upload successful, URL:', data.url);
-        setImages((prev) => {
-          const newImages = [...prev, data.url];
-          console.log('[AdminProductForm] Updated images state:', newImages);
-          return newImages;
+      
+      if (res.ok && data.media) {
+        console.log('[AdminProductForm] Upload successful:', data.media);
+        setMedia((prev) => {
+          const newMedia = [...prev, {
+            id: data.media.id,
+            url: data.media.url,
+            type: data.media.mediaType || uploadType,
+            thumbnailUrl: data.media.thumbnailUrl,
+            duration: data.media.duration,
+          }];
+          console.log('[AdminProductForm] Updated media state:', newMedia);
+          return newMedia;
         });
-        toast.success('Фото загружено');
+        toast.success(isVideo ? 'Видео загружено' : 'Фото загружено');
       } else {
         toast.error(data.error || 'Ошибка загрузки');
       }
@@ -136,7 +180,7 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
       ...form,
       price: parseFloat(form.price),
       categories: selectedCategories,
-      images: images.length > 0 ? images : ['/placeholder-image.jpg'],
+      images: media.length > 0 ? media.map(m => m.url) : ['/placeholder-image.jpg'],
     };
     console.log('[AdminProductForm] Sending payload:', JSON.stringify(data, null, 2));
     return data;
@@ -338,7 +382,37 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
               </div>
             </Section>
 
-            <Section title="Фотографии">
+            <Section title="Медиа (Фото и Видео)">
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                {/* Type selector */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUploadType('image')}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      uploadType === 'image'
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <ImageIcon className="h-4 w-4 inline mr-2" />
+                    Фото
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadType('video')}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      uploadType === 'video'
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <Play className="h-4 w-4 inline mr-2" />
+                    Видео
+                  </button>
+                </div>
+              </div>
+              
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="url"
@@ -351,7 +425,7 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                   type="button"
                   onClick={() => {
                     if (newImageUrl.trim()) {
-                      setImages((p) => [...p, newImageUrl.trim()]);
+                      setMedia((p) => [...p, { url: newImageUrl.trim(), type: uploadType }]);
                       setNewImageUrl('');
                     }
                   }}
@@ -362,26 +436,50 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                 </button>
                 <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400 hover:bg-emerald-500/20">
                   <Upload className="h-4 w-4" />
-                  {uploading ? '...' : 'Файл'}
+                  {uploading ? '...' : (uploadType === 'video' ? 'Видео' : 'Файл')}
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept={uploadType === 'video' ? 'video/*' : 'image/*'}
                     className="hidden"
                     onChange={handleUpload}
                     disabled={uploading}
                   />
                 </label>
               </div>
-              {images.length > 0 && (
+              
+              {media.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {images.map((url, i) => (
-                    <div key={`${url}-${i}`} className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-white/10">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="" className="h-full w-full object-cover" />
+                  {media.map((item, i) => (
+                    <div key={`${item.url}-${i}`} className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-white/10">
+                      {item.type === 'video' ? (
+                        <>
+                          {item.thumbnailUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full bg-gray-800 flex items-center justify-center">
+                              <Play className="h-12 w-12 text-white/50" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                            <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                              <Play className="w-5 h-5 text-gray-900 ml-0.5" fill="currentColor" />
+                            </div>
+                          </div>
+                          {item.duration && (
+                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 text-white text-[10px] rounded font-medium">
+                              {Math.floor(item.duration / 60)}:{String(item.duration % 60).padStart(2, '0')}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.url} alt="" className="h-full w-full object-cover" />
+                      )}
                       <button
                         type="button"
-                        onClick={() => setImages((p) => p.filter((_, idx) => idx !== i))}
+                        onClick={() => setMedia((p) => p.filter((_, idx) => idx !== i))}
                         className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <X className="h-3.5 w-3.5" />
@@ -389,6 +487,11 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                       {i === 0 && (
                         <span className="absolute bottom-2 left-2 rounded bg-violet-600 px-1.5 py-0.5 text-[10px] text-white">
                           Главное
+                        </span>
+                      )}
+                      {item.type === 'video' && (
+                        <span className="absolute top-2 left-2 rounded bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">
+                          Видео
                         </span>
                       )}
                     </div>

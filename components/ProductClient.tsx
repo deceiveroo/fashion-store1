@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingBag, Play } from 'lucide-react';
 import AddToCartButton from './AddToCartButton';
 import FavoriteButton from './FavoriteButton';
 import ProductCard from '@/components/product-card';
@@ -14,6 +14,9 @@ interface ProductImage {
   id: string;
   url: string;
   isMain: boolean;
+  mediaType?: 'image' | 'video';
+  duration?: number;
+  thumbnailUrl?: string;
 }
 
 interface Product {
@@ -60,7 +63,14 @@ export default function ProductClient({ product }: ProductClientProps) {
     if (product.images.length > 0) {
       return product.images.filter((img) => img?.url);
     }
-    return [{ id: '1', url: getPlaceholderImage(product.id), isMain: true }];
+    return [{ 
+      id: '1', 
+      url: getPlaceholderImage(product.id), 
+      isMain: true, 
+      mediaType: 'image' as const,
+      duration: undefined,
+      thumbnailUrl: undefined
+    }];
   }, [product.id, product.images]);
 
   const cartItemData = {
@@ -167,16 +177,27 @@ export default function ProductClient({ product }: ProductClientProps) {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <Image
-                    src={allImages[selectedImage]?.url || getPlaceholderImage(product.id)}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    priority={selectedImage === 0}
-                    loading={selectedImage === 0 ? 'eager' : 'lazy'}
-                    quality={85}
-                    className="object-cover"
-                  />
+                  {allImages[selectedImage]?.mediaType === 'video' ? (
+                    <video
+                      src={allImages[selectedImage]?.url}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={allImages[selectedImage]?.url || getPlaceholderImage(product.id)}
+                      alt={product.name}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      priority={selectedImage === 0}
+                      loading={selectedImage === 0 ? 'eager' : 'lazy'}
+                      quality={85}
+                      className="object-cover"
+                    />
+                  )}
                 </motion.div>
               </AnimatePresence>
 
@@ -242,15 +263,39 @@ export default function ProductClient({ product }: ProductClientProps) {
                         : 'opacity-70 hover:opacity-100 ring-1 ring-gray-200 dark:ring-neutral-800'
                     }`}
                   >
-                    <Image
-                      src={image.url}
-                      alt=""
-                      fill
-                      sizes="(max-width: 640px) 25vw, 15vw"
-                      loading="lazy"
-                      quality={60}
-                      className="object-cover"
-                    />
+                    {image.mediaType === 'video' && image.thumbnailUrl ? (
+                      <Image
+                        src={image.thumbnailUrl}
+                        alt=""
+                        fill
+                        sizes="(max-width: 640px) 25vw, 15vw"
+                        loading="lazy"
+                        quality={60}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src={image.url}
+                        alt=""
+                        fill
+                        sizes="(max-width: 640px) 25vw, 15vw"
+                        loading="lazy"
+                        quality={60}
+                        className="object-cover"
+                      />
+                    )}
+                    {image.mediaType === 'video' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                          <Play className="w-5 h-5 text-gray-900 ml-0.5" fill="currentColor" />
+                        </div>
+                      </div>
+                    )}
+                    {image.duration && (
+                      <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 text-white text-[10px] rounded font-medium">
+                        {Math.floor(image.duration / 60)}:{String(image.duration % 60).padStart(2, '0')}
+                      </span>
+                    )}
                   </button>
                 ))}
               </motion.div>

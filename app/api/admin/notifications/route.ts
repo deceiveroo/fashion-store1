@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH /api/admin/notifications/:id - Update notification
+// PATCH /api/admin/notifications/:id - Update notification (partial update)
 export async function PATCH(request: NextRequest) {
   try {
     const session = await getSession();
@@ -137,6 +137,96 @@ export async function PATCH(request: NextRequest) {
     if (isActive !== undefined) updateData.isActive = isActive;
     if (title) updateData.title = title;
     if (message) updateData.message = message;
+
+    const [updated] = await db
+      .update(systemNotifications)
+      .set(updateData)
+      .where(eq(systemNotifications.id, id))
+      .returning();
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: 'Notification not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      notification: updated,
+    });
+  } catch (error) {
+    console.error('Error updating notification:', error);
+    return NextResponse.json(
+      { error: 'Failed to update notification' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/admin/notifications/:id - Full update notification
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getSession();
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'admin' && userRole !== 'manager') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Notification ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { title, message, type, targetAudience, expiresAt, isActive } = body;
+
+    // Validate required fields
+    if (!title || !message) {
+      return NextResponse.json(
+        { error: 'Title and message are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate type
+    const validTypes = ['info', 'warning', 'success', 'error'];
+    if (type && !validTypes.includes(type)) {
+      return NextResponse.json(
+        { error: 'Invalid notification type' },
+        { status: 400 }
+      );
+    }
+
+    // Validate target audience
+    const validAudiences = ['all', 'registered', 'admins', 'specific'];
+    if (targetAudience && !validAudiences.includes(targetAudience)) {
+      return NextResponse.json(
+        { error: 'Invalid target audience' },
+        { status: 400 }
+      );
+    }
+
+    const updateData: any = {
+      title,
+      message,
+      type: type || 'info',
+      targetAudience: targetAudience || 'all',
+      updatedAt: new Date(),
+    };
+
+    if (expiresAt) updateData.expiresAt = new Date(expiresAt);
+    if (isActive !== undefined) updateData.isActive = isActive;
 
     const [updated] = await db
       .update(systemNotifications)

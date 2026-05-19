@@ -137,10 +137,14 @@ export const productImages = pgTable('product_images', {
   altText: text('alt_text'),
   isMain: boolean('is_primary').default(false),
   order: integer('sort_order').default(0),
+  mediaType: text('media_type').default('image').notNull(), // 'image' or 'video'
+  duration: integer('duration'), // Duration in seconds for videos
+  thumbnailUrl: text('thumbnail_url'), // Thumbnail for video preview
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
   return {
     productOrderIdx: index('product_images_product_sort_idx').on(table.productId, table.order),
+    mediaTypeIdx: index('product_images_media_type_idx').on(table.mediaType),
   };
 });
 

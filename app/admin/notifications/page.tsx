@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, Plus, Trash2, ToggleLeft, ToggleRight, AlertCircle, Info, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Bell, Plus, Trash2, ToggleLeft, ToggleRight, AlertCircle, Info, CheckCircle, AlertTriangle, Edit3, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Notification {
@@ -19,6 +19,7 @@ export default function AdminNotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     message: '',
@@ -50,15 +51,19 @@ export default function AdminNotificationsPage() {
     e.preventDefault();
     
     try {
-      const res = await fetch('/api/admin/notifications', {
-        method: 'POST',
+      const url = editingId ? `/api/admin/notifications/${editingId}` : '/api/admin/notifications';
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
       if (res.ok) {
-        toast.success('Уведомление создано');
+        toast.success(editingId ? 'Уведомление обновлено' : 'Уведомление создано');
         setShowForm(false);
+        setEditingId(null);
         setFormData({
           title: '',
           message: '',
@@ -68,11 +73,11 @@ export default function AdminNotificationsPage() {
         });
         fetchNotifications();
       } else {
-        toast.error('Ошибка при создании');
+        toast.error('Ошибка при сохранении');
       }
     } catch (error) {
-      console.error('Error creating notification:', error);
-      toast.error('Ошибка при создании');
+      console.error('Error saving notification:', error);
+      toast.error('Ошибка при сохранении');
     }
   };
 
@@ -108,6 +113,30 @@ export default function AdminNotificationsPage() {
     } catch (error) {
       toast.error('Ошибка при удалении');
     }
+  };
+
+  const startEdit = (notification: Notification) => {
+    setEditingId(notification.id);
+    setFormData({
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      targetAudience: notification.targetAudience,
+      expiresAt: notification.expiresAt ? new Date(notification.expiresAt).toISOString().slice(0, 16) : '',
+    });
+    setShowForm(true);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setShowForm(false);
+    setFormData({
+      title: '',
+      message: '',
+      type: 'info',
+      targetAudience: 'all',
+      expiresAt: '',
+    });
   };
 
   const getTypeIcon = (type: string) => {
@@ -157,7 +186,18 @@ export default function AdminNotificationsPage() {
       {/* Form */}
       {showForm && (
         <form onSubmit={handleSubmit} className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold mb-4">Создать уведомление</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">
+              {editingId ? 'Редактировать уведомление' : 'Создать уведомление'}
+            </h2>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
           
           <div className="space-y-4">
             <div>
@@ -289,8 +329,16 @@ export default function AdminNotificationsPage() {
 
                 <div className="flex items-center gap-2 ml-4">
                   <button
+                    onClick={() => startEdit(notification)}
+                    className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-500 rounded"
+                    title="Редактировать"
+                  >
+                    <Edit3 className="h-5 w-5" />
+                  </button>
+                  <button
                     onClick={() => toggleActive(notification.id, notification.isActive)}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                    title={notification.isActive ? 'Деактивировать' : 'Активировать'}
                   >
                     {notification.isActive ? (
                       <ToggleRight className="h-6 w-6 text-green-500" />
@@ -301,6 +349,7 @@ export default function AdminNotificationsPage() {
                   <button
                     onClick={() => deleteNotification(notification.id)}
                     className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-500 rounded"
+                    title="Удалить"
                   >
                     <Trash2 className="h-5 w-5" />
                   </button>
