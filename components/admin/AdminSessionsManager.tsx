@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Monitor, Smartphone, Tablet, Trash2, RefreshCw, 
-  AlertCircle, CheckCircle, Clock, MapPin, Shield 
+  AlertCircle, Clock, MapPin, Shield, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -103,172 +103,192 @@ export default function AdminSessionsManager() {
   const getDeviceIcon = (icon: string) => {
     switch (icon) {
       case 'mobile':
-        return <Smartphone className="w-5 h-5" />;
+        return <Smartphone className="h-5 w-5" />;
       case 'tablet':
-        return <Tablet className="w-5 h-5" />;
+        return <Tablet className="h-5 w-5" />;
       default:
-        return <Monitor className="w-5 h-5" />;
+        return <Monitor className="h-5 w-5" />;
     }
   };
 
-  if (loading && sessions.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-violet-500" />
-          <p className="text-gray-600 dark:text-gray-400">Загрузка сессий...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && sessions.length === 0) {
-    return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-red-900 dark:text-red-300">Ошибка</h3>
-            <p className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</p>
-            <button
-              onClick={loadSessions}
-              className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              Повторить
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const getDeviceColor = (icon: string) => {
+    switch (icon) {
+      case 'mobile':
+        return 'bg-blue-500/20 text-blue-400';
+      case 'tablet':
+        return 'bg-purple-500/20 text-purple-400';
+      default:
+        return 'bg-emerald-500/20 text-emerald-400';
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Enhanced Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Monitor className="h-7 w-7 text-violet-400" />
             Активные сессии
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Всего сессий: {sessions.length}
-          </p>
+          </h1>
+          <p className="text-sm text-white/40 mt-1">Просмотр и управление активными сессиями всех пользователей</p>
         </div>
-        <button
-          onClick={loadSessions}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        <button onClick={loadSessions} disabled={loading}
+          className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all disabled:opacity-50">
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Обновить
         </button>
       </div>
 
-      {/* Sessions List */}
-      {sessions.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-          <Monitor className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600 dark:text-gray-400">Нет активных сессий</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {sessions.map((session) => (
-              <motion.div
-                key={session.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  {/* Left side - User & Device info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white">
-                        {getDeviceIcon(session.parsedUA.icon)}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                          {session.userEmail}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                          {session.userName || 'Без имени'}
-                        </p>
-                      </div>
-                    </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Всего сессий', value: sessions.length, icon: Monitor, color: 'bg-violet-500/20 text-violet-400' },
+          { label: 'Уникальных пользователей', value: new Set(sessions.map(s => s.userId)).size, icon: Users, color: 'bg-blue-500/20 text-blue-400' },
+          { label: 'Мобильные', value: sessions.filter(s => s.parsedUA.icon === 'mobile').length, icon: Smartphone, color: 'bg-emerald-500/20 text-emerald-400' },
+          { label: 'Десктоп', value: sessions.filter(s => s.parsedUA.icon === 'desktop').length, icon: Monitor, color: 'bg-amber-500/20 text-amber-400' },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-5 hover:bg-white/[0.08] transition-all backdrop-blur-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-white/50 uppercase tracking-wider">{label}</p>
+                <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+              </div>
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
+                <Icon className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3 text-sm">
+      {/* Table */}
+      <div className="rounded-2xl border border-white/5 bg-white/[0.03] overflow-hidden">
+        {loading && sessions.length === 0 ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          </div>
+        ) : error && sessions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-white/20">
+            <AlertCircle className="h-10 w-10 mb-2 opacity-40 text-red-400" />
+            <p className="text-sm text-red-400">{error}</p>
+            <button onClick={loadSessions} className="mt-3 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-medium transition-colors">
+              Повторить
+            </button>
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-white/20">
+            <Monitor className="h-10 w-10 mb-2 opacity-40" />
+            <p className="text-sm">Нет активных сессий</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/5">
+                  {['Пользователь', 'Устройство', 'Локация', 'IP', 'Активность', ''].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider last:text-right">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence mode="popLayout">
+                  {sessions.map(session => (
+                    <motion.tr
+                      key={session.id}
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0, x: -100 }}
+                      className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+                    >
+                      {/* User */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${getDeviceColor(session.parsedUA.icon)}`}>
+                            {getDeviceIcon(session.parsedUA.icon)}
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">{session.userEmail}</p>
+                            <p className="text-[10px] text-white/30">{session.userName || 'Без имени'}</p>
+                          </div>
+                        </div>
+                      </td>
+
                       {/* Device */}
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <Monitor className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="truncate">{session.parsedUA.device}</span>
-                      </div>
+                      <td className="px-4 py-3">
+                        <p className="text-xs text-white/60">{session.parsedUA.browser}</p>
+                        <p className="text-[10px] text-white/30">{session.parsedUA.os}</p>
+                      </td>
 
                       {/* Location */}
-                      {session.location && (
-                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="truncate">{session.location}</span>
-                        </div>
-                      )}
+                      <td className="px-4 py-3">
+                        {session.location ? (
+                          <p className="text-xs text-white/60 flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-white/20" />
+                            {session.location}
+                          </p>
+                        ) : (
+                          <span className="text-xs text-white/20">—</span>
+                        )}
+                      </td>
 
                       {/* IP */}
-                      {session.ip && (
-                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                          <Shield className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="font-mono text-xs">{session.ip}</span>
-                        </div>
-                      )}
+                      <td className="px-4 py-3">
+                        {session.ip ? (
+                          <p className="text-xs text-white/60 font-mono flex items-center gap-1">
+                            <Shield className="h-3 w-3 text-white/20" />
+                            {session.ip}
+                          </p>
+                        ) : (
+                          <span className="text-xs text-white/20">—</span>
+                        )}
+                      </td>
 
                       {/* Last Active */}
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span>{session.lastActiveRelative}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right side - Actions */}
-                  <div className="flex-shrink-0">
-                    {confirmDelete === session.id ? (
-                      <div className="flex flex-col gap-2">
-                        <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                          Подтвердить?
+                      <td className="px-4 py-3">
+                        <p className="text-xs text-white/60 flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-white/20" />
+                          {session.lastActiveRelative}
                         </p>
-                        <div className="flex gap-2">
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3 text-right">
+                        {confirmDelete === session.id ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleDeleteSession(session.id, session.userId)}
+                              disabled={deletingId === session.id}
+                              className="rounded-lg px-2 py-1 text-[10px] font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {deletingId === session.id ? '...' : 'Да'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDelete(null)}
+                              className="rounded-lg px-2 py-1 text-[10px] font-medium bg-white/5 text-white/40 hover:bg-white/10 transition-colors"
+                            >
+                              Нет
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => handleDeleteSession(session.id, session.userId)}
-                            disabled={deletingId === session.id}
-                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
+                            onClick={() => setConfirmDelete(session.id)}
+                            className="rounded-lg p-1.5 text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            title="Завершить сессию"
                           >
-                            {deletingId === session.id ? '...' : 'Да'}
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
-                          <button
-                            onClick={() => setConfirmDelete(null)}
-                            className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium transition-colors"
-                          >
-                            Нет
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmDelete(session.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        title="Завершить сессию"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
+                        )}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
