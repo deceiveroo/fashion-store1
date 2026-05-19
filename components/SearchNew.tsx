@@ -108,20 +108,21 @@ export default function SearchNew() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
-  // Dispatch search state changes for global backdrop
+  // Close search when clicking outside
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('searchStateChange', { detail: { isOpen } }));
-  }, [isOpen]);
-
-  // Listen for closeSearch event from global backdrop
-  useEffect(() => {
-    const handleCloseSearch = () => {
-      setIsOpen(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside the search modal
+      if (!target.closest('[data-search-modal]')) {
+        setIsOpen(false);
+      }
     };
 
-    window.addEventListener('closeSearch', handleCloseSearch as EventListener);
-    return () => window.removeEventListener('closeSearch', handleCloseSearch as EventListener);
-  }, []);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
 
   return (
     <>
@@ -141,25 +142,14 @@ export default function SearchNew() {
 
       <AnimatePresence>
         {isOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-transparent z-[90]"
-              onClick={() => setIsOpen(false)}
-            />
-
-            {/* Search Modal */}
-            <motion.div
-              initial={{ opacity: 0, y: -50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -50 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[95] w-full max-w-3xl px-4"
-            >
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            data-search-modal
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[95] w-full max-w-3xl px-4"
+          >
               <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-purple-100 dark:border-purple-900/50 overflow-hidden">
                 {/* Search Input */}
                 <form onSubmit={handleSubmit} className="p-6 border-b border-gray-200 dark:border-gray-800">
@@ -344,7 +334,6 @@ export default function SearchNew() {
                 </div>
               </div>
             </motion.div>
-          </>
         )}
       </AnimatePresence>
     </>

@@ -21,20 +21,21 @@ export default function Cart({ isOpen, onClose }: CartProps) {
   const total = state?.total || 0;
   const itemCount = state?.itemCount || 0;
 
-  // Dispatch custom event when cart opens/closes
+  // Close cart when clicking outside
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('cartStateChange', { detail: { isOpen } }));
-  }, [isOpen]);
-
-  // Listen for closeCart event from global backdrop
-  useEffect(() => {
-    const handleCloseCart = () => {
-      onClose();
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside the cart panel
+      if (!target.closest('[data-cart-panel]')) {
+        onClose();
+      }
     };
 
-    window.addEventListener('closeCart', handleCloseCart as EventListener);
-    return () => window.removeEventListener('closeCart', handleCloseCart as EventListener);
-  }, [onClose]);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, onClose]);
 
   // Анимация при изменении количества товаров
   // useEffect(() => {
@@ -91,29 +92,18 @@ export default function Cart({ isOpen, onClose }: CartProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Glass Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-transparent z-40"
-            onClick={onClose}
-          />
-          
-          {/* Cart Panel */}
-          <motion.div
-            initial={{ x: '100%', opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: '100%', opacity: 0 }}
-            transition={{ 
-              type: 'spring', 
-              damping: 25,
-              stiffness: 200
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-white to-gray-50/80 dark:from-gray-900 dark:to-gray-950/80 z-50 shadow-2xl border-l border-white/20 dark:border-gray-800 flex flex-col"
-          >
+        <motion.div
+          initial={{ x: '100%', opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: '100%', opacity: 0 }}
+          transition={{ 
+            type: 'spring', 
+            damping: 25,
+            stiffness: 200
+          }}
+          data-cart-panel
+          className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-white to-gray-50/80 dark:from-gray-900 dark:to-gray-950/80 z-50 shadow-2xl border-l border-white/20 dark:border-gray-800 flex flex-col"
+        >
             {/* Header with Gradient */}
             <div className="relative p-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
               <div className="flex items-center justify-between">
@@ -457,7 +447,6 @@ export default function Cart({ isOpen, onClose }: CartProps) {
               </motion.div>
             )}
           </motion.div>
-        </>
       )}
     </AnimatePresence>
   );

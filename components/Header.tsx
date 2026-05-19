@@ -57,15 +57,21 @@ export default function Header() {
     window.dispatchEvent(new CustomEvent('userMenuStateChange', { detail: { isOpen: isUserMenuOpen } }));
   }, [isUserMenuOpen]);
 
-  // Listen for closeUserMenu event from global backdrop
+  // Close user menu when clicking outside
   useEffect(() => {
-    const handleCloseUserMenu = () => {
-      setIsUserMenuOpen(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside the user menu button and dropdown
+      if (!target.closest('[data-user-menu]')) {
+        setIsUserMenuOpen(false);
+      }
     };
 
-    window.addEventListener('closeUserMenu', handleCloseUserMenu as EventListener);
-    return () => window.removeEventListener('closeUserMenu', handleCloseUserMenu as EventListener);
-  }, []);
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isUserMenuOpen]);
 
   const handleSignOut = () => {
     logout();
@@ -189,7 +195,7 @@ export default function Header() {
                   )}
                   
                   {/* User Menu */}
-                  <div className="relative">
+                  <div className="relative" data-user-menu>
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                       className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -213,24 +219,13 @@ export default function Header() {
 
                     {/* User Dropdown */}
                     {isUserMenuOpen && (
-                      <>
-                        {/* Backdrop */}
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="fixed inset-0 bg-transparent z-[60]"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        />
-                        
-                        {/* Menu */}
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-[70]"
-                        >
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        data-user-menu
+                        className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-[70]"
+                      >
                         <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                           <p className="font-semibold text-gray-900 dark:text-gray-100">
                             {user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
@@ -280,7 +275,6 @@ export default function Header() {
                           </button>
                         </div>
                       </motion.div>
-                      </>
                     )}
                   </div>
                 </div>
