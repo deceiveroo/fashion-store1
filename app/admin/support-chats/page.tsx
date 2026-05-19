@@ -197,20 +197,20 @@ function SupportChatsPage() {
         {/* Enhanced Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <MessageCircle className="h-7 w-7 text-violet-400" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <MessageCircle className="h-7 w-7 text-violet-600 dark:text-violet-400" />
               Чаты поддержки
             </h1>
-            <p className="text-sm text-white/40 mt-1">
+            <p className="text-sm text-gray-500 dark:text-white/40 mt-1">
               Всего чатов: {sessions.length} • Активных: {sessions.filter(s => s.status === 'active').length}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-white/60">Live режим</span>
+            <div className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs text-gray-600 dark:text-white/60">Live режим</span>
             </div>
-            <button onClick={() => loadSessions()} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+            <button onClick={() => loadSessions()} className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2 text-sm text-gray-700 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
               <RefreshCw className="h-4 w-4" />
               Обновить
             </button>
@@ -220,16 +220,16 @@ function SupportChatsPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Всего чатов', value: sessions.length, icon: MessageCircle, color: 'bg-violet-500/20 text-violet-400' },
-            { label: 'Активные', value: sessions.filter(s => s.status === 'active').length, icon: Zap, color: 'bg-emerald-500/20 text-emerald-400' },
-            { label: 'Решенные', value: sessions.filter(s => s.status === 'resolved').length, icon: CheckCircle, color: 'bg-blue-500/20 text-blue-400' },
-            { label: 'Перехвачено', value: sessions.filter(s => s.aiDisabled).length, icon: Shield, color: 'bg-amber-500/20 text-amber-400' },
+            { label: 'Всего чатов', value: sessions.length, icon: MessageCircle, color: 'bg-gradient-to-br from-violet-500 to-purple-600 dark:from-violet-500/20 dark:to-purple-600/20 text-white dark:text-violet-400' },
+            { label: 'Активные', value: sessions.filter(s => s.status === 'active').length, icon: Zap, color: 'bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-500/20 dark:to-teal-600/20 text-white dark:text-emerald-400' },
+            { label: 'Решенные', value: sessions.filter(s => s.status === 'resolved').length, icon: CheckCircle, color: 'bg-gradient-to-br from-blue-500 to-cyan-600 dark:from-blue-500/20 dark:to-cyan-600/20 text-white dark:text-blue-400' },
+            { label: 'Перехвачено', value: sessions.filter(s => s.aiDisabled).length, icon: Shield, color: 'bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-500/20 dark:to-orange-600/20 text-white dark:text-amber-400' },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-5 hover:bg-white/[0.08] transition-all backdrop-blur-sm">
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-gray-50 to-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 hover:from-gray-100 hover:to-gray-50 dark:hover:bg-white/[0.08] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-white/50 uppercase tracking-wider">{label}</p>
-                  <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">{label}</p>
+                  <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
                 </div>
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
                   <Icon className="h-6 w-6" />
@@ -242,9 +242,9 @@ function SupportChatsPage() {
         {/* Main Content - Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-320px)] min-h-[600px]">
           {/* Left Column - Chat List */}
-          <div className="lg:col-span-1 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] backdrop-blur-sm flex flex-col overflow-hidden">
+          <div className="lg:col-span-1 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] backdrop-blur-sm flex flex-col overflow-hidden">
             {/* Filter Tabs */}
-            <div className="p-4 border-b border-white/10 flex gap-2">
+            <div className="p-4 border-b border-gray-200 dark:border-white/10 flex gap-2">
               {(['all','active','resolved'] as const).map(f => (
                 <button 
                   key={f} 
@@ -252,7 +252,7 @@ function SupportChatsPage() {
                   className={`px-4 py-2 rounded-xl text-xs font-medium transition-all ${
                     filter===f 
                       ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20' 
-                      : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+                      : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-white/60 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   {f==='all'?'Все':f==='active'?'Активные':'Решенные'}
@@ -272,7 +272,7 @@ function SupportChatsPage() {
                   </div>
                 </div>
               ) : filtered.length===0 ? (
-                <div className="p-8 text-center text-white/30 text-sm flex flex-col items-center gap-3">
+                <div className="p-8 text-center text-gray-400 dark:text-white/30 text-sm flex flex-col items-center gap-3">
                   <MessageCircle className="h-12 w-12 opacity-20" />
                   <p>Нет чатов</p>
                 </div>
@@ -281,33 +281,33 @@ function SupportChatsPage() {
                   <div 
                     key={s.id} 
                     onClick={() => setSel(s)}
-                    className={`border-b border-white/5 p-4 cursor-pointer hover:bg-white/5 transition-all ${
-                      sel?.id===s.id ? 'bg-violet-500/10 border-l-2 border-l-violet-500' : ''
+                    className={`border-b border-gray-200 dark:border-white/5 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-all ${
+                      sel?.id===s.id ? 'bg-violet-100 dark:bg-violet-500/10 border-l-2 border-l-violet-500' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.status==='active'?'bg-emerald-400 animate-pulse':'bg-white/20'}`}/>
-                        <span className="text-sm font-medium truncate text-white">{s.userName||s.userEmail||'Гость'}</span>
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.status==='active'?'bg-emerald-500 animate-pulse':'bg-gray-300 dark:bg-white/20'}`}/>
+                        <span className="text-sm font-medium truncate text-gray-900 dark:text-white">{s.userName||s.userEmail||'Гость'}</span>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                        {s.aiDisabled && <Shield className="h-4 w-4 text-emerald-400"/>}
+                        {s.aiDisabled && <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400"/>}
                         <button 
                           onClick={(e)=>del(s.sessionId,e)} 
-                          className="p-1 text-white/20 hover:text-red-400 transition-colors"
+                          className="p-1 text-gray-400 dark:text-white/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                         >
                           <Trash2 className="h-4 w-4"/>
                         </button>
                       </div>
                     </div>
-                    <p className="text-xs text-white/40 truncate ml-4 mb-2">{s.firstMessage||''}</p>
+                    <p className="text-xs text-gray-500 dark:text-white/40 truncate ml-4 mb-2">{s.firstMessage||''}</p>
                     <div className="flex justify-between ml-4">
-                      <span className="text-xs text-white/30 flex items-center gap-1">
+                      <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         {s.messageCount||0}
                       </span>
                       {s.lastMessageAt && (
-                        <span className="text-xs text-white/30 flex items-center gap-1">
+                        <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {new Date(s.lastMessageAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
                         </span>
@@ -320,31 +320,31 @@ function SupportChatsPage() {
           </div>
 
           {/* Right Column - Chat Area */}
-          <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] backdrop-blur-sm flex flex-col overflow-hidden">
+          <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] backdrop-blur-sm flex flex-col overflow-hidden">
             {sel ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b border-white/10 flex-shrink-0">
+                <div className="p-4 border-b border-gray-200 dark:border-white/10 flex-shrink-0">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <p className="font-semibold text-base text-white">{sel.userName||sel.userEmail||'Гость'}</p>
-                      <p className="text-xs text-white/40 mt-0.5 flex items-center gap-2">
+                      <p className="font-semibold text-base text-gray-900 dark:text-white">{sel.userName||sel.userEmail||'Гость'}</p>
+                      <p className="text-xs text-gray-500 dark:text-white/40 mt-0.5 flex items-center gap-2">
                         {taken ? (
                           <>
-                            <Shield className="h-3 w-3 text-emerald-400" />
-                            <span className="text-emerald-400">Вы в чате</span>
+                            <Shield className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-emerald-600 dark:text-emerald-400">Вы в чате</span>
                           </>
                         ) : (
                           <>
-                            <Bot className="h-3 w-3 text-violet-400" />
-                            <span className="text-violet-400">AI отвечает</span>
+                            <Bot className="h-3 w-3 text-violet-600 dark:text-violet-400" />
+                            <span className="text-violet-600 dark:text-violet-400">AI отвечает</span>
                           </>
                         )}
                       </p>
                     </div>
                     <button 
                       onClick={(e)=>del(sel.sessionId,e)} 
-                      className="p-2 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                      className="p-2 text-gray-400 dark:text-white/20 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/10 rounded-xl transition-all"
                     >
                       <Trash2 className="h-5 w-5"/>
                     </button>
@@ -362,7 +362,7 @@ function SupportChatsPage() {
                         </button>
                       )
                       : (
-                        <span className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-xl text-xs font-medium border border-emerald-500/30">
+                        <span className="px-4 py-2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-medium border border-emerald-300 dark:border-emerald-500/30">
                           Вы ведёте чат
                         </span>
                       )
@@ -370,7 +370,7 @@ function SupportChatsPage() {
                     {sel.status==='active' && (
                       <button 
                         onClick={()=>setStatus(sel.sessionId,'resolved')} 
-                        className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-xl text-xs font-medium hover:bg-blue-500/30 transition-all border border-blue-500/30 flex items-center gap-2"
+                        className="px-4 py-2 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded-xl text-xs font-medium hover:bg-blue-200 dark:hover:bg-blue-500/30 transition-all border border-blue-300 dark:border-blue-500/30 flex items-center gap-2"
                       >
                         <CheckCircle className="h-4 w-4"/> 
                         Решено
@@ -378,7 +378,7 @@ function SupportChatsPage() {
                     )}
                     <button 
                       onClick={()=>setStatus(sel.sessionId,'archived')} 
-                      className="px-4 py-2 bg-white/5 text-white/60 rounded-xl text-xs font-medium hover:bg-white/10 hover:text-white transition-all border border-white/10 flex items-center gap-2"
+                      className="px-4 py-2 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-white/60 rounded-xl text-xs font-medium hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-all border border-gray-200 dark:border-white/10 flex items-center gap-2"
                     >
                       <Archive className="h-4 w-4"/> 
                       Архив
@@ -387,10 +387,10 @@ function SupportChatsPage() {
                 </div>
 
                 {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-black/20">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-black/20">
                   {messages.length===0
                     ? (
-                      <div className="flex items-center justify-center h-full text-white/30">
+                      <div className="flex items-center justify-center h-full text-gray-400 dark:text-white/30">
                         <div className="text-center flex flex-col items-center gap-3">
                           <MessageCircle className="h-16 w-16 opacity-20" />
                           <p className="text-sm">Нет сообщений</p>
@@ -429,9 +429,9 @@ function SupportChatsPage() {
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 border-t border-white/10 flex-shrink-0">
+                <div className="p-4 border-t border-gray-200 dark:border-white/10 flex-shrink-0">
                   {!taken && (
-                    <p className="text-xs text-center text-white/30 mb-3 flex items-center justify-center gap-2">
+                    <p className="text-xs text-center text-gray-500 dark:text-white/30 mb-3 flex items-center justify-center gap-2">
                       <Shield className="h-3 w-3" />
                       Перехватите чат чтобы писать
                     </p>
@@ -444,7 +444,7 @@ function SupportChatsPage() {
                       onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}}
                       placeholder={taken?"Напишите сообщение...":"Сначала перехватите чат..."}
                       disabled={!taken||sending}
-                      className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-white placeholder-white/30 disabled:opacity-40 transition-all"
+                      className="flex-1 px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 disabled:opacity-40 transition-all"
                     />
                     <button 
                       onClick={sendMsg} 
@@ -457,17 +457,17 @@ function SupportChatsPage() {
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center h-full text-white/30">
+              <div className="flex items-center justify-center h-full text-gray-400 dark:text-white/30">
                 <div className="text-center flex flex-col items-center gap-4">
                   <div className="relative">
                     <MessageCircle className="h-20 w-20 opacity-20" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Zap className="h-8 w-8 text-violet-400/30" />
+                      <Zap className="h-8 w-8 text-violet-600 dark:text-violet-400/30" />
                     </div>
                   </div>
                   <div>
-                    <p className="text-base font-medium text-white/40">Выберите чат</p>
-                    <p className="text-xs text-white/20 mt-1">Начните общение с пользователем</p>
+                    <p className="text-base font-medium text-gray-500 dark:text-white/40">Выберите чат</p>
+                    <p className="text-xs text-gray-500 dark:text-white/20 mt-1">Начните общение с пользователем</p>
                   </div>
                 </div>
               </div>
