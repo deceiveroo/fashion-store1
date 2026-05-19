@@ -102,7 +102,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Revenue chart */}
-        <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 backdrop-blur-sm shadow-sm">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 backdrop-blur-sm shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <Activity className="h-4 w-4 text-violet-600 dark:text-violet-400" />
@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
 
         {/* Charts row */}
         <div className="grid gap-5 lg:grid-cols-2">
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 backdrop-blur-sm shadow-sm">
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 backdrop-blur-sm shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <ShoppingCart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -142,7 +142,7 @@ export default function AnalyticsPage() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 backdrop-blur-sm shadow-sm">
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 backdrop-blur-sm shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -164,7 +164,7 @@ export default function AnalyticsPage() {
 
         {/* Customer growth */}
         {analytics?.customerGrowth && (
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.05] dark:to-white/[0.02] p-5 backdrop-blur-sm shadow-sm">
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 backdrop-blur-sm shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
