@@ -25,7 +25,7 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* General Settings */}
-        <div className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.03] p-5 space-y-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.03] p-5 space-y-4 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Общие настройки</h2>
           {[
             { label: 'Название магазина', value: storeName, onChange: setStoreName, icon: Store, type: 'text' },

@@ -159,8 +159,8 @@ export default function MaintenanceSettings() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-bold text-white mb-1">Режим обслуживания</h2>
-        <p className="text-sm text-white/40">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Режим обслуживания</h2>
+        <p className="text-sm text-gray-500 dark:text-white/40">
           Настройте страницу-заглушку для посетителей во время технических работ
         </p>
       </div>
@@ -172,16 +172,16 @@ export default function MaintenanceSettings() {
         className={`rounded-2xl border p-6 transition-all ${
           config.maintenanceMode
             ? 'bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30'
-            : 'bg-white/[0.03] border-white/5'
+            : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/5'
         }`}
       >
         <div className="flex items-start gap-4">
-          <div className={`p-3 rounded-xl ${config.maintenanceMode ? 'bg-red-500/20' : 'bg-white/5'}`}>
-            <AlertTriangle className={`w-6 h-6 ${config.maintenanceMode ? 'text-red-400' : 'text-white/40'}`} />
+          <div className={`p-3 rounded-xl ${config.maintenanceMode ? 'bg-red-500/20' : 'bg-gray-100 dark:bg-white/5'}`}>
+            <AlertTriangle className={`w-6 h-6 ${config.maintenanceMode ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-white/40'}`} />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-white mb-1">Включить режим обслуживания</h3>
-            <p className="text-sm text-white/50 mb-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Включить режим обслуживания</h3>
+            <p className="text-sm text-gray-600 dark:text-white/50 mb-4">
               {config.maintenanceMode
                 ? 'Все посетители увидят страницу-заглушку. Админы продолжают видеть сайт.'
                 : 'Сайт работает в обычном режиме'}
@@ -204,39 +204,39 @@ export default function MaintenanceSettings() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-2xl border border-white/5 bg-white/[0.03] p-6 space-y-5"
+        className="rounded-2xl border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.03] p-6 space-y-5 shadow-sm"
       >
         {/* Title */}
         <div>
-          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
+          <label className="block text-[10px] font-semibold text-gray-500 dark:text-white/30 uppercase tracking-wider mb-2">
             Заголовок страницы
           </label>
           <input
             type="text"
             value={config.title}
             onChange={(e) => setConfig({ ...config, title: e.target.value })}
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none"
+            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 px-4 text-sm text-gray-900 dark:text-white focus:border-violet-500/50 focus:outline-none"
             placeholder="Сайт на обслуживании"
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
+          <label className="block text-[10px] font-semibold text-gray-500 dark:text-white/30 uppercase tracking-wider mb-2">
             Описание
           </label>
           <textarea
             value={config.description}
             onChange={(e) => setConfig({ ...config, description: e.target.value })}
             rows={3}
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none resize-none"
+            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 px-4 text-sm text-gray-900 dark:text-white focus:border-violet-500/50 focus:outline-none resize-none"
             placeholder="Мы проводим технические работы..."
           />
         </div>
 
         {/* End Time */}
         <div>
-          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
+          <label className="block text-[10px] font-semibold text-gray-500 dark:text-white/30 uppercase tracking-wider mb-2">
             <Calendar className="inline w-3 h-3 mr-1" />
             Дата окончания (опционально)
           </label>
@@ -244,16 +244,16 @@ export default function MaintenanceSettings() {
             type="datetime-local"
             value={config.endTime ? new Date(config.endTime).toISOString().slice(0, 16) : ''}
             onChange={(e) => setConfig({ ...config, endTime: e.target.value || null })}
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none"
+            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 px-4 text-sm text-gray-900 dark:text-white focus:border-violet-500/50 focus:outline-none"
           />
-          <p className="text-xs text-white/30 mt-1">
+          <p className="text-xs text-gray-500 dark:text-white/30 mt-1">
             Если указано, на странице будет показан обратный отсчёт
           </p>
         </div>
 
         {/* Background Image */}
         <div>
-          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
+          <label className="block text-[10px] font-semibold text-gray-500 dark:text-white/30 uppercase tracking-wider mb-2">
             <ImageIcon className="inline w-3 h-3 mr-1" />
             Фоновое изображение
           </label>
@@ -280,7 +280,7 @@ export default function MaintenanceSettings() {
               <button
                 type="button"
                 onClick={() => setConfig({ ...config, backgroundImage: null })}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm text-white transition-colors"
+                className="px-4 py-2 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 rounded-xl text-sm text-gray-700 dark:text-white transition-colors"
               >
                 Удалить
               </button>
@@ -292,16 +292,16 @@ export default function MaintenanceSettings() {
             type="text"
             value={config.backgroundImage || ''}
             onChange={(e) => setConfig({ ...config, backgroundImage: e.target.value || null })}
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none"
+            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 px-4 text-sm text-gray-900 dark:text-white focus:border-violet-500/50 focus:outline-none"
             placeholder="Или вставьте прямую ссылку на фото (https://...image.jpg)"
           />
-          <p className="text-xs text-white/30 mt-2">
+          <p className="text-xs text-gray-500 dark:text-white/30 mt-2">
             💡 Совет: Используйте прямые ссылки на изображения (заканчиваются на .jpg, .png, .webp)
           </p>
           
           {/* Preview */}
           {config.backgroundImage && config.backgroundImage.trim() !== '' && (
-            <div className="mt-3 relative rounded-xl overflow-hidden border border-white/10">
+            <div className="mt-3 relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
               <img
                 src={config.backgroundImage}
                 alt="Preview"
@@ -317,7 +317,7 @@ export default function MaintenanceSettings() {
 
         {/* Meme Image */}
         <div>
-          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
+          <label className="block text-[10px] font-semibold text-gray-500 dark:text-white/30 uppercase tracking-wider mb-2">
             <ImageIcon className="inline w-3 h-3 mr-1" />
             Картинка для мемов
           </label>
@@ -344,7 +344,7 @@ export default function MaintenanceSettings() {
               <button
                 type="button"
                 onClick={() => setConfig({ ...config, memeImage: null })}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm text-white transition-colors"
+                className="px-4 py-2 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 rounded-xl text-sm text-gray-700 dark:text-white transition-colors"
               >
                 Удалить
               </button>
@@ -356,16 +356,16 @@ export default function MaintenanceSettings() {
             type="text"
             value={config.memeImage || ''}
             onChange={(e) => setConfig({ ...config, memeImage: e.target.value || null })}
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white focus:border-violet-500/50 focus:outline-none"
+            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 px-4 text-sm text-gray-900 dark:text-white focus:border-violet-500/50 focus:outline-none"
             placeholder="Или вставьте прямую ссылку на мем (https://...image.jpg)"
           />
-          <p className="text-xs text-white/30 mt-2">
+          <p className="text-xs text-gray-500 dark:text-white/30 mt-2">
             💡 Одно изображение которое будет показано на странице обслуживания
           </p>
 
           {/* Preview */}
           {config.memeImage && config.memeImage.trim() !== '' && (
-            <div className="mt-3 relative rounded-xl overflow-hidden border border-white/10">
+            <div className="mt-3 relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
               <img
                 src={config.memeImage}
                 alt="Meme preview"
@@ -380,14 +380,14 @@ export default function MaintenanceSettings() {
         </div>
 
         {/* Enable Subscription */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+        <div className="flex items-center justify-between p-4 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-violet-500/20 rounded-lg">
-              <Mail className="w-5 h-5 text-violet-400" />
+            <div className="p-2 bg-violet-100 dark:bg-violet-500/20 rounded-lg">
+              <Mail className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
-              <h4 className="text-sm font-medium text-white">Сбор email'ов</h4>
-              <p className="text-xs text-white/40">Посетители смогут подписаться на уведомление</p>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white">Сбор email'ов</h4>
+              <p className="text-xs text-gray-600 dark:text-white/40">Посетители смогут подписаться на уведомление</p>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -412,8 +412,8 @@ export default function MaintenanceSettings() {
         </button>
 
         {/* Quick toggle for testing */}
-        <div className="pt-4 border-t border-white/10">
-          <p className="text-xs text-white/30 mb-2">
+        <div className="pt-4 border-t border-gray-200 dark:border-white/10">
+          <p className="text-xs text-gray-500 dark:text-white/30 mb-2">
             💡 Если изменения не применяются, попробуйте обновить страницу (F5)
           </p>
         </div>
