@@ -987,17 +987,6 @@ export default function ProfilePage() {
                               </div>
                             )}
 
-                            {/* Info Banner */}
-                            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                              <h5 className="font-semibold text-blue-900 dark:text-blue-300 mb-2 flex items-center gap-2">
-                                <Shield size={16} />
-                                Информация о сессиях
-                              </h5>
-                              <p className="text-sm text-blue-800 dark:text-blue-400">
-                                Supabase Auth не предоставляет список всех ваших сессий. Отображается информация о текущем устройстве.
-                                Для завершения всех других сессий используйте функцию смены пароля.
-                              </p>
-                            </div>
 
                             {/* Security Tips */}
                             <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl">

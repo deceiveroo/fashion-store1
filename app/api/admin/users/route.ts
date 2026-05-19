@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
           createdAt: users.createdAt,
           emailVerified: users.emailVerified,
           avatar: userProfiles.avatar,
+          lastSignIn: users.lastSignIn,
         })
         .from(users)
         .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
       createdAt: user.createdAt,
       emailVerified: user.emailVerified,
       avatar: user.avatar,
+      lastSignIn: user.lastSignIn,
     }));
 
     return new Response(JSON.stringify(filteredUsers), {

@@ -96,6 +96,19 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     async signIn({ user, account }) {
+      // Обновляем last_sign_in при каждом входе
+      if (user.id) {
+        try {
+          await db
+            .update(users)
+            .set({ lastSignIn: new Date() })
+            .where(eq(users.id, user.id));
+        } catch (error) {
+          console.error('Failed to update lastSignIn:', error);
+          // Не блокируем вход если не удалось обновить lastSignIn
+        }
+      }
+
       if (account?.provider === 'google' && user.email) {
         const em = user.email.toLowerCase();
         const [u] = await db

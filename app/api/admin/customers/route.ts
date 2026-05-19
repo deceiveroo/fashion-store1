@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         createdAt: users.createdAt,
         emailVerified: users.emailVerified,
         avatar: userProfiles.avatar,
+        lastSignIn: users.lastSignIn,
       })
       .from(users)
       .leftJoin(userProfiles, eq(users.id, userProfiles.userId))

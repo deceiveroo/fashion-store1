@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, MessageCircle,
   Shield, Tag, LineChart, Settings, LogOut, Menu, X, Home,
   Bell, ChevronRight, Zap, Search, Command,
-  Plus, TrendingUp, AlertCircle, CheckCircle2, Sparkles, Monitor,
+  Plus, TrendingUp, AlertCircle, CheckCircle2, Sparkles,
 } from 'lucide-react';
 import CommandPalette from './CommandPalette';
 import AnimatedGradient from './AnimatedGradient';
@@ -71,7 +71,6 @@ const NAV = [
     group: 'Управление',
     items: [
       { label: 'Команда',   href: '/admin/users',           icon: Shield,          roles: ['admin'] },
-      { label: 'Сессии',    href: '/admin/sessions',        icon: Monitor,         roles: ['admin'] },
       { label: 'Категории', href: '/admin/categories',      icon: Tag,             roles: ['admin','manager'] },
       { label: 'Настройки', href: '/admin/settings',        icon: Settings,        roles: ['admin'] },
     ],

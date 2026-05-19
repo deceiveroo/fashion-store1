@@ -17,6 +17,7 @@ export const users = pgTable('users', {
   role: text('role', { enum: rolesEnum }).default('customer').notNull(),
   password: text('password').notNull(),
   status: text('status').default('active').notNull(), // active, banned
+  lastSignIn: timestamp('last_sign_in', { mode: 'date' }), // Последний вход пользователя
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {

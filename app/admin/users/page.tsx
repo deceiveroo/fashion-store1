@@ -9,6 +9,7 @@ import AdminShell from '@/components/admin/AdminShell';
 interface StaffUser {
   id: string; email: string; name?: string; firstName?: string; lastName?: string;
   phone?: string; role: string; image?: string; avatar?: string; createdAt: string;
+  lastSignIn?: string | null;
 }
 
 const ROLE_STYLE: Record<string, string> = {
@@ -98,6 +99,24 @@ export default function UsersPage() {
   const av = (u: StaffUser) => u.avatar || u.image;
   const name = (u: StaffUser) => `${u.firstName||''} ${u.lastName||''}`.trim() || u.name || '—';
 
+  // Форматирование времени последнего входа
+  const formatLastSignIn = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'Никогда';
+    
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'только что';
+    if (diffMins < 60) return `${diffMins} мин назад`;
+    if (diffHours < 24) return `${diffHours} ч назад`;
+    if (diffDays < 7) return `${diffDays} дн назад`;
+    return date.toLocaleDateString('ru-RU');
+  };
+
   return (
     <AdminShell>
       <div className="space-y-5">
@@ -135,7 +154,7 @@ export default function UsersPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/5">
-                    {['Сотрудник','Email','Роль','Дата',''].map(h => (
+                    {['Сотрудник','Email','Роль','Последний вход','Дата регистрации',''].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider last:text-right">{h}</th>
                     ))}
                   </tr>
@@ -163,6 +182,11 @@ export default function UsersPage() {
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${ROLE_STYLE[u.role] || 'bg-white/5 text-white/40 border-white/10'}`}>
                           {u.role}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-xs text-white/60 whitespace-nowrap">
+                          {formatLastSignIn(u.lastSignIn)}
+                        </p>
                       </td>
                       <td className="px-4 py-3 text-xs text-white/30 whitespace-nowrap">
                         {new Date(u.createdAt).toLocaleDateString('ru-RU')}
