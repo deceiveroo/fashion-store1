@@ -588,7 +588,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
             </div>
 
             {/* Coupons Grid - Premium 3D Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {shopCoupons.length === 0 ? (
                 <div className="col-span-full">
                   <motion.div
@@ -626,7 +626,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                         : !coupon.inStock || !coupon.canAfford
                         ? 'bg-gray-100/50 dark:bg-gray-800/30'
                         : 'bg-gradient-to-br from-yellow-500/10 via-orange-500/10 to-pink-500/10 dark:from-yellow-500/20 dark:via-orange-500/20 dark:to-pink-500/20'
-                    } backdrop-blur-xl rounded-3xl p-8 border-2 transition-all duration-200 ${
+                    } backdrop-blur-xl rounded-2xl p-6 border-2 transition-all duration-200 ${
                       coupon.alreadyPurchased
                         ? 'border-green-400 dark:border-green-500 shadow-lg shadow-green-500/30'
                         : !coupon.inStock || !coupon.canAfford
@@ -643,10 +643,10 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
 
                     <div className="relative z-10">
                       {/* Coupon Header with Icon */}
-                      <div className="mb-6 flex items-start justify-between">
+                      <div className="mb-4 flex items-start justify-between">
                         <motion.div 
                           whileHover={{ scale: 1.1, rotate: 10 }}
-                          className="text-5xl p-3 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-2xl"
+                          className="text-4xl p-2 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-xl"
                         >
                           🎫
                         </motion.div>
@@ -667,27 +667,27 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                       </div>
 
                       {/* Coupon Name & Description */}
-                      <div className="mb-6">
-                        <h4 className="font-black text-gray-900 dark:text-white text-xl mb-2 line-clamp-1">
+                      <div className="mb-4">
+                        <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-1 line-clamp-1">
                           {coupon.name}
                         </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
                           {coupon.description}
                         </p>
                       </div>
 
                       {/* Discount Display - Large & Bold */}
-                      <div className="mb-6 p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 rounded-2xl border border-purple-300/30 dark:border-purple-500/30">
+                      <div className="mb-4 p-3 bg-gradient-to-br from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 rounded-xl border border-purple-300/30 dark:border-purple-500/30">
                         <div className="text-center">
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium">ВАША СКИДКА</div>
-                          <div className="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-0.5 font-medium">ВАША СКИДКА</div>
+                          <div className="text-3xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                             {coupon.discount}{coupon.discountType === 'percent' ? '%' : '₽'}
                           </div>
                         </div>
                       </div>
 
                       {/* Details Grid */}
-                      <div className="space-y-3 mb-6">
+                      <div className="space-y-2 mb-4">
                         {coupon.minOrder && (
                           <div className="flex items-center justify-between text-sm p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
                             <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
@@ -737,7 +737,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                         disabled={!coupon.canAfford || !coupon.inStock || coupon.alreadyPurchased || purchasing === coupon.id}
                         whileHover={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 1.02, transition: { duration: 0.15 } } : {}}
                         whileTap={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 0.98, transition: { duration: 0.1 } } : {}}
-                        className={`w-full py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-3 text-base ${
+                        className={`w-full py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 text-sm ${
                           coupon.alreadyPurchased
                             ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/30 cursor-default'
                             : !coupon.inStock || !coupon.canAfford
