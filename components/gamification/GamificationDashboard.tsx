@@ -369,8 +369,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                 className="flex gap-3 flex-wrap p-3 bg-gradient-to-br from-white/60 via-purple-50/40 to-pink-50/40 dark:from-gray-900/60 dark:via-purple-900/20 dark:to-pink-900/20 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-gray-700/50 shadow-xl"
               >
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
+                  whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
                   onClick={() => setFilter('all')}
                   className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 ${
                     filter === 'all'
@@ -387,8 +387,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                   </span>
                 </motion.button>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
+                  whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
                   onClick={() => setFilter('unlocked')}
                   className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 ${
                     filter === 'unlocked'
@@ -405,8 +405,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                   </span>
                 </motion.button>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
+                  whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
                   onClick={() => setFilter('locked')}
                   className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 ${
                     filter === 'locked'
@@ -433,8 +433,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
               >
                 <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide snap-x">
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
+                    whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
                     onClick={() => setCategoryFilter('all')}
                     className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
                       categoryFilter === 'all'
@@ -447,8 +447,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                   {categories.map((category, idx) => (
                     <motion.button
                       key={category}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
+                      whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
                       onClick={() => setCategoryFilter(category)}
                       className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
                         categoryFilter === category
@@ -613,7 +613,12 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                       y: -12,
                       rotateX: 5,
                       rotateY: 2,
-                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                      transition: { duration: 0.2, ease: "easeOut" }
+                    }}
+                    whileTap={{ 
+                      scale: 0.98,
+                      transition: { duration: 0.1 }
                     }}
                     className={`group relative overflow-hidden ${
                       coupon.alreadyPurchased
@@ -621,7 +626,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                         : !coupon.inStock || !coupon.canAfford
                         ? 'bg-gray-100/50 dark:bg-gray-800/30'
                         : 'bg-gradient-to-br from-yellow-500/10 via-orange-500/10 to-pink-500/10 dark:from-yellow-500/20 dark:via-orange-500/20 dark:to-pink-500/20'
-                    } backdrop-blur-xl rounded-3xl p-8 border-2 transition-all duration-500 ${
+                    } backdrop-blur-xl rounded-3xl p-8 border-2 transition-all duration-200 ${
                       coupon.alreadyPurchased
                         ? 'border-green-400 dark:border-green-500 shadow-lg shadow-green-500/30'
                         : !coupon.inStock || !coupon.canAfford
@@ -634,7 +639,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                     }}
                   >
                     {/* Shine Effect on Hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
 
                     <div className="relative z-10">
                       {/* Coupon Header with Icon */}
@@ -730,8 +735,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                       <motion.button
                         onClick={() => handlePurchaseCoupon(coupon.id)}
                         disabled={!coupon.canAfford || !coupon.inStock || coupon.alreadyPurchased || purchasing === coupon.id}
-                        whileHover={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 1.02 } : {}}
-                        whileTap={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 0.98 } : {}}
+                        whileHover={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 1.02, transition: { duration: 0.15 } } : {}}
+                        whileTap={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 0.98, transition: { duration: 0.1 } } : {}}
                         className={`w-full py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-3 text-base ${
                           coupon.alreadyPurchased
                             ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/30 cursor-default'
