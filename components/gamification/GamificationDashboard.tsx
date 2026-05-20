@@ -239,43 +239,21 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden"
       >
-        {/* Background Pattern - Subtle Floating Particles */}
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(15)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 bg-white/20 rounded-full"
-              initial={{ 
-                x: Math.random() * 100 + '%',
-                y: Math.random() * 100 + '%',
-                opacity: 0.1
-              }}
-              animate={{ 
-                y: [null, Math.random() * -30],
-                opacity: [0.1, 0.3, 0.1],
-                scale: [1, 1.2, 1]
-              }}
-              transition={{ 
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: Math.random() * 2
-              }}
-            />
-          ))}
+        {/* Subtle Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+            backgroundSize: '20px 20px'
+          }} />
         </div>
 
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <motion.div
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl"
-                >
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
                   <Crown className="w-8 h-8" />
-                </motion.div>
+                </div>
                 <div>
                   <h2 className="text-3xl font-black">Уровень {userLevel?.level}</h2>
                   <p className="text-white/80 text-lg font-medium">{userLevel?.title}</p>
