@@ -550,92 +550,134 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
           </>
         )}
 
-        {/* Shop Tab - Innovative Premium Design */}
+        {/* Shop Tab - Cyber-Glassmorphism Neo-Brutalism 2025 */}
         {activeTab === 'shop' && (
-          <div>
-            {/* Hero Section with Animated Background */}
-            <div className="relative mb-10 overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 p-8 shadow-2xl">
-              {/* Animated Background Elements */}
-              <div className="absolute inset-0 opacity-20">
-                <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-3xl animate-pulse" />
-                <div className="absolute bottom-10 right-10 w-40 h-40 bg-yellow-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-                <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-pink-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }} />
+          <div className="relative">
+            {/* Particle Background */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-white/20 rounded-full animate-pulse"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 3}s`,
+                    animationDuration: `${2 + Math.random() * 3}s`
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Hero Section - Liquid Neon Glassmorphism */}
+            <div className="relative mb-8 overflow-hidden rounded-[20px] bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2e] to-[#0a0a1a] p-8 shadow-2xl border border-white/10">
+              {/* Animated Liquid Neon Gradient */}
+              <div className="absolute inset-0 opacity-40">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#6C5CE7] via-[#00D2FF] to-[#FF6B9D] blur-[40px] animate-pulse" />
+                <div className="absolute top-0 left-1/4 w-64 h-64 bg-[#6C5CE7]/30 rounded-full blur-[60px] animate-bounce" style={{ animationDuration: '4s' }} />
+                <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-[#00D2FF]/30 rounded-full blur-[60px] animate-bounce" style={{ animationDuration: '5s', animationDelay: '1s' }} />
               </div>
 
               <div className="relative z-10 flex items-center justify-between">
                 <div>
-                  <h3 className="text-4xl font-black text-white mb-3 flex items-center gap-3">
-                    <span className="text-5xl animate-bounce">🛍️</span>
-                    <span>Магазин Промокодов</span>
+                  <h3 className="text-4xl font-black text-white mb-3 flex items-center gap-3 drop-shadow-lg">
+                    <motion.span 
+                      animate={{ rotateY: 360 }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      className="inline-block text-5xl"
+                      style={{ textShadow: '0 0 20px #6C5CE7, 0 0 40px #00D2FF' }}
+                    >
+                      🛍️
+                    </motion.span>
+                    <span style={{ background: 'linear-gradient(135deg, #6C5CE7, #00D2FF, #FF6B9D)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                      Магазин Промокодов
+                    </span>
                   </h3>
-                  <p className="text-white/90 text-lg max-w-xl">
-                    Обменяйте свои монеты на эксклюзивные скидки и специальные предложения!
+                  <p className="text-white/70 text-lg max-w-xl font-medium">
+                    Обменяйте монеты на эксклюзивные кибер-скидки!
                   </p>
                 </div>
                 
-                {/* Balance Display - Glassmorphism */}
+                {/* Holographic Coin Capsule */}
                 <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/30 shadow-xl"
+                  whileHover={{ scale: 1.05, rotateY: 10 }}
+                  className="relative px-6 py-4 rounded-2xl border border-[#FFD700]/30 shadow-2xl"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(255,215,0,0.1), rgba(108,92,231,0.1))',
+                    backdropFilter: 'blur(20px)',
+                    boxShadow: '0 0 30px rgba(255,215,0,0.3), inset 0 0 20px rgba(255,215,0,0.1)'
+                  }}
                 >
-                  <div className="text-white/80 text-sm font-medium mb-1">Ваш баланс</div>
+                  <div className="text-[#FFD700]/80 text-sm font-medium mb-1 tracking-wider">БАЛАНС</div>
                   <div className="text-white text-3xl font-black flex items-center gap-2">
-                    <span>{userLevel?.coins || 0}</span>
-                    <span className="text-2xl">💰</span>
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="inline-block text-2xl"
+                    >
+                      💰
+                    </motion.span>
+                    <span style={{ fontFamily: 'monospace', textShadow: '0 0 10px #FFD700' }}>{userLevel?.coins || 0}</span>
                   </div>
                 </motion.div>
               </div>
             </div>
 
-            {/* Coupons Grid - Premium 3D Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Coupons Grid - Cyber-Glassmorphism Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
               {shopCoupons.length === 0 ? (
                 <div className="col-span-full">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-20 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 backdrop-blur-sm rounded-3xl border-2 border-dashed border-purple-300 dark:border-purple-700"
+                    className="text-center py-20 rounded-[20px] border-2 border-dashed border-[#6C5CE7]/50"
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      backdropFilter: 'blur(20px)'
+                    }}
                   >
                     <div className="text-7xl mb-4 animate-bounce">🎁</div>
-                    <p className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Скоро открытие!</p>
-                    <p className="text-gray-600 dark:text-gray-400">Эксклюзивные промокоды уже в пути</p>
+                    <p className="text-2xl font-bold text-white mb-2" style={{ textShadow: '0 0 20px #6C5CE7' }}>Скоро открытие!</p>
+                    <p className="text-white/60">Эксклюзивные кибер-промокоды уже в пути</p>
                   </motion.div>
                 </div>
               ) : (
-                shopCoupons.map((coupon, index) => (
+                shopCoupons.map((coupon, index) => {
+                  const accentColor = coupon.alreadyPurchased ? '#00FF88' : 
+                                     !coupon.inStock || !coupon.canAfford ? '#666' :
+                                     ['#6C5CE7', '#00D2FF', '#FF6B9D', '#FFD700'][index % 4];
+                  
+                  return (
                   <motion.div
                     key={coupon.id}
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.08, type: "spring", stiffness: 100 }}
-                    whileHover={{ 
-                      scale: 1.05, 
-                      y: -12,
-                      rotateX: 5,
-                      rotateY: 2,
-                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    whileHover={coupon.alreadyPurchased || (!coupon.inStock || !coupon.canAfford) ? {} : {
+                      translateY: -8,
+                      boxShadow: `0 0 30px ${accentColor}40, 0 0 60px ${accentColor}20`,
                       transition: { duration: 0.2, ease: "easeOut" }
                     }}
-                    whileTap={{ 
-                      scale: 0.98,
-                      transition: { duration: 0.1 }
-                    }}
-                    className={`group relative overflow-hidden ${
+                    className={`group relative overflow-hidden rounded-[20px] p-6 border transition-all duration-300 ${
                       coupon.alreadyPurchased
-                        ? 'bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 dark:from-green-500/20 dark:via-emerald-500/20 dark:to-teal-500/20'
+                        ? 'opacity-100'
                         : !coupon.inStock || !coupon.canAfford
-                        ? 'bg-gray-100/50 dark:bg-gray-800/30'
-                        : 'bg-gradient-to-br from-yellow-500/10 via-orange-500/10 to-pink-500/10 dark:from-yellow-500/20 dark:via-orange-500/20 dark:to-pink-500/20'
-                    } backdrop-blur-xl rounded-2xl p-6 border-2 transition-all duration-200 ${
-                      coupon.alreadyPurchased
-                        ? 'border-green-400 dark:border-green-500 shadow-lg shadow-green-500/30'
-                        : !coupon.inStock || !coupon.canAfford
-                        ? 'border-gray-200 dark:border-gray-700 opacity-60'
-                        : 'border-yellow-400/50 dark:border-yellow-500/50 hover:border-yellow-500 dark:hover:border-yellow-400 shadow-xl hover:shadow-2xl hover:shadow-yellow-500/30'
+                        ? 'opacity-50'
+                        : ''
                     }`}
                     style={{
-                      transformStyle: 'preserve-3d',
-                      perspective: '1000px'
+                      background: coupon.alreadyPurchased 
+                        ? 'rgba(0,255,136,0.05)'
+                        : 'rgba(255,255,255,0.05)',
+                      backdropFilter: 'blur(20px)',
+                      border: coupon.alreadyPurchased
+                        ? '1px solid rgba(0,255,136,0.5)'
+                        : !coupon.inStock || !coupon.canAfford
+                        ? '1px solid rgba(255,255,255,0.1)'
+                        : `1px solid linear-gradient(135deg, ${accentColor}40, ${accentColor}80)`,
+                      boxShadow: coupon.alreadyPurchased
+                        ? '0 0 20px rgba(0,255,136,0.3), inset 0 0 20px rgba(0,255,136,0.1)'
+                        : 'none'
                     }}
                   >
                     {/* Shine Effect on Hover */}
@@ -785,7 +827,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                       </motion.button>
                     </div>
                   </motion.div>
-                ))
+                );
+              })
               )}
             </div>
           </div>
