@@ -101,25 +101,24 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-white dark:bg-gray-950 pt-20 pb-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
+        <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
             Мой Профиль
           </h1>
           <p className="text-gray-600 dark:text-gray-400">Управляйте вашими данными и настройками</p>
-        </motion.div>
+        </div>
 
         {/* Gamification Widget */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
+        <div className="mb-6">
           <GamificationProfileWidget />
-        </motion.div>
+        </div>
 
         {/* Profile Card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5 mb-6 border border-gray-200 dark:border-gray-800">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5 mb-6 border border-gray-200 dark:border-gray-800">
           <div className="flex items-center gap-6 flex-wrap">
             {/* Avatar */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/50 dark:to-pink-900/50 overflow-hidden flex items-center justify-center cursor-pointer group"
+            <div
+              className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/50 dark:to-pink-900/50 overflow-hidden flex items-center justify-center cursor-pointer group hover:scale-105 transition-transform duration-300"
               onClick={handleAvatarClick}
             >
               {profileData.formData.avatar ? (
@@ -134,12 +133,12 @@ export default function ProfilePage() {
               )}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
                 {profileActions.isUploading ? (
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }} className="w-6 h-6 border-2 border-white/40 border-t-white rounded-full" />
+                  <div className="w-6 h-6 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (
                   <Camera size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                 )}
               </div>
-            </motion.div>
+            </div>
             <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => profileActions.handleAvatarChange(e, fileInputRef as React.RefObject<HTMLInputElement>)} className="hidden" />
 
             {/* User Info */}
@@ -164,7 +163,7 @@ export default function ProfilePage() {
               Выйти
             </button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Holographic Tab Universe */}
         <HolographicTabs tabs={holographicTabs} activeTab={activeSection} onTabChange={(tabId) => setActiveSection(tabId as Section)}>
@@ -176,7 +175,7 @@ export default function ProfilePage() {
               if (!isActive) return null;
 
               return (
-                <motion.div key={section.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+                <div key={section.id}>
                   {/* Section Header */}
                   <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-purple-100 dark:border-purple-900/50 overflow-hidden mb-6">
                     <div className="w-full p-6 flex items-center gap-4">
@@ -254,7 +253,7 @@ export default function ProfilePage() {
                       />
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
