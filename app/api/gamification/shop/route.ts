@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { shopCoupons, userPurchasedCoupons, userLevels } from '@/lib/db/gamification-schema';
+import { coupons } from '@/lib/schema';
 import { eq, and, isNull, gt, or, lte } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
@@ -176,10 +177,36 @@ export async function POST(request: NextRequest) {
     const couponExpiresAt = new Date();
     couponExpiresAt.setDate(couponExpiresAt.getDate() + (shopCoupon.expiresDays || 14));
 
+    // Generate unique random coupon code (8-10 characters)
+    const generateRandomCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const length = Math.floor(Math.random() * 3) + 8; // 8, 9, or 10 characters
+      let code = '';
+      for (let i = 0; i < length; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    // Ensure code is unique
+    let uniqueCode = generateRandomCode();
+    let attempts = 0;
+    while (attempts < 10) {
+      const existing = await db
+        .select()
+        .from(coupons)
+        .where(eq(coupons.code, uniqueCode))
+        .limit(1);
+      
+      if (existing.length === 0) break;
+      uniqueCode = generateRandomCode();
+      attempts++;
+    }
+
     const [newCoupon] = await db
-      .insert(await import('@/lib/schema').then(m => m.coupons))
+      .insert(coupons)
       .values({
-        code: `${shopCoupon.couponCode}_${session.user.id.slice(0, 8)}_${Date.now().toString(36)}`,
+        code: uniqueCode,
         discount: shopCoupon.discount,
         type: shopCoupon.discountType as any,
         minOrder: shopCoupon.minOrder,
