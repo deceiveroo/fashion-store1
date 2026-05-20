@@ -236,6 +236,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden"
       >
         {/* Background Pattern */}
@@ -251,8 +252,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  animate={{ rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                   className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl"
                 >
                   <Crown className="w-8 h-8" />
@@ -480,7 +481,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
               key={achievement.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
+              transition={{ delay: index * 0.05, duration: 0.4, ease: "easeOut" }}
               whileHover={{ scale: 1.02, y: -2 }}
               className={`relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border-2 ${
                 achievement.unlocked
