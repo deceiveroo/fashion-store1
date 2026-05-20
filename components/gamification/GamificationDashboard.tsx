@@ -293,18 +293,19 @@ export default function GamificationDashboard() {
         </div>
 
         {activeTab === 'achievements' && (
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-            <Trophy className="text-yellow-500" />
-            Достижения
-          </h3>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {unlockedCount} из {totalCount}
-          </span>
-        </div>
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <Trophy className="text-yellow-500" />
+                Достижения
+              </h3>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {unlockedCount} из {totalCount}
+              </span>
+            </div>
 
-        {/* Фильтры */}
-        <div className="mb-6 space-y-4">
+            {/* Фильтры */}
+            <div className="mb-6 space-y-4">
           {/* Фильтр по статусу */}
           <div className="flex gap-2 flex-wrap">
             <button
@@ -441,6 +442,8 @@ export default function GamificationDashboard() {
             ))
           )}
         </div>
+          </>
+        )}
 
         {/* Shop Tab */}
         {activeTab === 'shop' && (

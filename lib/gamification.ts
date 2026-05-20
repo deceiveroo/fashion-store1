@@ -70,6 +70,22 @@ async function levelUp(userId: string, currentLevel: number) {
   // Award bonus coins for leveling up
   await awardXP(userId, 0, `Достигнут уровень ${newLevel}`, { level: newLevel });
   
+  // Create system notification for level up
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    await fetch(`${baseUrl}/api/gamification/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'level_up',
+        level: newLevel,
+        coinsAwarded: newLevel * 10,
+      }),
+    });
+  } catch (error) {
+    console.error('Error creating level up notification:', error);
+  }
+  
   // Check if there's a level reward coupon
   try {
     const rewardResult = await db.execute(sql`
@@ -100,6 +116,23 @@ async function levelUp(userId: string, currentLevel: number) {
       `);
       
       console.log(`Level ${newLevel} reward coupon created: ${reward.coupon_code}`);
+      
+      // Create notification for coupon reward
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await fetch(`${baseUrl}/api/gamification/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'coupon_reward',
+            couponCode: reward.coupon_code,
+            discount: reward.discount,
+            discountType: reward.discount_type,
+          }),
+        });
+      } catch (error) {
+        console.error('Error creating coupon reward notification:', error);
+      }
     }
   } catch (error) {
     console.error('Error creating level reward coupon:', error);

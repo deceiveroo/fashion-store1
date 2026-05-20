@@ -1,6 +1,7 @@
 'use client';
 
 import GamificationDashboard from '@/components/gamification/GamificationDashboard';
+import AchievementNotification from '@/components/gamification/AchievementNotification';
 
 export default function GamificationPage() {
   return (
@@ -9,7 +10,7 @@ export default function GamificationPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-5xl font-black text-gray-900 dark:text-white mb-4">
-              🎮 Система достижений
+               Система достижений
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400">
               Зарабатывайте опыт, открывайте достижения и получайте награды!
@@ -17,6 +18,7 @@ export default function GamificationPage() {
           </div>
 
           <GamificationDashboard />
+          <AchievementNotification />
         </div>
       </div>
     </div>

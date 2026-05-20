@@ -1,130 +1,258 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, X, Sparkles, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, Gift, Sparkles, Crown, X, CheckCircle } from 'lucide-react';
 
-interface Achievement {
-  name: string;
-  description: string;
-  icon: string;
-  xp: number;
-  coins: number;
-  rarity: string;
+interface LevelUpNotification {
+  type: 'level_up' | 'coupon_reward' | 'achievement';
+  level?: number;
+  title?: string;
+  message?: string;
+  couponCode?: string;
+  discount?: number;
+  discountType?: string;
+  coinsAwarded?: number;
 }
 
-interface AchievementNotificationProps {
-  achievement: Achievement | null;
-  onClose: () => void;
-}
-
-export default function AchievementNotification({ achievement, onClose }: AchievementNotificationProps) {
+export default function AchievementNotification() {
+  const [notification, setNotification] = useState<LevelUpNotification | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    if (achievement) {
+    // Listen for custom achievement events
+    const handleAchievement = (event: CustomEvent<LevelUpNotification>) => {
+      setNotification(event.detail);
       setIsVisible(true);
-      // Auto-close after 5 seconds
-      const timer = setTimeout(() => {
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
         setIsVisible(false);
-        setTimeout(onClose, 300);
       }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [achievement, onClose]);
+    };
 
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'legendary': return 'from-yellow-500 to-orange-500';
-      case 'epic': return 'from-purple-500 to-pink-500';
-      case 'rare': return 'from-blue-500 to-cyan-500';
-      default: return 'from-gray-500 to-gray-600';
+    window.addEventListener('achievement-notification' as any, handleAchievement as any);
+
+    return () => {
+      window.removeEventListener('achievement-notification' as any, handleAchievement as any);
+    };
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false);
+  };
+
+  const getIcon = () => {
+    if (!notification) return null;
+
+    switch (notification.type) {
+      case 'level_up':
+        return (
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
+            <Crown className="w-8 h-8 text-white" />
+          </div>
+        );
+      case 'coupon_reward':
+        return (
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg">
+            <Gift className="w-8 h-8 text-white" />
+          </div>
+        );
+      case 'achievement':
+        return (
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+            <Trophy className="w-8 h-8 text-white" />
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
-  if (!achievement) return null;
+  const getTitle = () => {
+    if (!notification) return '';
+
+    switch (notification.type) {
+      case 'level_up':
+        return `🎉 Уровень ${notification.level} достигнут!`;
+      case 'coupon_reward':
+        return '🎁 Новый промокод получен!';
+      case 'achievement':
+        return notification.title || '🏆 Достижение разблокировано!';
+      default:
+        return '';
+    }
+  };
+
+  const getMessage = () => {
+    if (!notification) return '';
+
+    switch (notification.type) {
+      case 'level_up':
+        return (
+          <>
+            <p className="text-gray-700 dark:text-gray-300 mb-2">
+              Поздравляем! Вы достигли нового уровня и получили{' '}
+              <span className="font-bold text-yellow-600 dark:text-yellow-400">
+                {notification.coinsAwarded} монет 💰
+              </span>
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Продолжайте в том же духе!
+            </p>
+          </>
+        );
+      case 'coupon_reward':
+        return (
+          <>
+            <p className="text-gray-700 dark:text-gray-300 mb-3">
+              За достижение уровня вам вручен эксклюзивный промокод:
+            </p>
+            <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl p-4 border-2 border-purple-300 dark:border-purple-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Ваш промокод:</p>
+                  <p className="font-mono font-bold text-xl text-purple-700 dark:text-purple-400">
+                    {notification.couponCode}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-black text-purple-600 dark:text-purple-400">
+                    {notification.discount}
+                    {notification.discountType === 'percent' ? '%' : '₽'}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">скидка</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-3">
+              Используйте при оформлении заказа
+            </p>
+          </>
+        );
+      case 'achievement':
+        return (
+          <>
+            <p className="text-gray-700 dark:text-gray-300">{notification.message}</p>
+            {(notification.coinsAwarded ?? 0) > 0 && (
+              <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2 font-medium">
+                +{notification.coinsAwarded} монет 💰
+              </p>
+            )}
+          </>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: -100, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -100, scale: 0.8 }}
-          className="fixed top-20 right-4 z-50 max-w-md"
-        >
-          <div className={`bg-gradient-to-br ${getRarityColor(achievement.rarity)} rounded-2xl p-6 shadow-2xl text-white relative overflow-hidden`}>
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute inset-0" style={{
-                backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                backgroundSize: '20px 20px'
-              }} />
-            </div>
+      {isVisible && notification && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleClose}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[69]"
+          />
 
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                setIsVisible(false);
-                setTimeout(onClose, 300);
-              }}
-              className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="relative z-10">
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl z-[70] px-4"
+          >
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
               {/* Header */}
-              <div className="flex items-center gap-3 mb-4">
-                <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 0.5, repeat: 3 }}
-                  className="p-3 bg-white/20 backdrop-blur-sm rounded-xl"
-                >
-                  <Trophy className="w-6 h-6" />
-                </motion.div>
-                <div>
-                  <h3 className="text-lg font-black">Достижение разблокировано!</h3>
-                  <p className="text-white/80 text-sm">Поздравляем!</p>
-                </div>
-              </div>
-
-              {/* Achievement Info */}
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 mb-3">
-                <div className="flex items-start gap-3">
-                  <span className="text-3xl">{achievement.icon}</span>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-lg mb-1">{achievement.name}</h4>
-                    <p className="text-white/90 text-sm">{achievement.description}</p>
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {getIcon()}
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                        {getTitle()}
+                      </h2>
+                    </div>
                   </div>
+                  <button
+                    onClick={handleClose}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
                 </div>
               </div>
 
-              {/* Rewards */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-2 rounded-lg">
-                  <Zap className="w-4 h-4" />
-                  <span className="font-bold">+{achievement.xp} XP</span>
+              {/* Content */}
+              <div className="px-6 py-8">
+                <div className="text-center">
+                  {getMessage()}
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-2 rounded-lg">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="font-bold">+{achievement.coins} монет</span>
-                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-center">
+                <button
+                  onClick={handleClose}
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Отлично!
+                </button>
               </div>
             </div>
-
-            {/* Sparkle Effects */}
-            <motion.div
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 1, 0.5],
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"
-            />
-          </div>
-        </motion.div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );
+}
+
+// Helper function to trigger notifications
+export function showLevelUpNotification(level: number, coinsAwarded: number) {
+  const event = new CustomEvent('achievement-notification', {
+    detail: {
+      type: 'level_up',
+      level,
+      coinsAwarded,
+    } as LevelUpNotification,
+  });
+  window.dispatchEvent(event);
+}
+
+export function showCouponRewardNotification(
+  couponCode: string,
+  discount: number,
+  discountType: string
+) {
+  const event = new CustomEvent('achievement-notification', {
+    detail: {
+      type: 'coupon_reward',
+      couponCode,
+      discount,
+      discountType,
+    } as LevelUpNotification,
+  });
+  window.dispatchEvent(event);
+}
+
+export function showAchievementNotification(
+  title: string,
+  message: string,
+  coinsAwarded?: number
+) {
+  const event = new CustomEvent('achievement-notification', {
+    detail: {
+      type: 'achievement',
+      title,
+      message,
+      coinsAwarded,
+    } as LevelUpNotification,
+  });
+  window.dispatchEvent(event);
 }
