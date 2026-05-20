@@ -360,88 +360,107 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
               </span>
             </div>
 
-            {/* Фильтры - Premium Design */}
+            {/* Фильтры - Ultra Premium Glassmorphism */}
             <div className="mb-8 space-y-4">
-              {/* Статус фильтр - Glassmorphism Pills */}
-              <div className="flex gap-3 flex-wrap p-2 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50">
-                <button
+              {/* Статус фильтр - 3D Glass Pills */}
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex gap-3 flex-wrap p-3 bg-gradient-to-br from-white/60 via-purple-50/40 to-pink-50/40 dark:from-gray-900/60 dark:via-purple-900/20 dark:to-pink-900/20 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-gray-700/50 shadow-xl"
+              >
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setFilter('all')}
-                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                  className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 ${
                     filter === 'all'
-                      ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white shadow-lg shadow-purple-500/30 scale-105'
-                      : 'bg-white/80 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md'
+                      ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-300 dark:ring-purple-500'
+                      : 'bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-md border border-gray-200/50 dark:border-gray-600/50'
                   }`}
                 >
-                  <span className="text-lg">🎯</span>
+                  <span className="text-xl">🎯</span>
                   <span>Все</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    filter === 'all' ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-600'
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                    filter === 'all' ? 'bg-white/25' : 'bg-gray-200 dark:bg-gray-700'
                   }`}>
                     {totalCount}
                   </span>
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setFilter('unlocked')}
-                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                  className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 ${
                     filter === 'unlocked'
-                      ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 text-white shadow-lg shadow-green-500/30 scale-105'
-                      : 'bg-white/80 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md'
+                      ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 text-white shadow-lg shadow-green-500/40 scale-105 ring-2 ring-green-300 dark:ring-green-500'
+                      : 'bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-md border border-gray-200/50 dark:border-gray-600/50'
                   }`}
                 >
-                  <span className="text-lg">✨</span>
+                  <span className="text-xl">✨</span>
                   <span>Открыто</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    filter === 'unlocked' ? 'bg-white/20' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                    filter === 'unlocked' ? 'bg-white/25' : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
                   }`}>
                     {unlockedCount}
                   </span>
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setFilter('locked')}
-                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                  className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 ${
                     filter === 'locked'
-                      ? 'bg-gradient-to-r from-gray-600 via-slate-600 to-gray-600 text-white shadow-lg shadow-gray-500/30 scale-105'
-                      : 'bg-white/80 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md'
+                      ? 'bg-gradient-to-r from-gray-600 via-slate-600 to-gray-600 text-white shadow-lg shadow-gray-500/40 scale-105 ring-2 ring-gray-300 dark:ring-gray-500'
+                      : 'bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-md border border-gray-200/50 dark:border-gray-600/50'
                   }`}
                 >
-                  <span className="text-lg">🔒</span>
+                  <span className="text-xl">🔒</span>
                   <span>Закрыто</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    filter === 'locked' ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-600'
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                    filter === 'locked' ? 'bg-white/25' : 'bg-gray-200 dark:bg-gray-700'
                   }`}>
                     {totalCount - unlockedCount}
                   </span>
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
 
-              {/* Категории - Horizontal Scroll with Gradient Indicators */}
-              <div className="relative">
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
-                  <button
+              {/* Категории - Premium Horizontal Scroll */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="relative"
+              >
+                <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide snap-x">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setCategoryFilter('all')}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
+                    className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
                       categoryFilter === 'all'
-                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/30'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                        ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 text-white shadow-lg shadow-blue-500/40 ring-2 ring-blue-300 dark:ring-blue-500'
+                        : 'bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm'
                     }`}
                   >
-                    🌟 Все
-                  </button>
-                  {categories.map(category => (
-                    <button
+                    🌟 Все категории
+                  </motion.button>
+                  {categories.map((category, idx) => (
+                    <motion.button
                       key={category}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => setCategoryFilter(category)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
+                      className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
                         categoryFilter === category
-                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30'
-                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                          ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/40 ring-2 ring-purple-300 dark:ring-purple-500'
+                          : 'bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm'
                       }`}
                     >
                       {getCategoryIcon(category)} {getCategoryName(category).split(' ')[1] || getCategoryName(category)}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
