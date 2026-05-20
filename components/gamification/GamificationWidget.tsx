@@ -57,13 +57,9 @@ export default function GamificationWidget() {
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="p-2 bg-white/20 backdrop-blur-sm rounded-lg"
-              >
+              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
                 <Trophy className="w-4 h-4 text-white" />
-              </motion.div>
+              </div>
               <div>
                 <p className="text-white/80 text-xs font-medium">Уровень {userLevel.level}</p>
                 <p className="text-white text-sm font-bold">{userLevel.title}</p>

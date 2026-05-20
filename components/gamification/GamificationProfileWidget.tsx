@@ -82,13 +82,9 @@ export default function GamificationProfileWidget() {
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="p-3 bg-white/20 backdrop-blur-sm rounded-xl"
-          >
+          <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
             <Trophy className="w-6 h-6 text-white" />
-          </motion.div>
+          </div>
           <div>
             <h3 className="text-white text-xl font-black">Уровень {userLevel.level}</h3>
             <p className="text-white/80 text-sm font-medium">{userLevel.title}</p>
