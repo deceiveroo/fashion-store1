@@ -250,6 +250,7 @@ export default function ProfilePage() {
                         setDeleteConfirmText={profileActions.setDeleteConfirmText}
                         setShowDeleteConfirm={profileActions.setShowDeleteConfirm}
                         handleExportData={profileActions.handleExportData}
+                        handleDeleteAccount={profileActions.handleDeleteAccount}
                       />
                     )}
                   </div>

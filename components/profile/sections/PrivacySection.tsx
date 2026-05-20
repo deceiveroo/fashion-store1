@@ -9,6 +9,7 @@ interface PrivacySectionProps {
   setDeleteConfirmText: (text: string) => void;
   setShowDeleteConfirm: (show: boolean) => void;
   handleExportData: () => Promise<void>;
+  handleDeleteAccount: () => Promise<void>;
 }
 
 export default function PrivacySection({
@@ -18,6 +19,7 @@ export default function PrivacySection({
   setDeleteConfirmText,
   setShowDeleteConfirm,
   handleExportData,
+  handleDeleteAccount,
 }: PrivacySectionProps) {
   return (
     <div className="space-y-4">
@@ -77,6 +79,7 @@ export default function PrivacySection({
             />
             <div className="flex gap-2">
               <button
+                onClick={handleDeleteAccount}
                 disabled={deleteConfirmText !== 'УДАЛИТЬ'}
                 className="flex-1 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-medium"
               >

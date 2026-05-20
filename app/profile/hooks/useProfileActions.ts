@@ -256,6 +256,29 @@ export function useProfileActions({
     }
   };
 
+  // Handle delete account
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'УДАЛИТЬ') {
+      toast.error('Введите "УДАЛИТЬ" для подтверждения');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/profile/delete', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!res.ok) throw new Error('Ошибка при удалении аккаунта');
+
+      toast.success('Аккаунт удален');
+      // Logout and redirect
+      router.push('/auth/signin');
+    } catch (error) {
+      toast.error('Ошибка при удалении аккаунта');
+    }
+  };
+
   return {
     // States
     isSaving,
@@ -284,6 +307,7 @@ export function useProfileActions({
     handleRemoveFromWishlist,
     handleTerminateSession,
     handleExportData,
+    handleDeleteAccount,
     saveProfile,
   };
 }
