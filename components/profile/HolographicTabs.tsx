@@ -49,88 +49,60 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
       />
 
       <div className="relative z-10">
-        {/* Tab Navigation - Optimized */}
-        <div className="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+        {/* Tab Navigation - Clean & Elegant */}
+        <div className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2">
+            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = tab.id === activeTab;
                 
                 return (
-                  <motion.button
+                  <button
                     key={tab.id}
                     onClick={() => handleTabClick(tab.id)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                     className={`
-                      relative flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm whitespace-nowrap
-                      transition-all duration-300 ease-out
-                      ${isActive ? 'text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}
+                      relative flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap
+                      transition-all duration-200 ease-out
+                      ${isActive 
+                        ? 'text-white shadow-lg' 
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }
                     `}
-                    layout
                   >
-                    {/* Active tab background with glow */}
+                    {/* Active tab background - simple gradient */}
                     {isActive && (
-                      <>
-                        {/* Glow effect */}
-                        <div
-                          className="absolute inset-0 rounded-xl blur-lg opacity-60"
-                          style={{
-                            background: `linear-gradient(135deg, ${tab.color}, ${tab.color}80)`,
-                            boxShadow: `0 0 40px ${tab.color}60`,
-                          }}
-                        />
-                        {/* Glass background */}
-                        <motion.div
-                          layoutId="activeTabBackground"
-                          className="absolute inset-0 rounded-xl backdrop-blur-xl"
-                          style={{
-                            background: `linear-gradient(135deg, ${tab.color}40, ${tab.color}20)`,
-                            border: `1px solid ${tab.color}60`,
-                          }}
-                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                        />
-                      </>
+                      <div
+                        className="absolute inset-0 rounded-lg"
+                        style={{
+                          background: `linear-gradient(135deg, ${tab.color}, ${tab.color}dd)`,
+                          boxShadow: `0 4px 12px ${tab.color}40`,
+                        }}
+                      />
                     )}
 
                     {/* Content */}
                     <div className="relative z-10 flex items-center gap-2">
-                      <motion.div
-                        animate={isActive ? { scale: [1, 1.2, 1] } : {}}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </motion.div>
+                      <Icon className="h-4 w-4" />
                       <span>{tab.label}</span>
                     </div>
-
-                    {/* Subtle indicator dot for active */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                        style={{ backgroundColor: tab.color }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                  </motion.button>
+                  </button>
                 );
               })}
             </div>
           </div>
         </div>
 
-        {/* Content Area - Optimized transitions */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Content Area - Smooth transitions */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ 
-                duration: 0.3,
+                duration: 0.25,
                 ease: 'easeOut',
               }}
             >
