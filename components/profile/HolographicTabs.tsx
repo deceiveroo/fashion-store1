@@ -51,7 +51,7 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
 
       <div className="relative z-10">
         {/* Tab Navigation - Premium Dark UI */}
-        <div className="sticky top-0 z-50 backdrop-blur-xl bg-[#0f1115]/95 border-b border-white/5">
+        <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/95 dark:bg-[#0f1115]/95 border-b border-gray-200 dark:border-white/5">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory">
               {/* Sliding indicator background */}
@@ -69,7 +69,7 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
                         h-11 px-5 rounded-xl font-medium text-sm whitespace-nowrap
                         transition-all duration-200 ease-out
                         transform-gpu will-change-transform active:scale-95
-                        ${isActive ? 'text-white' : 'text-gray-500 hover:text-white'}
+                        ${isActive ? 'text-white' : 'text-gray-700 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white'}
                       `}
                       style={{
                         transform: 'translate3d(0,0,0)',
@@ -81,13 +81,13 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
                           layoutId="active-tab"
                           className="absolute inset-0 rounded-xl"
                           style={{
-                            background: `linear-gradient(135deg, ${tab.color}30, ${tab.color}15)`,
+                            background: `linear-gradient(135deg, ${tab.color}60, ${tab.color}40)`,
                             boxShadow: `
-                              inset 0 1px 1px ${tab.color}40,
-                              0 0 20px ${tab.color}30,
-                              0 4px 12px rgba(0, 0, 0, 0.3)
+                              inset 0 1px 1px ${tab.color}80,
+                              0 0 20px ${tab.color}50,
+                              0 4px 12px rgba(0, 0, 0, 0.1)
                             `,
-                            border: `1px solid ${tab.color}50`,
+                            border: `1px solid ${tab.color}90`,
                           }}
                           transition={{
                             type: 'spring',
@@ -99,7 +99,7 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
 
                       {/* Hover effect for inactive tabs */}
                       {!isActive && (
-                        <div className="absolute inset-0 rounded-xl bg-white/0 hover:bg-white/5 transition-colors duration-200" />
+                        <div className="absolute inset-0 rounded-xl bg-transparent hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200" />
                       )}
 
                       {/* Content with hover micro-interaction */}
