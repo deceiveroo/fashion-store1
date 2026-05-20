@@ -34,22 +34,16 @@ export async function GET(request: NextRequest) {
           eq(systemNotifications.isActive, true),
           or(
             eq(systemNotifications.targetAudience, 'all'),
-            and(
-              eq(systemNotifications.targetAudience, 'registered'),
-              eq(systemNotifications.targetAudience, 'registered')
-            ),
+            eq(systemNotifications.targetAudience, 'registered'),
             and(
               eq(systemNotifications.targetAudience, 'admins'),
-              eq(systemNotifications.targetAudience, 'admins')
+              inArray(userRole, ['admin', 'manager'])
             ),
             and(
               eq(systemNotifications.targetAudience, 'specific'),
-              // Check if user is in target list
-              inArray(systemNotifications.id, 
-                db.select({ id: systemNotifications.id })
-                  .from(systemNotifications)
-                  .where(eq(systemNotifications.targetAudience, 'specific'))
-              )
+              // For specific audience, show to everyone (simplified)
+              // TODO: Add proper user targeting logic
+              eq(systemNotifications.targetAudience, 'specific')
             )
           ),
           or(
