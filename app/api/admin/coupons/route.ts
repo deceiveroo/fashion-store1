@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { coupons } from '@/lib/schema';
-import { eq, or, lte, gte, isNull } from 'drizzle-orm';
+import { coupons, userCouponUsage } from '@/lib/schema';
+import { eq, or, lte, gte, isNull, count, sql } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
-// GET /api/admin/coupons - Get all coupons
+// GET /api/admin/coupons - Get all coupons (including expired and inactive)
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
@@ -21,31 +21,42 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const active = searchParams.get('active');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    let query = db.select().from(coupons);
-
+    // Build query with optional active filter
+    let allCoupons;
     if (active !== null) {
-      query = query.where(eq(coupons.active, active === 'true'));
+      allCoupons = await db
+        .select()
+        .from(coupons)
+        .where(eq(coupons.active, active === 'true'));
+    } else {
+      allCoupons = await db.select().from(coupons);
     }
-
-    // Filter out expired coupons
-    query = query.where(
-      or(
-        isNull(coupons.expiresAt),
-        gte(coupons.expiresAt, new Date())
-      )
-    );
-
-    const allCoupons = await query;
     
-    // Apply pagination manually since we added custom filtering
-    const paginatedCoupons = allCoupons.slice(offset, offset + limit);
+    // Get usage statistics for each coupon
+    const couponsWithStats = await Promise.all(
+      allCoupons.map(async (coupon) => {
+        // Count how many unique users used this coupon
+        const usageCount = await db
+          .select({ count: count() })
+          .from(userCouponUsage)
+          .where(eq(userCouponUsage.couponId, coupon.id));
+
+        return {
+          ...coupon,
+          userCount: usageCount[0]?.count || 0,
+        };
+      })
+    );
+    
+    // Apply pagination
+    const paginatedCoupons = couponsWithStats.slice(offset, offset + limit);
 
     return NextResponse.json({
       coupons: paginatedCoupons,
-      total: allCoupons.length,
+      total: couponsWithStats.length,
     });
   } catch (error) {
     console.error('Error fetching coupons:', error);
