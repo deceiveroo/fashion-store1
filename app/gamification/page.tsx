@@ -6,16 +6,21 @@ import GamificationDashboard from '@/components/gamification/GamificationDashboa
 import AchievementNotification from '@/components/gamification/AchievementNotification';
 
 export default function GamificationPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [testing, setTesting] = useState(false);
   
   const isAdmin = user?.role === 'admin';
 
   // Debug log
   useEffect(() => {
+    console.log('[Gamification Page] === DEBUG INFO ===');
     console.log('[Gamification Page] User:', user);
+    console.log('[Gamification Page] Is Loading:', isLoading);
+    console.log('[Gamification Page] User Role:', user?.role);
     console.log('[Gamification Page] Is Admin:', isAdmin);
-  }, [user, isAdmin]);
+    console.log('[Gamification Page] Buttons should show:', isAdmin && !isLoading);
+    console.log('========================');
+  }, [user, isLoading, isAdmin]);
 
   const handleTestLevelUp = async () => {
     console.log('[TEST] Level up button clicked');
@@ -105,7 +110,23 @@ export default function GamificationPage() {
             </p>
             
             {/* Admin Test Buttons */}
-            {isAdmin && (
+            {isLoading ? (
+              <div className="mt-6 text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Загрузка...</span>
+                </div>
+              </div>
+            ) : !isAdmin ? (
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-500">
+                  🔒 Кнопки тестирования доступны только администраторам
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
+                  Текущая роль: {user?.role || 'не авторизован'}
+                </p>
+              </div>
+            ) : (
               <div className="mt-6 flex gap-3 justify-center">
                 <button
                   onClick={handleTestLevelUp}
@@ -141,11 +162,6 @@ export default function GamificationPage() {
                   )}
                 </button>
               </div>
-            )}
-            {isAdmin && (
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                🔒 Только для администраторов
-              </p>
             )}
           </div>
 
