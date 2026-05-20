@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { showAchievementNotification } from '@/components/gamification/AchievementNotification';
 
 interface Achievement {
   name: string;
@@ -48,6 +49,14 @@ export function useGamification() {
         if (data.unlocked && data.unlocked.length > 0) {
           data.unlocked.forEach((unlock: any) => {
             if (unlock.success && unlock.achievement) {
+              // Show beautiful modal notification
+              showAchievementNotification(
+                unlock.achievement.name,
+                `Поздравляем! Вы получили достижение и заработали ${unlock.achievement.xp} XP + ${unlock.achievement.coins} монет`,
+                unlock.achievement.coins
+              );
+              
+              // Also update local state for backward compatibility
               setUnlockedAchievement({
                 name: unlock.achievement.name,
                 description: '',
