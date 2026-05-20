@@ -282,12 +282,6 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                 transition={{ duration: 1, ease: 'easeOut' }}
                 className="absolute inset-y-0 left-0 bg-gradient-to-r from-white to-yellow-200 rounded-full"
               />
-              <motion.div
-                animate={{ x: ['0%', '100%'] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                style={{ width: '50%' }}
-              />
             </div>
           </div>
         </div>
