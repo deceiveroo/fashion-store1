@@ -87,7 +87,7 @@ export default function ProfilePage() {
   ];
 
   const holographicTabs = [
-    { id: 'personal', label: 'Личные данные', icon: User, color: '#8B5CF6', colorRGB: '139, 92, 246' },
+    { id: 'personal', label: 'Данные', icon: User, color: '#8B5CF6', colorRGB: '139, 92, 246' },
     { id: 'orders', label: 'Заказы', icon: Package, color: '#EC4899', colorRGB: '236, 72, 153' },
     { id: 'wishlist', label: 'Избранное', icon: Heart, color: '#F59E0B', colorRGB: '245, 158, 11' },
     { id: 'coupons', label: 'Промокоды', icon: Ticket, color: '#10B981', colorRGB: '16, 185, 129' },

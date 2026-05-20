@@ -62,7 +62,7 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
                     key={tab.id}
                     onClick={() => handleTabClick(tab.id)}
                     className={`
-                      relative flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap
+                      relative flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-xs whitespace-nowrap
                       transition-all duration-200 ease-out
                       ${isActive 
                         ? 'text-white shadow-lg' 
