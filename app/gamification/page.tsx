@@ -1,26 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import GamificationDashboard from '@/components/gamification/GamificationDashboard';
 import AchievementNotification from '@/components/gamification/AchievementNotification';
 
 export default function GamificationPage() {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user } = useAuth();
   const [testing, setTesting] = useState(false);
-
-  useEffect(() => {
-    // Check if user is admin
-    const checkAdmin = async () => {
-      try {
-        const res = await fetch('/api/auth/session');
-        const data = await res.json();
-        setIsAdmin(data?.user?.role === 'admin');
-      } catch (error) {
-        console.error('Error checking admin:', error);
-      }
-    };
-    checkAdmin();
-  }, []);
+  
+  const isAdmin = user?.role === 'admin';
 
   const handleTestLevelUp = async () => {
     if (!confirm('Повысить уровень на 1 для тестирования?')) return;
@@ -137,7 +126,7 @@ export default function GamificationPage() {
             )}
           </div>
 
-          <GamificationDashboard />
+          <GamificationDashboard isAdmin={isAdmin} />
         </div>
       </div>
     </div>

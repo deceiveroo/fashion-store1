@@ -29,7 +29,7 @@ interface Achievement {
   unlocked_at?: string;
 }
 
-export default function GamificationDashboard() {
+export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: boolean }) {
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,6 +171,31 @@ export default function GamificationDashboard() {
       alert('Ошибка сети');
     } finally {
       setPurchasing(null);
+    }
+  };
+
+  const handleForceUnlock = async (achievementCode: string) => {
+    if (!confirm(`Принудительно разблокировать достижение "${achievementCode}"?`)) return;
+
+    try {
+      const res = await fetch('/api/gamification/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ achievementCode }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Ошибка');
+        return;
+      }
+
+      alert('✅ Достижение разблокировано!');
+      fetchGamificationData();
+    } catch (error) {
+      console.error('Error unlocking achievement:', error);
+      alert('Ошибка сети');
     }
   };
 
@@ -436,6 +461,16 @@ export default function GamificationDashboard() {
                   <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
                     Получено: {new Date(achievement.unlocked_at).toLocaleDateString('ru-RU')}
                   </p>
+                )}
+
+                {/* Admin Force Unlock Button */}
+                {isAdmin && !achievement.unlocked && (
+                  <button
+                    onClick={() => handleForceUnlock(achievement.code)}
+                    className="mt-3 w-full py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2"
+                  >
+                    ⚡ Выполнить
+                  </button>
                 )}
               </div>
             </motion.div>
