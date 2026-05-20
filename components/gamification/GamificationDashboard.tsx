@@ -145,6 +145,21 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
     return names[category] || category;
   };
 
+  const getCategoryIcon = (category: string) => {
+    const icons: Record<string, string> = {
+      shopping: '🛍️',
+      orders: '📦',
+      wishlist: '❤️',
+      browsing: '🔍',
+      savings: '💰',
+      profile: '📱',
+      security: '🔐',
+      special: '🎯',
+      milestone: '🚀',
+    };
+    return icons[category] || '🌟';
+  };
+
   const handlePurchaseCoupon = async (shopCouponId: string) => {
     if (!confirm('Купить этот промокод за монеты?')) return;
 
@@ -345,71 +360,91 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
               </span>
             </div>
 
-            {/* Фильтры */}
-            <div className="mb-6 space-y-4">
-          {/* Фильтр по статусу */}
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-full font-medium transition-all ${
-                filter === 'all'
-                  ? 'bg-purple-600 text-white shadow-lg'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              Все ({totalCount})
-            </button>
-            <button
-              onClick={() => setFilter('unlocked')}
-              className={`px-4 py-2 rounded-full font-medium transition-all ${
-                filter === 'unlocked'
-                  ? 'bg-green-600 text-white shadow-lg'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              ✅ Разблокировано ({unlockedCount})
-            </button>
-            <button
-              onClick={() => setFilter('locked')}
-              className={`px-4 py-2 rounded-full font-medium transition-all ${
-                filter === 'locked'
-                  ? 'bg-gray-600 text-white shadow-lg'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              🔒 Заблокировано ({totalCount - unlockedCount})
-            </button>
-          </div>
+            {/* Фильтры - Premium Design */}
+            <div className="mb-8 space-y-4">
+              {/* Статус фильтр - Glassmorphism Pills */}
+              <div className="flex gap-3 flex-wrap p-2 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    filter === 'all'
+                      ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white shadow-lg shadow-purple-500/30 scale-105'
+                      : 'bg-white/80 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md'
+                  }`}
+                >
+                  <span className="text-lg">🎯</span>
+                  <span>Все</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    filter === 'all' ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-600'
+                  }`}>
+                    {totalCount}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setFilter('unlocked')}
+                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    filter === 'unlocked'
+                      ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 text-white shadow-lg shadow-green-500/30 scale-105'
+                      : 'bg-white/80 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md'
+                  }`}
+                >
+                  <span className="text-lg">✨</span>
+                  <span>Открыто</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    filter === 'unlocked' ? 'bg-white/20' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                  }`}>
+                    {unlockedCount}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setFilter('locked')}
+                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    filter === 'locked'
+                      ? 'bg-gradient-to-r from-gray-600 via-slate-600 to-gray-600 text-white shadow-lg shadow-gray-500/30 scale-105'
+                      : 'bg-white/80 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600 hover:shadow-md'
+                  }`}
+                >
+                  <span className="text-lg">🔒</span>
+                  <span>Закрыто</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    filter === 'locked' ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-600'
+                  }`}>
+                    {totalCount - unlockedCount}
+                  </span>
+                </button>
+              </div>
 
-          {/* Фильтр по категории */}
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setCategoryFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                categoryFilter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              Все категории
-            </button>
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setCategoryFilter(category)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  categoryFilter === category
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                {getCategoryName(category)}
-              </button>
-            ))}
-          </div>
-        </div>
+              {/* Категории - Horizontal Scroll with Gradient Indicators */}
+              <div className="relative">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                  <button
+                    onClick={() => setCategoryFilter('all')}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
+                      categoryFilter === 'all'
+                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/30'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                    }`}
+                  >
+                    🌟 Все
+                  </button>
+                  {categories.map(category => (
+                    <button
+                      key={category}
+                      onClick={() => setCategoryFilter(category)}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
+                        categoryFilter === category
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30'
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      {getCategoryIcon(category)} {getCategoryName(category).split(' ')[1] || getCategoryName(category)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {sortedAchievements.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 text-lg">
