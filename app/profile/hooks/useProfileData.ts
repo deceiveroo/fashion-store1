@@ -73,17 +73,23 @@ export interface UserSession {
 
 export interface UserCoupon {
   id: string;
-  couponId: string;
+  couponId?: string;
+  code?: string;
   orderId?: string;
-  discountAmount: string;
-  usedAt: string;
-  couponCode: string;
-  couponDiscount: number;
-  couponType: string;
-  couponActive: boolean;
+  discountAmount?: string;
+  usedAt?: string;
+  couponCode?: string;
+  couponDiscount?: number;
+  couponType?: string;
+  couponActive?: boolean;
   couponExpiresAt?: string;
   isExpired: boolean;
   isValid: boolean;
+  status?: 'active' | 'used' | 'expired';
+  discount?: number;
+  type?: string;
+  minOrder?: string;
+  expiresAt?: string;
 }
 
 export interface NotificationSettings {
@@ -263,7 +269,7 @@ export function useProfileData() {
   // Load coupons
   const loadCoupons = useCallback(async () => {
     try {
-      const res = await fetch('/api/profile/coupons', {
+      const res = await fetch('/api/profile/my-coupons', {
         credentials: 'include',
       });
       if (res.ok) {

@@ -25,10 +25,13 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
 
   // Calculate stats
   useEffect(() => {
-    const totalSavings = coupons.reduce((sum, c) => sum + parseFloat(c.discountAmount || '0'), 0);
-    const usedCount = coupons.filter(c => !c.isValid).length;
-    const activeCount = coupons.filter(c => c.isValid && !c.isExpired).length;
-    const expiredCount = coupons.filter(c => c.isExpired).length;
+    const totalSavings = coupons.reduce((sum, c) => {
+      const amount = c.discountAmount || '0';
+      return sum + (typeof amount === 'string' ? parseFloat(amount) : amount);
+    }, 0);
+    const usedCount = coupons.filter(c => c.status === 'used' || !c.isValid).length;
+    const activeCount = coupons.filter(c => c.status === 'active' || (c.isValid && !c.isExpired)).length;
+    const expiredCount = coupons.filter(c => c.status === 'expired' || c.isExpired).length;
     
     setStats({ totalSavings, usedCount, activeCount, expiredCount });
   }, [coupons]);
@@ -37,11 +40,11 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
   const filteredCoupons = coupons.filter(coupon => {
     switch (activeTab) {
       case 'active':
-        return coupon.isValid && !coupon.isExpired;
+        return coupon.status === 'active' || (coupon.isValid && !coupon.isExpired);
       case 'used':
-        return !coupon.isValid;
+        return coupon.status === 'used' || !coupon.isValid;
       case 'expired':
-        return coupon.isExpired;
+        return coupon.status === 'expired' || coupon.isExpired;
       default:
         return true;
     }
@@ -325,11 +328,13 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
                       <div>
                         <h4 className="font-black text-white text-xl font-mono tracking-wider"
                             style={{ textShadow: isActive ? '0 0 20px rgba(108,92,231,0.5)' : 'none' }}>
-                          {coupon.couponCode}
+                          {coupon.code || coupon.couponCode}
                         </h4>
                         <p className="text-xs text-gray-400 mt-0.5">
                           Скидка: <span className="font-bold text-white">
-                            {coupon.couponType === 'percent' ? `${coupon.couponDiscount}%` : `${coupon.couponDiscount} ₽`}
+                            {(coupon.type || coupon.couponType) === 'percent' 
+                              ? `${coupon.discount || coupon.couponDiscount}%` 
+                              : `${coupon.discount || coupon.couponDiscount} ₽`}
                           </span>
                         </p>
                       </div>
@@ -345,7 +350,7 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
                          }}>
                       <p className="text-xs text-gray-400 mb-1 font-medium">Сэкономлено</p>
                       <p className="text-lg font-black text-green-400" style={{ textShadow: '0 0 10px rgba(0,255,136,0.5)' }}>
-                        {parseFloat(coupon.discountAmount).toLocaleString('ru-RU')} ₽
+                        {coupon.discountAmount ? parseFloat(coupon.discountAmount).toLocaleString('ru-RU') : '0'} ₽
                       </p>
                     </div>
                     <div className="p-3 rounded-xl"
@@ -358,7 +363,7 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
                         {isUsed ? 'Использован' : 'Действует до'}
                       </p>
                       <p className="text-sm font-bold text-white">
-                        {new Date(isUsed ? coupon.usedAt : (coupon.couponExpiresAt || coupon.usedAt)).toLocaleDateString('ru-RU')}
+                        {new Date(isUsed ? (coupon.usedAt || '') : (coupon.expiresAt || coupon.couponExpiresAt || '')).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
                   </div>
@@ -367,7 +372,7 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
                   <div className="flex gap-2">
                     {isActive && (
                       <motion.button
-                        onClick={() => copyToClipboard(coupon.couponCode)}
+                        onClick={() => copyToClipboard(coupon.code || coupon.couponCode || '')}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"
