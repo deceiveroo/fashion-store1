@@ -20,6 +20,13 @@ export default function GamificationPage() {
     console.log('[Gamification Page] Is Admin:', isAdmin);
     console.log('[Gamification Page] Buttons should show:', isAdmin && !isLoading);
     console.log('========================');
+    
+    // Auto-test if buttons are not showing
+    if (!isLoading && !user) {
+      console.warn('⚠️ WARNING: User is null - you might not be logged in!');
+    } else if (!isLoading && user && !isAdmin) {
+      console.warn(`⚠️ WARNING: User role is "${user?.role}" - not admin!`);
+    }
   }, [user, isLoading, isAdmin]);
 
   const handleTestLevelUp = async () => {
@@ -97,6 +104,41 @@ export default function GamificationPage() {
     }
   };
 
+  const handleResetAchievements = async () => {
+    console.log('[TEST] Reset achievements button clicked');
+    console.log('[TEST] Is admin:', isAdmin);
+    
+    if (!isAdmin) {
+      alert('❌ Только для администраторов!');
+      return;
+    }
+    
+    if (!confirm('Сбросить ВСЕ достижения? Прогресс достижений будет потерян!')) return;
+    
+    setTesting(true);
+    try {
+      const res = await fetch('/api/gamification/reset-achievements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Ошибка');
+        return;
+      }
+
+      alert(`✅ Достижения сброшены!\n\n${data.message}`);
+      window.location.reload();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Ошибка сети');
+    } finally {
+      setTesting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-pink-900/20 pt-20">
       <div className="container mx-auto px-4 py-12">
@@ -127,7 +169,7 @@ export default function GamificationPage() {
                 </p>
               </div>
             ) : (
-              <div className="mt-6 flex gap-3 justify-center">
+              <div className="mt-6 flex gap-3 justify-center flex-wrap">
                 <button
                   onClick={handleTestLevelUp}
                   disabled={testing}
@@ -158,6 +200,23 @@ export default function GamificationPage() {
                   ) : (
                     <>
                       🔄 Сбросить уровень
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleResetAchievements}
+                  disabled={testing}
+                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {testing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Сброс...
+                    </>
+                  ) : (
+                    <>
+                      🗑️ Сбросить достижения
                     </>
                   )}
                 </button>
