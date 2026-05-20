@@ -35,6 +35,9 @@ export default function GamificationDashboard() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unlocked' | 'locked'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'achievements' | 'shop'>('achievements');
+  const [shopCoupons, setShopCoupons] = useState<any[]>([]);
+  const [purchasing, setPurchasing] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGamificationData();
@@ -52,6 +55,11 @@ export default function GamificationDashboard() {
       const achievementsData = await achievementsRes.json();
       // Убедимся что это массив
       setAchievements(Array.isArray(achievementsData) ? achievementsData : []);
+
+      // Fetch shop coupons
+      const shopRes = await fetch('/api/gamification/shop');
+      const shopData = await shopRes.json();
+      setShopCoupons(shopData.coupons || []);
     } catch (error) {
       console.error('Error fetching gamification data:', error);
       setAchievements([]); // Установим пустой массив при ошибке
@@ -134,6 +142,36 @@ export default function GamificationDashboard() {
       milestone: '🚀 Вехи',
     };
     return names[category] || category;
+  };
+
+  const handlePurchaseCoupon = async (shopCouponId: string) => {
+    if (!confirm('Купить этот промокод за монеты?')) return;
+
+    setPurchasing(shopCouponId);
+    try {
+      const res = await fetch('/api/gamification/shop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shopCouponId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Ошибка покупки');
+        return;
+      }
+
+      alert(`✅ Промокод куплен!\n\nКод: ${data.coupon.code}\nСкидка: ${data.coupon.discount}${data.coupon.discountType === 'percent' ? '%' : '₽'}\n\nОсталось монет: ${data.remainingCoins}`);
+      
+      // Refresh data
+      fetchGamificationData();
+    } catch (error) {
+      console.error('Error purchasing coupon:', error);
+      alert('Ошибка сети');
+    } finally {
+      setPurchasing(null);
+    }
   };
 
   return (
@@ -229,6 +267,32 @@ export default function GamificationDashboard() {
 
       {/* Achievements */}
       <div>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('achievements')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              activeTab === 'achievements'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            🏆 Достижения
+          </button>
+          <button
+            onClick={() => setActiveTab('shop')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+              activeTab === 'shop'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-yellow-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            🛒 Магазин промокодов
+            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{userLevel?.coins} 💰</span>
+          </button>
+        </div>
+
+        {activeTab === 'achievements' && (
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
             <Trophy className="text-yellow-500" />
@@ -377,6 +441,129 @@ export default function GamificationDashboard() {
             ))
           )}
         </div>
+
+        {/* Shop Tab */}
+        {activeTab === 'shop' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                🛒 Магазин промокодов
+              </h3>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Ваш баланс: <span className="font-bold text-yellow-600 dark:text-yellow-400">{userLevel?.coins} 💰</span>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {shopCoupons.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-500 dark:text-gray-400 text-lg">🛍️ Промокоды скоро появятся</p>
+                </div>
+              ) : (
+                shopCoupons.map((coupon, index) => (
+                  <motion.div
+                    key={coupon.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className={`relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border-2 ${
+                      coupon.alreadyPurchased
+                        ? 'border-green-500'
+                        : !coupon.inStock || !coupon.canAfford
+                        ? 'border-gray-200 dark:border-gray-700 opacity-60'
+                        : 'border-yellow-400 dark:border-yellow-600'
+                    }`}
+                  >
+                    {/* Already Purchased Badge */}
+                    {coupon.alreadyPurchased && (
+                      <div className="absolute top-3 right-3 px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                        ✓ Куплено
+                      </div>
+                    )}
+
+                    <div className="relative z-10">
+                      <div className="mb-4">
+                        <div className="text-4xl mb-2">🎫</div>
+                        <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-1">
+                          {coupon.name}
+                        </h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {coupon.description}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Скидка:</span>
+                          <span className="font-bold text-purple-600 dark:text-purple-400">
+                            {coupon.discount}{coupon.discountType === 'percent' ? '%' : '₽'}
+                          </span>
+                        </div>
+                        {coupon.minOrder && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">Мин. заказ:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {parseInt(coupon.minOrder).toLocaleString('ru-RU')} ₽
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Срок действия:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {coupon.expiresDays} дней
+                          </span>
+                        </div>
+                        {coupon.stock && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">Осталось:</span>
+                            <span className="font-medium text-orange-600 dark:text-orange-400">
+                              {coupon.stock - (coupon.purchasedCount || 0)} шт
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => handlePurchaseCoupon(coupon.id)}
+                        disabled={!coupon.canAfford || !coupon.inStock || coupon.alreadyPurchased || purchasing === coupon.id}
+                        className={`w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                          coupon.alreadyPurchased
+                            ? 'bg-green-500 text-white cursor-default'
+                            : !coupon.inStock || !coupon.canAfford
+                            ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl'
+                        }`}
+                      >
+                        {purchasing === coupon.id ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Покупка...
+                          </>
+                        ) : coupon.alreadyPurchased ? (
+                          <>
+                            ✓ Уже куплено
+                          </>
+                        ) : !coupon.inStock ? (
+                          'Нет в наличии'
+                        ) : !coupon.canAfford ? (
+                          <>
+                            🔒 Недостаточно монет
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-5 h-5" />
+                            Купить за {coupon.priceCoins} 💰
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

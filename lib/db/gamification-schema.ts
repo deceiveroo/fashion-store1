@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, boolean, jsonb, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, boolean, jsonb, uuid, decimal } from 'drizzle-orm/pg-core';
 import { users } from './schema';
 
 // Уровни пользователя
@@ -81,4 +81,51 @@ export const leaderboard = pgTable('leaderboard', {
   rank: integer('rank').notNull(),
   score: integer('score').notNull(), // XP или другая метрика
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Награды за уровни - промокоды
+export const levelRewards = pgTable('level_rewards', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  level: integer('level').notNull().unique(), // Уровень, за который выдается награда
+  couponCode: text('coupon_code').notNull().unique(), // Код промокода
+  discount: integer('discount').notNull(), // Размер скидки
+  discountType: text('discount_type').notNull().default('percent'), // Тип: percent или fixed
+  minOrder: decimal('min_order', { precision: 10, scale: 2 }), // Минимальная сумма заказа
+  maxUses: integer('max_uses').default(1), // Максимальное количество использований
+  expiresDays: integer('expires_days').default(30), // Срок действия в днях после получения
+  description: text('description'), // Описание награды
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Магазин промокодов - можно купить за монеты
+export const shopCoupons = pgTable('shop_coupons', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(), // Название промокода
+  couponCode: text('coupon_code').notNull().unique(), // Код промокода
+  discount: integer('discount').notNull(), // Размер скидки
+  discountType: text('discount_type').notNull().default('percent'), // Тип: percent или fixed
+  minOrder: decimal('min_order', { precision: 10, scale: 2 }), // Минимальная сумма заказа
+  maxUses: integer('max_uses').default(1), // Максимальное количество использований
+  expiresDays: integer('expires_days').default(14), // Срок действия в днях после покупки
+  priceCoins: integer('price_coins').notNull(), // Цена в монетах
+  description: text('description'), // Описание
+  isActive: boolean('is_active').default(true), // Активен ли для покупки
+  stock: integer('stock'), // Ограниченное количество (NULL = бесконечно)
+  purchasedCount: integer('purchased_count').default(0), // Сколько раз куплен
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Купленные пользователем промокоды
+export const userPurchasedCoupons = pgTable('user_purchased_coupons', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  shopCouponId: uuid('shop_coupon_id').notNull().references(() => shopCoupons.id, { onDelete: 'cascade' }),
+  couponCode: text('coupon_code').notNull(), // Код купленного промокода
+  coinsSpent: integer('coins_spent').notNull(), // Потраченные монеты
+  redeemed: boolean('redeemed').default(false), // Использован ли
+  redeemedAt: timestamp('redeemed_at'), // Когда использован
+  expiresAt: timestamp('expires_at').notNull(), // Срок действия
+  purchasedAt: timestamp('purchased_at').defaultNow().notNull(),
 });

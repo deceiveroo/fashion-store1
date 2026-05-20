@@ -70,6 +70,42 @@ async function levelUp(userId: string, currentLevel: number) {
   // Award bonus coins for leveling up
   await awardXP(userId, 0, `Достигнут уровень ${newLevel}`, { level: newLevel });
   
+  // Check if there's a level reward coupon
+  try {
+    const rewardResult = await db.execute(sql`
+      SELECT * FROM level_rewards WHERE level = ${newLevel}
+    `);
+    
+    if (rewardResult.rows && rewardResult.rows.length > 0) {
+      const reward = rewardResult.rows[0] as any;
+      
+      // Create the coupon in the coupons table
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + (reward.expires_days || 30));
+      
+      await db.execute(sql`
+        INSERT INTO coupons (code, discount, type, min_order, max_uses, used_count, active, expires_at, created_by)
+        VALUES (
+          ${reward.coupon_code},
+          ${reward.discount},
+          ${reward.discount_type},
+          ${reward.min_order},
+          ${reward.max_uses},
+          0,
+          true,
+          ${expiresAt},
+          ${userId}
+        )
+        ON CONFLICT (code) DO NOTHING
+      `);
+      
+      console.log(`Level ${newLevel} reward coupon created: ${reward.coupon_code}`);
+    }
+  } catch (error) {
+    console.error('Error creating level reward coupon:', error);
+    // Don't fail level up if coupon creation fails
+  }
+  
   // Check level achievements
   await checkAchievements(userId, 'level_up', newLevel);
   
