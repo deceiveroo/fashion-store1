@@ -8,6 +8,7 @@ import { Providers } from '@/components/providers/Providers';
 import SupportChatMinimalist from '@/components/SupportChatMinimalist';
 import QuickViewProvider from '@/components/QuickViewProvider';
 import MaintenanceCheck from '@/components/MaintenanceCheck';
+import AchievementNotification from '@/components/gamification/AchievementNotification';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react';
 
@@ -72,6 +73,7 @@ export default function RootLayout({
                   <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
                   <SupportChatMinimalist />
                   <QuickViewProvider />
+                  <AchievementNotification />
                 </div>
               </MaintenanceCheck>
             </CartProvider>
