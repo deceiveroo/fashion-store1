@@ -52,7 +52,7 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
         {/* Tab Navigation - Clean & Elegant */}
         <div className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2">
-            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = tab.id === activeTab;
@@ -62,7 +62,7 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
                     key={tab.id}
                     onClick={() => handleTabClick(tab.id)}
                     className={`
-                      relative flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-xs whitespace-nowrap
+                      relative flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium text-xs whitespace-nowrap
                       transition-all duration-200 ease-out
                       ${isActive 
                         ? 'text-white shadow-lg' 
@@ -82,7 +82,7 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
                     )}
 
                     {/* Content */}
-                    <div className="relative z-10 flex items-center gap-2">
+                    <div className="relative z-10 flex items-center gap-1.5">
                       <Icon className="h-4 w-4" />
                       <span>{tab.label}</span>
                     </div>
