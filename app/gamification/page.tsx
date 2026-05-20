@@ -8,6 +8,7 @@ import AchievementNotification from '@/components/gamification/AchievementNotifi
 export default function GamificationPage() {
   const { user, isLoading } = useAuth();
   const [testing, setTesting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<{action: string, message: string} | null>(null);
   
   const isAdmin = user?.role === 'admin';
 
@@ -35,12 +36,18 @@ export default function GamificationPage() {
     console.log('[TEST] User:', user);
     
     if (!isAdmin) {
-      alert('❌ Только для администраторов!');
+      setShowConfirmModal({ action: 'error', message: '❌ Только для администраторов!' });
       return;
     }
     
-    if (!confirm('Повысить уровень на 1 для тестирования?')) return;
-    
+    setShowConfirmModal({ 
+      action: 'levelup', 
+      message: '🧪 Повысить уровень на 1 для тестирования?\n\nВы получите XP, монеты и возможно промокод!' 
+    });
+  };
+
+  const executeLevelUp = async () => {
+    setShowConfirmModal(null);
     setTesting(true);
     try {
       const res = await fetch('/api/gamification/test-levelup', {
@@ -52,17 +59,20 @@ export default function GamificationPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || 'Ошибка');
+        setShowConfirmModal({ action: 'error', message: data.error || 'Ошибка' });
         return;
       }
 
-      alert(`✅ Уровень повышен!\n\n${data.message}\nXP начислено: ${data.xpAwarded}\n\nПроверьте модальное окно и колокольчик!`);
+      setShowConfirmModal({ 
+        action: 'success', 
+        message: `✅ Уровень повышен!\n\n${data.message}\nXP начислено: ${data.xpAwarded}\n\nПроверьте модальное окно и колокольчик!` 
+      });
       
-      // Reload page to refresh data
-      window.location.reload();
+      // Reload page to refresh data after 2 seconds
+      setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
       console.error('Error:', error);
-      alert('Ошибка сети');
+      setShowConfirmModal({ action: 'error', message: 'Ошибка сети' });
     } finally {
       setTesting(false);
     }
@@ -73,12 +83,18 @@ export default function GamificationPage() {
     console.log('[TEST] Is admin:', isAdmin);
     
     if (!isAdmin) {
-      alert('❌ Только для администраторов!');
+      setShowConfirmModal({ action: 'error', message: '❌ Только для администраторов!' });
       return;
     }
     
-    if (!confirm('Сбросить уровень до 1? Все монеты и прогресс будут потеряны!')) return;
-    
+    setShowConfirmModal({ 
+      action: 'reset', 
+      message: '⚠️ Сбросить уровень до 1?\n\nВсе монеты и прогресс будут потеряны! Это действие нельзя отменить.' 
+    });
+  };
+
+  const executeReset = async () => {
+    setShowConfirmModal(null);
     setTesting(true);
     try {
       const res = await fetch('/api/gamification/test-levelup', {
@@ -90,15 +106,15 @@ export default function GamificationPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || 'Ошибка');
+        setShowConfirmModal({ action: 'error', message: data.error || 'Ошибка' });
         return;
       }
 
-      alert('✅ Уровень сброшен до 1!');
-      window.location.reload();
+      setShowConfirmModal({ action: 'success', message: '✅ Уровень сброшен до 1!' });
+      setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
       console.error('Error:', error);
-      alert('Ошибка сети');
+      setShowConfirmModal({ action: 'error', message: 'Ошибка сети' });
     } finally {
       setTesting(false);
     }
@@ -109,12 +125,18 @@ export default function GamificationPage() {
     console.log('[TEST] Is admin:', isAdmin);
     
     if (!isAdmin) {
-      alert('❌ Только для администраторов!');
+      setShowConfirmModal({ action: 'error', message: '❌ Только для администраторов!' });
       return;
     }
     
-    if (!confirm('Сбросить ВСЕ достижения? Прогресс достижений будет потерян!')) return;
-    
+    setShowConfirmModal({ 
+      action: 'reset_achievements', 
+      message: '🗑️ Сбросить ВСЕ достижения?\n\nПрогресс достижений будет потерян! Вы сможете заработать их заново.' 
+    });
+  };
+
+  const executeResetAchievements = async () => {
+    setShowConfirmModal(null);
     setTesting(true);
     try {
       const res = await fetch('/api/gamification/reset-achievements', {
@@ -125,15 +147,15 @@ export default function GamificationPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || 'Ошибка');
+        setShowConfirmModal({ action: 'error', message: data.error || 'Ошибка' });
         return;
       }
 
-      alert(`✅ Достижения сброшены!\n\n${data.message}`);
-      window.location.reload();
+      setShowConfirmModal({ action: 'success', message: `✅ Достижения сброшены!\n\n${data.message}` });
+      setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
       console.error('Error:', error);
-      alert('Ошибка сети');
+      setShowConfirmModal({ action: 'error', message: 'Ошибка сети' });
     } finally {
       setTesting(false);
     }
@@ -227,6 +249,71 @@ export default function GamificationPage() {
           <GamificationDashboard isAdmin={isAdmin} />
         </div>
       </div>
+
+      {/* Beautiful Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                {showConfirmModal.action === 'error' ? '❌ Ошибка' :
+                 showConfirmModal.action === 'success' ? '✅ Успех!' :
+                 '⚠️ Подтверждение'}
+              </h3>
+              <button
+                onClick={() => setShowConfirmModal(null)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Message */}
+            <div className="mb-6 whitespace-pre-line text-gray-700 dark:text-gray-300 leading-relaxed">
+              {showConfirmModal.message}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(null)}
+                className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-all"
+              >
+                Отмена
+              </button>
+              {(showConfirmModal.action === 'levelup' || showConfirmModal.action === 'reset' || showConfirmModal.action === 'reset_achievements') && (
+                <button
+                  onClick={() => {
+                    if (showConfirmModal.action === 'levelup') executeLevelUp();
+                    else if (showConfirmModal.action === 'reset') executeReset();
+                    else if (showConfirmModal.action === 'reset_achievements') executeResetAchievements();
+                  }}
+                  disabled={testing}
+                  className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    showConfirmModal.action === 'levelup'
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
+                      : showConfirmModal.action === 'reset'
+                      ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'
+                      : 'bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white'
+                  } disabled:opacity-50`}
+                >
+                  {testing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Выполняется...
+                    </>
+                  ) : (
+                    'Подтвердить'
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

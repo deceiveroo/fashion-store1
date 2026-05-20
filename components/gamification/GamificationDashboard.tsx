@@ -38,6 +38,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
   const [activeTab, setActiveTab] = useState<'achievements' | 'shop'>('achievements');
   const [shopCoupons, setShopCoupons] = useState<any[]>([]);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [showForceUnlockModal, setShowForceUnlockModal] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGamificationData();
@@ -183,7 +184,14 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
       return;
     }
     
-    if (!confirm(`Принудительно разблокировать достижение "${achievementCode}"?`)) return;
+    setShowForceUnlockModal(achievementCode);
+  };
+
+  const executeForceUnlock = async () => {
+    if (!showForceUnlockModal) return;
+    
+    const achievementCode = showForceUnlockModal;
+    setShowForceUnlockModal(null);
 
     try {
       const res = await fetch('/api/gamification/unlock', {
@@ -611,6 +619,48 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
           </div>
         )}
       </div>
+
+      {/* Force Unlock Confirmation Modal */}
+      {showForceUnlockModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">⚡ Принудительная разблокировка</h3>
+              <button
+                onClick={() => setShowForceUnlockModal(null)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-6 text-gray-700 dark:text-gray-300">
+              <p className="mb-2">Разблокировать достижение:</p>
+              <p className="font-mono font-bold text-lg text-purple-600 dark:text-purple-400">{showForceUnlockModal}</p>
+              <p className="text-sm mt-4 text-gray-500 dark:text-gray-400">
+                Вы получите XP и монеты за это достижение.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowForceUnlockModal(null)}
+                className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-all"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={executeForceUnlock}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-semibold transition-all"
+              >
+                Разблокировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
