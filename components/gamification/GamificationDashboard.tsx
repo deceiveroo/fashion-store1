@@ -175,6 +175,14 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
   };
 
   const handleForceUnlock = async (achievementCode: string) => {
+    console.log('[ACHIEVEMENT] Force unlock clicked:', achievementCode);
+    console.log('[ACHIEVEMENT] Is admin:', isAdmin);
+    
+    if (!isAdmin) {
+      alert('❌ Только для администраторов!');
+      return;
+    }
+    
     if (!confirm(`Принудительно разблокировать достижение "${achievementCode}"?`)) return;
 
     try {

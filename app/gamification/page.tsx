@@ -11,7 +11,22 @@ export default function GamificationPage() {
   
   const isAdmin = user?.role === 'admin';
 
+  // Debug log
+  useEffect(() => {
+    console.log('[Gamification Page] User:', user);
+    console.log('[Gamification Page] Is Admin:', isAdmin);
+  }, [user, isAdmin]);
+
   const handleTestLevelUp = async () => {
+    console.log('[TEST] Level up button clicked');
+    console.log('[TEST] Is admin:', isAdmin);
+    console.log('[TEST] User:', user);
+    
+    if (!isAdmin) {
+      alert('❌ Только для администраторов!');
+      return;
+    }
+    
     if (!confirm('Повысить уровень на 1 для тестирования?')) return;
     
     setTesting(true);
@@ -42,6 +57,14 @@ export default function GamificationPage() {
   };
 
   const handleResetLevel = async () => {
+    console.log('[TEST] Reset button clicked');
+    console.log('[TEST] Is admin:', isAdmin);
+    
+    if (!isAdmin) {
+      alert('❌ Только для администраторов!');
+      return;
+    }
+    
     if (!confirm('Сбросить уровень до 1? Все монеты и прогресс будут потеряны!')) return;
     
     setTesting(true);
