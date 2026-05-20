@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { coupons } from '@/lib/schema';
+import { coupons, userCouponUsage } from '@/lib/schema';
 import { eq, and, or, lte, gte, isNull } from 'drizzle-orm';
+import { getSession } from '@/lib/server-auth';
 
 // POST /api/coupons/validate - Validate and apply coupon
 export async function POST(request: NextRequest) {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check usage limit
-    if (foundCoupon.maxUses && foundCoupon.usedCount >= foundCoupon.maxUses) {
+    if (foundCoupon.maxUses && (foundCoupon.usedCount || 0) >= foundCoupon.maxUses) {
       return NextResponse.json(
         { error: 'Промокод больше не доступен (лимит использований)', valid: false },
         { status: 400 }
@@ -65,6 +66,32 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // CRITICAL: Check if user already used this coupon
+    const session = await getSession();
+    if (session?.user?.id) {
+      const existingUsage = await db
+        .select()
+        .from(userCouponUsage)
+        .where(
+          and(
+            eq(userCouponUsage.userId, session.user.id),
+            eq(userCouponUsage.couponId, foundCoupon.id)
+          )
+        )
+        .limit(1);
+
+      if (existingUsage.length > 0) {
+        return NextResponse.json(
+          { 
+            error: 'Вы уже использовали этот промокод. Один промокод — один раз на аккаунт.',
+            valid: false,
+            alreadyUsed: true
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Calculate discount
