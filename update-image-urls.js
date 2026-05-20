@@ -16,8 +16,37 @@ const NEW_PROJECT = 'norjvtaujxlbdbqgkmwd';
 async function updateUrls() {
   console.log('🔄 Updating image URLs from Paris to Stockholm...\n');
 
+  // Update products table (image field)
+  console.log('1. Updating products table...');
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('id', 'image');
+
+  if (productsError) {
+    console.error('Error fetching products:', productsError);
+  } else {
+    let updatedProducts = 0;
+    for (const product of products) {
+      if (product.image && product.image.includes(OLD_PROJECT)) {
+        const newImage = product.image.replace(OLD_PROJECT, NEW_PROJECT);
+        const { error } = await supabase
+          .from('products')
+          .update({ image: newImage })
+          .eq('id', product.id);
+
+        if (error) {
+          console.error(`  ❌ Error updating product ${product.id}:`, error);
+        } else {
+          updatedProducts++;
+          console.log(`  ✅ Updated product: ${product.id}`);
+        }
+      }
+    }
+    console.log(`   Total products updated: ${updatedProducts}\n`);
+  }
+
   // Update product_images table
-  console.log('1. Updating product_images...');
+  console.log('2. Updating product_images...');
   const { data: productImages, error: imagesError } = await supabase
     .from('product_images')
     .select('id', 'url');
@@ -47,7 +76,7 @@ async function updateUrls() {
   console.log(`   Total updated: ${updatedImages}\n`);
 
   // Update user_profiles avatars
-  console.log('2. Updating user_profiles avatars...');
+  console.log('3. Updating user_profiles avatars...');
   const { data: profiles, error: profilesError } = await supabase
     .from('user_profiles')
     .select('user_id', 'avatar');
@@ -77,7 +106,7 @@ async function updateUrls() {
   console.log(`   Total updated: ${updatedProfiles}\n`);
 
   // Update users table (image field)
-  console.log('3. Updating users table images...');
+  console.log('4. Updating users table images...');
   const { data: users, error: usersError } = await supabase
     .from('users')
     .select('id', 'image');
@@ -106,10 +135,46 @@ async function updateUrls() {
   }
   console.log(`   Total updated: ${updatedUsers}\n`);
 
+  // Update site_content table (any image fields)
+  console.log('5. Updating site_content images...');
+  const { data: content, error: contentError } = await supabase
+    .from('site_content')
+    .select('id', 'image_url', 'background_image');
+
+  if (contentError) {
+    console.error('Error fetching site content:', contentError);
+  } else {
+    let updatedContent = 0;
+    for (const item of content) {
+      let updates = {};
+      
+      if (item.image_url && item.image_url.includes(OLD_PROJECT)) {
+        updates.image_url = item.image_url.replace(OLD_PROJECT, NEW_PROJECT);
+      }
+      
+      if (item.background_image && item.background_image.includes(OLD_PROJECT)) {
+        updates.background_image = item.background_image.replace(OLD_PROJECT, NEW_PROJECT);
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        const { error } = await supabase
+          .from('site_content')
+          .update(updates)
+          .eq('id', item.id);
+
+        if (error) {
+          console.error(`  ❌ Error updating content ${item.id}:`, error);
+        } else {
+          updatedContent++;
+          console.log(`  ✅ Updated content: ${item.id}`);
+        }
+      }
+    }
+    console.log(`   Total content updated: ${updatedContent}\n`);
+  }
+
   console.log('✅ Migration complete!');
-  console.log(`   Product images: ${updatedImages}`);
-  console.log(`   User avatars: ${updatedProfiles}`);
-  console.log(`   User images: ${updatedUsers}`);
+  console.log(`   Check console output above for details`);
 }
 
 updateUrls().catch(console.error);
