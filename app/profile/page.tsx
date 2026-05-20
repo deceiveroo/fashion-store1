@@ -20,9 +20,8 @@ import WishlistSection from '@/components/profile/sections/WishlistSection';
 import CouponsSection from '@/components/profile/sections/CouponsSection';
 import PaymentsSection from '@/components/profile/sections/PaymentsSection';
 import SecuritySection from '@/components/profile/sections/SecuritySection';
-import PrivacySection from '@/components/profile/sections/PrivacySection';
 
-type Section = 'personal' | 'security' | 'payments' | 'notifications' | 'orders' | 'wishlist' | 'privacy' | 'coupons';
+type Section = 'personal' | 'security' | 'payments' | 'notifications' | 'orders' | 'wishlist' | 'coupons';
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, logout, refreshUser } = useAuth();
@@ -94,7 +93,6 @@ export default function ProfilePage() {
     { id: 'payments', label: 'Оплата', icon: CreditCard, color: '#3B82F6', colorRGB: '59, 130, 246' },
     { id: 'security', label: 'Безопасность', icon: Shield, color: '#EF4444', colorRGB: '239, 68, 68' },
     { id: 'notifications', label: 'Уведомления', icon: Bell, color: '#8B5CF6', colorRGB: '139, 92, 246' },
-    { id: 'privacy', label: 'Конфиденциальность', icon: FileText, color: '#6366F1', colorRGB: '99, 102, 241' },
   ];
 
   return (
@@ -202,6 +200,11 @@ export default function ProfilePage() {
                         isSaving={profileActions.isSaving}
                         handleSave={profileActions.handleSave}
                         loadProfile={profileData.loadProfile}
+                        showDeleteConfirm={profileActions.showDeleteConfirm}
+                        deleteConfirmText={profileActions.deleteConfirmText}
+                        setDeleteConfirmText={profileActions.setDeleteConfirmText}
+                        setShowDeleteConfirm={profileActions.setShowDeleteConfirm}
+                        handleDeleteAccount={profileActions.handleDeleteAccount}
                       />
                     )}
 
@@ -239,18 +242,6 @@ export default function ProfilePage() {
                       <NotificationsPanel 
                         notifications={profileData.notifications} 
                         setNotifications={profileData.setNotifications} 
-                      />
-                    )}
-
-                    {section.id === 'privacy' && (
-                      <PrivacySection
-                        isExporting={profileActions.isExporting}
-                        showDeleteConfirm={profileActions.showDeleteConfirm}
-                        deleteConfirmText={profileActions.deleteConfirmText}
-                        setDeleteConfirmText={profileActions.setDeleteConfirmText}
-                        setShowDeleteConfirm={profileActions.setShowDeleteConfirm}
-                        handleExportData={profileActions.handleExportData}
-                        handleDeleteAccount={profileActions.handleDeleteAccount}
                       />
                     )}
                   </div>
