@@ -588,7 +588,10 @@ export default function AdminNotificationsPage() {
                     <div className={`rounded-xl border ${TYPE_CONFIG[formData.type].border} ${TYPE_CONFIG[formData.type].bg} p-4`}>
                       <div className="flex items-start gap-3">
                         <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${TYPE_CONFIG[formData.type].gradient} flex items-center justify-center text-white`}>
-                          {React.createElement(TYPE_CONFIG[formData.type].icon, { className: 'h-5 w-5' })}
+                          {(() => {
+                            const IconComponent = TYPE_CONFIG[formData.type].icon;
+                            return <IconComponent className="h-5 w-5" />;
+                          })()}
                         </div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 dark:text-white">
