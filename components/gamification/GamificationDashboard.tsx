@@ -661,9 +661,9 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                     {/* Shine Effect on Hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
 
-                    <div className="relative z-10">
+                    <div className="relative z-10 flex flex-col h-full">
                       {/* Coupon Header with Icon */}
-                      <div className="mb-4 flex items-start justify-between">
+                      <div className="mb-4 flex items-start justify-between min-h-[48px]">
                         <motion.div 
                           whileHover={{ scale: 1.05 }}
                           className="text-4xl p-2 bg-gray-100 dark:bg-gray-800 rounded-xl"
@@ -671,19 +671,21 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                           {coupon.alreadyPurchased ? '✅' : '🎫'}
                         </motion.div>
                         
-                        {/* Already Purchased Badge */}
-                        {coupon.alreadyPurchased && (
-                          <motion.div 
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="px-3 py-1.5 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1.5"
-                          >
+                        {/* Already Purchased Badge - Fixed Height */}
+                        <div className="min-h-[32px] flex items-center">
+                          {coupon.alreadyPurchased && (
+                            <motion.div 
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              className="px-3 py-1.5 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1.5"
+                            >
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                             Куплено
                           </motion.div>
-                        )}
+                          )}
+                        </div>
                       </div>
 
                       {/* Coupon Name & Description */}
