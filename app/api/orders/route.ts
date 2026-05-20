@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders, orderItems, users, coupons, userCouponUsage } from '@/lib/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
 import { getSession } from '@/lib/server-auth';
@@ -330,11 +330,21 @@ export async function POST(request: NextRequest) {
           deliveryPrice: deliveryPrice ? deliveryPrice.toString() : '0',
           deliveryMethod,
           paymentMethod,
-          // couponId: couponId || null, // TODO: Add coupon_id column to orders table first
+          couponId: couponId || null,
           status: 'processing', // Changed from 'pending' to 'processing'
           recipient,
           comment: comment || ''
         }).returning();
+
+        // Increment coupon usedCount if coupon was used (inside transaction)
+        if (couponId) {
+          await trx.update(coupons)
+            .set({ 
+              usedCount: sql`COALESCE("usedCount", 0) + 1`,
+              updatedAt: new Date()
+            })
+            .where(eq(coupons.id, couponId));
+        }
 
         // Add items to the order
         for (const item of items) {
@@ -368,14 +378,6 @@ export async function POST(request: NextRequest) {
           discountAmount: String(discount),
         });
         
-        // Increment coupon usedCount
-        await db.update(coupons)
-          .set({ 
-            usedCount: db.raw('COALESCE(used_count, 0) + 1'),
-            updatedAt: new Date()
-          })
-          .where(eq(coupons.id, couponId));
-          
         // Check coupon achievements
         await checkAchievements(currentUser.id, 'coupon_used');
       } catch (couponError) {

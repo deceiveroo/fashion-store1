@@ -198,7 +198,7 @@ export default function AdminNotificationsPage() {
     try {
       const url = editingNotification 
         ? `/api/admin/notifications/${editingNotification.id}`
-        : '/api/admin/notifications/create';
+        : '/api/admin/notifications';
       
       const method = editingNotification ? 'PATCH' : 'POST';
 
