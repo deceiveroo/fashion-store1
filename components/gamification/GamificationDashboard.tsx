@@ -588,55 +588,36 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
               ))}
             </div>
 
-            {/* Hero Section - Liquid Neon Glassmorphism */}
-            <div className="relative mb-8 overflow-hidden rounded-[20px] bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2e] to-[#0a0a1a] p-8 shadow-2xl border border-white/10">
-              {/* Animated Liquid Neon Gradient */}
-              <div className="absolute inset-0 opacity-40">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#6C5CE7] via-[#00D2FF] to-[#FF6B9D] blur-[40px] animate-pulse" />
-                <div className="absolute top-0 left-1/4 w-64 h-64 bg-[#6C5CE7]/30 rounded-full blur-[60px] animate-bounce" style={{ animationDuration: '4s' }} />
-                <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-[#00D2FF]/30 rounded-full blur-[60px] animate-bounce" style={{ animationDuration: '5s', animationDelay: '1s' }} />
+            {/* Hero Section - Clean Modern Design */}
+            <div className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+              {/* Subtle Background Pattern */}
+              <div className="absolute inset-0 opacity-5">
+                <div className="absolute inset-0" style={{
+                  backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
+                  backgroundSize: '30px 30px'
+                }} />
               </div>
 
               <div className="relative z-10 flex items-center justify-between">
                 <div>
-                  <h3 className="text-4xl font-black text-white mb-3 flex items-center gap-3 drop-shadow-lg">
-                    <motion.span 
-                      animate={{ rotateY: 360 }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      className="inline-block text-5xl"
-                      style={{ textShadow: '0 0 20px #6C5CE7, 0 0 40px #00D2FF' }}
-                    >
-                      🛍️
-                    </motion.span>
-                    <span style={{ background: 'linear-gradient(135deg, #6C5CE7, #00D2FF, #FF6B9D)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                      Магазин Промокодов
-                    </span>
+                  <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+                    <span className="text-4xl">🛍️</span>
+                    <span>Магазин Промокодов</span>
                   </h3>
-                  <p className="text-white/70 text-lg max-w-xl font-medium">
-                    Обменяйте монеты на эксклюзивные кибер-скидки!
+                  <p className="text-gray-600 dark:text-gray-400 text-base max-w-xl">
+                    Обменяйте монеты на эксклюзивные скидки
                   </p>
                 </div>
                 
-                {/* Holographic Coin Capsule */}
+                {/* Clean Balance Display */}
                 <motion.div
-                  whileHover={{ scale: 1.05, rotateY: 10 }}
-                  className="relative px-6 py-4 rounded-2xl border border-[#FFD700]/30 shadow-2xl"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(255,215,0,0.1), rgba(108,92,231,0.1))',
-                    backdropFilter: 'blur(20px)',
-                    boxShadow: '0 0 30px rgba(255,215,0,0.3), inset 0 0 20px rgba(255,215,0,0.1)'
-                  }}
+                  whileHover={{ scale: 1.02 }}
+                  className="px-6 py-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md"
                 >
-                  <div className="text-[#FFD700]/80 text-sm font-medium mb-1 tracking-wider">БАЛАНС</div>
-                  <div className="text-white text-3xl font-black flex items-center gap-2">
-                    <motion.span
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="inline-block text-2xl"
-                    >
-                      💰
-                    </motion.span>
-                    <span style={{ fontFamily: 'monospace', textShadow: '0 0 10px #FFD700' }}>{userLevel?.coins || 0}</span>
+                  <div className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Баланс</div>
+                  <div className="text-gray-900 dark:text-white text-2xl font-bold flex items-center gap-2">
+                    <span className="text-xl">💰</span>
+                    <span>{userLevel?.coins || 0}</span>
                   </div>
                 </motion.div>
               </div>
@@ -703,178 +684,112 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
 
                     <div className="relative z-10">
-                      {/* Coupon Header with 3D Icon */}
-                      <div className="mb-6 flex items-start justify-between">
+                      {/* Coupon Header with Icon */}
+                      <div className="mb-4 flex items-start justify-between">
                         <motion.div 
-                          whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
-                          transition={{ duration: 0.4 }}
-                          className="text-5xl p-3 rounded-2xl relative"
-                          style={{
-                            background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,107,157,0.15))',
-                            boxShadow: coupon.alreadyPurchased 
-                              ? '0 8px 32px rgba(0,255,136,0.3)'
-                              : '0 8px 32px rgba(108,92,231,0.3)',
-                            border: '1px solid rgba(255,255,255,0.1)'
-                          }}
+                          whileHover={{ scale: 1.05 }}
+                          className="text-4xl p-2 bg-gray-100 dark:bg-gray-800 rounded-xl"
                         >
                           {coupon.alreadyPurchased ? '✅' : '🎫'}
                         </motion.div>
                         
-                        {/* Already Purchased Badge - Neon Green */}
+                        {/* Already Purchased Badge */}
                         {coupon.alreadyPurchased && (
                           <motion.div 
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.2, type: "spring" }}
-                            className="px-4 py-2 text-white text-xs font-black rounded-full shadow-lg flex items-center gap-2"
-                            style={{
-                              background: 'linear-gradient(135deg, #00FF88, #00D2FF)',
-                              boxShadow: '0 0 20px rgba(0,255,136,0.5), inset 0 0 10px rgba(255,255,255,0.2)',
-                              border: '1px solid rgba(255,255,255,0.3)'
-                            }}
+                            className="px-3 py-1.5 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1.5"
                           >
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
-                            КУПЛЕНО
+                            Куплено
                           </motion.div>
                         )}
                       </div>
 
                       {/* Coupon Name & Description */}
-                      <div className="mb-5">
-                        <h4 className="font-black text-white text-xl mb-2 line-clamp-1 tracking-tight"
-                            style={{ textShadow: '0 0 20px rgba(108,92,231,0.5)' }}>
+                      <div className="mb-4">
+                        <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-1 line-clamp-1">
                           {coupon.name}
                         </h4>
-                        <p className="text-xs text-gray-300/80 line-clamp-2 leading-relaxed">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
                           {coupon.description}
                         </p>
                       </div>
 
-                      {/* Discount Display - Huge Gradient Text */}
-                      <div className="mb-5 p-4 rounded-2xl relative overflow-hidden"
-                           style={{
-                             background: 'linear-gradient(135deg, rgba(108,92,231,0.2), rgba(0,210,255,0.2))',
-                             border: '1px solid rgba(108,92,231,0.3)',
-                             backdropFilter: 'blur(10px)'
-                           }}>
-                        {/* Animated Background Glow */}
-                        <div className="absolute inset-0 opacity-30">
-                          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 animate-pulse" />
-                        </div>
-                        
-                        <div className="relative z-10 text-center">
-                          <div className="text-xs text-gray-300 mb-1 font-bold uppercase tracking-wider">ВАША СКИДКА</div>
-                          <div className="text-5xl font-black" 
-                               style={{
-                                 background: 'linear-gradient(135deg, #6C5CE7, #00D2FF, #FF6B9D)',
-                                 WebkitBackgroundClip: 'text',
-                                 WebkitTextFillColor: 'transparent',
-                                 filter: 'drop-shadow(0 0 10px rgba(108,92,231,0.5))'
-                               }}>
+                      {/* Discount Display */}
+                      <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium">Ваша скидка</div>
+                          <div className="text-4xl font-bold text-purple-600 dark:text-purple-400">
                             {coupon.discount}{coupon.discountType === 'percent' ? '%' : '₽'}
                           </div>
                         </div>
                       </div>
 
-                      {/* Details Grid - Micro-Chips */}
-                      <div className="space-y-3 mb-5">
+                      {/* Details Grid */}
+                      <div className="space-y-2 mb-4">
                         {coupon.minOrder && (
-                          <div className="flex items-center justify-between text-xs p-3 rounded-xl"
-                               style={{
-                                 background: 'rgba(255,255,255,0.05)',
-                                 border: '1px solid rgba(255,255,255,0.1)',
-                                 backdropFilter: 'blur(10px)'
-                               }}>
-                            <span className="text-gray-400 flex items-center gap-2 font-medium">
+                          <div className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                               Мин. заказ:
                             </span>
-                            <span className="font-black text-white" style={{ textShadow: '0 0 10px rgba(0,210,255,0.5)' }}>
+                            <span className="font-semibold text-gray-900 dark:text-white">
                               {parseInt(coupon.minOrder).toLocaleString('ru-RU')} ₽
                             </span>
                           </div>
                         )}
-                        <div className="flex items-center justify-between text-xs p-3 rounded-xl"
-                             style={{
-                               background: 'rgba(255,255,255,0.05)',
-                               border: '1px solid rgba(255,255,255,0.1)',
-                               backdropFilter: 'blur(10px)'
-                             }}>
-                          <span className="text-gray-400 flex items-center gap-2 font-medium">
+                        <div className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             Срок действия:
                           </span>
-                          <span className="font-black text-white" style={{ textShadow: '0 0 10px rgba(255,107,157,0.5)' }}>
+                          <span className="font-semibold text-gray-900 dark:text-white">
                             {coupon.expiresDays} дней
                           </span>
                         </div>
                         {coupon.stock && (
-                          <div className="flex items-center justify-between text-xs p-3 rounded-xl"
-                               style={{
-                                 background: 'rgba(255,255,255,0.05)',
-                                 border: '1px solid rgba(255,255,255,0.1)',
-                                 backdropFilter: 'blur(10px)'
-                               }}>
-                            <span className="text-gray-400 flex items-center gap-2 font-medium">
+                          <div className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                               </svg>
                               Осталось:
                             </span>
-                            <span className={`font-black ${
+                            <span className={`font-semibold ${
                               coupon.stock - (coupon.purchasedCount || 0) <= 5
-                                ? 'text-red-400'
-                                : 'text-orange-400'
-                            }`} style={{ textShadow: '0 0 10px currentColor' }}>
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-orange-600 dark:text-orange-400'
+                            }`}>
                               {coupon.stock - (coupon.purchasedCount || 0)} шт
                             </span>
                           </div>
                         )}
                       </div>
 
-                      {/* Purchase Button - Cyber Glow Effect */}
+                      {/* Purchase Button */}
                       <motion.button
                         onClick={() => handlePurchaseCoupon(coupon.id)}
                         disabled={!coupon.canAfford || !coupon.inStock || coupon.alreadyPurchased || purchasing === coupon.id}
-                        whileHover={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 1.02, y: -2, transition: { duration: 0.15 } } : {}}
+                        whileHover={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 1.02, transition: { duration: 0.15 } } : {}}
                         whileTap={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 0.98, transition: { duration: 0.1 } } : {}}
-                        className={`w-full py-4 rounded-2xl font-black transition-all duration-300 flex items-center justify-center gap-3 text-sm uppercase tracking-wider relative overflow-hidden ${
+                        className={`w-full py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
                           coupon.alreadyPurchased
-                            ? 'cursor-default'
+                            ? 'bg-green-500 text-white cursor-default'
                             : !coupon.inStock || !coupon.canAfford
-                            ? 'opacity-50 cursor-not-allowed'
-                            : ''
+                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                            : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg'
                         }`}
-                        style={{
-                          background: coupon.alreadyPurchased
-                            ? 'linear-gradient(135deg, #00FF88, #00D2FF)'
-                            : !coupon.inStock || !coupon.canAfford
-                            ? 'rgba(255,255,255,0.05)'
-                            : 'linear-gradient(135deg, #6C5CE7, #00D2FF)',
-                          color: coupon.alreadyPurchased || (coupon.canAfford && coupon.inStock) ? '#fff' : 'rgba(255,255,255,0.3)',
-                          boxShadow: coupon.alreadyPurchased
-                            ? '0 0 30px rgba(0,255,136,0.5), inset 0 0 20px rgba(255,255,255,0.2)'
-                            : coupon.canAfford && coupon.inStock
-                            ? '0 0 30px rgba(108,92,231,0.5), inset 0 0 20px rgba(255,255,255,0.1)'
-                            : 'none',
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          backdropFilter: 'blur(10px)'
-                        }}
                       >
-                        {/* Ripple Effect Overlay */}
-                        {coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                        )}
-                        
                         {purchasing === coupon.id ? (
                           <>
-                            <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             <span>Покупка...</span>
                           </>
                         ) : coupon.alreadyPurchased ? (
@@ -900,14 +815,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                           </>
                         ) : (
                           <>
-                            <motion.span
-                              animate={{ rotate: [0, 360] }}
-                              transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
-                              className="inline-block"
-                            >
-                              💰
-                            </motion.span>
-                            <span>Купить за {coupon.priceCoins}</span>
+                            <span>Купить за {coupon.priceCoins} 💰</span>
                           </>
                         )}
                       </motion.button>
