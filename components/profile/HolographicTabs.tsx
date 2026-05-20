@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, Heart, Ticket, CreditCard, Bell, Shield, User, FileText 
@@ -32,63 +32,90 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
     }
   }, [activeTab, tabs]);
 
-  const handleTabClick = useCallback((tabId: string) => {
+  const handleTabClick = (tabId: string) => {
     if (tabId === activeTab) return;
     onTabChange(tabId);
-  }, [activeTab, onTabChange]);
+  };
 
   return (
     <div className="relative min-h-[calc(100vh-300px)]">
-      {/* Ambient glow overlay - optimized with CSS */}
+      {/* Ambient glow overlay - GPU accelerated */}
       <div 
-        className="fixed inset-0 pointer-events-none opacity-20"
+        className="fixed inset-0 pointer-events-none opacity-15"
         style={{
-          background: `radial-gradient(circle at 50% 0%, ${ambientColor}30 0%, transparent 70%)`,
-          transition: 'background 0.6s ease-out',
+          background: `radial-gradient(circle at 50% 0%, ${ambientColor}25 0%, transparent 70%)`,
+          transition: 'background 0.4s ease-out',
+          willChange: 'background',
         }}
       />
 
       <div className="relative z-10">
-        {/* Tab Navigation - Clean & Elegant */}
-        <div className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2">
-            <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = tab.id === activeTab;
-                
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabClick(tab.id)}
-                    className={`
-                      relative flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium text-xs whitespace-nowrap
-                      transition-all duration-200 ease-out
-                      ${isActive 
-                        ? 'text-white shadow-lg' 
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }
-                    `}
-                  >
-                    {/* Active tab background - simple gradient */}
-                    {isActive && (
-                      <div
-                        className="absolute inset-0 rounded-lg"
-                        style={{
-                          background: `linear-gradient(135deg, ${tab.color}, ${tab.color}dd)`,
-                          boxShadow: `0 4px 12px ${tab.color}40`,
-                        }}
-                      />
-                    )}
+        {/* Tab Navigation - Premium Dark UI */}
+        <div className="sticky top-0 z-50 backdrop-blur-xl bg-[#0f1115]/95 border-b border-white/5">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory">
+              {/* Sliding indicator background */}
+              <div className="relative flex items-center gap-2">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = tab.id === activeTab;
+                  
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleTabClick(tab.id)}
+                      className={`
+                        relative flex items-center justify-center gap-2 
+                        h-11 px-5 rounded-xl font-medium text-sm whitespace-nowrap
+                        transition-all duration-200 ease-out
+                        transform-gpu will-change-transform active:scale-95
+                        ${isActive ? 'text-white' : 'text-gray-500 hover:text-white'}
+                      `}
+                      style={{
+                        transform: 'translate3d(0,0,0)',
+                      }}
+                    >
+                      {/* Sliding background with layoutId for smooth animation */}
+                      {isActive && (
+                        <motion.div
+                          layoutId="active-tab"
+                          className="absolute inset-0 rounded-xl"
+                          style={{
+                            background: `linear-gradient(135deg, ${tab.color}30, ${tab.color}15)`,
+                            boxShadow: `
+                              inset 0 1px 1px ${tab.color}40,
+                              0 0 20px ${tab.color}30,
+                              0 4px 12px rgba(0, 0, 0, 0.3)
+                            `,
+                            border: `1px solid ${tab.color}50`,
+                          }}
+                          transition={{
+                            type: 'spring',
+                            stiffness: 500,
+                            damping: 35,
+                          }}
+                        />
+                      )}
 
-                    {/* Content */}
-                    <div className="relative z-10 flex items-center gap-1.5">
-                      <Icon className="h-4 w-4" />
-                      <span>{tab.label}</span>
-                    </div>
-                  </button>
-                );
-              })}
+                      {/* Hover effect for inactive tabs */}
+                      {!isActive && (
+                        <div className="absolute inset-0 rounded-xl bg-white/0 hover:bg-white/5 transition-colors duration-200" />
+                      )}
+
+                      {/* Content with hover micro-interaction */}
+                      <div className="relative z-10 flex items-center gap-2">
+                        <span 
+                          className="transition-transform duration-200"
+                          style={{ display: 'flex', alignItems: 'center' }}
+                        >
+                          <Icon className="h-4 w-4 transition-transform duration-200 hover:-translate-y-0.5" />
+                        </span>
+                        <span className="transition-colors duration-200">{tab.label}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -112,9 +139,7 @@ export default function HolographicTabs({ tabs, activeTab, onTabChange, children
         </div>
       </div>
 
-
-
-      {/* CSS for scrollbar */}
+      {/* CSS for scrollbar hide and snap scroll */}
       <style jsx global>{`
         .scrollbar-hide {
           -ms-overflow-style: none;
