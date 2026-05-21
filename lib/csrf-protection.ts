@@ -9,6 +9,12 @@ import { NextRequest, NextResponse } from 'next/server';
 const ALLOWED_ORIGINS = [
   process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  // Vercel preview/production deployments
+  'https://fashion-store1-seven.vercel.app',
+  'https://shonheii.vercel.app',
+  // Localhost for development
+  'http://localhost:3000',
+  'http://localhost:3001',
 ].filter(Boolean) as string[];
 
 export function validateCSRF(request: NextRequest): { valid: boolean; error?: string } {
