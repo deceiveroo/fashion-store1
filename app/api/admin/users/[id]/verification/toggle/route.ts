@@ -6,11 +6,11 @@ import { getSession } from '@/lib/server-auth';
 
 /**
  * Выдать или отозвать верификацию у пользователя (только для админов)
- * POST /api/admin/users/[userId]/verification/toggle
+ * POST /api/admin/users/[id]/verification/toggle
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getSession();
@@ -31,7 +31,7 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const targetUserId = params.userId;
+    const targetUserId = params.id;
     const body = await request.json();
     const { action } = body;
 
