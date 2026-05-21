@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import GamificationDashboard from '@/components/gamification/GamificationDashboard';
-import AchievementNotification from '@/components/gamification/AchievementNotification';
+import AchievementNotification, { showLevelUpNotification, showCouponRewardNotification } from '@/components/gamification/AchievementNotification';
 
 export default function GamificationPage() {
   const { user, isLoading } = useAuth();
@@ -63,13 +63,32 @@ export default function GamificationPage() {
         return;
       }
 
+      // Show notifications BEFORE reload
+      if (data.levelUpData) {
+        const { newLevel, coinsAwarded, couponReward } = data.levelUpData;
+        
+        // Show level up notification
+        showLevelUpNotification(newLevel, coinsAwarded);
+        
+        // Show coupon reward if exists
+        if (couponReward) {
+          setTimeout(() => {
+            showCouponRewardNotification(
+              couponReward.code,
+              couponReward.discount,
+              couponReward.discountType
+            );
+          }, 1500);
+        }
+      }
+
       setShowConfirmModal({ 
         action: 'success', 
         message: `✅ Уровень повышен!\n\n${data.message}\nXP начислено: ${data.xpAwarded}\n\nПроверьте модальное окно и колокольчик!` 
       });
       
-      // Reload page to refresh data after 2 seconds
-      setTimeout(() => window.location.reload(), 2000);
+      // Reload page to refresh data after 4 seconds (give time for notifications)
+      setTimeout(() => window.location.reload(), 4000);
     } catch (error) {
       console.error('Error:', error);
       setShowConfirmModal({ action: 'error', message: 'Ошибка сети' });

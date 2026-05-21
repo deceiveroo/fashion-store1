@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     console.log(`[TEST] Awarding ${xpToAward} XP to reach level ${newLevel}`);
 
     // Award XP which will trigger level up and notifications
-    await awardXP(userId, xpToAward, 'Test level up', { test: true });
+    const xpResult = await awardXP(userId, xpToAward, 'Test level up', { test: true });
 
     // Check achievements
     await checkAchievements(userId, 'level_up', newLevel);
@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
       message: `Leveled up from ${currentLevel.level} to ${newLevel}`,
       xpAwarded: xpToAward,
       newLevel,
+      levelUpData: xpResult.levelUp, // Return level up data for client notifications
       notification: 'Check the modal popup and bell icon!',
     });
   } catch (error) {
