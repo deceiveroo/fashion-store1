@@ -402,10 +402,10 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                 <div className={`h-1.5 w-full bg-gradient-to-r ${getRarityColor(achievement.rarity)}`} />
 
                 <div className="p-6">
-                  <div className="flex items-start gap-4 mb-4">
-                    {/* Achievement Icon - Large Emoji */}
-                    <div className={`text-4xl leading-none p-3 rounded-xl bg-gradient-to-br ${getRarityColor(achievement.rarity)} bg-opacity-10`}>
-                      <span className="filter drop-shadow-lg">{getAchievementIcon(achievement.category, achievement.unlocked)}</span>
+                  <div className="flex items-start gap-3 mb-4">
+                    {/* Achievement Icon - Smaller and more subtle */}
+                    <div className={`text-2xl leading-none p-2 rounded-lg bg-gradient-to-br ${getRarityColor(achievement.rarity)} bg-opacity-10 border border-gray-200 dark:border-gray-700`}>
+                      <span>{getAchievementIcon(achievement.category, achievement.unlocked)}</span>
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 dark:text-white mb-1">
@@ -475,7 +475,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
       )}
 
       {activeTab === 'shop' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {shopCoupons.map((coupon) => {
             // Calculate discount display - use correct field names from API
             const discountValue = coupon.discount || 0;
@@ -493,7 +493,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ scale: 1.02, y: -4 }}
-                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-400 transition-all shadow-sm hover:shadow-2xl"
+                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-400 transition-all shadow-sm hover:shadow-2xl flex flex-col"
               >
                 {/* Discount Badge - Top Left Corner */}
                 <div className="absolute top-0 left-0 bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 text-white px-4 py-2 rounded-br-2xl shadow-lg z-10">
@@ -501,20 +501,23 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                   <p className="text-[10px] font-medium uppercase tracking-wider opacity-90">скидка</p>
                 </div>
 
-                <div className="pt-16 pb-6 px-6">
+                <div className="pt-16 px-6 pb-6 flex-1 flex flex-col">
                   {/* Icon and Name */}
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                      <Gift className="w-6 h-6" />
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="p-2.5 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex-shrink-0">
+                      <Gift className="w-5 h-5" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">{coupon.name}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{coupon.description}</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-base text-gray-900 dark:text-white mb-1 line-clamp-2">{coupon.name}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">{coupon.description}</p>
                     </div>
                   </div>
 
-                  {/* Price and Action - Innovative Colors */}
-                  <div className="flex items-center justify-between pt-4 border-t-2 border-gray-100 dark:border-gray-700">
+                  {/* Spacer to push price/action to bottom */}
+                  <div className="flex-1" />
+
+                  {/* Price and Action - Bottom aligned */}
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t-2 border-gray-100 dark:border-gray-700">
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Цена</p>
                       <div className="flex items-center gap-1.5">
@@ -529,7 +532,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                     <button
                       onClick={() => handlePurchase(coupon.id)}
                       disabled={purchasing === coupon.id || (userLevel?.coins || 0) < price}
-                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white font-bold shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white font-semibold shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none whitespace-nowrap"
                     >
                       {purchasing === coupon.id ? (
                         <span className="flex items-center gap-2">

@@ -15,10 +15,10 @@ export default function GamificationPage() {
             <div className="absolute -top-10 -right-20 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl" />
             
             <div className="relative">
-              <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 dark:from-purple-400 dark:via-pink-400 dark:to-orange-400 mb-4">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
                 Достижения и награды
               </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl">
+              <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl">
                 Развивайте свой профиль, открывайте достижения и получайте эксклюзивные награды
               </p>
             </div>
