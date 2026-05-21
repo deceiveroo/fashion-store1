@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Edit3, Mail, Phone, MapPin, Loader, Trash2, AlertTriangle, Shield, CheckCircle, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Edit3, Mail, Phone, MapPin, Loader, Trash2, AlertTriangle, Shield, CheckCircle, Award, X } from 'lucide-react';
 import { ProfileFormData } from '@/app/profile/hooks/useProfileData';
 import { handlePhoneChangeWithCursor } from '@/app/profile/utils/formatPhone';
+import VerificationForm from '@/components/profile/VerificationForm';
 
 interface PersonalInfoSectionProps {
   formData: ProfileFormData;
@@ -39,6 +40,7 @@ export default function PersonalInfoSection({
   const [isVerified, setIsVerified] = useState(false);
   const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
   const [loadingVerification, setLoadingVerification] = useState(true);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   // Загружаем статус верификации
   useEffect(() => {
@@ -205,13 +207,13 @@ export default function PersonalInfoSection({
                     Подтвердите свою личность для получения синей галочки и дополнительных возможностей.
                     Ваши данные защищены и шифруются. Никто не может получить доступ к вашим паспортным данным.
                   </p>
-                  <a
-                    href="/profile/verification"
+                  <button
+                    onClick={() => setShowVerificationModal(true)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm"
                   >
                     <CheckCircle className="h-4 w-4" />
                     Пройти верификацию
-                  </a>
+                  </button>
                 </>
               )}
             </div>
@@ -296,6 +298,59 @@ export default function PersonalInfoSection({
           </div>
         </div>
       )}
+
+      {/* Verification Modal */}
+      <AnimatePresence>
+        {showVerificationModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowVerificationModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Shield className="h-6 w-6 text-blue-600" />
+                    Верификация аккаунта
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Заполните форму для подтверждения личности
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowVerificationModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                <VerificationForm 
+                  onSuccess={() => {
+                    setShowVerificationModal(false);
+                    // Перезагружаем статус верификации
+                    setIsVerified(true);
+                    setVerifiedAt(new Date().toISOString());
+                  }} 
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
