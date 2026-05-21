@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Edit3, Mail, Phone, MapPin, Loader, Trash2, AlertTriangle, Shield, CheckCircle, Award, X } from 'lucide-react';
+import { Edit3, Mail, Phone, MapPin, Loader, Trash2, AlertTriangle, Shield, CheckCircle, Award, X, Clock } from 'lucide-react';
 import { ProfileFormData } from '@/app/profile/hooks/useProfileData';
 import { handlePhoneChangeWithCursor } from '@/app/profile/utils/formatPhone';
 import VerificationForm from '@/components/profile/VerificationForm';
@@ -41,6 +41,8 @@ export default function PersonalInfoSection({
   const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
   const [loadingVerification, setLoadingVerification] = useState(true);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<'pending' | 'rejected' | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   // Загружаем статус верификации
   useEffect(() => {
@@ -51,6 +53,16 @@ export default function PersonalInfoSection({
           const data = await res.json();
           setIsVerified(data.isVerified || false);
           setVerifiedAt(data.verifiedAt || null);
+          
+          // Проверяем статус заявки
+          if (data.latestRequest) {
+            if (data.latestRequest.status === 'pending') {
+              setRequestStatus('pending');
+            } else if (data.latestRequest.status === 'rejected') {
+              setRequestStatus('rejected');
+              setRejectionReason(data.latestRequest.rejectionReason);
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to load verification status:', error);
@@ -166,12 +178,20 @@ export default function PersonalInfoSection({
         <div className={`mt-6 p-4 border rounded-xl ${
           isVerified 
             ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800'
+            : requestStatus === 'rejected'
+            ? 'bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-200 dark:border-red-800'
+            : requestStatus === 'pending'
+            ? 'bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-yellow-200 dark:border-yellow-800'
             : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800'
         }`}>
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
               {isVerified ? (
                 <Award className="h-6 w-6 text-green-600 dark:text-green-400" />
+              ) : requestStatus === 'rejected' ? (
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              ) : requestStatus === 'pending' ? (
+                <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
               ) : (
                 <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               )}
@@ -198,6 +218,43 @@ export default function PersonalInfoSection({
                   <div className="mt-3 flex items-center gap-2 text-xs text-green-700 dark:text-green-300">
                     <CheckCircle className="h-4 w-4" />
                     <span>Все возможности платформы доступны</span>
+                  </div>
+                </>
+              ) : requestStatus === 'rejected' ? (
+                <>
+                  <h4 className="font-semibold text-red-900 dark:text-red-100 mb-1 flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Ваши данные не прошли проверку
+                  </h4>
+                  <p className="text-sm text-red-800 dark:text-red-200 mb-2">
+                    К сожалению, ваша заявка на верификацию была отклонена. Пожалуйста, исправьте ошибки и подайте заявку снова.
+                  </p>
+                  {rejectionReason && (
+                    <div className="mb-3 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                      <p className="text-xs text-red-700 dark:text-red-300 font-medium mb-1">Причина отказа:</p>
+                      <p className="text-xs text-red-600 dark:text-red-400">{rejectionReason}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setShowVerificationModal(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm"
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    Подать заявку снова
+                  </button>
+                </>
+              ) : requestStatus === 'pending' ? (
+                <>
+                  <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1 flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Заявка на рассмотрении
+                  </h4>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
+                    Ваша заявка на верификацию принята и находится на рассмотрении. Пожалуйста, ожидайте решения администратора.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-300">
+                    <Clock className="h-4 w-4" />
+                    <span>Обычно рассмотрение занимает 1-2 рабочих дня</span>
                   </div>
                 </>
               ) : (
