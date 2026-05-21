@@ -1,6 +1,7 @@
 // Gamification System - XP and Achievement Management
 import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
+import { systemNotifications } from '@/lib/schema';
 
 export interface AchievementProgress {
   code: string;
@@ -76,17 +77,14 @@ async function levelUp(userId: string, currentLevel: number) {
 
   // Create notification for level up
   try {
-    await db.execute(sql`
-      INSERT INTO system_notifications (title, message, type, target_audience, is_active, created_at)
-      VALUES (
-        '🎉 Уровень ${newLevel} достигнут!',
-        'Поздравляем! Вы получили новый уровень и ${coinsAwarded} монет',
-        'success',
-        'registered',
-        true,
-        NOW()
-      )
-    `);
+    await db.insert(systemNotifications).values({
+      title: `🎉 Уровень ${newLevel} достигнут!`,
+      message: `Поздравляем! Вы получили новый уровень и ${coinsAwarded} монет`,
+      type: 'success',
+      targetAudience: 'registered',
+      isActive: true,
+      createdAt: new Date(),
+    });
     console.log('Notification created for level up');
   } catch (error) {
     console.error('Error creating level up notification:', error);
@@ -156,18 +154,15 @@ async function levelUp(userId: string, currentLevel: number) {
       
       // Create notification in system_notifications table
       try {
-        await db.execute(sql`
-          INSERT INTO system_notifications (title, message, type, target_audience, is_active, created_at, expires_at)
-          VALUES (
-            '🎁 Промокод за уровень ${newLevel}',
-            'Вам вручен промокод ${uniqueCode} на скидку ${reward.discount}${reward.discount_type === 'percent' ? '%' : '₽'}',
-            'success',
-            'registered',
-            true,
-            NOW(),
-            NOW() + INTERVAL '${reward.expires_days || 30} days'
-          )
-        `);
+        await db.insert(systemNotifications).values({
+          title: `🎁 Промокод за уровень ${newLevel}`,
+          message: `Вам вручен промокод ${uniqueCode} на скидку ${reward.discount}${reward.discount_type === 'percent' ? '%' : '₽'}`,
+          type: 'success',
+          targetAudience: 'registered',
+          isActive: true,
+          createdAt: new Date(),
+          expiresAt: new Date(Date.now() + (reward.expires_days || 30) * 24 * 60 * 60 * 1000),
+        });
         console.log('Notification created for coupon reward');
       } catch (error) {
         console.error('Error creating notification:', error);
