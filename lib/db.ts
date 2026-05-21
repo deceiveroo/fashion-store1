@@ -17,7 +17,7 @@ function buildPoolConfig(): PoolConfig {
   const password = (base.password ? String(base.password) : '') || (process.env.DATABASE_PASSWORD ? String(process.env.DATABASE_PASSWORD) : '');
   return {
     ...base, password,
-    ssl: process.env.NODE_ENV === 'production' ? true : isSupabase ? { rejectUnauthorized: false } : base.ssl ?? false,
+    ssl: isSupabase ? { rejectUnauthorized: false } : process.env.NODE_ENV === 'production' ? true : base.ssl ?? false,
     // CRITICAL: Supabase Pooler limits - keep minimal
     max: isSupabase ? 3 : 8,
     min: 0,
