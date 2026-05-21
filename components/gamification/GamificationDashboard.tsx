@@ -6,6 +6,7 @@ import {
   Trophy, Star, Zap, Crown, Target, TrendingUp, Award,
   Sparkles, Gift, Flame, Medal, ChevronRight
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface UserLevel {
   level: number;
@@ -161,8 +162,6 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
   };
 
   const handlePurchaseCoupon = async (shopCouponId: string) => {
-    if (!confirm('Купить этот промокод за монеты?')) return;
-
     setPurchasing(shopCouponId);
     try {
       const res = await fetch('/api/gamification/shop', {
@@ -174,17 +173,26 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || 'Ошибка покупки');
+        toast.error(data.error || 'Ошибка покупки');
         return;
       }
 
-      alert(`✅ Промокод куплен!\n\nКод: ${data.coupon.code}\nСкидка: ${data.coupon.discount}${data.coupon.discountType === 'percent' ? '%' : '₽'}\n\nОсталось монет: ${data.remainingCoins}`);
+      // Show success notification
+      toast.success(
+        <div>
+          <p className="font-semibold">✅ Промокод куплен!</p>
+          <p className="text-sm mt-1">Код: <span className="font-mono font-bold">{data.coupon.code}</span></p>
+          <p className="text-sm">Скидка: {data.coupon.discount}{data.coupon.discountType === 'percent' ? '%' : '₽'}</p>
+          <p className="text-xs text-gray-500 mt-1">Осталось монет: {data.remainingCoins} 💰</p>
+        </div>,
+        { duration: 5000 }
+      );
       
       // Refresh data
       fetchGamificationData();
     } catch (error) {
       console.error('Error purchasing coupon:', error);
-      alert('Ошибка сети');
+      toast.error('Ошибка сети');
     } finally {
       setPurchasing(null);
     }
