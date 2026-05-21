@@ -55,6 +55,10 @@ export async function GET(request: NextRequest) {
           userLastName: userProfiles.lastName,
           userAvatar: userProfiles.avatar,
           userImage: users.image,
+          // Admin info
+          adminName: supportChatSessions.adminName,
+          adminAvatar: supportChatSessions.adminAvatar,
+          adminEmail: supportChatSessions.adminEmail,
         })
         .from(supportChatSessions)
         .leftJoin(users, eq(supportChatSessions.userId, users.id))

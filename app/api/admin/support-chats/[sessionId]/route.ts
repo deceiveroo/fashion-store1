@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { supportChatSessions, supportChatMessages } from '@/lib/schema';
+import { supportChatSessions, supportChatMessages, users, userProfiles } from '@/lib/schema';
 import { asc, eq } from 'drizzle-orm';
 import { isStaff } from '@/lib/server-auth';
 
@@ -31,7 +31,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .where(eq(supportChatMessages.sessionId, sessionId))
       .orderBy(asc(supportChatMessages.createdAt));
 
-    return NextResponse.json({ session: session[0], messages });
+    // Добавляем информацию о сессии включая данные админа
+    const sessionData = session[0];
+    
+    return NextResponse.json({ 
+      session: sessionData,
+      messages,
+      adminInfo: {
+        name: sessionData.adminName,
+        avatar: sessionData.adminAvatar,
+        email: sessionData.adminEmail,
+      }
+    });
   } catch (error: unknown) {
     console.error('[ADMIN] Error fetching support chat session:', error);
     return NextResponse.json({ error: 'Failed to fetch support chat session' }, { status: 500 });
@@ -61,6 +72,45 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
+    // Получаем информацию об админе
+    let adminName: string | null = null;
+    let adminAvatar: string | null = null;
+    let adminEmail: string | null = null;
+
+    if (admin.id) {
+      adminEmail = admin.email || null;
+      
+      // Пытаемся получить имя и аватар из профиля
+      try {
+        const profile = await db
+          .select({
+            firstName: userProfiles.firstName,
+            lastName: userProfiles.lastName,
+            avatar: userProfiles.avatar,
+          })
+          .from(userProfiles)
+          .where(eq(userProfiles.userId, admin.id))
+          .limit(1);
+        
+        if (profile.length > 0) {
+          if (profile[0].firstName || profile[0].lastName) {
+            adminName = `${profile[0].firstName || ''} ${profile[0].lastName || ''}`.trim();
+          }
+          adminAvatar = profile[0].avatar || null;
+        }
+        
+        // Если нет имени в профиле, берем из users
+        if (!adminName && admin.name) {
+          adminName = admin.name;
+        }
+      } catch (err) {
+        console.warn('Failed to fetch admin profile:', err);
+        if (admin.name) {
+          adminName = admin.name;
+        }
+      }
+    }
+
     await db.insert(supportChatMessages).values({
       id: crypto.randomUUID(),
       sessionId,
@@ -76,6 +126,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         lastMessageAt: new Date(),
         updatedAt: new Date(),
         aiDisabled: true,
+        takenOverBy: admin.id,
+        takenOverAt: new Date(),
+        adminName: adminName,
+        adminAvatar: adminAvatar,
+        adminEmail: adminEmail,
       })
       .where(eq(supportChatSessions.sessionId, sessionId));
 

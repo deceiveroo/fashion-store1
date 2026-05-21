@@ -9,8 +9,21 @@ import {
   MessageSquare, 
   Star,
   Download,
-  Calendar
+  Calendar,
+  List
 } from 'lucide-react';
+
+interface Rating {
+  id: string;
+  sessionId: string;
+  rating: number;
+  feedback: string | null;
+  ratedBy: string | null;
+  createdAt: string;
+  sessionStatus: string | null;
+  operatorDisplayName: string;
+  operatorEmail: string | null;
+}
 
 interface AnalyticsData {
   period: string;
@@ -54,8 +67,10 @@ interface SLADashboardProps {
 
 export default function SLADashboard({ days = 30 }: SLADashboardProps) {
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [ratings, setRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDays, setSelectedDays] = useState(days);
+  const [activeTab, setActiveTab] = useState<'analytics' | 'ratings'>('analytics');
 
   useEffect(() => {
     loadAnalytics();
@@ -68,6 +83,13 @@ export default function SLADashboard({ days = 30 }: SLADashboardProps) {
       if (res.ok) {
         const analytics = await res.json();
         setData(analytics);
+      }
+      
+      // Загружаем историю оценок
+      const ratingsRes = await fetch(`/api/admin/support-chats/ratings/history?days=${selectedDays}&limit=50`);
+      if (ratingsRes.ok) {
+        const ratingsData = await ratingsRes.json();
+        setRatings(ratingsData.ratings || []);
       }
     } catch (error) {
       console.error('Failed to load analytics:', error);
@@ -134,6 +156,43 @@ export default function SLADashboard({ days = 30 }: SLADashboardProps) {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-white/10">
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'analytics'
+              ? 'text-violet-400 border-b-2 border-violet-400'
+              : 'text-white/40 hover:text-white'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Аналитика
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('ratings')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'ratings'
+              ? 'text-violet-400 border-b-2 border-violet-400'
+              : 'text-white/40 hover:text-white'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            История оценок
+            {ratings.length > 0 && (
+              <span className="px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded-full text-xs">
+                {ratings.length}
+              </span>
+            )}
+          </div>
+        </button>
+      </div>
+
+      {activeTab === 'analytics' ? (
+        <>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
@@ -310,6 +369,95 @@ export default function SLADashboard({ days = 30 }: SLADashboardProps) {
           </table>
         </div>
       </div>
+      </>
+      ) : (
+        // История оценок
+        <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/10">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-400" />
+              История оценок операторов
+            </h3>
+          </div>
+          
+          {ratings.length === 0 ? (
+            <div className="p-12 text-center text-white/40">
+              <Star className="h-12 w-12 mx-auto mb-4 opacity-40" />
+              <p>Нет оценок за выбранный период</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Дата</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Оператор</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Оценка</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Отзыв</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Статус чата</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {ratings.map((rating) => (
+                    <tr key={rating.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4 text-white">
+                        {new Date(rating.createdAt).toLocaleDateString('ru-RU', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xs">
+                            {rating.operatorDisplayName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="text-white font-medium">{rating.operatorDisplayName}</div>
+                            <div className="text-xs text-white/40">{rating.operatorEmail}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < rating.rating
+                                  ? 'text-yellow-400 fill-yellow-400'
+                                  : 'text-white/20'
+                              }`}
+                            />
+                          ))}
+                          <span className="ml-2 text-white font-medium">{rating.rating}/5</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-white max-w-xs truncate">
+                        {rating.feedback || '-'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          rating.sessionStatus === 'resolved'
+                            ? 'bg-green-500/20 text-green-400'
+                            : rating.sessionStatus === 'active'
+                            ? 'bg-blue-500/20 text-blue-400'
+                            : 'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {rating.sessionStatus === 'resolved' ? 'Завершен' : 
+                           rating.sessionStatus === 'active' ? 'Активен' : rating.sessionStatus}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

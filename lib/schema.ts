@@ -782,6 +782,9 @@ export const supportChatSessions = pgTable('support_chat_sessions', {
   notes: text('notes'), // Admin notes
   takenOverBy: text('taken_over_by').references(() => users.id, { onDelete: 'set null' }), // Admin who took over
   takenOverAt: timestamp('taken_over_at', { mode: 'date' }),
+  adminName: text('admin_name'), // Name of admin responding
+  adminAvatar: text('admin_avatar'), // Avatar of admin responding
+  adminEmail: text('admin_email'), // Email of admin responding
   aiDisabled: boolean('ai_disabled').default(false), // Whether AI is disabled for this chat
   operatorRating: integer('operator_rating'), // Rating given to the operator (1-10)
   operatorRatedAt: timestamp('operator_rated_at', { mode: 'date' }), // When the rating was given

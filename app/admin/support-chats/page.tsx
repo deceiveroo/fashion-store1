@@ -35,6 +35,9 @@ interface Session {
   lastMessageAt: string|null; 
   aiDisabled: boolean|null; 
   operatorRating?: number | null;
+  adminName?: string | null;
+  adminAvatar?: string | null;
+  adminEmail?: string | null;
   createdAt: string; 
 }
 
@@ -312,10 +315,18 @@ function SupportChatsPage() {
   };
 
   // Функция для получения аватара оператора (админа)
-  const getAdminAvatar = () => {
-    // Здесь можно добавить реальный аватар админа из сессии
-    // Пока используем placeholder
-    return 'https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff&size=128';
+  const getAdminAvatar = (adminAvatar?: string | null, adminName?: string | null) => {
+    if (adminAvatar) return adminAvatar;
+    // Fallback на UI Avatars API
+    const name = adminName || 'Admin';
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10b981&color=fff&size=128`;
+  };
+
+  // Функция для получения имени админа
+  const getAdminName = (session: Session) => {
+    if (session.adminName) return session.adminName;
+    if (session.adminEmail) return session.adminEmail.split('@')[0];
+    return 'Администратор';
   };
 
   return (
@@ -483,12 +494,27 @@ function SupportChatsPage() {
                           </div>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-white/40 truncate mt-1">{s.firstMessage||''}</p>
-                        <div className="flex justify-between mt-2">
+                        <div className="flex justify-between items-center mt-2">
                           <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             {s.messageCount||0}
                           </span>
                           <div className="flex items-center gap-2">
+                            {/* Информация об админе */}
+                            {s.adminName && s.aiDisabled && (
+                              <div className="flex items-center gap-1">
+                                {s.adminAvatar ? (
+                                  <img src={s.adminAvatar} alt={s.adminName} className="w-5 h-5 rounded-full object-cover border border-emerald-500/30" />
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                                    <Shield className="h-3 w-3 text-white" />
+                                  </div>
+                                )}
+                                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium truncate max-w-[80px]">
+                                  {s.adminName.split(' ')[0]}
+                                </span>
+                              </div>
+                            )}
                             {/* Рейтинг оператора */}
                             {s.operatorRating && (
                               <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1 font-medium">
@@ -603,8 +629,10 @@ function SupportChatsPage() {
                     : messages.map(m => {
                       const isAdmin = m.sender === 'admin';
                       const isUser = m.sender === 'user';
-                      const adminAvatar = getAdminAvatar();
-                      const userAvatar = sel ? getUserAvatar(sel.userEmail, sel.userName, sel.userAvatar) : null;
+                      const adminAvatarUrl = sel ? getAdminAvatar(sel.adminAvatar, sel.adminName) : null;
+                      const adminDisplayName = sel ? getAdminName(sel) : 'Администратор';
+                      const userAvatar = sel ? getUserAvatar(sel.userEmail, sel.userName, sel.userAvatar, sel.userImage) : null;
+                      const userDisplayName = sel ? getUserName(sel) : 'Пользователь';
                       
                       return (
                       <div key={m.id} className={`flex gap-3 ${isUser?'justify-start':'justify-end'}`}>
@@ -612,7 +640,7 @@ function SupportChatsPage() {
                         {!isAdmin && (
                           <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border-2 border-gray-200 dark:border-white/10">
                             {userAvatar ? (
-                              <img src={userAvatar} alt="User" className="w-full h-full object-cover" />
+                              <img src={userAvatar} alt={userDisplayName} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                                 <User className="w-4 h-4 text-white"/>
@@ -629,7 +657,11 @@ function SupportChatsPage() {
                         }`}>
                           {/* Sender name for admin messages */}
                           {isAdmin && (
-                            <p className="text-xs font-medium text-emerald-400 mb-1">Администратор</p>
+                            <p className="text-xs font-medium text-emerald-400 mb-1">{adminDisplayName}</p>
+                          )}
+                          {/* Sender name for AI messages */}
+                          {!isAdmin && !isUser && (
+                            <p className="text-xs font-medium text-violet-400 mb-1">AI Ассистент</p>
                           )}
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.message}</p>
                           <span className="text-xs mt-2 block opacity-50">
@@ -638,11 +670,15 @@ function SupportChatsPage() {
                           </span>
                         </div>
                         
-                        {/* Admin Avatar - справа */}
+                        {/* Admin/AI Avatar - справа */}
                         {!isUser && (
                           <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border-2 border-gray-200 dark:border-white/10">
-                            {isAdmin ? (
-                              <img src={adminAvatar} alt="Admin" className="w-full h-full object-cover" />
+                            {isAdmin && adminAvatarUrl ? (
+                              <img src={adminAvatarUrl} alt={adminDisplayName} className="w-full h-full object-cover" />
+                            ) : isAdmin ? (
+                              <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                                <Shield className="w-4 h-4 text-white"/>
+                              </div>
                             ) : (
                               <div className="w-full h-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
                                 <Bot className="w-4 h-4 text-white"/>
