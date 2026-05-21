@@ -11,12 +11,14 @@ interface ShopCoupon {
   description: string;
   discount: number;
   discountType: 'percent' | 'fixed';
+  couponCode: string;
   priceCoins: number;
   stock: number | null;
-  maxPurchasesPerUser: number;
+  maxUses: number;
   expiresDays: number;
   minOrder: number | null;
-  active: boolean;
+  isActive: boolean;
+  purchasedCount?: number;
 }
 
 export default function AdminShopCouponsPage() {
@@ -29,12 +31,13 @@ export default function AdminShopCouponsPage() {
     description: '',
     discount: 10,
     discountType: 'percent',
+    couponCode: '',
     priceCoins: 100,
     stock: null,
-    maxPurchasesPerUser: 1,
+    maxUses: 1,
     expiresDays: 30,
     minOrder: null,
-    active: true,
+    isActive: true,
   });
 
   useEffect(() => {
@@ -149,12 +152,13 @@ export default function AdminShopCouponsPage() {
       description: coupon.description,
       discount: coupon.discount,
       discountType: coupon.discountType,
+      couponCode: coupon.couponCode,
       priceCoins: coupon.priceCoins,
       stock: coupon.stock,
-      maxPurchasesPerUser: coupon.maxPurchasesPerUser,
+      maxUses: coupon.maxUses,
       expiresDays: coupon.expiresDays,
       minOrder: coupon.minOrder,
-      active: coupon.active,
+      isActive: coupon.isActive,
     });
   };
 
@@ -164,12 +168,13 @@ export default function AdminShopCouponsPage() {
       description: '',
       discount: 10,
       discountType: 'percent',
+      couponCode: '',
       priceCoins: 100,
       stock: null,
-      maxPurchasesPerUser: 1,
+      maxUses: 1,
       expiresDays: 30,
       minOrder: null,
-      active: true,
+      isActive: true,
     });
   };
 
@@ -235,15 +240,19 @@ export default function AdminShopCouponsPage() {
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{coupon.name}</h3>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      coupon.active 
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+                      coupon.isActive 
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                     }`}>
-                      {coupon.active ? 'Активен' : 'Неактивен'}
+                      {coupon.isActive ? 'Активен' : 'Неактивен'}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{coupon.description}</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Код:</span>
+                      <p className="font-mono font-semibold text-purple-600 dark:text-purple-400">{coupon.couponCode}</p>
+                    </div>
                     <div>
                       <span className="text-gray-500 dark:text-gray-400">Скидка:</span>
                       <p className="font-semibold text-gray-900 dark:text-white">
@@ -260,9 +269,25 @@ export default function AdminShopCouponsPage() {
                         {coupon.stock === null ? '∞' : coupon.stock}
                       </p>
                     </div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Макс. использований:</span>
+                      <p className="font-semibold text-gray-900 dark:text-white">{coupon.maxUses}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Куплено:</span>
+                      <p className="font-semibold text-gray-900 dark:text-white">{coupon.purchasedCount || 0}</p>
+                    </div>
                     <div>
                       <span className="text-gray-500 dark:text-gray-400">Срок:</span>
                       <p className="font-semibold text-gray-900 dark:text-white">{coupon.expiresDays} дней</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Мин. заказ:</span>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {coupon.minOrder ? `${coupon.minOrder} ₽` : 'Нет'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -327,15 +352,25 @@ function CouponForm({ data, onChange, onSave, onCancel }: CouponFormProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Описание</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Код промокода</label>
           <input
             type="text"
-            value={data.description}
-            onChange={(e) => onChange({ ...data, description: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="Краткое описание"
+            value={data.couponCode}
+            onChange={(e) => onChange({ ...data, couponCode: e.target.value.toUpperCase() })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
+            placeholder="SUMMER2024"
           />
         </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Описание</label>
+        <textarea
+          value={data.description}
+          onChange={(e) => onChange({ ...data, description: e.target.value })}
+          rows={2}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+          placeholder="Краткое описание промокода..."
+        />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -349,18 +384,18 @@ function CouponForm({ data, onChange, onSave, onCancel }: CouponFormProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Тип</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Тип скидки</label>
           <select
             value={data.discountType}
             onChange={(e) => onChange({ ...data, discountType: e.target.value as 'percent' | 'fixed' })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
             <option value="percent">Процент (%)</option>
-            <option value="fixed">Фикс (₽)</option>
+            <option value="fixed">Фиксированная (₽)</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Цена (монеты)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Цена в монетах</label>
           <input
             type="number"
             value={data.priceCoins}
@@ -369,7 +404,7 @@ function CouponForm({ data, onChange, onSave, onCancel }: CouponFormProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Остаток (null = ∞)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Остаток (пусто = ∞)</label>
           <input
             type="number"
             value={data.stock ?? ''}
@@ -379,14 +414,13 @@ function CouponForm({ data, onChange, onSave, onCancel }: CouponFormProps) {
           />
         </div>
       </div>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Макс. покупок на пользователя</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Макс. использований</label>
           <input
             type="number"
-            value={data.maxPurchasesPerUser}
-            onChange={(e) => onChange({ ...data, maxPurchasesPerUser: Number(e.target.value) })}
+            value={data.maxUses}
+            onChange={(e) => onChange({ ...data, maxUses: Number(e.target.value) })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
         </div>
@@ -400,7 +434,7 @@ function CouponForm({ data, onChange, onSave, onCancel }: CouponFormProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Мин. заказ (null = нет)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Мин. заказ (пусто = нет)</label>
           <input
             type="number"
             value={data.minOrder ?? ''}
@@ -413,9 +447,9 @@ function CouponForm({ data, onChange, onSave, onCancel }: CouponFormProps) {
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={data.active}
-              onChange={(e) => onChange({ ...data, active: e.target.checked })}
-              className="w-4 h-4 text-purple-600 rounded"
+              checked={data.isActive}
+              onChange={(e) => onChange({ ...data, isActive: e.target.checked })}
+              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
             />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Активен</span>
           </label>
