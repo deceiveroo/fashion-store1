@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { userVerificationRequests, users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { getSession } from '@/lib/server-auth';
+import { isAdmin } from '@/lib/server-auth';
 
 /**
  * Одобрить или отклонить заявку на верификацию
@@ -13,21 +13,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Проверяем что пользователь - админ
-    const adminUser = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
-      columns: {
-        role: true,
-      },
-    });
-
-    if (!adminUser || adminUser.role !== 'admin') {
+    const admin = await isAdmin();
+    if (!admin?.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -66,7 +53,7 @@ export async function POST(
       // Обновляем заявку
       await tx.update(userVerificationRequests).set({
         status: action === 'approve' ? 'approved' : 'rejected',
-        reviewedBy: session.user.id,
+        reviewedBy: admin.id,
         reviewedAt: new Date(),
         rejectionReason: action === 'reject' ? rejectionReason || null : null,
       }).where(eq(userVerificationRequests.id, requestId));

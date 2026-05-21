@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { getSession } from '@/lib/server-auth';
+import { isAdmin } from '@/lib/server-auth';
 
 /**
  * Выдать или отозвать верификацию у пользователя (только для админов)
@@ -13,39 +13,25 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Проверяем что пользователь - админ
-    const adminUser = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
-      columns: {
-        role: true,
-      },
-    });
-
-    if (!adminUser || adminUser.role !== 'admin') {
+    const admin = await isAdmin();
+    if (!admin?.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const targetUserId = params.id;
-    const body = await request.json();
-    const { action } = body;
-
-    if (!action || !['grant', 'revoke'].includes(action)) {
-      return NextResponse.json(
-        { error: 'Invalid action. Use "grant" or "revoke"' },
-        { status: 400 }
-      );
-    }
+    const body = await request.json().catch(() => ({}));
+    const action: unknown = (body as { action?: unknown }).action;
 
     // Находим целевого пользователя
-    const targetUser = await db.query.users.findFirst({
-      where: eq(users.id, targetUserId),
-    });
+    const [targetUser] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        isVerified: users.isVerified,
+      })
+      .from(users)
+      .where(eq(users.id, targetUserId))
+      .limit(1);
 
     if (!targetUser) {
       return NextResponse.json(
@@ -55,7 +41,20 @@ export async function POST(
     }
 
     // Обновляем статус верификации
-    const newStatus = action === 'grant';
+    const newStatus =
+      action === 'grant'
+        ? true
+        : action === 'revoke'
+          ? false
+          : !(targetUser.isVerified ?? false);
+
+    if (action !== undefined && action !== 'grant' && action !== 'revoke') {
+      return NextResponse.json(
+        { error: 'Invalid action. Use "grant" or "revoke"' },
+        { status: 400 }
+      );
+    }
+
     await db.update(users).set({
       isVerified: newStatus,
       verifiedAt: newStatus ? new Date() : null,
@@ -63,7 +62,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: action === 'grant' 
+      message: newStatus
         ? `Верификация выдана пользователю ${targetUser.email}`
         : `Верификация отозвана у пользователя ${targetUser.email}`,
       isVerified: newStatus,

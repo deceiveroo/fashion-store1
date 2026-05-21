@@ -24,6 +24,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const enableVercelInsights = process.env.NEXT_PUBLIC_VERCEL_INSIGHTS === '1';
+
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className="font-sans antialiased text-gray-900 dark:text-gray-100">
@@ -55,8 +57,8 @@ export default function RootLayout({
             </CartProvider>
           </AuthProvider>
         </Providers>
-        <Analytics />
-        <SpeedInsights />
+        {enableVercelInsights ? <Analytics /> : null}
+        {enableVercelInsights ? <SpeedInsights /> : null}
       </body>
     </html>
   );

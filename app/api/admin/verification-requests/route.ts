@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { userVerificationRequests, users } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
-import { getSession } from '@/lib/server-auth';
+import { userProfiles, userVerificationRequests, users } from '@/lib/schema';
+import { desc, eq, inArray } from 'drizzle-orm';
+import { isAdmin } from '@/lib/server-auth';
 
 /**
  * Получить все заявки на верификацию (только для админов)
@@ -10,74 +10,90 @@ import { getSession } from '@/lib/server-auth';
  */
 export async function GET() {
   try {
-    const session = await getSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Проверяем что пользователь - админ
-    const adminUser = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
-      columns: {
-        role: true,
-      },
-    });
-
-    if (!adminUser || adminUser.role !== 'admin') {
+    const admin = await isAdmin();
+    if (!admin?.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Получаем все заявки с данными пользователей
-    const requests = await db.query.userVerificationRequests.findMany({
-      with: {
-        user: {
-          columns: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            avatarUrl: true,
-          },
+    const requests = await db
+      .select({
+        id: userVerificationRequests.id,
+        userId: userVerificationRequests.userId,
+        firstName: userVerificationRequests.firstName,
+        lastName: userVerificationRequests.lastName,
+        middleName: userVerificationRequests.middleName,
+        passportSeries: userVerificationRequests.passportSeries,
+        passportNumber: userVerificationRequests.passportNumber,
+        issuedBy: userVerificationRequests.issuedBy,
+        issueDate: userVerificationRequests.issueDate,
+        departmentCode: userVerificationRequests.departmentCode,
+        dateOfBirth: userVerificationRequests.dateOfBirth,
+        phoneNumber: userVerificationRequests.phoneNumber,
+        additionalInfo: userVerificationRequests.additionalInfo,
+        passportPhotoFrontUrl: userVerificationRequests.passportPhotoFrontUrl,
+        passportPhotoBackUrl: userVerificationRequests.passportPhotoBackUrl,
+        selfieWithPassportUrl: userVerificationRequests.selfieWithPassportUrl,
+        status: userVerificationRequests.status,
+        reviewedBy: userVerificationRequests.reviewedBy,
+        reviewedAt: userVerificationRequests.reviewedAt,
+        rejectionReason: userVerificationRequests.rejectionReason,
+        createdAt: userVerificationRequests.createdAt,
+        updatedAt: userVerificationRequests.updatedAt,
+      })
+      .from(userVerificationRequests)
+      .orderBy(desc(userVerificationRequests.createdAt));
+
+    const ids = Array.from(
+      new Set(
+        [
+          ...requests.map((r) => r.userId),
+          ...requests.map((r) => r.reviewedBy).filter((x): x is string => Boolean(x)),
+        ].filter(Boolean)
+      )
+    );
+
+    const usersWithProfiles = ids.length
+      ? await db
+          .select({
+            id: users.id,
+            email: users.email,
+            name: users.name,
+            image: users.image,
+            firstName: userProfiles.firstName,
+            lastName: userProfiles.lastName,
+            avatar: userProfiles.avatar,
+          })
+          .from(users)
+          .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
+          .where(inArray(users.id, ids))
+      : [];
+
+    const userMap = new Map(
+      usersWithProfiles.map((u) => [
+        u.id,
+        {
+          id: u.id,
+          email: u.email,
+          firstName: u.firstName ?? null,
+          lastName: u.lastName ?? null,
+          avatarUrl: u.avatar ?? u.image ?? null,
         },
-        reviewer: {
-          columns: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      orderBy: (requests, { desc }) => [desc(requests.createdAt)],
-    });
+      ])
+    );
 
     return NextResponse.json({
-      requests: requests.map(req => ({
-        id: req.id,
-        userId: req.userId,
-        userInfo: req.user,
-        firstName: req.firstName,
-        lastName: req.lastName,
-        middleName: req.middleName,
-        passportSeries: req.passportSeries,
-        passportNumber: req.passportNumber,
-        issuedBy: req.issuedBy,
-        issueDate: req.issueDate,
-        departmentCode: req.departmentCode,
-        dateOfBirth: req.dateOfBirth,
-        phoneNumber: req.phoneNumber,
-        additionalInfo: req.additionalInfo,
-        passportPhotoFrontUrl: req.passportPhotoFrontUrl,
-        passportPhotoBackUrl: req.passportPhotoBackUrl,
-        selfieWithPassportUrl: req.selfieWithPassportUrl,
-        status: req.status,
-        reviewedBy: req.reviewedBy,
-        reviewerInfo: req.reviewer,
-        reviewedAt: req.reviewedAt,
-        rejectionReason: req.rejectionReason,
-        createdAt: req.createdAt,
-        updatedAt: req.updatedAt,
+      requests: requests.map((req) => ({
+        ...req,
+        userInfo:
+          userMap.get(req.userId) ??
+          ({
+            id: req.userId,
+            email: '',
+            firstName: null,
+            lastName: null,
+            avatarUrl: null,
+          } as const),
+        reviewerInfo: req.reviewedBy ? userMap.get(req.reviewedBy) ?? null : null,
       })),
     });
   } catch (error) {
