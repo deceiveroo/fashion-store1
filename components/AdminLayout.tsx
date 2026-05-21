@@ -22,6 +22,7 @@ import {
   Home,
   ChevronLeft,
   MessageCircle,
+  Star,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { ThemeToggle } from '@/components/admin/ThemeToggle';
@@ -46,7 +47,8 @@ export type AdminPageId =
   | 'analytics'
   | 'reports'
   | 'settings'
-  | 'support-chats';
+  | 'support-chats'
+  | 'reviews';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -58,6 +60,7 @@ const nav = [
   { id: 'products' as const, label: 'Товары', href: '/admin/products', icon: Package, roles: ['admin', 'manager', 'support'] },
   { id: 'orders' as const, label: 'Заказы', href: '/admin/orders', icon: ShoppingCart, roles: ['admin', 'manager', 'support'] },
   { id: 'customers' as const, label: 'Клиенты', href: '/admin/customers', icon: Users, roles: ['admin', 'manager', 'support'] },
+  { id: 'reviews' as const, label: 'Отзывы', href: '/admin/reviews', icon: Star, roles: ['admin', 'manager', 'support'] },
   { id: 'support-chats' as const, label: 'Чаты', href: '/admin/support-chats', icon: MessageCircle, roles: ['admin', 'manager', 'support'] },
   { id: 'users' as const, label: 'Команда', href: '/admin/users', icon: Shield, roles: ['admin'] },
   { id: 'categories' as const, label: 'Категории', href: '/admin/categories', icon: Tag, roles: ['admin', 'manager'] },
