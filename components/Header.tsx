@@ -29,6 +29,7 @@ export default function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const { user, isLoading } = useAuth();
   const { state: cart } = useCart();
 
@@ -109,7 +110,12 @@ export default function Header() {
   };
 
   const clearAllNotifications = async () => {
-    if (!confirm('Очистить все уведомления?')) return;
+    // Показываем красивое подтверждение
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearNotifications = async () => {
+    setShowClearConfirm(false);
     
     try {
       const res = await fetch('/api/notifications/clear', {
@@ -719,6 +725,62 @@ export default function Header() {
                     </p>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Clear All Confirmation Modal */}
+      <AnimatePresence>
+        {showClearConfirm && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowClearConfirm(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]"
+            />
+            
+            {/* Confirmation Dialog */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-[90] px-4"
+            >
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                {/* Icon Header */}
+                <div className="px-6 pt-8 pb-4 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/20 dark:to-orange-900/20 flex items-center justify-center">
+                    <Trash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    Очистить все уведомления?
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Это действие нельзя отменить. Все {notifications.length} уведомлени{notifications.length === 1 ? 'е' : notifications.length < 5 ? 'я' : 'й'} будут удалены навсегда.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex gap-3">
+                  <button
+                    onClick={() => setShowClearConfirm(false)}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    onClick={confirmClearNotifications}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-medium hover:from-red-700 hover:to-orange-700 transition-all shadow-lg shadow-red-500/30"
+                  >
+                    Да, очистить
+                  </button>
+                </div>
               </div>
             </motion.div>
           </>
