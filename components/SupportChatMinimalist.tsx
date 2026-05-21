@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner';
 import { AUTO_RESPONSES } from '@/lib/chat-auto-responses';
 import { supabase } from '@/lib/supabase-client';
+import { useAuth } from '@/context/AuthContext';
 
 interface Message {
   id: string;
@@ -54,6 +55,7 @@ function getSessionId() {
 }
 
 export default function SupportChatMinimalist() {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -448,31 +450,27 @@ export default function SupportChatMinimalist() {
                     </div>
                   )}
                   
-                  {messages.map((msg) => (
+                  {messages.map((msg) => {
+                    const isUser = msg.sender === 'user';
+                    const userAvatar = user?.avatar || user?.image;
+                    
+                    return (
                     <motion.div
                       key={msg.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`flex gap-2 sm:gap-3 ${msg.sender === 'user' ? 'justify-end flex-row-reverse' : 'justify-start'}`}
+                      className={`flex gap-2 sm:gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
                     >
-                      {/* Avatar */}
-                      <div
-                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          msg.sender === 'user'
-                            ? 'bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D]'
-                            : 'bg-gray-200 dark:bg-white/10'
-                        }`}
-                      >
-                        {msg.sender === 'user' ? (
-                          <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                        ) : (
+                      {/* Avatar - left for AI/admin, right for user */}
+                      {!isUser && (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200 dark:bg-white/10">
                           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#9D4EDD]" />
-                        )}
-                      </div>
+                        </div>
+                      )}
                       
                       <div
                         className={`max-w-[70%] sm:max-w-[80%] px-4 py-3 rounded-2xl ${
-                          msg.sender === 'user'
+                          isUser
                             ? 'bg-gradient-to-r from-[#9D4EDD] to-[#FF6B9D] text-white'
                             : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white/90 border border-gray-200 dark:border-white/10'
                         }`}
@@ -481,16 +479,30 @@ export default function SupportChatMinimalist() {
                           {msg.text.replace(/\*\*/g, '').replace(/\*/g, '')}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className={`text-xs ${msg.sender === 'user' ? 'text-white/70' : 'text-gray-500 dark:text-white/40'}`}>
+                          <span className={`text-xs ${isUser ? 'text-white/70' : 'text-gray-500 dark:text-white/40'}`}>
                             {msg.timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                           </span>
-                          {msg.sender === 'user' && (
+                          {isUser && (
                             msg.read ? <CheckCheck size={14} className="text-white/70" /> : <Check size={14} className="text-white/70" />
                           )}
                         </div>
                       </div>
+                      
+                      {/* User Avatar - right side */}
+                      {isUser && (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 overflow-hidden">
+                          {userAvatar ? (
+                            <img src={userAvatar} alt="User" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] flex items-center justify-center">
+                              <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </motion.div>
-                  ))}
+                    );
+                  })}
 
                   {typing && (
                     <motion.div
