@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/AdminLayout';
+import NewAdminLayout from '@/components/admin/NewAdminLayout';
 import { Star, ThumbsUp, MessageSquare, CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -175,7 +175,7 @@ export default function AdminReviewsPage() {
   });
 
   return (
-    <AdminLayout currentPage="reviews">
+    <NewAdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -389,6 +389,6 @@ export default function AdminReviewsPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </NewAdminLayout>
   );
 }

@@ -24,6 +24,7 @@ import {
   Bell,
   Moon,
   Sun,
+  Star,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -85,6 +86,7 @@ const NAV_DATA = [
       { title: 'Products', href: '/admin/products', icon: Package, roles: ['admin', 'manager'] },
       { title: 'Orders', href: '/admin/orders', icon: ShoppingCart, roles: ['admin', 'manager', 'support'] },
       { title: 'Customers', href: '/admin/customers', icon: Users, roles: ['admin', 'manager', 'support'] },
+      { title: 'Reviews', href: '/admin/reviews', icon: Star, roles: ['admin', 'manager', 'support'] },
       { title: 'Support Chats', href: '/admin/support-chats', icon: MessageCircle, roles: ['admin', 'manager', 'support'] },
     ],
   },

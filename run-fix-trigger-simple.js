@@ -46,7 +46,8 @@ async function runMigration() {
       console.log('   4. Run this SQL:\n');
       console.log('   --- COPY THIS ---');
       console.log('   DROP TRIGGER IF EXISTS calculate_response_times_trigger ON support_chat_sessions;');
-      console.log('   DROP FUNCTION IF EXISTS calculate_response_times();');
+      console.log('   DROP TRIGGER IF EXISTS trg_calculate_response_times ON support_chat_sessions;');
+      console.log('   DROP FUNCTION IF EXISTS calculate_response_times() CASCADE;');
       console.log('   --- END ---\n');
       process.exit(1);
     }
