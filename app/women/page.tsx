@@ -1,7 +1,6 @@
-﻿import CatalogPage from '@/components/catalog/CatalogPage';
+import CatalogPage from '@/components/catalog/CatalogPage';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 60; // ISR: regenerate every 60 seconds
 export const runtime = 'nodejs';
 
 export default function WomenPage() {

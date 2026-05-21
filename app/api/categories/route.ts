@@ -3,9 +3,19 @@ import { db } from '@/lib/db';
 import { categories } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { cacheGet, cacheSet } from '@/lib/redis';
+
+const CATEGORIES_CACHE_KEY = 'categories:all';
+const CATEGORIES_CACHE_TTL = 300; // 5 minutes
 
 export async function GET(_request: NextRequest) {
   try {
+    // Try Redis cache first
+    const cached = await cacheGet<any[]>(CATEGORIES_CACHE_KEY);
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      return NextResponse.json(cached);
+    }
+
     let categoriesList;
     try {
       categoriesList = await db
@@ -33,6 +43,11 @@ export async function GET(_request: NextRequest) {
           updatedAt: categories.updatedAt,
         })
         .from(categories);
+    }
+
+    // Cache the result
+    if (categoriesList.length > 0) {
+      cacheSet(CATEGORIES_CACHE_KEY, categoriesList, CATEGORIES_CACHE_TTL).catch(() => {});
     }
 
     return NextResponse.json(categoriesList);

@@ -282,23 +282,52 @@ export function useProfileData() {
     }
   }, []);
 
-  // Load all data
+  // Load all data - consolidated endpoint (1 request instead of 7)
   const loadAllData = useCallback(async () => {
     setIsLoadingData(true);
-    await Promise.all([
-      loadProfile(),
-      loadOrders(),
-      loadWishlist(),
-      loadPaymentMethods(),
-      loadSessions(),
-      loadNotificationSettings(),
-      loadCoupons(),
-    ]);
+    try {
+      const res = await fetch('/api/profile/full', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.profile) {
+          setFormData({
+            firstName: data.profile.firstName || '',
+            lastName: data.profile.lastName || '',
+            email: data.profile.email || '',
+            phone: data.profile.phone || '',
+            address: data.profile.address || '',
+            avatar: data.profile.avatar || '',
+          });
+        }
+        setOrders(Array.isArray(data.orders) ? data.orders : []);
+        setWishlist(Array.isArray(data.wishlist) ? data.wishlist : []);
+        setPaymentMethods(Array.isArray(data.paymentMethods) ? data.paymentMethods : []);
+        setSessions(Array.isArray(data.sessions) ? data.sessions : []);
+        setCoupons(Array.isArray(data.coupons) ? data.coupons : []);
+        setNotifications(data.notifications || {});
+      } else if (res.status === 401) {
+        router.push('/auth/signin');
+        return;
+      } else {
+        throw new Error('Consolidated endpoint failed');
+      }
+    } catch {
+      // Fallback to individual calls
+      await Promise.all([
+        loadProfile(),
+        loadOrders(),
+        loadWishlist(),
+        loadPaymentMethods(),
+        loadSessions(),
+        loadNotificationSettings(),
+        loadCoupons(),
+      ]);
+    }
     setIsLoadingData(false);
     
     // Check achievements after loading profile (in background)
     checkAchievements();
-  }, [loadProfile, loadOrders, loadWishlist, loadPaymentMethods, loadSessions, loadNotificationSettings, loadCoupons, checkAchievements]);
+  }, [router, loadProfile, loadOrders, loadWishlist, loadPaymentMethods, loadSessions, loadNotificationSettings, loadCoupons, checkAchievements]);
 
   return {
     // Data
