@@ -56,6 +56,8 @@ export default function AdminVerificationRequestsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'verified' | 'unverified'>('all');
+  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'customer' | 'admin' | 'manager' | 'support'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function AdminVerificationRequestsPage() {
   }, [activeTab]);
 
   const loadRequests = async () => {
+    setLoading(true);
     try {
       const res = await fetch('/api/admin/verification-requests');
       if (res.ok) {
@@ -84,11 +87,12 @@ export default function AdminVerificationRequestsPage() {
   };
 
   const loadUsers = async () => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/admin/users');
+      const res = await fetch('/api/admin/users?scope=all&limit=100');
       if (res.ok) {
         const data = await res.json();
-        setUsers(data.users || []);
+        setUsers(Array.isArray(data) ? data : (data.users || []));
       } else {
         toast.error('Не удалось загрузить пользователей');
       }
@@ -198,6 +202,9 @@ export default function AdminVerificationRequestsPage() {
   });
 
   const filteredUsers = users.filter(user => {
+    if (userStatusFilter === 'verified' && !user.isVerified) return false;
+    if (userStatusFilter === 'unverified' && user.isVerified) return false;
+    if (userRoleFilter !== 'all' && user.role !== userRoleFilter) return false;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
@@ -212,6 +219,7 @@ export default function AdminVerificationRequestsPage() {
   const approvedCount = requests.filter(r => r.status === 'approved').length;
   const rejectedCount = requests.filter(r => r.status === 'rejected').length;
   const verifiedUsersCount = users.filter(u => u.isVerified).length;
+  const unverifiedUsersCount = users.length - verifiedUsersCount;
 
   return (
     <AdminShell>
@@ -265,7 +273,7 @@ export default function AdminVerificationRequestsPage() {
               <Users className="h-4 w-4" />
               Пользователи
               <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs">
-                {verifiedUsersCount}
+                {users.length}
               </span>
             </div>
             {activeTab === 'users' && (
@@ -331,7 +339,7 @@ export default function AdminVerificationRequestsPage() {
           />
         </div>
 
-        {/* Filters (only for requests) */}
+        {/* Filters */}
         {activeTab === 'requests' && (
           <div className="flex gap-2">
             {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
@@ -350,6 +358,43 @@ export default function AdminVerificationRequestsPage() {
                 {f === 'rejected' && `Отклонено (${rejectedCount})`}
               </button>
             ))}
+          </div>
+        )}
+        {activeTab === 'users' && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-2 flex-wrap">
+              {([
+                { key: 'all', label: `Все (${users.length})` },
+                { key: 'verified', label: `Верифицированы (${verifiedUsersCount})` },
+                { key: 'unverified', label: `Не верифицированы (${unverifiedUsersCount})` },
+              ] as const).map((x) => (
+                <button
+                  key={x.key}
+                  onClick={() => setUserStatusFilter(x.key)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    userStatusFilter === x.key
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {x.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Роль</span>
+              <select
+                value={userRoleFilter}
+                onChange={(e) => setUserRoleFilter(e.target.value as typeof userRoleFilter)}
+                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="all">Все</option>
+                <option value="customer">customer</option>
+                <option value="admin">admin</option>
+                <option value="manager">manager</option>
+                <option value="support">support</option>
+              </select>
+            </div>
           </div>
         )}
 

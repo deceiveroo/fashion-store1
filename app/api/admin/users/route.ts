@@ -56,13 +56,15 @@ export async function GET(request: NextRequest) {
 
     // Получаем параметры пагинации
     const { searchParams } = new URL(request.url);
+    const scope = searchParams.get('scope') || 'staff';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const offset = (page - 1) * limit;
 
-    // Получаем пользователей с профилями, только с ролями 'admin', 'manager', 'support'
-    const usersWithProfiles = await queryWithRetry(() =>
-      db
+    const includeAll = scope === 'all';
+
+    const usersWithProfiles = await queryWithRetry(() => {
+      let q = db
         .select({
           id: users.id,
           email: users.email,
@@ -73,18 +75,22 @@ export async function GET(request: NextRequest) {
           role: users.role,
           image: users.image,
           status: users.status,
+          isVerified: users.isVerified,
+          verifiedAt: users.verifiedAt,
           createdAt: users.createdAt,
           emailVerified: users.emailVerified,
           avatar: userProfiles.avatar,
           lastSignIn: users.lastSignIn,
         })
         .from(users)
-        .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
-        .where(inArray(users.role, ['admin', 'manager', 'support'])) // Только пользователи с ролями admin, manager, support
-        .orderBy(users.createdAt)
-        .limit(limit)
-        .offset(offset)
-    );
+        .leftJoin(userProfiles, eq(users.id, userProfiles.userId));
+
+      if (!includeAll) {
+        q = q.where(inArray(users.role, ['admin', 'manager', 'support']));
+      }
+
+      return q.orderBy(users.createdAt).limit(limit).offset(offset);
+    });
 
     // Возвращаем пользователей без чувствительных данных
     const filteredUsers = usersWithProfiles.map(user => ({
@@ -97,6 +103,8 @@ export async function GET(request: NextRequest) {
       role: user.role || 'customer',
       image: user.image,
       status: user.status,
+      isVerified: user.isVerified ?? false,
+      verifiedAt: user.verifiedAt,
       createdAt: user.createdAt,
       emailVerified: user.emailVerified,
       avatar: user.avatar,

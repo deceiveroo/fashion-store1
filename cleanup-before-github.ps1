@@ -181,8 +181,8 @@ Write-Host "`n✅ Очистка завершена!" -ForegroundColor Green
 Write-Host "`n📝 Следующие шаги:" -ForegroundColor Cyan
 Write-Host "  1. Проверьте что не удалилось ничего важного" -ForegroundColor White
 Write-Host "  2. Добавьте переменные окружения в Vercel:" -ForegroundColor White
-Write-Host "     - UPSTASH_REDIS_REST_URL=https://uncommon-longhorn-133227.upstash.io" -ForegroundColor Yellow
-Write-Host "     - UPSTASH_REDIS_REST_TOKEN=gQAAAAAAAghrAAIgcDE1YjVkZDA4N2UyYTA0NGEzODQ1YTEzMTE4ZDJiMGVjOQ" -ForegroundColor Yellow
+Write-Host "     - UPSTASH_REDIS_REST_URL=<YOUR_UPSTASH_REDIS_REST_URL>" -ForegroundColor Yellow
+Write-Host "     - UPSTASH_REDIS_REST_TOKEN=<YOUR_UPSTASH_REDIS_REST_TOKEN>" -ForegroundColor Yellow
 Write-Host "  3. Закоммитьте изменения: git add ." -ForegroundColor White
 Write-Host "  4. Создайте коммит: git commit -m 'Clean project before GitHub upload'" -ForegroundColor White
 Write-Host "  5. Отправьте на GitHub: git push origin main" -ForegroundColor White

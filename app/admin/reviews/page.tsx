@@ -46,7 +46,7 @@ export default function AdminReviewsPage() {
 
   useEffect(() => {
     loadReviews();
-  }, [filter, page, sortBy]);
+  }, [filter, page, sortBy, searchQuery]);
 
   const loadReviews = async () => {
     setLoading(true);
@@ -76,7 +76,7 @@ export default function AdminReviewsPage() {
 
       const data = await res.json();
       setReviews(data.reviews || []);
-      setStatistics(data.statistics || null);
+      setStatistics(data.statistics || data.stats || null);
       setTotalPages(data.pagination?.totalPages || 1);
     } catch (error) {
       console.error('Error loading reviews:', error);
@@ -240,7 +240,7 @@ export default function AdminReviewsPage() {
               type="text"
               placeholder="Поиск по отзывам..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
           </div>

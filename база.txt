@@ -747,6 +747,7 @@ CREATE TABLE public.support_chat_messages (
   is_read boolean DEFAULT false,
   created_at timestamp without time zone NOT NULL DEFAULT now(),
   read_by_admin boolean DEFAULT false,
+  read_by_user boolean DEFAULT false,
   CONSTRAINT support_chat_messages_pkey PRIMARY KEY (id),
   CONSTRAINT support_chat_messages_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.support_chat_sessions(session_id),
   CONSTRAINT support_chat_messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
@@ -783,6 +784,9 @@ CREATE TABLE public.support_chat_sessions (
   customer_satisfaction integer CHECK (customer_satisfaction >= 1 AND customer_satisfaction <= 5),
   tags ARRAY,
   category text,
+  admin_name text,
+  admin_avatar text,
+  admin_email text,
   CONSTRAINT support_chat_sessions_pkey PRIMARY KEY (id),
   CONSTRAINT support_chat_sessions_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(id),
   CONSTRAINT support_chat_sessions_operator_rated_by_fkey FOREIGN KEY (operator_rated_by) REFERENCES public.users(id),
@@ -950,6 +954,33 @@ CREATE TABLE public.user_sessions (
   CONSTRAINT user_sessions_pkey PRIMARY KEY (id),
   CONSTRAINT user_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
+CREATE TABLE public.user_verification_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  first_name text NOT NULL,
+  last_name text NOT NULL,
+  middle_name text,
+  passport_series text NOT NULL,
+  passport_number text NOT NULL,
+  issued_by text NOT NULL,
+  issue_date date NOT NULL,
+  department_code text,
+  date_of_birth date NOT NULL,
+  passport_photo_front_url text,
+  passport_photo_back_url text,
+  selfie_with_passport_url text,
+  phone_number text NOT NULL,
+  additional_info text,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+  reviewed_by text,
+  reviewed_at timestamp with time zone,
+  rejection_reason text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_verification_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT user_verification_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT user_verification_requests_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES public.users(id)
+);
 CREATE TABLE public.user_wishlist_items (
   id text NOT NULL DEFAULT (gen_random_uuid())::text,
   user_id text NOT NULL,
@@ -973,6 +1004,8 @@ CREATE TABLE public.users (
   updated_at timestamp without time zone DEFAULT now(),
   status text NOT NULL DEFAULT 'active'::text,
   last_sign_in timestamp without time zone,
+  is_verified boolean DEFAULT false,
+  verified_at timestamp with time zone,
   CONSTRAINT users_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.verification_tokens (

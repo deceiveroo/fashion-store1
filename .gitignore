@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -190,3 +191,7 @@ app/api/create-crypto-payment/
 app/api/webhook/stripe/
 app/api/webhook/crypto/
 vercel-env.txt
+
+# Local DB/schema notes
+база.txt
+БАЗА.txt

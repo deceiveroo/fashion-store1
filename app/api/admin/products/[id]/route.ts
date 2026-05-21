@@ -178,7 +178,13 @@ export async function PATCH(
     if (body.price !== undefined) patch.price = String(body.price);
     if (body.featured !== undefined) patch.featured = Boolean(body.featured);
     if (body.isNew !== undefined) patch.isNew = Boolean(body.isNew);
-    if (body.isActive !== undefined) patch.isActive = Boolean(body.isActive);
+    if (body.isActive !== undefined) {
+      const nextActive = Boolean(body.isActive);
+      patch.isActive = nextActive;
+      if (nextActive) {
+        patch.deletedAt = null;
+      }
+    }
 
     if (body.inStock !== undefined) {
       const inStock = Boolean(body.inStock);

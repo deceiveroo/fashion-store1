@@ -58,8 +58,8 @@ Add these variables in Vercel Dashboard → Settings → Environment Variables:
 
 #### Redis (Upstash) - For Chat & Caching
 ```
-UPSTASH_REDIS_REST_URL=https://uncommon-longhorn-133227.upstash.io
-UPSTASH_REDIS_REST_TOKEN=gQAAAAAAAghrAAIgcDE1YjVkZDA4N2UyYTA0NGEzODQ1YTEzMTE4ZDJiMGVjOQ
+UPSTASH_REDIS_REST_URL=<YOUR_UPSTASH_REDIS_REST_URL>
+UPSTASH_REDIS_REST_TOKEN=<YOUR_UPSTASH_REDIS_REST_TOKEN>
 ```
 
 **Important:** Select all environments (Production, Preview, Development)

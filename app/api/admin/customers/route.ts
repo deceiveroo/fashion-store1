@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, userProfiles } from '@/lib/schema';
-import { eq, or, ilike, desc } from 'drizzle-orm';
+import { and, eq, or, ilike, desc } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
 // GET /api/admin/customers - Search and list customers/users
@@ -33,20 +33,30 @@ export async function GET(request: NextRequest) {
         .select({
           id: users.id,
           email: users.email,
+          name: users.name,
           role: users.role,
+          status: users.status,
+          isVerified: users.isVerified,
+          verifiedAt: users.verifiedAt,
           createdAt: users.createdAt,
+          emailVerified: users.emailVerified,
+          lastSignIn: users.lastSignIn,
           firstName: userProfiles.firstName,
           lastName: userProfiles.lastName,
+          phone: userProfiles.phone,
           avatar: userProfiles.avatar,
           image: users.image,
         })
         .from(users)
         .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
         .where(
-          or(
-            ilike(users.email, searchTerm),
-            ilike(userProfiles.firstName, searchTerm),
-            ilike(userProfiles.lastName, searchTerm)
+          and(
+            eq(users.role, 'customer'),
+            or(
+              ilike(users.email, searchTerm),
+              ilike(userProfiles.firstName, searchTerm),
+              ilike(userProfiles.lastName, searchTerm)
+            )
           )
         )
         .orderBy(desc(users.createdAt))
@@ -57,15 +67,23 @@ export async function GET(request: NextRequest) {
         .select({
           id: users.id,
           email: users.email,
+          name: users.name,
           role: users.role,
+          status: users.status,
+          isVerified: users.isVerified,
+          verifiedAt: users.verifiedAt,
           createdAt: users.createdAt,
+          emailVerified: users.emailVerified,
+          lastSignIn: users.lastSignIn,
           firstName: userProfiles.firstName,
           lastName: userProfiles.lastName,
+          phone: userProfiles.phone,
           avatar: userProfiles.avatar,
           image: users.image,
         })
         .from(users)
         .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
+        .where(eq(users.role, 'customer'))
         .orderBy(desc(users.createdAt))
         .limit(limit);
     }
@@ -74,11 +92,18 @@ export async function GET(request: NextRequest) {
     const customers = results.map(user => ({
       id: user.id,
       email: user.email,
+      name: user.name,
       firstName: user.firstName,
       lastName: user.lastName,
+      phone: user.phone,
       avatar: user.avatar || user.image,
-      role: user.role,
+      role: user.role || 'customer',
+      status: user.status,
+      isVerified: user.isVerified ?? false,
+      verifiedAt: user.verifiedAt,
       createdAt: user.createdAt,
+      emailVerified: user.emailVerified,
+      lastSignIn: user.lastSignIn,
     }));
 
     return NextResponse.json(customers);

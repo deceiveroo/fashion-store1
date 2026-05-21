@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter, Plus_Jakarta_Sans, Oswald } from 'next/font/google';
 import './globals.css';
 import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -11,29 +10,6 @@ import MaintenanceCheck from '@/components/MaintenanceCheck';
 import AchievementNotification from '@/components/gamification/AchievementNotification';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react';
-
-// Основной шрифт для текста - более современный и читаемый
-const inter = Inter({
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-// Шрифт для заголовков - стильный и современный
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-jakarta',
-  display: 'swap',
-  weight: ['400', '500', '600', '700', '800'],
-});
-
-// Шрифт Oswald для крупных заголовков (с поддержкой кириллицы)
-const oswald = Oswald({
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-oswald',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-});
 
 export const metadata: Metadata = {
   title: 'ELEVATE',
@@ -50,7 +26,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jakarta.variable} ${oswald.variable} font-sans antialiased text-gray-900 dark:text-gray-100`}>
+      <body className="font-sans antialiased text-gray-900 dark:text-gray-100">
         <script
           dangerouslySetInnerHTML={{
             __html: `

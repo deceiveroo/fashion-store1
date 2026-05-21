@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { reviews, users, products } from '@/lib/schema';
-import { eq, desc, and, or, ilike } from 'drizzle-orm';
+import { eq, desc, asc, and, or, ilike, count } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
 // GET /api/admin/reviews - Получить все отзывы для модерации
@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const status = searchParams.get('status'); // pending, approved, rejected
     const search = searchParams.get('search');
+    const sortBy = searchParams.get('sortBy') || 'newest';
 
     let conditions = [];
 
@@ -39,6 +40,23 @@ export async function GET(request: NextRequest) {
     }
 
     const offset = (page - 1) * limit;
+    let orderBy;
+    switch (sortBy) {
+      case 'oldest':
+        orderBy = asc(reviews.createdAt);
+        break;
+      case 'highest':
+        orderBy = desc(reviews.rating);
+        break;
+      case 'lowest':
+        orderBy = asc(reviews.rating);
+        break;
+      case 'helpful':
+        orderBy = desc(reviews.helpfulCount);
+        break;
+      default:
+        orderBy = desc(reviews.createdAt);
+    }
 
     // Получаем отзывы с информацией о пользователе и товаре
     const reviewsList = await db
@@ -64,7 +82,7 @@ export async function GET(request: NextRequest) {
       .leftJoin(users, eq(reviews.userId, users.id))
       .leftJoin(products, eq(reviews.productId, products.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(reviews.createdAt))
+      .orderBy(orderBy)
       .limit(limit)
       .offset(offset);
 
@@ -72,6 +90,28 @@ export async function GET(request: NextRequest) {
     const [{ totalCount }] = await db
       .select({ totalCount: db.$count(reviews, conditions.length > 0 ? and(...conditions) : undefined) })
       .from(reviews);
+
+    const ratingStats = await db
+      .select({
+        rating: reviews.rating,
+        count: count(),
+      })
+      .from(reviews)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .groupBy(reviews.rating);
+
+    const totalRatings = ratingStats.reduce(
+      (sum, stat) => sum + (Number(stat.count) * (stat.rating || 0)),
+      0
+    );
+    const avg = totalCount > 0 ? totalRatings / totalCount : 0;
+
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    ratingStats.forEach((stat) => {
+      if (stat.rating && stat.rating >= 1 && stat.rating <= 5) {
+        distribution[stat.rating as keyof typeof distribution] = Number(stat.count);
+      }
+    });
 
     // Статистика
     const [pendingCount, approvedCount] = await Promise.all([
@@ -86,6 +126,11 @@ export async function GET(request: NextRequest) {
         limit,
         total: totalCount,
         totalPages: Math.ceil(totalCount / limit),
+      },
+      statistics: {
+        averageRating: parseFloat(avg.toFixed(1)),
+        totalCount,
+        distribution,
       },
       stats: {
         pending: pendingCount[0].count,

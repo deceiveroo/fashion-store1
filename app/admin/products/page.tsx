@@ -30,6 +30,7 @@ interface Product {
   featured: boolean;
   isNew?: boolean;
   mainImage?: string;
+  isActive?: boolean;
   createdAt: string;
 }
 
@@ -46,7 +47,7 @@ export default function AdminProductsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/products?limit=200', { credentials: 'include', cache: 'no-store' });
+      const res = await fetch('/api/admin/products?limit=200', { credentials: 'include', cache: 'no-store' });
       const data = await res.json();
       if (res.ok && Array.isArray(data)) {
         setProducts(data);
@@ -394,10 +395,20 @@ export default function AdminProductsPage() {
                               disabled={busyId === p.id}
                               onToggle={() => void patchProduct(p.id, { isNew: !p.isNew })}
                             />
+                            {p.isActive === false && (
+                              <span className="rounded-md px-2 py-0.5 text-[10px] font-medium border border-amber-500/30 bg-amber-500/10 text-amber-400">
+                                Скрыт
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-0.5">
+                            <ActionBtn
+                              title={p.isActive === false ? 'Вернуть в каталог' : 'Скрыть из каталога'}
+                              onClick={() => void patchProduct(p.id, { isActive: p.isActive === false })}
+                              icon={p.isActive === false ? Eye : ToggleLeft}
+                            />
                             <ActionBtn
                               title="На сайте"
                               onClick={() => window.open(`/products/${p.id}`, '_blank')}
