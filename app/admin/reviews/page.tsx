@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
-import { Star, ThumbsUp, MessageSquare, CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
+import { Star, ThumbsUp, MessageSquare, CheckCircle, XCircle, Trash2, Eye, ExternalLink, Package, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -39,10 +39,12 @@ export default function AdminReviewsPage() {
   const [adminResponse, setAdminResponse] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful'>('newest');
 
   useEffect(() => {
     loadReviews();
-  }, [filter, page]);
+  }, [filter, page, sortBy]);
 
   const loadReviews = async () => {
     setLoading(true);
@@ -50,13 +52,17 @@ export default function AdminReviewsPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20',
-        sortBy: 'newest',
+        sortBy: sortBy,
       });
 
       if (filter === 'pending') {
         params.append('status', 'pending');
       } else if (filter === 'approved') {
         params.append('status', 'approved');
+      }
+
+      if (searchQuery) {
+        params.append('search', searchQuery);
       }
 
       const res = await fetch(`/api/admin/reviews?${params}`, {
@@ -218,6 +224,33 @@ export default function AdminReviewsPage() {
           </div>
         )}
 
+        {/* Search and Sort */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder="Поиск по отзывам..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+            />
+          </div>
+          
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+          >
+            <option value="newest">Сначала новые</option>
+            <option value="oldest">Сначала старые</option>
+            <option value="highest">Высокий рейтинг</option>
+            <option value="lowest">Низкий рейтинг</option>
+            <option value="helpful">Полезные</option>
+          </select>
+        </div>
+
         {/* Filters */}
         <div className="flex gap-2">
           <button
@@ -293,20 +326,41 @@ export default function AdminReviewsPage() {
                         <h3 className="mt-2 font-semibold text-gray-900 dark:text-white">{review.title}</h3>
                       )}
                       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{review.comment}</p>
-                      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                        <span>{review.userName || 'Аноним'}</span>
-                        <span>•</span>
-                        <span>{new Date(review.createdAt).toLocaleDateString('ru-RU')}</span>
-                        {review.productName && (
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+                        {/* User */}
+                        <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                          <User className="h-3 w-3" />
+                          {review.userName || 'Аноним'}
+                        </span>
+                        <span className="text-gray-300 dark:text-gray-600">•</span>
+                        
+                        {/* Date */}
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {new Date(review.createdAt).toLocaleDateString('ru-RU')}
+                        </span>
+                        
+                        {/* Product Link */}
+                        {review.productName && review.productId && (
                           <>
-                            <span>•</span>
-                            <span>{review.productName}</span>
+                            <span className="text-gray-300 dark:text-gray-600">•</span>
+                            <a
+                              href={`/products/${review.productId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium transition-colors"
+                            >
+                              <Package className="h-3 w-3" />
+                              {review.productName}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
                           </>
                         )}
+                        
+                        {/* Helpful Count */}
                         {review.helpfulCount > 0 && (
                           <>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
+                            <span className="text-gray-300 dark:text-gray-600">•</span>
+                            <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                               <ThumbsUp className="h-3 w-3" />
                               {review.helpfulCount}
                             </span>
@@ -315,6 +369,19 @@ export default function AdminReviewsPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      {/* View Product Button */}
+                      {review.productId && (
+                        <a
+                          href={`/products/${review.productId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-200 dark:bg-violet-900 dark:text-violet-300 dark:hover:bg-violet-800 transition-colors flex items-center gap-1.5"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Товар
+                        </a>
+                      )}
+                      
                       {!review.isApproved && (
                         <>
                           <button
