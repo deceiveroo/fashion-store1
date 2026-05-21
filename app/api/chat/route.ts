@@ -1,26 +1,48 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { supportChatMessages, supportChatSessions } from '@/lib/schema';
+import { supportChatMessages, supportChatSessions, users, userProfiles } from '@/lib/schema';
 import { eq, asc, desc } from 'drizzle-orm';
 import { findAutoResponse } from '@/lib/chat-auto-responses';
 import { validateMessage } from '@/lib/chat-utils';
 import { validateCSRF } from '@/lib/csrf-protection';
 import { chatRateLimiter, memoryRateLimitCheck, isRedisAvailable } from '@/lib/redis';
+import { getSession } from '@/lib/server-auth';
 
-async function upsertSession(sessionId: string, firstMsg?: string) {
+async function upsertSession(sessionId: string, firstMsg?: string, userId?: string | null, userEmail?: string | null, userName?: string | null) {
   const existing = await db.select().from(supportChatSessions)
     .where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
+  
   if (existing.length === 0) {
     await db.insert(supportChatSessions).values({
-      id: crypto.randomUUID(), sessionId, status: 'active',
-      messageCount: 1, firstMessage: firstMsg || null,
-      lastMessageAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+      id: crypto.randomUUID(), 
+      sessionId, 
+      userId: userId || null,
+      userEmail: userEmail || null,
+      userName: userName || null,
+      status: 'active',
+      messageCount: 1, 
+      firstMessage: firstMsg || null,
+      lastMessageAt: new Date(), 
+      createdAt: new Date(), 
+      updatedAt: new Date(),
     });
   } else {
-    await db.update(supportChatSessions).set({
+    // Обновляем информацию о пользователе если она появилась
+    const updateData: any = {
       messageCount: (existing[0].messageCount || 0) + 1,
-      lastMessageAt: new Date(), updatedAt: new Date(),
-    }).where(eq(supportChatSessions.sessionId, sessionId));
+      lastMessageAt: new Date(), 
+      updatedAt: new Date(),
+    };
+    
+    // Если сессия была без пользователя, а теперь пользователь авторизован - привязываем
+    if (!existing[0].userId && userId) {
+      updateData.userId = userId;
+      updateData.userEmail = userEmail;
+      updateData.userName = userName;
+    }
+    
+    await db.update(supportChatSessions).set(updateData)
+      .where(eq(supportChatSessions.sessionId, sessionId));
   }
 }
 
@@ -51,6 +73,36 @@ export async function POST(req: NextRequest) {
     
     if (!sessionId) {
       return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+    }
+
+    // Получаем информацию о пользователе из сессии
+    const session = await getSession();
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    let userName: string | null = null;
+
+    if (session?.user?.id) {
+      userId = session.user.id;
+      userEmail = session.user.email || null;
+      userName = session.user.name || null;
+      
+      // Пытаемся получить имя из профиля
+      try {
+        const profile = await db
+          .select({
+            firstName: userProfiles.firstName,
+            lastName: userProfiles.lastName,
+          })
+          .from(userProfiles)
+          .where(eq(userProfiles.userId, userId))
+          .limit(1);
+        
+        if (profile.length > 0 && (profile[0].firstName || profile[0].lastName)) {
+          userName = `${profile[0].firstName || ''} ${profile[0].lastName || ''}`.trim();
+        }
+      } catch (err) {
+        console.warn('Failed to fetch user profile:', err);
+      }
     }
 
     // Rate limiting with Redis (fallback to in-memory)
@@ -98,7 +150,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'message or image required' }, { status: 400 });
     }
 
-    await upsertSession(sessionId, message);
+    // Создаем или обновляем сессию с информацией о пользователе
+    await upsertSession(sessionId, message, userId, userEmail, userName);
     
     // Если это авто-ответ, просто сохраняем и возвращаем
     if (isAutoReply) {
@@ -109,10 +162,10 @@ export async function POST(req: NextRequest) {
     // Сохраняем сообщение пользователя
     await saveMsg(sessionId, message || '📷 Изображение', 'user', imageUrl);
 
-    const [session] = await db.select().from(supportChatSessions)
+    const [currentSession] = await db.select().from(supportChatSessions)
       .where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
 
-    if (session?.aiDisabled) {
+    if (currentSession?.aiDisabled) {
       return NextResponse.json({ takenOver: true, message: '👨‍💼 Оператор подключён. Ожидайте ответа...' });
     }
 

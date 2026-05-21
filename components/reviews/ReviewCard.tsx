@@ -20,6 +20,8 @@ interface ReviewCardProps {
     adminResponse?: string | null;
     adminRespondedAt?: string | null;
     userName?: string | null;
+    userAvatar?: string | null;
+    userImage?: string | null;
   };
   onHelpfulClick?: (reviewId: string) => Promise<void>;
   hasVoted?: boolean;
@@ -31,6 +33,23 @@ export default function ReviewCard({
   hasVoted = false,
 }: ReviewCardProps) {
   const [isHelpfulLoading, setIsHelpfulLoading] = useState(false);
+
+  // Функция для получения аватара пользователя
+  const getUserAvatar = () => {
+    // Сначала проверяем аватар из профиля
+    if (review.userAvatar) return review.userAvatar;
+    if (review.userImage) return review.userImage;
+    
+    // Если нет аватара, используем UI Avatars API с именем
+    if (review.userName) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(review.userName)}&background=random&color=fff&size=128`;
+    }
+    
+    // Fallback: первая буква имени или 'U'
+    return null;
+  };
+
+  const userAvatarUrl = getUserAvatar();
 
   const handleHelpfulClick = async () => {
     if (!onHelpfulClick || isHelpfulLoading) return;
@@ -62,10 +81,31 @@ export default function ReviewCard({
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          {/* Avatar placeholder */}
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
-            {review.userName?.charAt(0).toUpperCase() || 'U'}
-          </div>
+          {/* Avatar */}
+          {userAvatarUrl ? (
+            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-gray-200 dark:border-gray-700">
+              <Image
+                src={userAvatarUrl}
+                alt={review.userName || 'User'}
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Если изображение не загрузилось, показываем fallback
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = `
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                      ${review.userName?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  `;
+                }}
+              />
+            </div>
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+              {review.userName?.charAt(0).toUpperCase() || 'U'}
+            </div>
+          )}
           
           <div>
             <div className="flex items-center gap-2">

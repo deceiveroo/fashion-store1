@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3 } from 'lucide-react';
+import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
@@ -22,14 +22,19 @@ interface Msg {
 interface Session { 
   id: string; 
   sessionId: string; 
+  userId?: string | null;
   userEmail: string|null; 
   userName: string|null;
   userAvatar?: string | null;
+  userImage?: string | null;
+  userFirstName?: string | null;
+  userLastName?: string | null;
   status: 'active'|'resolved'|'archived'; 
   messageCount: number|null; 
   firstMessage: string|null; 
   lastMessageAt: string|null; 
   aiDisabled: boolean|null; 
+  operatorRating?: number | null;
   createdAt: string; 
 }
 
@@ -64,6 +69,8 @@ function SupportChatsPage() {
         sessionId: String(m.sessionId ?? m.session_id ?? sessionId),
         message: String(m.message ?? ''),
         sender: (m.sender as Msg['sender']) ?? 'user',
+        senderName: m.senderName as string | null | undefined,
+        senderAvatar: m.senderAvatar as string | null | undefined,
         createdAt: String(m.createdAt ?? m.created_at ?? new Date().toISOString()),
       }));
       setMessages(list);
@@ -207,7 +214,7 @@ function SupportChatsPage() {
         body: JSON.stringify({ message: msg }),
       });
       if (!r.ok) throw new Error('Send failed');
-      await loadMessages(sel.sessionId);
+      // Не вызываем loadMessages - Realtime обновит автоматически
       toast.success('Сообщение отправлено');
     } catch (err) {
       console.error('Send error:', err);
@@ -223,6 +230,38 @@ function SupportChatsPage() {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid, status }),
     });
     toast.success('Обновлено'); setSel(p => p ? { ...p, status: status as any } : p);
+  };
+
+  const completeChat = async () => {
+    if (!sel) return;
+    
+    const confirmed = await showConfirm({
+      title: 'Завершение чата',
+      message: 'Завершить этот чат? История сохранится для пользователя и администратора.',
+      confirmText: 'Завершить',
+      cancelText: 'Отмена',
+      variant: 'info',
+    });
+    
+    if (!confirmed) return;
+    
+    try {
+      const r = await fetch(`/api/admin/support-chats/${encodeURIComponent(sel.sessionId)}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: null, feedback: null }),
+      });
+      
+      if (r.ok) {
+        toast.success('Чат завершен');
+        setSel(p => p ? { ...p, status: 'resolved' } : p);
+      } else {
+        toast.error('Ошибка при завершении чата');
+      }
+    } catch (err) {
+      console.error('Complete chat error:', err);
+      toast.error('Ошибка при завершении чата');
+    }
   };
 
   const del = async (sid: string, e: React.MouseEvent) => {
@@ -248,14 +287,28 @@ function SupportChatsPage() {
   const filtered = sessions.filter(s => filter === 'all' || s.status === filter);
 
   // Функция для получения аватара пользователя
-  const getUserAvatar = (userEmail: string | null, userName: string | null, userAvatar?: string | null) => {
+  const getUserAvatar = (userEmail: string | null, userName: string | null, userAvatar?: string | null, userImage?: string | null) => {
+    // Сначала проверяем реальный аватар из профиля
     if (userAvatar) return userAvatar;
-    if (userEmail) {
-      // Генерируем avatar через UI Avatars API
-      const name = userName || userEmail.split('@')[0];
+    if (userImage) return userImage;
+    // Если нет аватара, используем UI Avatars API с именем
+    if (userName || userEmail) {
+      const name = userName || (userEmail ? userEmail.split('@')[0] : 'User');
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128`;
     }
     return null; // Гость - будет стандартная иконка
+  };
+
+  // Функция для получения имени пользователя
+  const getUserName = (session: any) => {
+    // Приоритет: firstName + lastName > userName > email username > 'Гость'
+    if (session.userFirstName || session.userLastName) {
+      const fullName = `${session.userFirstName || ''} ${session.userLastName || ''}`.trim();
+      if (fullName) return fullName;
+    }
+    if (session.userName) return session.userName;
+    if (session.userEmail) return session.userEmail.split('@')[0];
+    return 'Гость';
   };
 
   // Функция для получения аватара оператора (админа)
@@ -392,7 +445,8 @@ function SupportChatsPage() {
                 </div>
               ) : (
                 filtered.map(s => {
-                  const avatarUrl = getUserAvatar(s.userEmail, s.userName, s.userAvatar);
+                  const displayName = getUserName(s);
+                  const avatarUrl = getUserAvatar(s.userEmail, s.userName, s.userAvatar, s.userImage);
                   return (
                   <div 
                     key={s.id} 
@@ -406,7 +460,7 @@ function SupportChatsPage() {
                       {avatarUrl ? (
                         <img 
                           src={avatarUrl} 
-                          alt={s.userName || 'User'}
+                          alt={displayName}
                           className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-gray-200 dark:border-white/10"
                         />
                       ) : (
@@ -417,7 +471,7 @@ function SupportChatsPage() {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium truncate text-gray-900 dark:text-white">{s.userName||s.userEmail||'Гость'}</span>
+                          <span className="text-sm font-medium truncate text-gray-900 dark:text-white">{displayName}</span>
                           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                             {s.aiDisabled && <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400"/>}
                             <button 
@@ -434,12 +488,21 @@ function SupportChatsPage() {
                             <Users className="h-3 w-3" />
                             {s.messageCount||0}
                           </span>
-                          {s.lastMessageAt && (
-                            <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {new Date(s.lastMessageAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {/* Рейтинг оператора */}
+                            {s.operatorRating && (
+                              <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1 font-medium">
+                                <Star className="h-3 w-3 fill-current" />
+                                {s.operatorRating}/10
+                              </span>
+                            )}
+                            {s.lastMessageAt && (
+                              <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {new Date(s.lastMessageAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -498,6 +561,15 @@ function SupportChatsPage() {
                         </span>
                       )
                     }
+                    {sel.status==='active' && taken && (
+                      <button 
+                        onClick={completeChat} 
+                        className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl text-xs font-medium hover:from-emerald-500 hover:to-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                      >
+                        <CheckCircle className="h-4 w-4"/> 
+                        Завершить чат
+                      </button>
+                    )}
                     {sel.status==='active' && (
                       <button 
                         onClick={()=>setStatus(sel.sessionId,'resolved')} 

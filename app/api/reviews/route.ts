@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { reviews, users, orders, orderItems, products } from '@/lib/schema';
+import { reviews, users, orders, orderItems, products, userProfiles } from '@/lib/schema';
 import { eq, and, desc, asc, count } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 import { awardXP, checkAchievements } from '@/lib/gamification';
@@ -76,9 +76,12 @@ export async function GET(request: NextRequest) {
         adminResponse: reviews.adminResponse,
         adminRespondedAt: reviews.adminRespondedAt,
         userName: users.name,
+        userAvatar: userProfiles.avatar,
+        userImage: users.image,
       })
       .from(reviews)
       .leftJoin(users, eq(reviews.userId, users.id))
+      .leftJoin(userProfiles, eq(reviews.userId, userProfiles.userId))
       .where(and(...conditions))
       .orderBy(orderBy)
       .limit(limit)

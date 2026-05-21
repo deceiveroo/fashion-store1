@@ -109,7 +109,7 @@ export default function SLADashboard({ days = 30 }: SLADashboardProps) {
       {/* Header with controls */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">SLA Dashboard</h2>
+          <h2 className="text-xl font-bold text-white">Аналитика чатов поддержки</h2>
           <p className="text-sm text-white/40 mt-1">Период: {data.period}</p>
         </div>
         
@@ -150,7 +150,7 @@ export default function SLADashboard({ days = 30 }: SLADashboardProps) {
         />
         <KPICard
           icon={TrendingUp}
-          label="AI Resolution Rate"
+          label="Решено AI"
           value={data.overview.aiResolutionRate}
           color="purple"
         />

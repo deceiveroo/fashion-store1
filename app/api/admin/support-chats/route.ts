@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { supportChatSessions, supportChatMessages } from '@/lib/schema';
+import { supportChatSessions, supportChatMessages, users, userProfiles } from '@/lib/schema';
 import { desc, eq, count, sql } from 'drizzle-orm';
 import { isAdmin } from '@/lib/server-auth';
 import { cache, CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
@@ -22,10 +22,43 @@ export async function GET(request: NextRequest) {
     const includeStats = searchParams.get('includeStats') === 'true';
 
     try {
-      // Fetch sessions with pagination
+      // Fetch sessions with pagination and user data
       const sessions = await db
-        .select()
+        .select({
+          id: supportChatSessions.id,
+          sessionId: supportChatSessions.sessionId,
+          userId: supportChatSessions.userId,
+          userEmail: supportChatSessions.userEmail,
+          userName: supportChatSessions.userName,
+          status: supportChatSessions.status,
+          messageCount: supportChatSessions.messageCount,
+          firstMessage: supportChatSessions.firstMessage,
+          lastMessageAt: supportChatSessions.lastMessageAt,
+          resolvedAt: supportChatSessions.resolvedAt,
+          resolvedBy: supportChatSessions.resolvedBy,
+          notes: supportChatSessions.notes,
+          takenOverBy: supportChatSessions.takenOverBy,
+          takenOverAt: supportChatSessions.takenOverAt,
+          aiDisabled: supportChatSessions.aiDisabled,
+          operatorRating: supportChatSessions.operatorRating,
+          operatorRatedAt: supportChatSessions.operatorRatedAt,
+          operatorRatedBy: supportChatSessions.operatorRatedBy,
+          firstResponseTime: supportChatSessions.firstResponseTime,
+          resolutionTime: supportChatSessions.resolutionTime,
+          customerSatisfaction: supportChatSessions.customerSatisfaction,
+          tags: supportChatSessions.tags,
+          category: supportChatSessions.category,
+          createdAt: supportChatSessions.createdAt,
+          updatedAt: supportChatSessions.updatedAt,
+          // User profile data
+          userFirstName: userProfiles.firstName,
+          userLastName: userProfiles.lastName,
+          userAvatar: userProfiles.avatar,
+          userImage: users.image,
+        })
         .from(supportChatSessions)
+        .leftJoin(users, eq(supportChatSessions.userId, users.id))
+        .leftJoin(userProfiles, eq(supportChatSessions.userId, userProfiles.userId))
         .orderBy(desc(supportChatSessions.lastMessageAt))
         .limit(limit)
         .offset(offset);
@@ -72,8 +105,17 @@ export async function GET(request: NextRequest) {
         });
       }
 
+      // Ensure all fields are properly serialized to avoid "Cannot convert undefined or null to object"
+      const safeSessions = enhancedSessions.map(session => {
+        const safeSession: any = {};
+        for (const [key, value] of Object.entries(session)) {
+          safeSession[key] = value === undefined ? null : value;
+        }
+        return safeSession;
+      });
+
       // Cache the result for 10 seconds to reduce DB load
-      const responseData = { sessions: enhancedSessions };
+      const responseData = { sessions: safeSessions };
       cache.set(`${CACHE_KEYS.SITE_CONFIG}:support-chats:list:p${page}`, responseData, CACHE_TTL.SHORT);
 
       return NextResponse.json(responseData);
