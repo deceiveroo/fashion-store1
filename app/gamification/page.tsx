@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import GamificationDashboard from '@/components/gamification/GamificationDashboard';
-import AchievementNotification, { showLevelUpNotification, showCouponRewardNotification } from '@/components/gamification/AchievementNotification';
+import AchievementNotification, { showLevelUpNotification, showCouponRewardNotification, showAchievementNotification } from '@/components/gamification/AchievementNotification';
 
 export default function GamificationPage() {
   const { user, isLoading } = useAuth();
@@ -154,6 +154,21 @@ export default function GamificationPage() {
     });
   };
 
+  const handleTestAchievement = async () => {
+    console.log('[TEST] Test achievement button clicked');
+    console.log('[TEST] Is admin:', isAdmin);
+    
+    if (!isAdmin) {
+      setShowConfirmModal({ action: 'error', message: '❌ Только для администраторов!' });
+      return;
+    }
+    
+    setShowConfirmModal({ 
+      action: 'test_achievement', 
+      message: '🧪 Разблокировать тестовое достижение?\n\nВы получите XP и монеты за достижение "Первая покупка"' 
+    });
+  };
+
   const executeResetAchievements = async () => {
     setShowConfirmModal(null);
     setTesting(true);
@@ -172,6 +187,47 @@ export default function GamificationPage() {
 
       setShowConfirmModal({ action: 'success', message: `✅ Достижения сброшены!\n\n${data.message}` });
       setTimeout(() => window.location.reload(), 2000);
+    } catch (error) {
+      console.error('Error:', error);
+      setShowConfirmModal({ action: 'error', message: 'Ошибка сети' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const executeTestAchievement = async () => {
+    setShowConfirmModal(null);
+    setTesting(true);
+    try {
+      const res = await fetch('/api/gamification/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ achievementCode: 'first_purchase' }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setShowConfirmModal({ action: 'error', message: data.error || 'Ошибка' });
+        return;
+      }
+
+      // Show achievement notification
+      if (data.achievement) {
+        showAchievementNotification(
+          `🏆 ${data.achievement.name}`,
+          `Поздравляем! Вы получили достижение`,
+          data.achievement.coins
+        );
+      }
+
+      setShowConfirmModal({ 
+        action: 'success', 
+        message: `✅ Достижение разблокировано!\n\nXP: +${data.achievement.xp}\nМонеты: +${data.achievement.coins}\n\nПроверьте модальное окно и колокольчик!` 
+      });
+      
+      // Reload page after 4 seconds
+      setTimeout(() => window.location.reload(), 4000);
     } catch (error) {
       console.error('Error:', error);
       setShowConfirmModal({ action: 'error', message: 'Ошибка сети' });
@@ -224,6 +280,23 @@ export default function GamificationPage() {
                   ) : (
                     <>
                       🧪 Повысить уровень
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={handleTestAchievement}
+                  disabled={testing}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {testing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Тестирование...
+                    </>
+                  ) : (
+                    <>
+                      🏆 Тест достижения
                     </>
                   )}
                 </button>
@@ -303,12 +376,13 @@ export default function GamificationPage() {
               >
                 Отмена
               </button>
-              {(showConfirmModal.action === 'levelup' || showConfirmModal.action === 'reset' || showConfirmModal.action === 'reset_achievements') && (
+              {(showConfirmModal.action === 'levelup' || showConfirmModal.action === 'reset' || showConfirmModal.action === 'reset_achievements' || showConfirmModal.action === 'test_achievement') && (
                 <button
                   onClick={() => {
                     if (showConfirmModal.action === 'levelup') executeLevelUp();
                     else if (showConfirmModal.action === 'reset') executeReset();
                     else if (showConfirmModal.action === 'reset_achievements') executeResetAchievements();
+                    else if (showConfirmModal.action === 'test_achievement') executeTestAchievement();
                   }}
                   disabled={testing}
                   className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${

@@ -216,6 +216,21 @@ export async function unlockAchievement(userId: string, achievementCode: string)
       VALUES (${userId}, ${achievement.id}::uuid, NOW(), false)
     `);
 
+    // Create notification for achievement unlock
+    try {
+      await db.insert(systemNotifications).values({
+        title: `🏆 Достижение разблокировано!`,
+        message: `Вы получили достижение "${achievement.name}" и ${achievement.xp_reward} XP + ${achievement.coins_reward} монет`,
+        type: 'success',
+        targetAudience: 'registered',
+        isActive: true,
+        createdAt: new Date(),
+      });
+      console.log('Notification created for achievement:', achievementCode);
+    } catch (error) {
+      console.error('Error creating achievement notification:', error);
+    }
+
     // Award XP and coins
     await awardXP(userId, achievement.xp_reward, `Достижение: ${achievement.name}`, {
       achievement: achievementCode
