@@ -121,7 +121,13 @@ export default function CustomersPage() {
   });
 
   const avatar = (c: Customer) => c.avatar || c.image;
-  const displayName = (c: Customer) => `${c.firstName||''} ${c.lastName||''}`.trim() || c.name || '—';
+  const displayName = (c: Customer) => {
+    const fullName = `${c.firstName||''} ${c.lastName||''}`.trim();
+    if (fullName) return fullName;
+    if (c.name) return c.name;
+    // Fallback: show email username part (before @)
+    return c.email.split('@')[0];
+  };
 
   // Форматирование времени последнего входа
   const formatLastSignIn = (dateStr: string | null | undefined) => {
