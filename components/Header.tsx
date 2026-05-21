@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, User, Menu, X, Search as SearchIcon, Plus, LogOut, ChevronDown, Package, Heart, Bell } from 'lucide-react';
+import { ShoppingBag, User, Menu, X, Search as SearchIcon, Plus, LogOut, ChevronDown, Package, Heart, Bell, CheckCheck, Trash2 } from 'lucide-react';
 import SearchComponent from './SearchNew';
 import Cart from './Cart';
 import ThemeToggle from './ThemeToggle';
@@ -83,6 +83,28 @@ export default function Header() {
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
+      
+      if (unreadIds.length === 0) return;
+
+      await Promise.all(
+        unreadIds.map(id =>
+          fetch(`/api/notifications/${id}/read`, {
+            method: 'POST',
+            credentials: 'include',
+          })
+        )
+      );
+
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
     }
   };
 
@@ -590,12 +612,22 @@ export default function Header() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          className="px-3 py-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors flex items-center gap-1.5"
+                        >
+                          <CheckCheck className="w-3.5 h-3.5" />
+                          Прочитать все
+                        </button>
+                      )}
                       {notifications.length > 0 && (
                         <button
                           onClick={clearAllNotifications}
-                          className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center gap-1.5"
                         >
-                          Очистить все
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Очистить
                         </button>
                       )}
                       <button
