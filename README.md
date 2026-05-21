@@ -49,3 +49,26 @@ The store supports multiple payment methods including:
 To use Stripe payments, you need to configure your credentials in the environment variables (see [.env.example](./.env.example)).
 
 For cryptocurrency payments, the system generates unique addresses for each order and monitors payments via blockchain monitoring services.
+
+## Environment Variables Setup
+
+### Required for Vercel Deployment
+
+Add these variables in Vercel Dashboard → Settings → Environment Variables:
+
+#### Redis (Upstash) - For Chat & Caching
+```
+UPSTASH_REDIS_REST_URL=https://uncommon-longhorn-133227.upstash.io
+UPSTASH_REDIS_REST_TOKEN=gQAAAAAAAghrAAIgcDE1YjVkZDA4N2UyYTA0NGEzODQ1YTEzMTE4ZDJiMGVjOQ
+```
+
+**Important:** Select all environments (Production, Preview, Development)
+
+Redis is used for:
+- Real-time chat
+- Rate limiting
+- Data caching
+- User sessions
+- Offline message queue
+
+Without Redis, chat and some features may not work correctly!
