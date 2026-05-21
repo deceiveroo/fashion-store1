@@ -2,6 +2,7 @@ import { db, safeQuery } from '@/lib/db';
 import { products, productCategory, productImages, categories } from '@/lib/schema';
 import { productInStock, productFeatured } from '@/lib/product-query';
 import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
+import { cacheGet, cacheSet, cacheDelete } from '@/lib/redis';
 
 export type CatalogProduct = {
   id: string;
@@ -173,6 +174,31 @@ async function fetchAllActiveProducts(limit: number) {
   return result ?? [];
 }
 
+const CATALOG_CACHE_TTL = 120; // 2 minutes
+
+function buildCacheKey(options: CatalogOptions): string {
+  const key = {
+    s: options.categorySlugs?.sort() || [],
+    c: options.categoryIds?.sort() || [],
+    f: options.featuredOnly || false,
+    n: options.newOnly || false,
+    l: options.limit || 48,
+  };
+  return `catalog:${JSON.stringify(key)}`;
+}
+
+export async function invalidateCatalogCache(): Promise<void> {
+  // Delete known common cache keys
+  const keys = [
+    'catalog:{"s":[],"c":[],"f":false,"n":false,"l":48}',
+    'catalog:{"s":[],"c":[],"f":true,"n":false,"l":48}',
+    'catalog:{"s":[],"c":[],"f":false,"n":true,"l":48}',
+    'catalog:{"s":["men"],"c":[],"f":false,"n":false,"l":48}',
+    'catalog:{"s":["women"],"c":[],"f":false,"n":false,"l":48}',
+  ];
+  await Promise.all(keys.map(k => cacheDelete(k)));
+}
+
 export async function getCatalogProducts(options: CatalogOptions = {}): Promise<CatalogProduct[]> {
   const {
     categorySlugs = [],
@@ -182,6 +208,17 @@ export async function getCatalogProducts(options: CatalogOptions = {}): Promise<
     limit = 48,
     fallbackToAll = true,
   } = options;
+
+  // Try Redis cache first
+  const cacheKey = buildCacheKey(options);
+  try {
+    const cached = await cacheGet<CatalogProduct[]>(cacheKey);
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      return cached;
+    }
+  } catch {
+    // Cache miss or error — proceed to DB
+  }
 
   try {
     const resolvedCategoryIds = await resolveCategoryIds(categorySlugs, categoryIds);
@@ -200,7 +237,14 @@ export async function getCatalogProducts(options: CatalogOptions = {}): Promise<
       (product, index, self) => index === self.findIndex((p) => p.id === product.id)
     );
 
-    return attachImages(unique);
+    const result = await attachImages(unique);
+
+    // Cache the result
+    if (result.length > 0) {
+      cacheSet(cacheKey, result, CATALOG_CACHE_TTL).catch(() => {});
+    }
+
+    return result;
   } catch (error) {
     console.error('[catalog-products]', error);
     try {
