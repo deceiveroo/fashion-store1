@@ -1,7 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Edit3, Mail, Phone, MapPin, Loader, Trash2, AlertTriangle, Shield, CheckCircle } from 'lucide-react';
+import { Edit3, Mail, Phone, MapPin, Loader, Trash2, AlertTriangle, Shield, CheckCircle, Award } from 'lucide-react';
 import { ProfileFormData } from '@/app/profile/hooks/useProfileData';
 import { handlePhoneChangeWithCursor } from '@/app/profile/utils/formatPhone';
 
@@ -35,6 +36,29 @@ export default function PersonalInfoSection({
   setShowDeleteConfirm,
   handleDeleteAccount,
 }: PersonalInfoSectionProps) {
+  const [isVerified, setIsVerified] = useState(false);
+  const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
+  const [loadingVerification, setLoadingVerification] = useState(true);
+
+  // Загружаем статус верификации
+  useEffect(() => {
+    const loadVerificationStatus = async () => {
+      try {
+        const res = await fetch('/api/user/verification');
+        if (res.ok) {
+          const data = await res.json();
+          setIsVerified(data.isVerified || false);
+          setVerifiedAt(data.verifiedAt || null);
+        }
+      } catch (error) {
+        console.error('Failed to load verification status:', error);
+      } finally {
+        setLoadingVerification(false);
+      }
+    };
+
+    loadVerificationStatus();
+  }, []);
   // Handle phone change with cursor management
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handlePhoneChangeWithCursor(e, formData.phone, (value: string) => {
@@ -136,27 +160,64 @@ export default function PersonalInfoSection({
       </div>
 
       {/* Verification Status & Button */}
-      <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="flex-1">
-            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Верификация аккаунта</h4>
-            <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
-              Подтвердите свою личность для получения синей галочки и дополнительных возможностей.
-              Ваши данные защищены и шифруются. Никто не может получить доступ к вашим паспортным данным.
-            </p>
-            <a
-              href="/profile/verification"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm"
-            >
-              <CheckCircle className="h-4 w-4" />
-              Пройти верификацию
-            </a>
+      {!loadingVerification && (
+        <div className={`mt-6 p-4 border rounded-xl ${
+          isVerified 
+            ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800'
+            : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800'
+        }`}>
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              {isVerified ? (
+                <Award className="h-6 w-6 text-green-600 dark:text-green-400" />
+              ) : (
+                <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              )}
+            </div>
+            <div className="flex-1">
+              {isVerified ? (
+                <>
+                  <h4 className="font-semibold text-green-900 dark:text-green-100 mb-1 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5" />
+                    Вы верифицированы!
+                  </h4>
+                  <p className="text-sm text-green-800 dark:text-green-200 mb-2">
+                    Спасибо, что вы с нами! Ваш аккаунт прошел полную верификацию.
+                  </p>
+                  {verifiedAt && (
+                    <p className="text-xs text-green-700 dark:text-green-300">
+                      Дата верификации: {new Date(verifiedAt).toLocaleDateString('ru-RU', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  )}
+                  <div className="mt-3 flex items-center gap-2 text-xs text-green-700 dark:text-green-300">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Все возможности платформы доступны</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Верификация аккаунта</h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                    Подтвердите свою личность для получения синей галочки и дополнительных возможностей.
+                    Ваши данные защищены и шифруются. Никто не может получить доступ к вашим паспортным данным.
+                  </p>
+                  <a
+                    href="/profile/verification"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Пройти верификацию
+                  </a>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Save/Cancel Buttons */}
       {isEditing && (
