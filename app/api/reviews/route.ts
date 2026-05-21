@@ -1,9 +1,140 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { reviews, orders, orderItems, products } from '@/lib/schema';
-import { eq, and } from 'drizzle-orm';
+import { reviews, users, orders, orderItems, products } from '@/lib/schema';
+import { eq, and, desc, asc, count } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 import { awardXP, checkAchievements } from '@/lib/gamification';
+
+// GET /api/reviews - Получить отзывы для товара
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get('productId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const sortBy = searchParams.get('sortBy') || 'newest';
+    const ratingFilter = searchParams.get('rating');
+    const verifiedOnly = searchParams.get('verified') === 'true';
+
+    if (!productId) {
+      return NextResponse.json(
+        { error: 'Product ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Строим условия фильтрации
+    let conditions = [eq(reviews.productId, productId), eq(reviews.isApproved, true)];
+    
+    if (ratingFilter) {
+      conditions.push(eq(reviews.rating, parseInt(ratingFilter)));
+    }
+    
+    if (verifiedOnly) {
+      conditions.push(eq(reviews.isVerifiedPurchase, true));
+    }
+
+    // Сортировка
+    let orderBy;
+    switch (sortBy) {
+      case 'oldest':
+        orderBy = asc(reviews.createdAt);
+        break;
+      case 'highest':
+        orderBy = desc(reviews.rating);
+        break;
+      case 'lowest':
+        orderBy = asc(reviews.rating);
+        break;
+      case 'helpful':
+        orderBy = desc(reviews.helpfulCount);
+        break;
+      default:
+        orderBy = desc(reviews.createdAt);
+    }
+
+    // Получаем общее количество
+    const totalCountResult = await db
+      .select({ count: count() })
+      .from(reviews)
+      .where(and(...conditions));
+    
+    const totalCount = totalCountResult[0]?.count || 0;
+
+    // Получаем отзывы с информацией о пользователе
+    const reviewsList = await db
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        title: reviews.title,
+        comment: reviews.comment,
+        images: reviews.images,
+        isVerifiedPurchase: reviews.isVerifiedPurchase,
+        helpfulCount: reviews.helpfulCount,
+        createdAt: reviews.createdAt,
+        updatedAt: reviews.updatedAt,
+        adminResponse: reviews.adminResponse,
+        adminRespondedAt: reviews.adminRespondedAt,
+        userName: users.name,
+      })
+      .from(reviews)
+      .leftJoin(users, eq(reviews.userId, users.id))
+      .where(and(...conditions))
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    // Статистика по рейтингам
+    const ratingStats = await db
+      .select({
+        rating: reviews.rating,
+        count: count(),
+      })
+      .from(reviews)
+      .where(and(...conditions))
+      .groupBy(reviews.rating);
+
+    // Рассчитываем средний рейтинг
+    const totalRatings = ratingStats.reduce((sum, stat) => sum + (stat.count * (stat.rating || 0)), 0);
+    const averageRating = totalCount > 0 ? totalRatings / totalCount : 0;
+
+    // Создаем distribution объект
+    const distribution = {
+      5: 0,
+      4: 0,
+      3: 0,
+      2: 0,
+      1: 0,
+    };
+    
+    ratingStats.forEach((stat) => {
+      if (stat.rating && stat.rating >= 1 && stat.rating <= 5) {
+        distribution[stat.rating as keyof typeof distribution] = Number(stat.count);
+      }
+    });
+
+    return NextResponse.json({
+      reviews: reviewsList,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+      statistics: {
+        averageRating: parseFloat(averageRating.toFixed(1)),
+        totalCount,
+        distribution,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch reviews' },
+      { status: 500 }
+    );
+  }
+}
 
 // POST /api/reviews - Создать новый отзыв
 export async function POST(request: NextRequest) {
