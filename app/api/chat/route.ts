@@ -211,10 +211,25 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .offset(offset);
 
+    // Получаем информацию о сессии для данных об админе
+    const session = await db.query.supportChatSessions.findFirst({
+      where: eq(supportChatSessions.sessionId, sessionId),
+      columns: {
+        adminName: true,
+        adminAvatar: true,
+        adminEmail: true,
+      },
+    });
+
     return NextResponse.json({ 
       messages,
       hasMore: messages.length === limit,
-      total: messages.length
+      total: messages.length,
+      adminInfo: session ? {
+        name: session.adminName,
+        avatar: session.adminAvatar,
+        email: session.adminEmail,
+      } : null,
     });
   } catch (error) {
     console.error('[CHAT GET] Error:', error);

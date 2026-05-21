@@ -68,6 +68,7 @@ export default function SupportChatMinimalist() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false); // Track cart state
+  const [adminInfo, setAdminInfo] = useState<{ name: string | null; avatar: string | null; email: string | null } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const realtimeChannelRef = useRef<any>(null);
@@ -148,6 +149,10 @@ export default function SupportChatMinimalist() {
             readByAdmin: m.read_by_admin ?? m.readByAdmin ?? false,
           })));
         }
+        // Сохраняем информацию об админе
+        if (data.adminInfo) {
+          setAdminInfo(data.adminInfo);
+        }
       }
     } catch (error) {
       console.error('Failed to load messages:', error);
@@ -198,6 +203,17 @@ export default function SupportChatMinimalist() {
 
         if (newMsg.sender === 'admin') {
           setTakenOver(true);
+          // Загружаем информацию об админе если еще не загружена
+          if (!adminInfo) {
+            fetch(`/api/chat?sessionId=${sessionId}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data.adminInfo) {
+                  setAdminInfo(data.adminInfo);
+                }
+              })
+              .catch(err => console.error('Failed to load admin info:', err));
+          }
         }
       }
     );
@@ -485,6 +501,10 @@ export default function SupportChatMinimalist() {
                     const isAI = msg.sender === 'ai';
                     const userAvatar = user?.avatar || user?.image;
                     
+                    // Получаем имя и аватар админа
+                    const adminDisplayName = adminInfo?.name || 'Администратор';
+                    const adminAvatarUrl = adminInfo?.avatar;
+                    
                     return (
                     <motion.div
                       key={msg.id}
@@ -494,11 +514,17 @@ export default function SupportChatMinimalist() {
                     >
                       {/* Avatar - left for AI/admin, right for user */}
                       {!isUser && (
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200 dark:bg-white/10">
-                          {isAdmin ? (
-                            <User className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 overflow-hidden">
+                          {isAdmin && adminAvatarUrl ? (
+                            <img src={adminAvatarUrl} alt={adminDisplayName} className="w-full h-full object-cover" />
+                          ) : isAdmin ? (
+                            <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                              <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                            </div>
                           ) : (
-                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#9D4EDD]" />
+                            <div className="w-full h-full bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] flex items-center justify-center">
+                              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                            </div>
                           )}
                         </div>
                       )}
@@ -515,7 +541,7 @@ export default function SupportChatMinimalist() {
                           <p className={`text-xs font-medium mb-1 ${
                             isAdmin ? 'text-emerald-600 dark:text-emerald-400' : 'text-violet-600 dark:text-violet-400'
                           }`}>
-                            {isAdmin ? 'Оператор' : 'ELEVATE AI'}
+                            {isAdmin ? adminDisplayName : 'ELEVATE AI'}
                           </p>
                         )}
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">
