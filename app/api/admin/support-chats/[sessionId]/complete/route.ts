@@ -42,7 +42,7 @@ export async function POST(
       status: 'resolved',
       resolvedAt: new Date(),
       resolvedBy: admin.id,
-      updatedAt: new Date(),
+      // НЕ включаем updatedAt - триггер базы данных обновит его автоматически
     };
 
     // Добавляем оценку оператора если есть

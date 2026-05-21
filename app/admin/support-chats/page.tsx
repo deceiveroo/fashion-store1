@@ -133,15 +133,21 @@ function SupportChatsPage() {
 
   // Supabase Realtime для сообщений
   useEffect(() => {
+    if (!sel) { 
+      setMessages([]);
+      // Очищаем канал при закрытии чата
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current);
+        realtimeChannelRef.current = null;
+      }
+      return; 
+    }
+
     // Сначала удаляем старый канал если есть
     if (realtimeChannelRef.current) {
+      console.log('Removing old channel:', realtimeChannelRef.current.topic);
       supabase.removeChannel(realtimeChannelRef.current);
       realtimeChannelRef.current = null;
-    }
-    
-    if (!sel) { 
-      setMessages([]); 
-      return; 
     }
 
     // Создаем НОВЫЙ канал
