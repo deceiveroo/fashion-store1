@@ -295,11 +295,15 @@ export default function SupportChatMinimalist() {
         await new Promise((r) => setTimeout(r, 600));
       }
 
-      // НЕ вызываем loadMessages() - realtime добавит сообщение автоматически
-      // Это предотвращает дублирование сообщений
+      // НЕ вызываем loadMessages() сразу - realtime добавит сообщение автоматически
+      // Но если realtime не сработает в течение 5 секунд, загрузим вручную
+      setTimeout(async () => {
+        console.log('⚠️ Realtime timeout, loading messages manually...');
+        await loadMessages();
+      }, 5000);
+      
       setTyping(false);
       setLoading(false);
-      return;
     } catch (error) {
       console.error('Send error:', error);
       toast.error('Не удалось отправить сообщение');
