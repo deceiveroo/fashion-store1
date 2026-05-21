@@ -1,4 +1,4 @@
-﻿import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { parseIntoClientConfig } from 'pg-connection-string';
 import { Pool, type PoolConfig } from 'pg';
 import * as schema from './schema';
@@ -6,6 +6,7 @@ import * as schema from './schema';
 // Singleton pattern to prevent multiple pool instances in development
 const globalForDb = globalThis as unknown as {
   pool: Pool | undefined;
+  poolListenersAttached: boolean | undefined;
 };
 
 function buildPoolConfig(): PoolConfig {
@@ -30,48 +31,73 @@ function buildPoolConfig(): PoolConfig {
   };
 }
 
-const poolConfig = buildPoolConfig();
-
-// Create singleton pool instance
-let pool: Pool;
-
-if (globalForDb.pool) {
-  pool = globalForDb.pool;
-} else {
-  pool = new Pool(poolConfig);
-  globalForDb.pool = pool;
-}
-
 // Thread-safe connection counter
 let activeConnections = 0;
 const connectionLock = { locked: false };
 
-pool.on('error', (err) => console.error('Unexpected error on idle client', err));
-pool.on('connect', () => { 
-  activeConnections++; 
-  // Log only when connections exceed threshold to reduce noise
-  if (process.env.NODE_ENV === 'development' && activeConnections > 5) {
-    console.log(`✓ DB connection established (active: ${activeConnections})`); 
+let poolInstance: Pool | undefined;
+
+function getPoolInstance(): Pool {
+  if (poolInstance) return poolInstance;
+
+  if (globalForDb.pool) {
+    poolInstance = globalForDb.pool;
+  } else {
+    const poolConfig = buildPoolConfig();
+    poolInstance = new Pool(poolConfig);
+    globalForDb.pool = poolInstance;
   }
-});
-pool.on('remove', () => { 
-  if (activeConnections > 0) {
-    activeConnections--; 
+
+  if (!globalForDb.poolListenersAttached) {
+    globalForDb.poolListenersAttached = true;
+    poolInstance.on('error', (err) => console.error('Unexpected error on idle client', err));
+    poolInstance.on('connect', () => { 
+      activeConnections++; 
+      if (process.env.NODE_ENV === 'development' && activeConnections > 5) {
+        console.log(`✓ DB connection established (active: ${activeConnections})`); 
+      }
+    });
+    poolInstance.on('remove', () => { 
+      if (activeConnections > 0) {
+        activeConnections--; 
+      }
+      if (process.env.NODE_ENV === 'development' && activeConnections > 3) {
+        console.log(`✗ DB connection removed (active: ${activeConnections})`); 
+      }
+    });
   }
-  // Log only when connections exceed threshold to reduce noise
-  if (process.env.NODE_ENV === 'development' && activeConnections > 3) {
-    console.log(`✗ DB connection removed (active: ${activeConnections})`); 
-  }
+
+  return poolInstance;
+}
+
+export const pool = new Proxy({} as Pool, {
+  get(_target, prop) {
+    const instance = getPoolInstance() as any;
+    const value = Reflect.get(instance, prop, instance);
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
 });
 
-export { pool };
+let dbInstance: ReturnType<typeof drizzle> | undefined;
+function getDbInstance(): ReturnType<typeof drizzle> {
+  if (!dbInstance) {
+    dbInstance = drizzle(getPoolInstance(), { schema, logger: false });
+  }
+  return dbInstance;
+}
 
-export const db = drizzle(pool, { schema, logger: false });
+export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+  get(_target, prop) {
+    const instance = getDbInstance() as any;
+    const value = Reflect.get(instance, prop, instance);
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
+});
 
 // Add pool health check
 export async function checkPoolHealth(): Promise<boolean> {
   try {
-    await pool.query('SELECT 1');
+    await getPoolInstance().query('SELECT 1');
     return true;
   } catch (error) {
     console.error('Database pool health check failed:', error);
