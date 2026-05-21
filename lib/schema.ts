@@ -19,6 +19,8 @@ export const users = pgTable('users', {
   role: text('role', { enum: rolesEnum }).default('customer').notNull(),
   password: text('password').notNull(),
   status: text('status').default('active').notNull(), // active, banned
+  isVerified: boolean('is_verified').default(false), // Верифицирован ли пользователь
+  verifiedAt: timestamp('verified_at', { mode: 'date' }), // Дата верификации
   lastSignIn: timestamp('last_sign_in', { mode: 'date' }), // Последний вход пользователя
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
@@ -1075,4 +1077,58 @@ export const reviewsRelations = relations(reviews, ({ one, many }) => ({
 export const reviewHelpfulVotesRelations = relations(reviewHelpfulVotes, ({ one }) => ({
   review: one(reviews, { fields: [reviewHelpfulVotes.reviewId], references: [reviews.id] }),
   user: one(users, { fields: [reviewHelpfulVotes.userId], references: [users.id] }),
+}));
+
+// User verification requests table
+export const userVerificationRequests = pgTable('user_verification_requests', {
+  id: text('id').primaryKey().notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Passport data
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  middleName: text('middle_name'), // Отчество
+  
+  passportSeries: text('passport_series').notNull(), // Серия паспорта
+  passportNumber: text('passport_number').notNull(), // Номер паспорта
+  issuedBy: text('issued_by').notNull(), // Кем выдан
+  issueDate: timestamp('issue_date', { mode: 'date' }).notNull(), // Дата выдачи
+  departmentCode: text('department_code'), // Код подразделения
+  
+  dateOfBirth: timestamp('date_of_birth', { mode: 'date' }).notNull(), // Дата рождения
+  
+  // Document photos (stored in Supabase Storage)
+  passportPhotoFrontUrl: text('passport_photo_front_url'), // Фото разворота с фото
+  passportPhotoBackUrl: text('passport_photo_back_url'), // Фото разворота с регистрацией
+  selfieWithPassportUrl: text('selfie_with_passport_url'), // Селфи с паспортом
+  
+  // Additional info
+  phoneNumber: text('phone_number').notNull(), // Контактный телефон
+  additionalInfo: text('additional_info'), // Дополнительная информация
+  
+  // Status
+  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  
+  // Moderation data
+  reviewedBy: text('reviewed_by').references(() => users.id), // Кто рассмотрел
+  reviewedAt: timestamp('reviewed_at', { mode: 'date' }), // Когда рассмотрено
+  rejectionReason: text('rejection_reason'), // Причина отказа
+  
+  // Metadata
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdx: index('idx_verification_user_id').on(table.userId),
+    statusIdx: index('idx_verification_status').on(table.status),
+    createdAtIdx: index('idx_verification_created_at').on(table.createdAt),
+  };
+});
+
+// Relations for verification requests
+export const userVerificationRequestsRelations = relations(userVerificationRequests, ({ one }) => ({
+  user: one(users, { fields: [userVerificationRequests.userId], references: [users.id] }),
+  reviewer: one(users, { fields: [userVerificationRequests.reviewedBy], references: [users.id] }),
 }));
