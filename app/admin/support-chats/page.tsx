@@ -113,39 +113,55 @@ function SupportChatsPage() {
 
   // Supabase Realtime для сообщений
   useEffect(() => {
+    // Сначала удаляем старый канал если есть
     if (realtimeChannelRef.current) {
       supabase.removeChannel(realtimeChannelRef.current);
       realtimeChannelRef.current = null;
     }
-    if (!sel) { setMessages([]); return; }
+    
+    if (!sel) { 
+      setMessages([]); 
+      return; 
+    }
 
-    const channel = supabase
-      .channel(`admin-chat-${sel.sessionId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'support_chat_messages',
-          filter: `session_id=eq.${sel.sessionId}`,
-        },
-        (payload) => {
-          const raw = payload.new as Record<string, unknown>;
-          const newMsg: Msg = {
-            id: String(raw.id),
-            sessionId: String(raw.session_id ?? raw.sessionId ?? sel.sessionId),
-            message: String(raw.message ?? ''),
-            sender: (raw.sender as Msg['sender']) ?? 'user',
-            createdAt: String(raw.created_at ?? raw.createdAt ?? new Date().toISOString()),
-          };
-          setMessages(prev => {
-            const exists = prev.some(m => m.id === newMsg.id);
-            if (exists) return prev;
-            return [...prev, newMsg];
-          });
-        }
-      )
-      .subscribe();
+    // Создаем НОВЫЙ канал
+    const channelName = `admin-chat-${sel.sessionId}`;
+    const channel = supabase.channel(channelName);
+    
+    // Добавляем callback ДО subscribe
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_chat_messages',
+        filter: `session_id=eq.${sel.sessionId}`,
+      },
+      (payload) => {
+        const raw = payload.new as Record<string, unknown>;
+        const newMsg: Msg = {
+          id: String(raw.id),
+          sessionId: String(raw.session_id ?? raw.sessionId ?? sel.sessionId),
+          message: String(raw.message ?? ''),
+          sender: (raw.sender as Msg['sender']) ?? 'user',
+          createdAt: String(raw.created_at ?? raw.createdAt ?? new Date().toISOString()),
+        };
+        setMessages(prev => {
+          const exists = prev.some(m => m.id === newMsg.id);
+          if (exists) return prev;
+          return [...prev, newMsg];
+        });
+      }
+    );
+    
+    // Теперь подписываемся
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Admin chat realtime connected:', sel.sessionId);
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Admin chat realtime error:', sel.sessionId);
+      }
+    });
 
     realtimeChannelRef.current = channel;
   }, [sel?.sessionId]);

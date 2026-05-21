@@ -139,50 +139,62 @@ export default function SupportChatMinimalist() {
   };
 
   const subscribeToRealtime = () => {
-    if (realtimeChannelRef.current) return;
+    if (realtimeChannelRef.current) {
+      console.log('Realtime already subscribed, skipping...');
+      return;
+    }
 
-    const channel = supabase
-      .channel(`chat-${sessionId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'support_chat_messages',
-          filter: `session_id=eq.${sessionId}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as any;
+    // Создаем канал
+    const channelName = `chat-${sessionId}`;
+    const channel = supabase.channel(channelName);
+    
+    // Добавляем callback ДО subscribe
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_chat_messages',
+        filter: `session_id=eq.${sessionId}`,
+      },
+      (payload) => {
+        const newMsg = payload.new as any;
+        
+        setMessages(prev => {
+          const exists = prev.some(m => m.id === newMsg.id);
+          if (exists) return prev;
           
-          setMessages(prev => {
-            const exists = prev.some(m => m.id === newMsg.id);
-            if (exists) return prev;
-            
-            return [...prev, {
-              id: newMsg.id,
-              text: newMsg.message,
-              imageUrl: newMsg.image_url,
-              sender:
-                newMsg.sender === 'admin'
-                  ? 'admin'
-                  : newMsg.sender === 'user'
-                    ? 'user'
-                    : 'ai',
-              timestamp: new Date(newMsg.created_at),
-              read: newMsg.read_by_admin,
-            }];
-          });
+          return [...prev, {
+            id: newMsg.id,
+            text: newMsg.message,
+            imageUrl: newMsg.image_url,
+            sender:
+              newMsg.sender === 'admin'
+                ? 'admin'
+                : newMsg.sender === 'user'
+                  ? 'user'
+                  : 'ai',
+            timestamp: new Date(newMsg.created_at),
+            read: newMsg.read_by_admin,
+          }];
+        });
 
-          if (newMsg.sender === 'admin') {
-            setTakenOver(true);
-          }
+        if (newMsg.sender === 'admin') {
+          setTakenOver(true);
         }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Realtime connected for chat:', sessionId);
-        }
-      });
+      }
+    );
+    
+    // Подписываемся с обработкой статуса
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Realtime connected for chat:', sessionId);
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Realtime channel error:', sessionId);
+      } else if (status === 'TIMED_OUT') {
+        console.warn('⚠️ Realtime channel timed out:', sessionId);
+      }
+    });
 
     realtimeChannelRef.current = channel;
   };
