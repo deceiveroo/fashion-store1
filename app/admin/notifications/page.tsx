@@ -103,6 +103,14 @@ export default function AdminNotificationsPage() {
       if (statusFilter !== 'all') {
         params.set('status', statusFilter);
       }
+      
+      if (typeFilter !== 'all') {
+        params.set('type', typeFilter);
+      }
+      
+      if (search) {
+        params.set('search', search);
+      }
 
       const res = await fetch(`/api/admin/notifications?${params}`, { 
         credentials: 'include',
@@ -123,7 +131,7 @@ export default function AdminNotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, typeFilter, search]);
 
   useEffect(() => {
     loadNotifications(page);
@@ -133,6 +141,18 @@ export default function AdminNotificationsPage() {
     setPage(1);
     loadNotifications(1);
   };
+
+  // Debounced search - trigger after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (search) {
+        setPage(1);
+        loadNotifications(1);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
     try {
@@ -227,15 +247,11 @@ export default function AdminNotificationsPage() {
     }
   };
 
-  const filteredNotifications = notifications.filter(n => {
-    const matchesSearch = n.title.toLowerCase().includes(search.toLowerCase()) ||
-                         n.message.toLowerCase().includes(search.toLowerCase());
-    const matchesType = typeFilter === 'all' || n.type === typeFilter;
-    return matchesSearch && matchesType;
-  });
+  // Server-side filtering is applied, no need for client-side filtering
+  const displayNotifications = notifications;
 
   return (
-    <AdminShell title="Уведомления" description="Управление системными уведомлениями">
+    <AdminShell>
       <div className="space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -303,7 +319,7 @@ export default function AdminNotificationsPage() {
                 placeholder="Поиск уведомлений..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               />
             </div>
@@ -356,7 +372,7 @@ export default function AdminNotificationsPage() {
               <div key={i} className="h-32 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />
             ))}
           </div>
-        ) : filteredNotifications.length === 0 ? (
+        ) : displayNotifications.length === 0 ? (
           <div className="text-center py-16">
             <Bell className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400 text-lg">Нет уведомлений</p>
@@ -365,7 +381,7 @@ export default function AdminNotificationsPage() {
         ) : (
           <div className="space-y-3">
             <AnimatePresence mode="popLayout">
-              {filteredNotifications.map((notification, index) => {
+              {displayNotifications.map((notification: Notification, index: number) => {
                 const TypeIcon = TYPE_CONFIG[notification.type].icon;
                 return (
                   <motion.div
@@ -458,7 +474,7 @@ export default function AdminNotificationsPage() {
         {!loading && total > 0 && (
           <div className="flex items-center justify-between pt-4">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Показано {filteredNotifications.length} из {total}
+              Показано {displayNotifications.length} из {total}
             </p>
             <div className="flex gap-2">
               <button

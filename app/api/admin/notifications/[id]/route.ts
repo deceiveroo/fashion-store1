@@ -7,31 +7,49 @@ import { getSession } from '@/lib/server-auth';
 // PATCH /api/admin/notifications/[id] - Update notification
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getSession();
     
-    if (!session?.user?.id || session.user.role !== 'admin') {
+    if (!session?.user?.id || (session.user.role !== 'admin' && session.user.role !== 'manager')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const id = params.id;
     const body = await request.json();
     const { title, message, type, isActive } = body;
 
-    const updateData: any = {};
-    if (title !== undefined) updateData.title = title;
-    if (message !== undefined) updateData.message = message;
-    if (type !== undefined) updateData.type = type;
-    if (isActive !== undefined) updateData.isActive = isActive;
+    // Check if notification exists
+    const existing = await db
+      .select()
+      .from(systemNotifications)
+      .where(eq(systemNotifications.id, id))
+      .limit(1);
 
-    await db
+    if (existing.length === 0) {
+      return NextResponse.json(
+        { error: 'Notification not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update notification
+    const [updated] = await db
       .update(systemNotifications)
-      .set(updateData)
-      .where(eq(systemNotifications.id, id));
+      .set({
+        ...(title !== undefined && { title }),
+        ...(message !== undefined && { message }),
+        ...(type !== undefined && { type }),
+        ...(isActive !== undefined && { isActive }),
+      })
+      .where(eq(systemNotifications.id, id))
+      .returning();
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      notification: updated 
+    });
   } catch (error) {
     console.error('Error updating notification:', error);
     return NextResponse.json(
@@ -44,7 +62,7 @@ export async function PATCH(
 // DELETE /api/admin/notifications/[id] - Delete notification
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getSession();
@@ -53,8 +71,23 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const id = params.id;
 
+    // Check if notification exists
+    const existing = await db
+      .select()
+      .from(systemNotifications)
+      .where(eq(systemNotifications.id, id))
+      .limit(1);
+
+    if (existing.length === 0) {
+      return NextResponse.json(
+        { error: 'Notification not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete notification (cascade will handle related reads/dismissals)
     await db
       .delete(systemNotifications)
       .where(eq(systemNotifications.id, id));

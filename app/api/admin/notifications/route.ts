@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { systemNotifications, userNotificationReads, userNotificationDismissals } from '@/lib/schema';
-import { eq, desc, gt, lt, or, and, sql, count } from 'drizzle-orm';
+import { eq, desc, gt, lt, or, and, sql, count, ilike } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
 // GET /api/admin/notifications - Get all notifications with stats
@@ -18,15 +18,32 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const status = searchParams.get('status'); // active, inactive
     const type = searchParams.get('type'); // info, success, warning, error
+    const search = searchParams.get('search'); // search query
     
     const offset = (page - 1) * limit;
 
     // Build where clause
     let whereClause = undefined;
+    
     if (status === 'active') {
       whereClause = eq(systemNotifications.isActive, true);
     } else if (status === 'inactive') {
       whereClause = eq(systemNotifications.isActive, false);
+    }
+
+    // Add type filter if specified
+    if (type && type !== 'all') {
+      const typeCondition = eq(systemNotifications.type, type as any);
+      whereClause = whereClause ? and(whereClause, typeCondition) : typeCondition;
+    }
+
+    // Add search filter if specified
+    if (search) {
+      const searchCondition = or(
+        ilike(systemNotifications.title, `%${search}%`),
+        ilike(systemNotifications.message, `%${search}%`)
+      );
+      whereClause = whereClause ? and(whereClause, searchCondition) : searchCondition;
     }
 
     // Get notifications with pagination
