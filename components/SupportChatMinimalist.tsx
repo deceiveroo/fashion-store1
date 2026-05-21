@@ -285,7 +285,8 @@ export default function SupportChatMinimalist() {
         await new Promise((r) => setTimeout(r, 600));
       }
 
-      await loadMessages();
+      // НЕ вызываем loadMessages() - realtime добавит сообщение автоматически
+      // Это предотвращает дублирование сообщений
       setTyping(false);
       setLoading(false);
       return;
