@@ -74,6 +74,24 @@ async function levelUp(userId: string, currentLevel: number) {
     WHERE user_id = ${userId}
   `);
 
+  // Create notification for level up
+  try {
+    await db.execute(sql`
+      INSERT INTO system_notifications (title, message, type, target_audience, is_active, created_at)
+      VALUES (
+        '🎉 Уровень ${newLevel} достигнут!',
+        'Поздравляем! Вы получили новый уровень и ${coinsAwarded} монет',
+        'success',
+        'registered',
+        true,
+        NOW()
+      )
+    `);
+    console.log('Notification created for level up');
+  } catch (error) {
+    console.error('Error creating level up notification:', error);
+  }
+
   let couponReward = null;
   
   // Check if there's a level reward coupon
@@ -135,6 +153,25 @@ async function levelUp(userId: string, currentLevel: number) {
         discount: reward.discount,
         discountType: reward.discount_type,
       };
+      
+      // Create notification in system_notifications table
+      try {
+        await db.execute(sql`
+          INSERT INTO system_notifications (title, message, type, target_audience, is_active, created_at, expires_at)
+          VALUES (
+            '🎁 Промокод за уровень ${newLevel}',
+            'Вам вручен промокод ${uniqueCode} на скидку ${reward.discount}${reward.discount_type === 'percent' ? '%' : '₽'}',
+            'success',
+            'registered',
+            true,
+            NOW(),
+            NOW() + INTERVAL '${reward.expires_days || 30} days'
+          )
+        `);
+        console.log('Notification created for coupon reward');
+      } catch (error) {
+        console.error('Error creating notification:', error);
+      }
     }
   } catch (error) {
     console.error('Error creating level reward coupon:', error);
