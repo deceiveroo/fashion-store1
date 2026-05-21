@@ -7,7 +7,7 @@ import { signOut, useSession } from 'next-auth/react';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, MessageCircle,
   Shield, Tag, LineChart, Settings, LogOut, Menu, X, Home,
-  Bell, ChevronRight, Zap, Search, Command,
+  Bell, ChevronRight, Zap, Search, Command, BadgeCheck,
   Plus, TrendingUp, AlertCircle, CheckCircle2, Sparkles, Star,
 } from 'lucide-react';
 import CommandPalette from './CommandPalette';
@@ -72,6 +72,7 @@ const NAV = [
     group: 'Управление',
     items: [
       { label: 'Команда',   href: '/admin/users',           icon: Shield,          roles: ['admin'] },
+      { label: 'Верификации', href: '/admin/verification-requests', icon: BadgeCheck, roles: ['admin','manager'] },
       { label: 'Категории', href: '/admin/categories',      icon: Tag,             roles: ['admin','manager'] },
       { label: 'Промокоды', href: '/admin/coupons',         icon: Sparkles,        roles: ['admin','manager'] },
       { label: 'Уведомления', href: '/admin/notifications', icon: Bell,            roles: ['admin','manager'] },
