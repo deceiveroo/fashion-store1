@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Edit3, Mail, Phone, MapPin, Loader, Trash2, AlertTriangle } from 'lucide-react';
+import { Edit3, Mail, Phone, MapPin, Loader, Trash2, AlertTriangle, Shield, CheckCircle } from 'lucide-react';
 import { ProfileFormData } from '@/app/profile/hooks/useProfileData';
 import { handlePhoneChangeWithCursor } from '@/app/profile/utils/formatPhone';
 
@@ -133,6 +133,29 @@ export default function PersonalInfoSection({
             <span className="text-gray-900 dark:text-white">{formData.address || 'Адрес не указан'}</span>
           </div>
         )}
+      </div>
+
+      {/* Verification Status & Button */}
+      <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0">
+            <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Верификация аккаунта</h4>
+            <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+              Подтвердите свою личность для получения синей галочки и дополнительных возможностей.
+              Ваши данные защищены и шифруются. Никто не может получить доступ к вашим паспортным данным.
+            </p>
+            <a
+              href="/profile/verification"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Пройти верификацию
+            </a>
+          </div>
+        </div>
       </div>
 
       {/* Save/Cancel Buttons */}
