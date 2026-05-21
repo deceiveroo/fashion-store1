@@ -756,6 +756,7 @@ export const supportChatMessages = pgTable('support_chat_messages', {
   sender: text('sender', { enum: ['user', 'ai', 'admin'] }).notNull(),
   isRead: boolean('is_read').default(false),
   readByAdmin: boolean('read_by_admin').default(false),
+  readByUser: boolean('read_by_user').default(false), // Прочитано пользователем
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
   return {

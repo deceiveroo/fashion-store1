@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3, Star } from 'lucide-react';
+import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3, Star, Check, CheckCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
@@ -16,7 +16,10 @@ interface Msg {
   sender: 'user'|'ai'|'admin';
   senderName?: string | null;
   senderAvatar?: string | null;
-  createdAt: string; 
+  createdAt: string;
+  isRead?: boolean;
+  readByAdmin?: boolean;
+  readByUser?: boolean;
 }
 
 interface Session { 
@@ -75,6 +78,9 @@ function SupportChatsPage() {
         senderName: m.senderName as string | null | undefined,
         senderAvatar: m.senderAvatar as string | null | undefined,
         createdAt: String(m.createdAt ?? m.created_at ?? new Date().toISOString()),
+        isRead: Boolean(m.isRead ?? m.is_read ?? false),
+        readByAdmin: Boolean(m.readByAdmin ?? m.read_by_admin ?? false),
+        readByUser: Boolean(m.readByUser ?? m.read_by_user ?? false),
       }));
       setMessages(list);
     } catch (err) {
@@ -88,6 +94,20 @@ function SupportChatsPage() {
       return;
     }
     loadMessages(sel.sessionId);
+    
+    // Отмечаем сообщения пользователя как прочитанные админом
+    const markAsRead = async () => {
+      try {
+        await fetch('/api/admin/support-chats/mark-read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sel.sessionId }),
+        });
+      } catch (err) {
+        console.error('Failed to mark messages as read:', err);
+      }
+    };
+    markAsRead();
   }, [sel?.sessionId, loadMessages]);
 
   const loadSessions = useCallback(async (silent=false) => {
@@ -145,6 +165,9 @@ function SupportChatsPage() {
           message: String(raw.message ?? ''),
           sender: (raw.sender as Msg['sender']) ?? 'user',
           createdAt: String(raw.created_at ?? raw.createdAt ?? new Date().toISOString()),
+          isRead: Boolean(raw.is_read ?? raw.isRead ?? false),
+          readByAdmin: Boolean(raw.read_by_admin ?? raw.readByAdmin ?? false),
+          readByUser: Boolean(raw.read_by_user ?? raw.readByUser ?? false),
         };
         setMessages(prev => {
           const exists = prev.some(m => m.id === newMsg.id);
@@ -692,10 +715,20 @@ function SupportChatsPage() {
                             <p className="text-xs font-medium text-violet-400 mb-1">AI Ассистент</p>
                           )}
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.message}</p>
-                          <span className="text-xs mt-2 block opacity-50">
-                            {new Date(m.createdAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
-                            {isAdmin && ' • Вы'}
-                          </span>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs opacity-50">
+                              {new Date(m.createdAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+                              {isAdmin && ' • Вы'}
+                            </span>
+                            {/* Галочки прочтения для сообщений админа */}
+                            {isAdmin && (
+                              m.readByUser ? (
+                                <CheckCheck size={14} className="text-emerald-400" />
+                              ) : m.isRead ? (
+                                <Check size={14} className="opacity-50" />
+                              ) : null
+                            )}
+                          </div>
                         </div>
                         
                         {/* Admin/AI Avatar - справа */}

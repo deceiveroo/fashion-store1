@@ -18,6 +18,7 @@ interface Message {
   sender: 'user' | 'ai' | 'admin';
   timestamp: Date;
   read?: boolean;
+  readByAdmin?: boolean; // Добавлено для отслеживания прочтения админом
 }
 
 const CATEGORIES = [
@@ -94,6 +95,20 @@ export default function SupportChatMinimalist() {
       inputRef.current?.focus();
       loadMessages();
       subscribeToRealtime();
+      
+      // Отмечаем сообщения админа как прочитанные пользователем
+      const markAsRead = async () => {
+        try {
+          await fetch('/api/chat/mark-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId }),
+          });
+        } catch (err) {
+          console.error('Failed to mark messages as read:', err);
+        }
+      };
+      markAsRead();
     } else {
       unsubscribeFromRealtime();
     }
@@ -129,7 +144,8 @@ export default function SupportChatMinimalist() {
             sender:
               m.sender === 'admin' ? 'admin' : m.sender === 'user' ? 'user' : 'ai',
             timestamp: new Date(m.createdAt || m.created_at),
-            read: m.isRead ?? m.read_by_admin ?? m.readByAdmin ?? false,
+            read: m.isRead ?? false,
+            readByAdmin: m.read_by_admin ?? m.readByAdmin ?? false,
           })));
         }
       }
@@ -175,7 +191,8 @@ export default function SupportChatMinimalist() {
                   ? 'user'
                   : 'ai',
             timestamp: new Date(newMsg.created_at),
-            read: newMsg.read_by_admin,
+            read: newMsg.is_read ?? false,
+            readByAdmin: newMsg.read_by_admin ?? false,
           }];
         });
 
@@ -508,8 +525,13 @@ export default function SupportChatMinimalist() {
                           <span className={`text-xs ${isUser ? 'text-white/70' : 'text-gray-500 dark:text-white/40'}`}>
                             {msg.timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                           </span>
+                          {/* Галочки прочтения для сообщений пользователя */}
                           {isUser && (
-                            msg.read ? <CheckCheck size={14} className="text-white/70" /> : <Check size={14} className="text-white/70" />
+                            msg.readByAdmin ? (
+                              <CheckCheck size={14} className="text-emerald-300" />
+                            ) : msg.read ? (
+                              <Check size={14} className="text-white/70" />
+                            ) : null
                           )}
                         </div>
                       </div>
