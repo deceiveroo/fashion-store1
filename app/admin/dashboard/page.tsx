@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import AdminShell from '@/components/admin/AdminShell';
+import ProxyImage from '@/components/ProxyImage';
 import { AdminCard } from '@/components/admin/AdminCard';
 import { RevenueChart } from '@/components/admin/charts/RevenueChart';
 import { OrdersDonutChart } from '@/components/admin/charts/OrdersDonutChart';
@@ -477,7 +478,7 @@ export default function DashboardPage() {
                       {i + 1}
                     </span>
                     {p.image ? (
-                      <img src={p.image} alt="" className="h-11 w-11 rounded-lg object-cover ring-1 ring-[var(--admin-border)]" />
+                      <ProxyImage src={p.image} alt="" className="h-11 w-11 rounded-lg object-cover ring-1 ring-[var(--admin-border)]" proxyWidth={96} />
                     ) : (
                       <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--admin-bg-muted)]">
                         <Package className="h-5 w-5 text-[var(--admin-text-faint)]" />

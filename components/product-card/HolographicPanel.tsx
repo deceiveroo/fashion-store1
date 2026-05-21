@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Play, Ruler, Layers } from 'lucide-react';
+import ProxyImage from '@/components/ProxyImage';
 
 type HolographicPanelProps = {
   open: boolean;
@@ -96,8 +97,7 @@ export default function HolographicPanel({
             whileHover={{ scale: 1.02 }}
             transition={{ type: 'spring', stiffness: 500, damping: 35 }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={secondaryImage} alt="" className="h-full w-full object-cover opacity-90" />
+            <ProxyImage src={secondaryImage} alt="" className="h-full w-full object-cover opacity-90" proxyWidth={640} />
             <div className="absolute inset-0 flex items-center justify-center bg-black/25">
               <span className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-[10px] font-medium text-white backdrop-blur-md">
                 <Play className="h-3 w-3" aria-hidden />

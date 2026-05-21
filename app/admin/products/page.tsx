@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
+import ProxyImage from '@/components/ProxyImage';
 
 interface Product {
   id: string;
@@ -349,8 +350,7 @@ export default function AdminProductsPage() {
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-3 min-w-[200px]">
                             {p.mainImage ? (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img src={p.mainImage} alt="" className="h-11 w-11 rounded-lg object-cover border border-gray-200 dark:border-white/10" />
+                              <ProxyImage src={p.mainImage} alt="" className="h-11 w-11 rounded-lg object-cover border border-gray-200 dark:border-white/10" proxyWidth={96} />
                             ) : (
                               <div className="h-11 w-11 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center">
                                 <Package className="h-4 w-4 text-gray-400 dark:text-white/20" />

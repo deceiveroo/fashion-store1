@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
+import ProxyImage from '@/components/ProxyImage';
 
 type MediaItem = {
   id?: string;
@@ -593,15 +594,11 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                       {item.type === 'video' ? (
                         <>
                           {item.thumbnailUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img 
+                            <ProxyImage 
                               src={item.thumbnailUrl} 
                               alt="" 
                               className="h-full w-full object-cover"
-                              onError={(e) => {
-                                // Тихо заменяем на placeholder без ошибки в консоли
-                                e.currentTarget.src = '/placeholder-image.jpg';
-                              }}
+                              proxyWidth={384}
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-violet-600/20 to-purple-600/20">
@@ -620,17 +617,11 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                           )}
                         </>
                       ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img 
+                        <ProxyImage 
                           src={item.url} 
                           alt="" 
                           className="h-full w-full object-cover"
-                          onError={(e) => {
-                            // Заменяем битое изображение на placeholder
-                            if (e.currentTarget.src !== '/placeholder-image.jpg') {
-                              e.currentTarget.src = '/placeholder-image.jpg';
-                            }
-                          }}
+                          proxyWidth={384}
                         />
                       )}
                       <button
