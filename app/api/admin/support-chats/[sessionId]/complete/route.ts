@@ -37,30 +37,33 @@ export async function POST(
       return NextResponse.json({ error: 'Session already completed' }, { status: 400 });
     }
 
-    // Обновляем статус сессии
-    await db
-      .update(supportChatSessions)
-      .set({
-        status: 'resolved',
-        resolvedAt: new Date(),
-        resolvedBy: admin.id,
-        updatedAt: new Date(),
-      })
-      .where(eq(supportChatSessions.sessionId, sessionId));
+    // Подготавливаем данные для обновления
+    const updateData: any = {
+      status: 'resolved',
+      resolvedAt: new Date(),
+      resolvedBy: admin.id,
+      updatedAt: new Date(),
+    };
 
-    // Если есть оценка от админа, сохраняем её
+    // Добавляем оценку оператора если есть
     if (rating && typeof rating === 'number' && rating >= 1 && rating <= 10) {
-      await db
-        .update(supportChatSessions)
-        .set({
-          operatorRating: rating,
-          operatorRatedAt: new Date(),
-          operatorRatedBy: admin.id,
-        })
-        .where(eq(supportChatSessions.sessionId, sessionId));
+      updateData.operatorRating = rating;
+      updateData.operatorRatedAt = new Date();
+      updateData.operatorRatedBy = admin.id;
     }
 
-    // Если есть отзыв от пользователя (через форму оценки)
+    // Добавляем оценку клиента если есть
+    if (feedback && session.userId) {
+      updateData.customerSatisfaction = rating || 5;
+    }
+
+    // ОДИН UPDATE запрос вместо нескольких - избегаем конфликта с триггером
+    await db
+      .update(supportChatSessions)
+      .set(updateData)
+      .where(eq(supportChatSessions.sessionId, sessionId));
+
+    // Если есть отзыв от пользователя, сохраняем его отдельно
     if (feedback && session.userId) {
       await db.insert(chatSatisfactionRatings).values({
         id: crypto.randomUUID(),
@@ -70,14 +73,6 @@ export async function POST(
         ratedBy: session.userId,
         createdAt: new Date(),
       });
-
-      // Также обновим customerSatisfaction в сессии
-      await db
-        .update(supportChatSessions)
-        .set({
-          customerSatisfaction: rating || 5,
-        })
-        .where(eq(supportChatSessions.sessionId, sessionId));
     }
 
     return NextResponse.json({ 
