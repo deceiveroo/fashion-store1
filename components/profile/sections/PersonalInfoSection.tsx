@@ -299,53 +299,61 @@ export default function PersonalInfoSection({
         </div>
       )}
 
-      {/* Verification Modal */}
+      {/* Verification Modal - Notification Style */}
       <AnimatePresence>
         {showVerificationModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4"
             onClick={() => setShowVerificationModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden border border-gray-200 dark:border-gray-700"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
-              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Shield className="h-6 w-6 text-blue-600" />
-                    Верификация аккаунта
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Заполните форму для подтверждения личности
-                  </p>
+              {/* Modal Header - Gradient Background like Notifications */}
+              <div className="relative px-6 py-5 bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                      <Shield className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        Верификация аккаунта
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
+                        Подтвердите личность для получения синей галочки
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowVerificationModal(false)}
+                    className="flex-shrink-0 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowVerificationModal(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-500" />
-                </button>
               </div>
 
-              {/* Modal Content */}
-              <div className="p-6">
-                <VerificationForm 
-                  onSuccess={() => {
-                    setShowVerificationModal(false);
-                    // Перезагружаем статус верификации
-                    setIsVerified(true);
-                    setVerifiedAt(new Date().toISOString());
-                  }} 
-                />
+              {/* Modal Body */}
+              <div className="overflow-y-auto max-h-[calc(85vh-120px)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                <div className="p-6">
+                  <VerificationForm 
+                    onSuccess={() => {
+                      setShowVerificationModal(false);
+                      // Перезагружаем статус верификации
+                      setIsVerified(true);
+                      setVerifiedAt(new Date().toISOString());
+                    }} 
+                  />
+                </div>
               </div>
             </motion.div>
           </motion.div>
