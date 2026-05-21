@@ -304,6 +304,14 @@ function SupportChatsPage() {
 
   // Функция для получения имени пользователя
   const getUserName = (session: any) => {
+    // Отладка: логируем данные сессии
+    console.log('Session data:', {
+      userFirstName: session.userFirstName,
+      userLastName: session.userLastName,
+      userName: session.userName,
+      userEmail: session.userEmail
+    });
+    
     // Приоритет: firstName + lastName > userName > email username > 'Гость'
     if (session.userFirstName || session.userLastName) {
       const fullName = `${session.userFirstName || ''} ${session.userLastName || ''}`.trim();
@@ -493,6 +501,10 @@ function SupportChatsPage() {
                             </button>
                           </div>
                         </div>
+                        {/* Email пользователя если есть */}
+                        {s.userEmail && (
+                          <p className="text-xs text-gray-500 dark:text-white/40 truncate mt-0.5">{s.userEmail}</p>
+                        )}
                         <p className="text-xs text-gray-500 dark:text-white/40 truncate mt-1">{s.firstMessage||''}</p>
                         <div className="flex justify-between items-center mt-2">
                           <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">

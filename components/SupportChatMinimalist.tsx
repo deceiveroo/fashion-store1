@@ -452,6 +452,8 @@ export default function SupportChatMinimalist() {
                   
                   {messages.map((msg) => {
                     const isUser = msg.sender === 'user';
+                    const isAdmin = msg.sender === 'admin';
+                    const isAI = msg.sender === 'ai';
                     const userAvatar = user?.avatar || user?.image;
                     
                     return (
@@ -464,7 +466,11 @@ export default function SupportChatMinimalist() {
                       {/* Avatar - left for AI/admin, right for user */}
                       {!isUser && (
                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200 dark:bg-white/10">
-                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#9D4EDD]" />
+                          {isAdmin ? (
+                            <User className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#9D4EDD]" />
+                          )}
                         </div>
                       )}
                       
@@ -475,6 +481,14 @@ export default function SupportChatMinimalist() {
                             : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white/90 border border-gray-200 dark:border-white/10'
                         }`}
                       >
+                        {/* Sender name for AI/admin messages */}
+                        {!isUser && (
+                          <p className={`text-xs font-medium mb-1 ${
+                            isAdmin ? 'text-emerald-600 dark:text-emerald-400' : 'text-violet-600 dark:text-violet-400'
+                          }`}>
+                            {isAdmin ? 'Оператор' : 'ELEVATE AI'}
+                          </p>
+                        )}
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">
                           {msg.text.replace(/\*\*/g, '').replace(/\*/g, '')}
                         </p>
