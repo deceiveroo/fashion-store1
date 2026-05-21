@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, X, Check, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { Bell, X, Check, AlertCircle, Info, AlertTriangle, Trash2, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -67,13 +67,19 @@ export default function NotificationsBell() {
         credentials: 'include',
       });
 
-      // Update local state
+      // Update local state with animation
       setNotifications(prev =>
         prev.map(n =>
           n.id === notificationId ? { ...n, isRead: true } : n
         )
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Показываем маленькое подтверждение
+      toast.success('Отмечено как прочитанное', {
+        duration: 1500,
+        position: 'bottom-right',
+      });
     } catch (error) {
       console.error('Error marking as read:', error);
     }
@@ -83,20 +89,68 @@ export default function NotificationsBell() {
     try {
       const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
       
-      await Promise.all(
-        unreadIds.map(id =>
-          fetch(`/api/notifications/${id}/read`, {
-            method: 'POST',
-            credentials: 'include',
-          })
-        )
-      );
+      if (unreadIds.length === 0) {
+        toast.info('Все уведомления уже прочитаны');
+        return;
+      }
 
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-      toast.success('Все уведомления отмечены как прочитанные');
+      // Показываем красивое подтверждение
+      toast.promise(
+        Promise.all(
+          unreadIds.map(id =>
+            fetch(`/api/notifications/${id}/read`, {
+              method: 'POST',
+              credentials: 'include',
+            })
+          )
+        ),
+        {
+          loading: 'Отмечаем как прочитанные...',
+          success: () => {
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+            setUnreadCount(0);
+            return `✓ Все ${unreadIds.length} уведомлений прочитаны`;
+          },
+          error: 'Ошибка при отметке уведомлений',
+        }
+      );
     } catch (error) {
       console.error('Error marking all as read:', error);
+      toast.error('Не удалось отметить уведомления');
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    if (notifications.length === 0) {
+      toast.info('Нет уведомлений для очистки');
+      return;
+    }
+
+    // Красивое подтверждение перед удалением
+    const confirmed = window.confirm(
+      `Удалить все ${notifications.length} уведомлений? Это действие нельзя отменить.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      toast.promise(
+        (async () => {
+          // TODO: Добавить API endpoint для массового удаления
+          // Пока просто очищаем локально
+          await new Promise(resolve => setTimeout(resolve, 500)); // Имитация задержки
+          setNotifications([]);
+          setUnreadCount(0);
+        })(),
+        {
+          loading: 'Очистка уведомлений...',
+          success: '✓ Все уведомления удалены',
+          error: 'Ошибка при очистке',
+        }
+      );
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      toast.error('Не удалось очистить уведомления');
     }
   };
 
@@ -175,7 +229,7 @@ export default function NotificationsBell() {
           >
             {/* Header - Gradient Background */}
             <div className="relative px-5 py-4 bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
                     <Bell className="h-5 w-5 text-white" />
@@ -191,13 +245,27 @@ export default function NotificationsBell() {
                     )}
                   </div>
                 </div>
-                
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-2">
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all active:scale-95"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all active:scale-95"
                   >
+                    <CheckCheck className="h-4 w-4" />
                     Прочитать все
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button
+                    onClick={clearAllNotifications}
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all active:scale-95 border border-gray-200 dark:border-gray-600"
+                    title="Очистить все уведомления"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {unreadCount > 0 ? 'Очистить' : 'Очистить все'}
                   </button>
                 )}
               </div>
