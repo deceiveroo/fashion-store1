@@ -201,13 +201,29 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Статусы заказов которые считаются как "куплено"
+    // delivered - доставлен, shipped - отправлен, processing - в обработке
+    const validOrderStatuses = ['delivered', 'shipped', 'processing'];
+
     for (const order of userOrders) {
       const hasProduct = order.items?.some((item) => item.productId === productId);
-      if (hasProduct && order.status === 'delivered') {
+      // Проверяем что заказ не отменен и не возвращен
+      if (hasProduct && validOrderStatuses.includes(order.status)) {
         isVerifiedPurchase = true;
         relatedOrderId = order.id;
         break;
       }
+    }
+
+    // ВАЖНО: Если пользователь НЕ покупал этот товар, блокируем создание отзыва
+    // Это предотвращает фейковые отзывы
+    if (!isVerifiedPurchase) {
+      return NextResponse.json(
+        { 
+          error: 'Вы можете оставить отзыв только на товары, которые купили. Отзыв будет доступен после доставки заказа.' 
+        },
+        { status: 403 }
+      );
     }
 
     // Создаем отзыв (по умолчанию не одобрен, требует модерации)
@@ -242,9 +258,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         review: newReview,
-        message: isVerifiedPurchase
-          ? 'Review submitted successfully! It will be visible after moderation.'
-          : 'Review submitted successfully! Verified purchase badge will be added once your order is delivered.',
+        message: 'Отзыв успешно создан! Он появится после модерации.',
         xpAwarded: xpAmount,
       },
       { status: 201 }

@@ -10,6 +10,7 @@ type Review = {
   id: string;
   productId: string;
   productName?: string;
+  orderId?: string | null; // Добавляем ID заказа
   userId: string;
   userName?: string;
   rating: number;
@@ -317,10 +318,15 @@ export default function AdminReviewsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         {renderStars(review.rating)}
-                        {review.isVerifiedPurchase && (
+                        {review.isVerifiedPurchase ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
                             <CheckCircle className="h-3 w-3" />
                             Подтвержденная покупка
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-200">
+                            <AlertTriangle className="h-3 w-3" />
+                            Нет подтверждения покупки
                           </span>
                         )}
                         {!review.isApproved && (
@@ -345,6 +351,23 @@ export default function AdminReviewsPage() {
                         <span className="text-gray-500 dark:text-gray-400">
                           {new Date(review.createdAt).toLocaleDateString('ru-RU')}
                         </span>
+                        
+                        {/* Order ID - показываем только если есть верификация */}
+                        {review.isVerifiedPurchase && review.orderId && (
+                          <>
+                            <span className="text-gray-300 dark:text-gray-600">•</span>
+                            <a
+                              href={`/admin/orders?search=${review.orderId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
+                            >
+                              <Package className="h-3 w-3" />
+                              Заказ: {review.orderId.slice(0, 8)}...
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </>
+                        )}
                         
                         {/* Product Link */}
                         {review.productName && review.productId && (

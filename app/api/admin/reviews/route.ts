@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
         id: reviews.id,
         userId: reviews.userId,
         productId: reviews.productId,
+        orderId: reviews.orderId, // Добавляем ID заказа
         rating: reviews.rating,
         title: reviews.title,
         comment: reviews.comment,
