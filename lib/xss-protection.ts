@@ -86,9 +86,14 @@ export function sanitizeAdminNote(html: string): string {
 
 // Generate Content Security Policy header
 export function generateCSPHeader(): string {
+  const isDev = process.env.NODE_ENV === 'development';
+  
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    // Allow unsafe-eval in development for React debugging features
+    isDev 
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net"
+      : "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' https: data:",
     "font-src 'self' https://fonts.gstatic.com",
