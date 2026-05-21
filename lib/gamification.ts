@@ -24,19 +24,25 @@ export async function awardXP(userId: string, amount: number, reason: string, me
       SET xp = xp + ${amount},
           updated_at = NOW()
       WHERE user_id = ${userId}
-      RETURNING xp, xp_to_next_level, level
+      RETURNING xp, xp_to_next_level, level, coins
     `);
+
+    let levelUpData = null;
 
     if (result.rows && result.rows.length > 0) {
       const userLevel = result.rows[0] as any;
       
       // Check if level up
       if (userLevel.xp >= userLevel.xp_to_next_level) {
-        await levelUp(userId, userLevel.level);
+        levelUpData = await levelUp(userId, userLevel.level);
       }
     }
 
-    return { success: true, amount };
+    return { 
+      success: true, 
+      amount,
+      levelUp: levelUpData // Return level up info if it happened
+    };
   } catch (error) {
     console.error('Error awarding XP:', error);
     return { success: false, error };
@@ -47,6 +53,7 @@ export async function awardXP(userId: string, amount: number, reason: string, me
 async function levelUp(userId: string, currentLevel: number) {
   const newLevel = currentLevel + 1;
   const newXpRequired = Math.floor(100 * Math.pow(newLevel, 1.5));
+  const coinsAwarded = newLevel * 10;
   
   // Get new title
   const titleResult = await db.execute(sql`
@@ -55,36 +62,19 @@ async function levelUp(userId: string, currentLevel: number) {
   
   const newTitle = titleResult.rows?.[0]?.title || 'Новичок';
   
-  // Update level
+  // Update level and award coins
   await db.execute(sql`
     UPDATE user_levels
     SET level = ${newLevel},
         xp = 0,
         xp_to_next_level = ${newXpRequired},
         title = ${newTitle},
-        coins = coins + ${newLevel * 10},
+        coins = coins + ${coinsAwarded},
         updated_at = NOW()
     WHERE user_id = ${userId}
   `);
 
-  // Award bonus coins for leveling up
-  await awardXP(userId, 0, `Достигнут уровень ${newLevel}`, { level: newLevel });
-  
-  // Create system notification for level up
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    await fetch(`${baseUrl}/api/gamification/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'level_up',
-        level: newLevel,
-        coinsAwarded: newLevel * 10,
-      }),
-    });
-  } catch (error) {
-    console.error('Error creating level up notification:', error);
-  }
+  let couponReward = null;
   
   // Check if there's a level reward coupon
   try {
@@ -95,6 +85,29 @@ async function levelUp(userId: string, currentLevel: number) {
     if (rewardResult.rows && rewardResult.rows.length > 0) {
       const reward = rewardResult.rows[0] as any;
       
+      // Generate unique random coupon code for this user
+      const generateRandomCode = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const length = Math.floor(Math.random() * 3) + 8; // 8-10 characters
+        let code = '';
+        for (let i = 0; i < length; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+      
+      // Ensure code is unique
+      let uniqueCode = generateRandomCode();
+      let attempts = 0;
+      while (attempts < 10) {
+        const existing = await db.execute(sql`
+          SELECT id FROM coupons WHERE code = ${uniqueCode}
+        `);
+        if (!existing.rows || existing.rows.length === 0) break;
+        uniqueCode = generateRandomCode();
+        attempts++;
+      }
+      
       // Create the coupon in the coupons table
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (reward.expires_days || 30));
@@ -102,7 +115,7 @@ async function levelUp(userId: string, currentLevel: number) {
       await db.execute(sql`
         INSERT INTO coupons (code, discount, type, min_order, max_uses, used_count, active, expires_at, created_by)
         VALUES (
-          ${reward.coupon_code},
+          ${uniqueCode},
           ${reward.discount},
           ${reward.discount_type},
           ${reward.min_order},
@@ -112,27 +125,16 @@ async function levelUp(userId: string, currentLevel: number) {
           ${expiresAt},
           ${userId}
         )
-        ON CONFLICT (code) DO NOTHING
+        RETURNING code
       `);
       
-      console.log(`Level ${newLevel} reward coupon created: ${reward.coupon_code}`);
+      console.log(`Level ${newLevel} reward coupon created: ${uniqueCode}`);
       
-      // Create notification for coupon reward
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-        await fetch(`${baseUrl}/api/gamification/notify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'coupon_reward',
-            couponCode: reward.coupon_code,
-            discount: reward.discount,
-            discountType: reward.discount_type,
-          }),
-        });
-      } catch (error) {
-        console.error('Error creating coupon reward notification:', error);
-      }
+      couponReward = {
+        code: uniqueCode,
+        discount: reward.discount,
+        discountType: reward.discount_type,
+      };
     }
   } catch (error) {
     console.error('Error creating level reward coupon:', error);
@@ -142,7 +144,12 @@ async function levelUp(userId: string, currentLevel: number) {
   // Check level achievements
   await checkAchievements(userId, 'level_up', newLevel);
   
-  return { newLevel, newTitle, coinsAwarded: newLevel * 10 };
+  return { 
+    newLevel, 
+    newTitle, 
+    coinsAwarded,
+    couponReward // Return coupon info if awarded
+  };
 }
 
 // Unlock achievement

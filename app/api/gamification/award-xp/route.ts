@@ -28,7 +28,11 @@ export async function POST(request: NextRequest) {
     const result = await awardXP(userId, amount, reason, metadata);
 
     if (result.success) {
-      return NextResponse.json({ success: true, amount: result.amount });
+      return NextResponse.json({ 
+        success: true, 
+        amount: result.amount,
+        levelUp: result.levelUp // Include level up info if it happened
+      });
     } else {
       return NextResponse.json(
         { error: 'Failed to award XP' },

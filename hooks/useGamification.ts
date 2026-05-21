@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { showAchievementNotification } from '@/components/gamification/AchievementNotification';
+import { showAchievementNotification, showLevelUpNotification, showCouponRewardNotification } from '@/components/gamification/AchievementNotification';
 
 interface Achievement {
   name: string;
@@ -27,6 +27,26 @@ export function useGamification() {
       if (response.ok) {
         const data = await response.json();
         toast.success(`+${amount} XP: ${reason}`);
+        
+        // Check if user leveled up
+        if (data.levelUp) {
+          const { newLevel, newTitle, coinsAwarded, couponReward } = data.levelUp;
+          
+          // Show level up notification
+          showLevelUpNotification(newLevel, coinsAwarded);
+          
+          // Show coupon reward notification if there is one
+          if (couponReward) {
+            setTimeout(() => {
+              showCouponRewardNotification(
+                couponReward.code,
+                couponReward.discount,
+                couponReward.discountType
+              );
+            }, 1500); // Delay to not overlap with level up notification
+          }
+        }
+        
         return data;
       }
     } catch (error) {
