@@ -182,10 +182,20 @@ export default function SupportChatMinimalist() {
         const newMsg = payload.new as any;
         
         setMessages(prev => {
+          // Проверяем есть ли уже это сообщение по ID
           const exists = prev.some(m => m.id === newMsg.id);
           if (exists) return prev;
           
-          return [...prev, {
+          // Если это сообщение от пользователя, удаляем временное сообщение
+          const isUserMessage = newMsg.sender === 'user';
+          let filtered = prev;
+          
+          if (isUserMessage) {
+            // Удаляем все временные сообщения пользователя (с ID начинающимся на 'temp-')
+            filtered = prev.filter(m => !(m.sender === 'user' && m.id.startsWith('temp-')));
+          }
+          
+          return [...filtered, {
             id: newMsg.id,
             text: newMsg.message,
             imageUrl: newMsg.image_url,
