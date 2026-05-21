@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Package, Plus, Edit, Trash2, X, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 interface Bundle {
   id: string;
@@ -16,6 +17,7 @@ interface Bundle {
 }
 
 export default function AdminBundlesPage() {
+  const { showConfirm } = useConfirm();
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -89,7 +91,15 @@ export default function AdminBundlesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Удалить эту подборку?')) return;
+    const confirmed = await showConfirm({
+      title: 'Удаление подборки',
+      message: 'Удалить эту подборку?',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/admin/bundles/${id}`, {

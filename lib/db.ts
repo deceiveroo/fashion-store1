@@ -18,13 +18,13 @@ function buildPoolConfig(): PoolConfig {
     ...base, password,
     ssl: process.env.NODE_ENV === 'production' ? true : isSupabase ? { rejectUnauthorized: false } : base.ssl ?? false,
     // CRITICAL: Supabase Pooler limits - keep minimal
-    max: isSupabase ? 3 : 10,
+    max: isSupabase ? 3 : 8,
     min: 0,
-    idleTimeoutMillis: 20000,
-    connectionTimeoutMillis: 20000,
+    idleTimeoutMillis: 10000, // Reduced from 30s to 10s
+    connectionTimeoutMillis: 15000, // Reduced from 30s to 15s
     allowExitOnIdle: false,
-    statement_timeout: 15000, // 15 seconds max per query
-    query_timeout: 15000, // 15 seconds
+    statement_timeout: 30000, // 30 seconds max per query
+    query_timeout: 30000, // 30 seconds
     keepAlive: true,
     keepAliveInitialDelayMillis: 5000,
   };
@@ -49,7 +49,8 @@ const connectionLock = { locked: false };
 pool.on('error', (err) => console.error('Unexpected error on idle client', err));
 pool.on('connect', () => { 
   activeConnections++; 
-  if (process.env.NODE_ENV === 'development') {
+  // Log only when connections exceed threshold to reduce noise
+  if (process.env.NODE_ENV === 'development' && activeConnections > 5) {
     console.log(`✓ DB connection established (active: ${activeConnections})`); 
   }
 });
@@ -57,7 +58,8 @@ pool.on('remove', () => {
   if (activeConnections > 0) {
     activeConnections--; 
   }
-  if (process.env.NODE_ENV === 'development') {
+  // Log only when connections exceed threshold to reduce noise
+  if (process.env.NODE_ENV === 'development' && activeConnections > 3) {
     console.log(`✗ DB connection removed (active: ${activeConnections})`); 
   }
 });

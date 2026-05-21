@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
-import { products, productImages, productCategory, categories } from '@/lib/schema';
+import { products, productImages, productCategory, categories, productSizes } from '@/lib/schema';
 import { productInStock, productFeatured } from '@/lib/product-query';
 import { eq, and, inArray } from 'drizzle-orm';
 import ProductClient from '@/components/ProductClient';
@@ -16,7 +16,8 @@ async function getProduct(id: string) {
   }
 
   try {
-    const productData = await db
+    // Загружаем основной товар
+    const productRows = await db
       .select({
         id: products.id,
         name: products.name,
@@ -26,30 +27,57 @@ async function getProduct(id: string) {
         featured: productFeatured,
         isNew: products.isNew,
         createdAt: products.createdAt,
-        images: productImages,
-        categoryId: categories.id,
-        categoryName: categories.name,
-        categorySlug: categories.slug,
+        // Новые поля
+        brand: products.brand,
+        country: products.country,
+        composition: products.composition,
+        compositionSecondary: products.compositionSecondary,
+        color: products.color,
+        articleNumber: products.articleNumber,
+        productCode: products.productCode,
+        modelParams: products.modelParams,
       })
       .from(products)
-      .leftJoin(productImages, eq(productImages.productId, products.id))
-      .leftJoin(productCategory, eq(productCategory.productId, products.id))
-      .leftJoin(categories, eq(categories.id, productCategory.categoryId))
-      .where(eq(products.id, id));
+      .where(eq(products.id, id))
+      .limit(1);
 
-    if (productData.length === 0) {
+    if (productRows.length === 0) {
       return null;
     }
 
-    // Группируем данные
-    const firstProduct = productData[0];
-    
+    const firstProduct = productRows[0];
+
+    // Загружаем изображения
+    const imageRows = await db
+      .select()
+      .from(productImages)
+      .where(eq(productImages.productId, id))
+      .orderBy(productImages.order);
+
+    // Загружаем категории
+    const categoryRows = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+      })
+      .from(productCategory)
+      .leftJoin(categories, eq(categories.id, productCategory.categoryId))
+      .where(eq(productCategory.productId, id));
+
+    // Загружаем размеры
+    const sizeRows = await db
+      .select()
+      .from(productSizes)
+      .where(eq(productSizes.productId, id))
+      .orderBy(productSizes.sortOrder);
+
     // Собираем уникальные категории с названиями
     const categoryNames = Array.from(
       new Set(
-        productData
-          .filter(item => item.categoryName)
-          .map(item => item.categoryName as string)
+        categoryRows
+          .filter(item => item.name)
+          .map(item => item.name as string)
       )
     );
     
@@ -62,23 +90,33 @@ async function getProduct(id: string) {
       isNew: firstProduct.isNew ?? false,
       createdAt: firstProduct.createdAt,
       price: parseFloat(String(firstProduct.price ?? '0')) || 0,
-      images: productData
-        .filter(item => item.images)
-        .map(item => ({
-          id: item.images?.id || '',
-          url: item.images?.url || '',
-          isMain: item.images?.isMain || false,
-          mediaType: ((item.images as any)?.mediaType as 'image' | 'video') || 'image',
-          duration: (item.images as any)?.duration || undefined,
-          thumbnailUrl: (item.images as any)?.thumbnailUrl || undefined,
-        }))
-        // Удаляем дубликаты по ID изображения
-        .filter((img, index, self) => 
-          img.id && self.findIndex(i => i.id === img.id) === index
-        ),
+      // Новые поля
+      brand: firstProduct.brand,
+      country: firstProduct.country,
+      composition: firstProduct.composition,
+      compositionSecondary: firstProduct.compositionSecondary,
+      color: firstProduct.color,
+      articleNumber: firstProduct.articleNumber,
+      productCode: firstProduct.productCode,
+      modelParams: firstProduct.modelParams,
+      images: imageRows.map(img => ({
+        id: img.id || '',
+        url: img.url || '',
+        isMain: img.isMain || false,
+        mediaType: (img.mediaType as 'image' | 'video') || 'image',
+        duration: img.duration || undefined,
+        thumbnailUrl: img.thumbnailUrl || undefined,
+      })),
+      sizes: sizeRows.map(size => ({
+        id: size.id,
+        sizeName: size.sizeName,
+        sizeType: size.sizeType,
+        inStock: size.inStock,
+        stockCount: size.stockCount,
+      })),
       categories: categoryNames.length > 0 ? categoryNames : ['Без категории'],
-      mainImage: productData.find(item => item.images?.isMain)?.images?.url || 
-                 productData[0]?.images?.url || 
+      mainImage: imageRows.find(img => img.isMain)?.url || 
+                 imageRows[0]?.url || 
                  '/placeholder-image.jpg'
     };
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { generateCSPHeader } from '@/lib/xss-protection';
 
 // NOTE: In-memory rate limiting works only for single-instance deployments.
 // For Vercel (multi-instance), upgrade to @upstash/ratelimit + Redis.
@@ -34,6 +35,7 @@ const SECURITY_HEADERS = {
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Content-Security-Policy': generateCSPHeader(),
 };
 
 export async function middleware(request: NextRequest) {

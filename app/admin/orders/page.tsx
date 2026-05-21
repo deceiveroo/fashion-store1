@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Package, Clock, CheckCircle, XCircle, Truck, Download, Eye, ChevronDown, RefreshCw, ShoppingBag, TrendingUp, AlertCircle, Filter, Edit2, Trash2, X, Save, Zap, DollarSign, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
 import OrderReceipt from '@/components/receipts/OrderReceipt';
 import html2canvas from 'html2canvas';
@@ -32,6 +33,7 @@ const STATUS = {
 const LIMIT = 50;
 
 export default function AdminOrdersPage() {
+  const { showConfirm } = useConfirm();
   const [orders, setOrders] = useState<Order[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -72,7 +74,16 @@ export default function AdminOrdersPage() {
   };
 
   const deleteOrder = async (id: string) => {
-    if (!confirm('Удалить заказ?')) return;
+    const confirmed = await showConfirm({
+      title: 'Удаление заказа',
+      message: 'Удалить заказ? Это действие нельзя отменить.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
+    
     try {
       const res = await fetch(`/api/admin/orders/${id}`, { method: 'DELETE', credentials: 'include' });
       if (res.ok) { setOrders(o => o.filter(x => x.id !== id)); toast.success('Удалён'); }
@@ -264,7 +275,7 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.03] overflow-hidden">
+        <div className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.03]">
           {loading ? (
             <div className="flex items-center justify-center h-48">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
@@ -275,7 +286,7 @@ export default function AdminOrdersPage() {
               <p className="text-sm">Заказов не найдено</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-t-2xl">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-white/5">
@@ -284,7 +295,7 @@ export default function AdminOrdersPage() {
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="relative">
                   {filtered.map(order => {
                     const cfg = STATUS[order.status as keyof typeof STATUS] || STATUS.pending;
                     const Icon = cfg.icon;
@@ -312,14 +323,14 @@ export default function AdminOrdersPage() {
                           <td className="px-4 py-3 text-xs text-gray-600 dark:text-white/40 whitespace-nowrap">
                             {new Date(order.createdAt).toLocaleDateString('ru-RU', { day:'numeric', month:'short' })}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 overflow-visible">
                             <div className="relative group inline-block">
                               <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${cfg.cls}`}>
                                 <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
                                 {cfg.label}
                                 <ChevronDown className="h-3 w-3 opacity-60" />
                               </span>
-                              <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block w-36 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f0f1a] shadow-xl py-1">
+                              <div className="absolute left-0 top-full mt-1 z-[100] hidden group-hover:block w-36 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f0f1a] shadow-xl py-1">
                                 {Object.entries(STATUS).map(([k, v]) => (
                                   <button key={k} onClick={() => updateStatus(order.id, k)}
                                     className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${order.status === k ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-600 dark:text-white/50'}`}>

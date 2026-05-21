@@ -73,7 +73,6 @@ const NAV = [
       { label: 'Команда',   href: '/admin/users',           icon: Shield,          roles: ['admin'] },
       { label: 'Категории', href: '/admin/categories',      icon: Tag,             roles: ['admin','manager'] },
       { label: 'Промокоды', href: '/admin/coupons',         icon: Sparkles,        roles: ['admin','manager'] },
-      { label: 'Магазин промокодов', href: '/admin/shop-coupons', icon: Zap,       roles: ['admin','manager'] },
       { label: 'Уведомления', href: '/admin/notifications', icon: Bell,            roles: ['admin','manager'] },
       { label: 'Настройки', href: '/admin/settings',        icon: Settings,        roles: ['admin'] },
     ],

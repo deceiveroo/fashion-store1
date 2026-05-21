@@ -7,6 +7,7 @@ import {
   ArrowUp, ArrowDown, CheckCircle, AlertCircle 
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 interface Collection {
   id: string;
@@ -27,6 +28,7 @@ interface Product {
 }
 
 export default function CuratedCollectionsPage() {
+  const { showConfirm } = useConfirm();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +139,15 @@ export default function CuratedCollectionsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Удалить эту подборку?')) return;
+    const confirmed = await showConfirm({
+      title: 'Удаление подборки',
+      message: 'Удалить эту подборку?',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/admin/collections/${id}`, {

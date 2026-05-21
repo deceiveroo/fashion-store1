@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productImages, productCategory } from '@/lib/schema';
+import { products, productImages, productCategory, productSizes } from '@/lib/schema';
 import { productListSelect } from '@/lib/product-query';
 import { eq, and, inArray, desc } from 'drizzle-orm';
 import { checkCanManageProducts } from '@/lib/server-auth';
@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
       db
         .select(productListSelect)
         .from(products)
+        .where(eq(products.isActive, true)) // Только активные товары
         .orderBy(desc(products.createdAt))
         .limit(limit)
         .offset(offset)
@@ -160,6 +161,15 @@ export async function POST(request: NextRequest) {
         isNew: Boolean(data.isNew),
         isActive: true,
         categoryId: categoryIds[0],
+        // Новые поля
+        brand: data.brand || null,
+        country: data.country || null,
+        composition: data.composition || null,
+        compositionSecondary: data.compositionSecondary || null,
+        color: data.color || null,
+        articleNumber: data.articleNumber || null,
+        productCode: data.productCode || null,
+        modelParams: data.modelParams || null,
       })
       .returning();
 
@@ -185,6 +195,24 @@ export async function POST(request: NextRequest) {
           order: index,
         }))
       );
+    }
+
+    // Сохраняем размеры
+    const sizesData = data.sizes;
+    if (sizesData && Array.isArray(sizesData) && sizesData.length > 0) {
+      console.log('[POST /api/products] Saving sizes:', sizesData);
+      await db.insert(productSizes).values(
+        sizesData.map((size: any, index: number) => ({
+          id: uuidv4(),
+          productId: newProduct.id,
+          sizeName: size.sizeName || size.size_name,
+          sizeType: size.sizeType || size.size_type || 'international',
+          inStock: size.inStock !== undefined ? size.inStock : size.in_stock !== undefined ? size.in_stock : true,
+          stockCount: size.stockCount || size.stock_count || 0,
+          sortOrder: size.sortOrder || index,
+        }))
+      );
+      console.log('[POST /api/products] Sizes saved successfully');
     }
 
     return NextResponse.json(newProduct);

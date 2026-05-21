@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
 
 export default function AdminSegmentLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -50,5 +51,9 @@ export default function AdminSegmentLayout({ children }: { children: React.React
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <ConfirmProvider>
+      {children}
+    </ConfirmProvider>
+  );
 }

@@ -311,6 +311,36 @@
     scrollbar-width: none;  /* Firefox */
   }
 
+  /* Анимация появления компонента */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  /* Анимация заполнения прогресс-бара */
+  @keyframes progressFill {
+    from {
+      width: 0%;
+    }
+    to {
+      width: var(--progress-width, 100%);
+    }
+  }
+
+  .animate-progress-fill {
+    animation: progressFill 1.2s ease-out;
+  }
+
   /* Анимация появления */
   @keyframes glassSlideIn {
     from {

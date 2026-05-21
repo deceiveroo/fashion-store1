@@ -30,14 +30,15 @@ export async function POST(request: NextRequest) {
       notificationType = 'success';
     }
 
-    // Insert into system_notifications table
+    // Insert into system_notifications table with PERSONAL targeting
     await db.execute(sql`
-      INSERT INTO system_notifications (title, message, type, target_audience, is_active, created_by)
+      INSERT INTO system_notifications (title, message, type, target_audience, target_user_ids, is_active, created_by)
       VALUES (
         ${title},
         ${message},
         ${notificationType},
         'specific',
+        ${[session.user.id]},
         true,
         ${session.user.id}
       )

@@ -115,6 +115,15 @@ export const products = pgTable('products', {
   deletedAt: timestamp('deleted_at', { mode: 'date' }),
   seoTitle: text('seo_title'),
   seoDesc: text('seo_desc'),
+  // Дополнительные поля товара
+  brand: text('brand'), // Бренд (ZIMMERMANN)
+  country: text('country'), // Страна производства (КИТАЙ)
+  composition: text('composition'), // Основной состав (100% вискоза)
+  compositionSecondary: text('composition_secondary'), // Дополнительный состав (86% полиэстер, 14% эластан)
+  color: text('color'), // Цвет (Мультиколор, Цветочный принт)
+  articleNumber: text('article_number'), // Артикул (0991TC261)
+  productCode: text('product_code'), // Код товара (4741819)
+  modelParams: text('model_params'), // Параметры модели (165/86/63/89, размер на модели – 40RU)
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
@@ -165,6 +174,26 @@ export const productVariants = pgTable('product_variants', {
   return {
     skuIdx: uniqueIndex('product_variants_sku_idx').on(table.sku),
     productIdx: index('product_variants_product_idx').on(table.productId),
+  };
+});
+
+// Product Sizes table - для управления размерами и наличием
+export const productSizes = pgTable('product_sizes', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  productId: text('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  sizeName: text('size_name').notNull(), // XS, S, M, L, XL, XXL или RU 42, 44, 46, 48, 50, 52
+  sizeType: text('size_type').default('international'), // international, ru, eu, us
+  inStock: boolean('in_stock').default(true),
+  stockCount: integer('stock_count').default(0),
+  sortOrder: integer('sort_order').default(0),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    productIdx: index('product_sizes_product_id_idx').on(table.productId),
+    sizeNameIdx: index('product_sizes_size_name_idx').on(table.sizeName),
   };
 });
 
@@ -262,6 +291,60 @@ export const userWishlistItems = pgTable('user_wishlist_items', {
   return {
     userProductIdx: uniqueIndex('user_wishlist_items_user_product_unique').on(table.userId, table.productId),
     userIdx: index('user_wishlist_items_user_idx').on(table.userId),
+  };
+});
+
+// Reviews table (отзывы на товары)
+export const reviews = pgTable('reviews', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  productId: text('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  orderId: text('order_id').references(() => orders.id, { onDelete: 'set null' }), // Для верификации покупки
+  rating: integer('rating').notNull(), // 1-5 stars
+  title: text('title'), // Заголовок отзыва
+  comment: text('comment'), // Текст отзыва
+  images: text('images').array(), // URLs фото/видео в отзыве
+  isVerifiedPurchase: boolean('is_verified_purchase').default(false), // Подтвержденная покупка
+  isApproved: boolean('is_approved').default(false), // Одобрено модератором
+  adminResponse: text('admin_response'), // Ответ магазина
+  adminRespondedAt: timestamp('admin_responded_at', { mode: 'date' }),
+  helpfulCount: integer('helpful_count').default(0), // Количество "полезно"
+  position: integer('position').default(0), // Для сортировки
+  locale: text('locale').default('ru'), // Язык отзыва
+  meta: jsonb('meta'), // Дополнительные метаданные
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    productIdx: index('reviews_product_idx').on(table.productId),
+    userIdx: index('reviews_user_idx').on(table.userId),
+    ratingIdx: index('reviews_rating_idx').on(table.rating),
+    approvedIdx: index('reviews_approved_idx').on(table.isApproved),
+    verifiedIdx: index('reviews_verified_idx').on(table.isVerifiedPurchase),
+    createdAtIdx: index('reviews_created_at_idx').on(table.createdAt),
+    // Уникальный индекс: один отзыв на товар от одного пользователя
+    userProductIdx: uniqueIndex('reviews_user_product_unique').on(table.userId, table.productId),
+  };
+});
+
+// Review Helpful votes table (кто отметил отзыв полезным)
+export const reviewHelpfulVotes = pgTable('review_helpful_votes', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  reviewId: text('review_id')
+    .notNull()
+    .references(() => reviews.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    reviewUserIdx: uniqueIndex('review_helpful_review_user_unique').on(table.reviewId, table.userId),
+    reviewIdx: index('review_helpful_review_idx').on(table.reviewId),
   };
 });
 
@@ -377,7 +460,7 @@ export const systemNotifications = pgTable('system_notifications', {
   message: text('message').notNull(),
   type: text('type', { enum: ['info', 'warning', 'success', 'error'] }).default('info'),
   targetAudience: text('target_audience', { enum: ['all', 'registered', 'admins', 'specific'] }).default('all'),
-  targetUserIds: text('target_user_ids').array(), // для specific audience
+  targetUserIds: text('target_user_ids').array().$type<string[]>(), // для specific audience - явный тип string[]
   isActive: boolean('is_active').default(true),
   expiresAt: timestamp('expires_at', { mode: 'date' }),
   createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
@@ -703,6 +786,11 @@ export const supportChatSessions = pgTable('support_chat_sessions', {
   operatorRating: integer('operator_rating'), // Rating given to the operator (1-10)
   operatorRatedAt: timestamp('operator_rated_at', { mode: 'date' }), // When the rating was given
   operatorRatedBy: text('operator_rated_by'), // User ID who gave the rating
+  firstResponseTime: integer('first_response_time'), // Time to first response in seconds
+  resolutionTime: integer('resolution_time'), // Total resolution time in seconds
+  customerSatisfaction: integer('customer_satisfaction'), // Customer satisfaction rating (1-5)
+  tags: text('tags').array(), // Tags for categorization
+  category: text('category'), // Main category of inquiry
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
@@ -723,6 +811,38 @@ export const supportChatSessionsRelations = relations(supportChatSessions, ({ on
   user: one(users, { fields: [supportChatSessions.userId], references: [users.id] }),
   resolvedByUser: one(users, { fields: [supportChatSessions.resolvedBy], references: [users.id] }),
   messages: many(supportChatMessages),
+  satisfactionRatings: many(chatSatisfactionRatings),
+}));
+
+// Chat Satisfaction Ratings table (for detailed customer feedback)
+export const chatSatisfactionRatings = pgTable('chat_satisfaction_ratings', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  sessionId: text('session_id')
+    .notNull()
+    .references(() => supportChatSessions.sessionId, { onDelete: 'cascade' }),
+  rating: integer('rating').notNull(), // 1-5 stars
+  feedback: text('feedback'), // Optional text feedback
+  ratedBy: text('rated_by'), // User ID or 'anonymous'
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => {
+  return {
+    sessionIdIdx: index('chat_satisfaction_session_idx').on(table.sessionId),
+    ratingIdx: index('chat_satisfaction_rating_idx').on(table.rating),
+  };
+});
+
+// Chat Tags table (for categorizing inquiries)
+export const chatTags = pgTable('chat_tags', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull().unique(),
+  color: text('color').default('#6B7280'),
+  description: text('description'),
+  usageCount: integer('usage_count').default(0),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+});
+
+export const chatSatisfactionRatingsRelations = relations(chatSatisfactionRatings, ({ one }) => ({
+  session: one(supportChatSessions, { fields: [chatSatisfactionRatings.sessionId], references: [supportChatSessions.sessionId] }),
 }));
 
 // Payment Methods table
@@ -933,3 +1053,22 @@ export const maintenanceSubscriptions = pgTable('maintenance_subscriptions', {
 });
 
 export const maintenanceSubscriptionsRelations = relations(maintenanceSubscriptions, ({}) => ({}));
+
+// Relations for product sizes
+export const productSizesRelations = relations(productSizes, ({ one }) => ({
+  product: one(products, { fields: [productSizes.productId], references: [products.id] }),
+}));
+
+// Relations for reviews
+export const reviewsRelations = relations(reviews, ({ one, many }) => ({
+  user: one(users, { fields: [reviews.userId], references: [users.id] }),
+  product: one(products, { fields: [reviews.productId], references: [products.id] }),
+  order: one(orders, { fields: [reviews.orderId], references: [orders.id] }),
+  helpfulVotes: many(reviewHelpfulVotes),
+}));
+
+// Relations for review helpful votes
+export const reviewHelpfulVotesRelations = relations(reviewHelpfulVotes, ({ one }) => ({
+  review: one(reviews, { fields: [reviewHelpfulVotes.reviewId], references: [reviews.id] }),
+  user: one(users, { fields: [reviewHelpfulVotes.userId], references: [users.id] }),
+}));

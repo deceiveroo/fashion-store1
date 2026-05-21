@@ -16,6 +16,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
 
 type MediaItem = {
@@ -35,6 +36,15 @@ export type ProductFormValues = {
   inStock: boolean;
   featured: boolean;
   isNew: boolean;
+  // Дополнительные поля
+  brand?: string;
+  country?: string;
+  composition?: string;
+  compositionSecondary?: string;
+  color?: string;
+  articleNumber?: string;
+  productCode?: string;
+  modelParams?: string;
 };
 
 type AdminProductFormProps = {
@@ -44,6 +54,7 @@ type AdminProductFormProps = {
 
 export default function AdminProductForm({ mode, productId }: AdminProductFormProps) {
   const router = useRouter();
+  const { showConfirm } = useConfirm();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<ProductFormValues>({
@@ -53,6 +64,14 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
     inStock: true,
     featured: false,
     isNew: false,
+    brand: '',
+    country: '',
+    composition: '',
+    compositionSecondary: '',
+    color: '',
+    articleNumber: '',
+    productCode: '',
+    modelParams: '',
   });
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -62,6 +81,17 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
   const [uploadType, setUploadType] = useState<'image' | 'video'>('image');
   const [loading, setLoading] = useState(mode === 'edit');
   const [saving, setSaving] = useState(false);
+  
+  // Размеры товара
+  type ProductSize = {
+    id?: string;
+    sizeName: string;
+    sizeType: 'international' | 'ru' | 'eu' | 'us';
+    inStock: boolean;
+    stockCount: number;
+  };
+  const [sizes, setSizes] = useState<ProductSize[]>([]);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     void loadCategories();
@@ -97,6 +127,14 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
         inStock: Boolean(data.inStock),
         featured: Boolean(data.featured),
         isNew: Boolean(data.isNew),
+        brand: data.brand ?? '',
+        country: data.country ?? '',
+        composition: data.composition ?? '',
+        compositionSecondary: data.compositionSecondary ?? '',
+        color: data.color ?? '',
+        articleNumber: data.articleNumber ?? '',
+        productCode: data.productCode ?? '',
+        modelParams: data.modelParams ?? '',
       });
       setSelectedCategories(data.categories ?? []);
       // Load media (images and videos)
@@ -120,6 +158,17 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
       }
       console.log('[AdminProductForm] Final media array:', initialMedia);
       setMedia(initialMedia);
+      
+      // Load sizes
+      if (data.sizes && Array.isArray(data.sizes)) {
+        setSizes(data.sizes.map((s: any) => ({
+          id: s.id,
+          sizeName: s.sizeName || s.size_name,
+          sizeType: s.sizeType || s.size_type || 'international',
+          inStock: s.inStock !== undefined ? s.inStock : s.in_stock !== undefined ? s.in_stock : true,
+          stockCount: s.stockCount || s.stock_count || 0,
+        })));
+      }
     } catch {
       toast.error('Ошибка загрузки');
       router.push('/admin/products');
@@ -129,54 +178,112 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const isVideo = file.type.startsWith('video/');
-    const isImage = file.type.startsWith('image/');
-    
-    if (!isVideo && !isImage) {
-      toast.error('Нужен файл изображения или видео');
-      return;
-    }
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     
     setUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+    
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('productId', productId || 'temp');
-      fd.append('mediaType', uploadType);
-      
-      const res = await fetch(`/api/admin/products/${productId}/media`, { 
-        method: 'POST', 
-        credentials: 'include', 
-        body: fd 
-      });
-      const data = await res.json();
-      
-      if (res.ok && data.media) {
-        console.log('[AdminProductForm] Upload successful:', data.media);
-        setMedia((prev) => {
-          const newMedia = [...prev, {
-            id: data.media.id,
-            url: data.media.url,
-            type: data.media.mediaType || uploadType,
-            thumbnailUrl: data.media.thumbnailUrl,
-            duration: data.media.duration,
-          }];
-          console.log('[AdminProductForm] Updated media state:', newMedia);
-          return newMedia;
-        });
-        toast.success(isVideo ? 'Видео загружено' : 'Фото загружено');
-      } else {
-        toast.error(data.error || 'Ошибка загрузки');
+      // Загружаем файлы последовательно
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isVideo = file.type.startsWith('video/');
+        const isImage = file.type.startsWith('image/');
+        
+        if (!isVideo && !isImage) {
+          toast.error(`Файл "${file.name}" не является изображением или видео`);
+          errorCount++;
+          continue;
+        }
+        
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('productId', productId || 'temp');
+          fd.append('mediaType', isVideo ? 'video' : 'image');
+          
+          const res = await fetch(`/api/admin/products/${productId}/media`, { 
+            method: 'POST', 
+            credentials: 'include', 
+            body: fd 
+          });
+          const data = await res.json();
+          
+          if (res.ok && data.media) {
+            setMedia((prev) => [...prev, {
+              id: data.media.id,
+              url: data.media.url,
+              type: data.media.mediaType || (isVideo ? 'video' : 'image'),
+              thumbnailUrl: data.media.thumbnailUrl,
+              duration: data.media.duration,
+            }]);
+            successCount++;
+          } else {
+            console.error(`Ошибка загрузки файла ${file.name}:`, data.error);
+            errorCount++;
+          }
+        } catch (err) {
+          console.error(`Ошибка загрузки файла ${file.name}:`, err);
+          errorCount++;
+        }
       }
-    } catch {
-      toast.error('Ошибка загрузки');
+      
+      // Показываем результат
+      if (successCount > 0 && errorCount === 0) {
+        toast.success(`Загружено файлов: ${successCount}`);
+      } else if (successCount > 0 && errorCount > 0) {
+        toast.warning(`Загружено: ${successCount}, ошибок: ${errorCount}`);
+      } else {
+        toast.error('Не удалось загрузить файлы');
+      }
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  // Drag & Drop для фото
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    
+    // Меняем местами элементы
+    const newMedia = [...media];
+    const draggedItem = newMedia[draggedIndex];
+    newMedia.splice(draggedIndex, 1);
+    newMedia.splice(index, 0, draggedItem);
+    setMedia(newMedia);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  // Управление размерами
+  const addSize = () => {
+    setSizes([...sizes, {
+      sizeName: 'M',
+      sizeType: 'international',
+      inStock: true,
+      stockCount: 0,
+    }]);
+  };
+
+  const updateSize = (index: number, field: keyof ProductSize, value: any) => {
+    const newSizes = [...sizes];
+    newSizes[index] = { ...newSizes[index], [field]: value };
+    setSizes(newSizes);
+  };
+
+  const removeSize = (index: number) => {
+    setSizes(sizes.filter((_, i) => i !== index));
   };
 
   const payload = () => {
@@ -185,6 +292,10 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
       price: parseFloat(form.price),
       categories: selectedCategories,
       images: media.length > 0 ? media : [{ url: '/placeholder-image.jpg', type: 'image' }],
+      sizes: sizes.map((s, index) => ({
+        ...s,
+        sortOrder: index,
+      })),
     };
     console.log('[AdminProductForm] Sending payload:', JSON.stringify(data, null, 2));
     return data;
@@ -207,7 +318,7 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
       return;
     }
 
-    console.log('[AdminProductForm] Current images state before save:', images);
+    console.log('[AdminProductForm] Current media state before save:', media);
 
     setSaving(true);
     try {
@@ -244,7 +355,18 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
   };
 
   const handleDelete = async () => {
-    if (!productId || !confirm('Скрыть товар из каталога? (мягкое удаление)')) return;
+    if (!productId) return;
+    
+    const confirmed = await showConfirm({
+      title: 'Удаление товара',
+      message: 'Скрыть товар из каталога? (мягкое удаление)',
+      confirmText: 'Скрыть',
+      cancelText: 'Отмена',
+      variant: 'warning',
+    });
+    
+    if (!confirmed) return;
+    
     try {
       const res = await fetch(`/api/admin/products/${productId}`, {
         method: 'DELETE',
@@ -440,11 +562,12 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                 </button>
                 <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400 hover:bg-emerald-500/20">
                   <Upload className="h-4 w-4" />
-                  {uploading ? '...' : (uploadType === 'video' ? 'Видео' : 'Файл')}
+                  {uploading ? '...' : (uploadType === 'video' ? 'Видео' : 'Файлы')}
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept={uploadType === 'video' ? 'video/*' : 'image/*'}
+                    multiple={uploadType === 'image'}
                     className="hidden"
                     onChange={handleUpload}
                     disabled={uploading}
@@ -455,7 +578,16 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
               {media.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {media.map((item, i) => (
-                    <div key={`${item.url}-${i}`} className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-white/10 bg-gray-800">
+                    <div
+                      key={`${item.url}-${i}`}
+                      draggable
+                      onDragStart={() => handleDragStart(i)}
+                      onDragOver={(e) => handleDragOver(e, i)}
+                      onDragEnd={handleDragEnd}
+                      className={`group relative aspect-[3/4] overflow-hidden rounded-xl border bg-gray-800 cursor-move transition-all ${
+                        draggedIndex === i ? 'opacity-50 scale-95' : 'border-white/10 hover:border-violet-500/50'
+                      }`}
+                    >
                       {item.type === 'video' ? (
                         <>
                           {item.thumbnailUrl ? (
@@ -465,11 +597,12 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                               alt="" 
                               className="h-full w-full object-cover"
                               onError={(e) => {
+                                // Тихо заменяем на placeholder без ошибки в консоли
                                 e.currentTarget.src = '/placeholder-image.jpg';
                               }}
                             />
                           ) : (
-                            <div className="h-full w-full flex items-center justify-center">
+                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-violet-600/20 to-purple-600/20">
                               <Play className="h-12 w-12 text-white/50" />
                             </div>
                           )}
@@ -491,8 +624,10 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                           alt="" 
                           className="h-full w-full object-cover"
                           onError={(e) => {
-                            console.error('Failed to load image:', item.url);
-                            e.currentTarget.src = '/placeholder-image.jpg';
+                            // Заменяем битое изображение на placeholder
+                            if (e.currentTarget.src !== '/placeholder-image.jpg') {
+                              e.currentTarget.src = '/placeholder-image.jpg';
+                            }
                           }}
                         />
                       )}
@@ -517,6 +652,75 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                   ))}
                 </div>
               )}
+            </Section>
+
+            <Section title="Детали товара">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Бренд">
+                  <input
+                    value={form.brand || ''}
+                    onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                    className={inputCls}
+                    placeholder="ZIMMERMANN"
+                  />
+                </Field>
+                <Field label="Страна производства">
+                  <input
+                    value={form.country || ''}
+                    onChange={(e) => setForm({ ...form, country: e.target.value })}
+                    className={inputCls}
+                    placeholder="КИТАЙ"
+                  />
+                </Field>
+                <Field label="Основной состав">
+                  <input
+                    value={form.composition || ''}
+                    onChange={(e) => setForm({ ...form, composition: e.target.value })}
+                    className={inputCls}
+                    placeholder="100% вискоза"
+                  />
+                </Field>
+                <Field label="Дополнительный состав">
+                  <input
+                    value={form.compositionSecondary || ''}
+                    onChange={(e) => setForm({ ...form, compositionSecondary: e.target.value })}
+                    className={inputCls}
+                    placeholder="86% полиэстер, 14% эластан"
+                  />
+                </Field>
+                <Field label="Цвет">
+                  <input
+                    value={form.color || ''}
+                    onChange={(e) => setForm({ ...form, color: e.target.value })}
+                    className={inputCls}
+                    placeholder="Мультиколор, Цветочный принт"
+                  />
+                </Field>
+                <Field label="Артикул">
+                  <input
+                    value={form.articleNumber || ''}
+                    onChange={(e) => setForm({ ...form, articleNumber: e.target.value })}
+                    className={inputCls}
+                    placeholder="0991TC261"
+                  />
+                </Field>
+                <Field label="Код товара">
+                  <input
+                    value={form.productCode || ''}
+                    onChange={(e) => setForm({ ...form, productCode: e.target.value })}
+                    className={inputCls}
+                    placeholder="4741819"
+                  />
+                </Field>
+                <Field label="Параметры модели">
+                  <input
+                    value={form.modelParams || ''}
+                    onChange={(e) => setForm({ ...form, modelParams: e.target.value })}
+                    className={inputCls}
+                    placeholder="165/86/63/89, размер на модели – 40RU"
+                  />
+                </Field>
+              </div>
             </Section>
 
             <Section title="Статусы">

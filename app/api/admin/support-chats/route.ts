@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatSessions, supportChatMessages } from '@/lib/schema';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, count, sql } from 'drizzle-orm';
 import { isAdmin } from '@/lib/server-auth';
 import { cache, CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { calculateResponseTime, formatResponseTime, isSessionStale } from '@/lib/chat-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,20 +14,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check cache first
-    const cacheKey = `${CACHE_KEYS.SITE_CONFIG}:support-chats:list`;
-    const cached = cache.get(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached);
-    }
-
-    // Get all chat sessions
+    // Get all chat sessions with enhanced data
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const offset = (page - 1) * limit;
+    const includeStats = searchParams.get('includeStats') === 'true';
 
     try {
+      // Fetch sessions with pagination
       const sessions = await db
         .select()
         .from(supportChatSessions)
@@ -34,9 +30,51 @@ export async function GET(request: NextRequest) {
         .limit(limit)
         .offset(offset);
 
+      // Enhanced session data with stats if requested
+      let enhancedSessions = sessions;
+      
+      if (includeStats && sessions.length > 0) {
+        // Get message counts and response times for each session
+        const sessionIds = sessions.map(s => s.sessionId);
+        
+        // Fetch messages for these sessions
+        const messages = await db
+          .select()
+          .from(supportChatMessages)
+          .where(sql`${supportChatMessages.sessionId} IN (${sessionIds.map(() => '?').join(',')})`)
+          .orderBy(desc(supportChatMessages.createdAt));
+
+        // Group messages by session
+        const messagesBySession = new Map<string, any[]>();
+        messages.forEach(msg => {
+          if (!messagesBySession.has(msg.sessionId)) {
+            messagesBySession.set(msg.sessionId, []);
+          }
+          messagesBySession.get(msg.sessionId)!.push(msg);
+        });
+
+        // Calculate stats for each session
+        enhancedSessions = sessions.map(session => {
+          const sessionMessages = messagesBySession.get(session.sessionId) || [];
+          const responseTime = calculateResponseTime(
+            sessionMessages.map(m => ({ sender: m.sender, createdAt: m.createdAt }))
+          );
+
+          return {
+            ...session,
+            messageCount: sessionMessages.length,
+            avgResponseTime: responseTime.avgResponseTime > 0 
+              ? formatResponseTime(responseTime.avgResponseTime)
+              : '—',
+            isStale: isSessionStale(session.lastMessageAt),
+            lastMessage: sessionMessages[0]?.message || null,
+          };
+        });
+      }
+
       // Cache the result for 10 seconds to reduce DB load
-      const responseData = { sessions };
-      cache.set(cacheKey, responseData, CACHE_TTL.SHORT); // 10 seconds
+      const responseData = { sessions: enhancedSessions };
+      cache.set(`${CACHE_KEYS.SITE_CONFIG}:support-chats:list:p${page}`, responseData, CACHE_TTL.SHORT);
 
       return NextResponse.json(responseData);
     } catch (dbError: unknown) {

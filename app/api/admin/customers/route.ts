@@ -1,54 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, userProfiles } from '@/lib/schema';
-import { eq, notInArray, count } from 'drizzle-orm';
-import { isStaff } from '@/lib/server-auth';
+import { eq, or, ilike, desc } from 'drizzle-orm';
+import { getSession } from '@/lib/server-auth';
 
-const STAFF_ROLES = ['admin', 'manager', 'support'] as const;
-
+// GET /api/admin/customers - Search and list customers/users
 export async function GET(request: NextRequest) {
   try {
-    const staff = await isStaff();
-    if (!staff) {
+    const session = await getSession();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 200);
-    const offset = parseInt(searchParams.get('offset') || '0');
+    // Check admin/manager role
+    const userRole = (session.user as any).role;
+    if (userRole !== 'admin' && userRole !== 'manager') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    const result = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        name: users.name,
-        firstName: userProfiles.firstName,
-        lastName: userProfiles.lastName,
-        phone: userProfiles.phone,
-        role: users.role,
-        image: users.image,
-        status: users.status,
-        createdAt: users.createdAt,
-        emailVerified: users.emailVerified,
-        avatar: userProfiles.avatar,
-        lastSignIn: users.lastSignIn,
-      })
-      .from(users)
-      .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
-      .where(notInArray(users.role, [...STAFF_ROLES]))
-      .orderBy(users.createdAt)
-      .limit(limit)
-      .offset(offset);
+    const searchParams = request.nextUrl.searchParams;
+    const search = searchParams.get('search') || '';
+    const limit = parseInt(searchParams.get('limit') || '20');
 
-    const [{ total }] = await db
-      .select({ total: count() })
-      .from(users)
-      .where(notInArray(users.role, [...STAFF_ROLES]));
+    // Build query with proper order: select -> from -> join -> where -> orderBy -> limit
+    let results: any[];
+    
+    if (search.trim()) {
+      // With search filter
+      const searchTerm = `%${search.trim()}%`;
+      results = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          createdAt: users.createdAt,
+          firstName: userProfiles.firstName,
+          lastName: userProfiles.lastName,
+          avatar: userProfiles.avatar,
+          image: users.image,
+        })
+        .from(users)
+        .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
+        .where(
+          or(
+            ilike(users.email, searchTerm),
+            ilike(userProfiles.firstName, searchTerm),
+            ilike(userProfiles.lastName, searchTerm)
+          )
+        )
+        .orderBy(desc(users.createdAt))
+        .limit(limit);
+    } else {
+      // Without search filter
+      results = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          createdAt: users.createdAt,
+          firstName: userProfiles.firstName,
+          lastName: userProfiles.lastName,
+          avatar: userProfiles.avatar,
+          image: users.image,
+        })
+        .from(users)
+        .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
+        .orderBy(desc(users.createdAt))
+        .limit(limit);
+    }
 
-    return NextResponse.json({ customers: result, total });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('[CUSTOMERS]', errorMessage);
-    return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 });
+    // Format response
+    const customers = results.map(user => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatar: user.avatar || user.image,
+      role: user.role,
+      createdAt: user.createdAt,
+    }));
+
+    return NextResponse.json(customers);
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch customers' },
+      { status: 500 }
+    );
   }
 }

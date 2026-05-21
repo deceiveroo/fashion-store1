@@ -218,7 +218,11 @@ export default function ProfilePage() {
                     )}
 
                     {section.id === 'coupons' && (
-                      <CouponsSection coupons={profileData.coupons} isLoadingData={profileData.isLoadingData} />
+                      <CouponsSection 
+                        coupons={profileData.coupons} 
+                        isLoadingData={profileData.isLoadingData}
+                        loadCoupons={profileData.loadCoupons}
+                      />
                     )}
 
                     {section.id === 'payments' && (

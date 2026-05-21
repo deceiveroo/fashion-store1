@@ -13,6 +13,7 @@ interface Notification {
   createdAt: string;
   expiresAt?: string;
   isRead: boolean;
+  targetAudience?: 'all' | 'registered' | 'admins' | 'specific';
 }
 
 export default function NotificationsBell() {
@@ -166,37 +167,60 @@ export default function NotificationsBell() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl z-50"
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute right-0 top-full mt-3 w-96 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl z-50 overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                Уведомления
-              </span>
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Отметить все
-                </button>
-              )}
+            {/* Header - Gradient Background */}
+            <div className="relative px-5 py-4 bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                    <Bell className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                      Уведомления
+                    </h3>
+                    {unreadCount > 0 && (
+                      <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                        {unreadCount} непрочитанных
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all active:scale-95"
+                  >
+                    Прочитать все
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Notifications List */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[28rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
               {loading ? (
-                <div className="py-8 text-center">
-                  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                <div className="py-12 text-center">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="inline-block h-8 w-8 rounded-full border-4 border-purple-600 border-t-transparent"
+                  />
+                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Загрузка...</p>
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                  <Bell className="mx-auto mb-2 h-8 w-8 opacity-20" />
-                  Нет уведомлений
+                <div className="py-16 text-center">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 flex items-center justify-center">
+                    <Bell className="h-10 w-10 text-purple-400 dark:text-purple-500" />
+                  </div>
+                  <p className="text-gray-900 dark:text-white font-semibold text-lg">Нет уведомлений</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Все прочитано ✓</p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -216,9 +240,17 @@ export default function NotificationsBell() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {notification.title}
-                            </h4>
+                            <div className="flex-1 min-w-0">
+                              {/* Type Badge */}
+                              {notification.targetAudience === 'specific' && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 mb-1">
+                                  Персональное
+                                </span>
+                              )}
+                              <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {notification.title}
+                              </h4>
+                            </div>
                             {!notification.isRead && (
                               <span className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500" />
                             )}

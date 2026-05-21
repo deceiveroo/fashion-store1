@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Star, Zap, Crown, Target, TrendingUp, Award,
-  Sparkles, Gift, Flame, Medal, ChevronRight
+  Sparkles, Gift, Flame, Medal, ChevronRight, Lock, CheckCircle2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -55,7 +55,6 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
       // Fetch achievements
       const achievementsRes = await fetch('/api/gamification/achievements');
       const achievementsData = await achievementsRes.json();
-      // Убедимся что это массив
       setAchievements(Array.isArray(achievementsData) ? achievementsData : []);
 
       // Fetch shop coupons
@@ -64,7 +63,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
       setShopCoupons(shopData.coupons || []);
     } catch (error) {
       console.error('Error fetching gamification data:', error);
-      setAchievements([]); // Установим пустой массив при ошибке
+      setAchievements([]);
     } finally {
       setLoading(false);
     }
@@ -72,63 +71,59 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case 'legendary': return 'from-yellow-500 to-orange-500';
-      case 'epic': return 'from-purple-500 to-pink-500';
-      case 'rare': return 'from-blue-500 to-cyan-500';
-      default: return 'from-gray-500 to-gray-600';
+      case 'legendary': return 'from-amber-400 via-yellow-500 to-amber-600';
+      case 'epic': return 'from-violet-500 via-purple-600 to-violet-700';
+      case 'rare': return 'from-sky-400 via-blue-500 to-sky-600';
+      default: return 'from-slate-400 via-gray-500 to-slate-600';
     }
   };
 
-  const getRarityBorder = (rarity: string) => {
+  const getRarityName = (rarity: string) => {
     switch (rarity) {
-      case 'legendary': return 'border-yellow-500';
-      case 'epic': return 'border-purple-500';
-      case 'rare': return 'border-blue-500';
-      default: return 'border-gray-400';
+      case 'legendary': return 'Легендарное';
+      case 'epic': return 'Эпическое';
+      case 'rare': return 'Редкое';
+      default: return 'Обычное';
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
+  const getAchievementIcon = (category: string, unlocked: boolean) => {
+    // Different icons based on achievement category
+    const icons: Record<string, string> = {
+      shopping: '🛍️',
+      orders: '📦',
+      wishlist: '❤️',
+      browsing: '🔍',
+      savings: '💰',
+      profile: '👤',
+      security: '🔐',
+      special: '🎯',
+      milestone: '🚀',
+    };
+    
+    return icons[category] || (unlocked ? '✨' : '🔒');
+  };
 
+  // Don't show loading - render content immediately with skeleton states
   const xpProgress = userLevel ? (userLevel.xp / userLevel.xp_to_next_level) * 100 : 0;
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   const totalCount = achievements.length;
 
-  // Фильтрация достижений
   const filteredAchievements = achievements.filter(achievement => {
-    // Фильтр по статусу
     if (filter === 'unlocked' && !achievement.unlocked) return false;
     if (filter === 'locked' && achievement.unlocked) return false;
-    
-    // Фильтр по категории
     if (categoryFilter !== 'all' && achievement.category !== categoryFilter) return false;
-    
     return true;
   });
 
-  // Сортировка: сначала разблокированные, потом по редкости
   const sortedAchievements = [...filteredAchievements].sort((a, b) => {
-    // Сначала разблокированные
     if (a.unlocked && !b.unlocked) return -1;
     if (!a.unlocked && b.unlocked) return 1;
-    
-    // Потом по редкости
     const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
     return (rarityOrder[a.rarity as keyof typeof rarityOrder] || 5) - 
            (rarityOrder[b.rarity as keyof typeof rarityOrder] || 5);
   });
 
-  // Получаем уникальные категории
   const categories = Array.from(new Set(achievements.map(a => a.category)));
 
   const getCategoryName = (category: string) => {
@@ -146,28 +141,13 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
     return names[category] || category;
   };
 
-  const getCategoryIcon = (category: string) => {
-    const icons: Record<string, string> = {
-      shopping: '🛍️',
-      orders: '📦',
-      wishlist: '❤️',
-      browsing: '🔍',
-      savings: '💰',
-      profile: '📱',
-      security: '🔐',
-      special: '🎯',
-      milestone: '🚀',
-    };
-    return icons[category] || '🌟';
-  };
-
-  const handlePurchaseCoupon = async (shopCouponId: string) => {
-    setPurchasing(shopCouponId);
+  const handlePurchase = async (couponId: string) => {
+    setPurchasing(couponId);
     try {
       const res = await fetch('/api/gamification/shop', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopCouponId }),
+        body: JSON.stringify({ shopCouponId: couponId }),
       });
 
       const data = await res.json();
@@ -177,18 +157,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
         return;
       }
 
-      // Show success notification
-      toast.success(
-        <div>
-          <p className="font-semibold">✅ Промокод куплен!</p>
-          <p className="text-sm mt-1">Код: <span className="font-mono font-bold">{data.coupon.code}</span></p>
-          <p className="text-sm">Скидка: {data.coupon.discount}{data.coupon.discountType === 'percent' ? '%' : '₽'}</p>
-          <p className="text-xs text-gray-500 mt-1">Осталось монет: {data.remainingCoins} 💰</p>
-        </div>,
-        { duration: 5000 }
-      );
-      
-      // Refresh data
+      toast.success('Промокод успешно куплен!', { icon: '🎉' });
       fetchGamificationData();
     } catch (error) {
       console.error('Error purchasing coupon:', error);
@@ -199,9 +168,6 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
   };
 
   const handleForceUnlock = async (achievementCode: string) => {
-    console.log('[ACHIEVEMENT] Force unlock clicked:', achievementCode);
-    console.log('[ACHIEVEMENT] Is admin:', isAdmin);
-    
     if (!isAdmin) {
       alert('❌ Только для администраторов!');
       return;
@@ -239,619 +205,411 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
   };
 
   return (
-    <div className="space-y-6">
-      {/* Level Card */}
+    <div className="space-y-8">
+      {/* Luxury Level Card - Dark Gold Theme */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden"
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-slate-900 to-black rounded-3xl p-8 text-white shadow-2xl border border-yellow-600/30"
       >
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
+        {/* Subtle Gold Pattern */}
+        <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-            backgroundSize: '20px 20px'
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,215,0,.1) 35px, rgba(255,215,0,.1) 70px)',
           }} />
         </div>
+        
+        {/* Gold Glow Effect */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl" />
 
         <div className="relative z-10">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                  <Crown className="w-8 h-8" />
+          {userLevel ? (
+            <>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-2xl shadow-lg shadow-yellow-500/30">
+                    <Crown className="w-10 h-10 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-4xl font-black mb-1 bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                      Уровень {userLevel.level}
+                    </h2>
+                    <p className="text-lg text-gray-300 font-medium">{userLevel.title}</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-3xl font-black">Уровень {userLevel?.level}</h2>
-                  <p className="text-white/80 text-lg font-medium">{userLevel?.title}</p>
+                
+                <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 backdrop-blur-md px-6 py-3 rounded-2xl border border-yellow-500/30">
+                  <Sparkles className="w-6 h-6 text-yellow-400" />
+                  <span className="font-bold text-xl text-yellow-200">{userLevel.coins.toLocaleString('ru-RU')} монет</span>
                 </div>
               </div>
-            </div>
-            
-            <div className="text-right">
-              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                <Sparkles className="w-5 h-5" />
-                <span className="font-bold text-lg">{userLevel?.coins} монет</span>
-              </div>
-            </div>
-          </div>
 
-          {/* XP Progress */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Опыт</span>
-              <span className="font-bold">{userLevel?.xp} / {userLevel?.xp_to_next_level} XP</span>
+              {/* XP Progress Bar - Gold Style */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span className="text-gray-300">Опыт</span>
+                  <span className="text-yellow-200 font-bold">{userLevel.xp.toLocaleString('ru-RU')} / {userLevel.xp_to_next_level.toLocaleString('ru-RU')} XP</span>
+                </div>
+                <div className="relative h-5 bg-gray-800/80 rounded-full overflow-hidden border border-yellow-600/30">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${xpProgress}%` }}
+                    transition={{ duration: 1.2, ease: 'easeOut' }}
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 rounded-full shadow-lg shadow-yellow-500/50"
+                  />
+                  {/* Shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                </div>
+                <p className="text-xs text-gray-400 text-right">
+                  До следующего уровня: {(userLevel.xp_to_next_level - userLevel.xp).toLocaleString('ru-RU')} XP
+                </p>
+              </div>
+            </>
+          ) : (
+            /* Skeleton loading state */
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gray-800/80 rounded-2xl animate-pulse" />
+                  <div className="space-y-2">
+                    <div className="h-10 w-48 bg-gray-800/80 rounded-lg animate-pulse" />
+                    <div className="h-6 w-32 bg-gray-800/80 rounded-lg animate-pulse" />
+                  </div>
+                </div>
+                <div className="h-14 w-48 bg-gray-800/80 rounded-2xl animate-pulse" />
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <div className="h-5 w-16 bg-gray-800/80 rounded animate-pulse" />
+                  <div className="h-5 w-40 bg-gray-800/80 rounded animate-pulse" />
+                </div>
+                <div className="h-5 bg-gray-800/80 rounded-full animate-pulse" />
+                <div className="h-4 w-48 ml-auto bg-gray-800/80 rounded animate-pulse" />
+              </div>
             </div>
-            <div className="relative h-4 bg-white/20 backdrop-blur-sm rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${xpProgress}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-white to-yellow-200 rounded-full"
-              />
-            </div>
-          </div>
+          )}
         </div>
       </motion.div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { icon: Trophy, label: 'Достижения', value: `${unlockedCount}/${totalCount}`, color: 'from-yellow-500 to-orange-500' },
-          { icon: Star, label: 'Уровень', value: userLevel?.level || 0, color: 'from-purple-500 to-pink-500' },
-          { icon: Zap, label: 'Опыт', value: userLevel?.xp || 0, color: 'from-blue-500 to-cyan-500' },
-          { icon: Sparkles, label: 'Монеты', value: userLevel?.coins || 0, color: 'from-green-500 to-emerald-500' },
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.1 }}
-            whileHover={{ scale: 1.05, y: -5 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700"
-          >
-            <div className={`p-3 bg-gradient-to-br ${stat.color} rounded-xl w-fit mb-3`}>
-              <stat.icon className="w-6 h-6 text-white" />
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{stat.label}</p>
-            <p className="text-2xl font-black text-gray-900 dark:text-white">{stat.value}</p>
-          </motion.div>
-        ))}
+      {/* Tabs - Luxury Style */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => setActiveTab('achievements')}
+          className={`px-8 py-3 rounded-xl font-semibold transition-all ${
+            activeTab === 'achievements'
+              ? 'bg-gradient-to-r from-gray-900 to-slate-900 text-yellow-400 shadow-lg border border-yellow-600/50'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+          }`}
+        >
+          🏆 Достижения ({unlockedCount}/{totalCount})
+        </button>
+        <button
+          onClick={() => setActiveTab('shop')}
+          className={`px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+            activeTab === 'shop'
+              ? 'bg-gradient-to-r from-gray-900 to-slate-900 text-amber-400 shadow-lg border border-amber-600/50'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+          }`}
+        >
+          🛒 Магазин
+          <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30">{userLevel?.coins} 💰</span>
+        </button>
       </div>
 
-      {/* Achievements */}
-      <div>
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab('achievements')}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-              activeTab === 'achievements'
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-gray-700'
-            }`}
-          >
-            🏆 Достижения
-          </button>
-          <button
-            onClick={() => setActiveTab('shop')}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-              activeTab === 'shop'
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-yellow-100 dark:hover:bg-gray-700'
-            }`}
-          >
-            🛒 Магазин промокодов
-            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{userLevel?.coins} 💰</span>
-          </button>
-        </div>
-
-        {activeTab === 'achievements' && (
-          <>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                <Trophy className="text-yellow-500" />
-                Достижения
-              </h3>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {unlockedCount} из {totalCount}
-              </span>
-            </div>
-
-            {/* Фильтры - Ultra Premium Glassmorphism */}
-            <div className="mb-8 space-y-4">
-              {/* Статус фильтр - 3D Glass Pills */}
-              <motion.div 
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex gap-3 flex-wrap p-3 bg-gradient-to-br from-white/60 via-purple-50/40 to-pink-50/40 dark:from-gray-900/60 dark:via-purple-900/20 dark:to-pink-900/20 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-gray-700/50 shadow-xl"
-              >
-                <motion.button
-                  whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
-                  whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
-                  onClick={() => setFilter('all')}
-                  className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 ${
-                    filter === 'all'
-                      ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-300 dark:ring-purple-500'
-                      : 'bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-md border border-gray-200/50 dark:border-gray-600/50'
-                  }`}
-                >
-                  <span className="text-xl">🎯</span>
-                  <span>Все</span>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                    filter === 'all' ? 'bg-white/25' : 'bg-gray-200 dark:bg-gray-700'
-                  }`}>
-                    {totalCount}
-                  </span>
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
-                  whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
-                  onClick={() => setFilter('unlocked')}
-                  className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 ${
-                    filter === 'unlocked'
-                      ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 text-white shadow-lg shadow-green-500/40 scale-105 ring-2 ring-green-300 dark:ring-green-500'
-                      : 'bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-md border border-gray-200/50 dark:border-gray-600/50'
-                  }`}
-                >
-                  <span className="text-xl">✨</span>
-                  <span>Открыто</span>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                    filter === 'unlocked' ? 'bg-white/25' : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
-                  }`}>
-                    {unlockedCount}
-                  </span>
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
-                  whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
-                  onClick={() => setFilter('locked')}
-                  className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 ${
-                    filter === 'locked'
-                      ? 'bg-gradient-to-r from-gray-600 via-slate-600 to-gray-600 text-white shadow-lg shadow-gray-500/40 scale-105 ring-2 ring-gray-300 dark:ring-gray-500'
-                      : 'bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-md border border-gray-200/50 dark:border-gray-600/50'
-                  }`}
-                >
-                  <span className="text-xl">🔒</span>
-                  <span>Закрыто</span>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                    filter === 'locked' ? 'bg-white/25' : 'bg-gray-200 dark:bg-gray-700'
-                  }`}>
-                    {totalCount - unlockedCount}
-                  </span>
-                </motion.button>
-              </motion.div>
-
-              {/* Категории - Premium Horizontal Scroll */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="relative"
-              >
-                <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide snap-x">
-                  <motion.button
-                    whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
-                    whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
-                    onClick={() => setCategoryFilter('all')}
-                    className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
-                      categoryFilter === 'all'
-                        ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 text-white shadow-lg shadow-blue-500/40 ring-2 ring-blue-300 dark:ring-blue-500'
-                        : 'bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm'
-                    }`}
-                  >
-                    🌟 Все категории
-                  </motion.button>
-                  {categories.map((category, idx) => (
-                    <motion.button
-                      key={category}
-                      whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
-                      whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
-                      onClick={() => setCategoryFilter(category)}
-                      className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap snap-start flex-shrink-0 ${
-                        categoryFilter === category
-                          ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/40 ring-2 ring-purple-300 dark:ring-purple-500'
-                          : 'bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm'
-                      }`}
-                    >
-                      {getCategoryIcon(category)} {getCategoryName(category).split(' ')[1] || getCategoryName(category)}
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sortedAchievements.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400 text-lg">
-                {filter === 'unlocked' 
-                  ? '🎯 У вас пока нет разблокированных достижений в этой категории'
-                  : filter === 'locked'
-                  ? '🎉 Поздравляем! Вы разблокировали все достижения в этой категории'
-                  : '😕 Достижения не найдены'}
-              </p>
-            </div>
-          ) : (
-            sortedAchievements.map((achievement, index) => (
-            <motion.div
-              key={achievement.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05, duration: 0.4, ease: "easeOut" }}
-              whileHover={{ scale: 1.02, y: -2 }}
-              className={`relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border-2 ${
-                achievement.unlocked
-                  ? getRarityBorder(achievement.rarity)
-                  : 'border-gray-200 dark:border-gray-700 opacity-60'
-              } ${!achievement.unlocked && 'grayscale'}`}
+      {activeTab === 'achievements' && (
+        <>
+          {/* Filters - Luxury Style */}
+          <div className="flex flex-wrap gap-3">
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as any)}
+              className="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
             >
-              {/* Rarity Glow */}
-              {achievement.unlocked && (
-                <div className={`absolute inset-0 bg-gradient-to-br ${getRarityColor(achievement.rarity)} opacity-10 rounded-2xl`} />
-              )}
+              <option value="all">Все достижения</option>
+              <option value="unlocked">Разблокированные</option>
+              <option value="locked">Заблокированные</option>
+            </select>
 
-              <div className="relative z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`text-4xl p-3 bg-gradient-to-br ${getRarityColor(achievement.rarity)} rounded-xl`}>
-                    {achievement.icon}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+            >
+              <option value="all">Все категории</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{getCategoryName(cat)}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Achievements Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {loading ? (
+              // Skeleton loading state
+              Array.from({ length: 6 }).map((_, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700"
+                >
+                  {/* Gradient bar placeholder */}
+                  <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                  
+                  <div className="p-6 space-y-4">
+                    {/* Header with icon and title */}
+                    <div className="flex items-start gap-4">
+                      <div className="w-16 h-16 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      </div>
+                    </div>
+                    
+                    {/* Rewards placeholders */}
+                    <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
+                      <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                      <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                    </div>
+                    
+                    {/* Status placeholder */}
+                    <div className="flex justify-between">
+                      <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse" />
+                    </div>
                   </div>
-                  {achievement.unlocked && (
-                    <motion.div
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      className="p-2 bg-green-500 rounded-full"
-                    >
-                      <Award className="w-4 h-4 text-white" />
-                    </motion.div>
-                  )}
-                </div>
+                </motion.div>
+              ))
+            ) : (
+              // Actual achievements
+              sortedAchievements.map((achievement, index) => (
+              <motion.div
+                key={achievement.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`relative group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 transition-all hover:shadow-xl ${
+                  achievement.unlocked
+                    ? `border-${getRarityBorder(achievement.rarity)} shadow-lg`
+                    : 'border-gray-200 dark:border-gray-700 opacity-75'
+                }`}
+              >
+                {/* Rarity Gradient Bar - Top */}
+                <div className={`h-1.5 w-full bg-gradient-to-r ${getRarityColor(achievement.rarity)}`} />
 
-                <h4 className="font-bold text-gray-900 dark:text-white mb-1">
-                  {achievement.name}
-                </h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  {achievement.description}
-                </p>
+                <div className="p-6">
+                  <div className="flex items-start gap-4 mb-4">
+                    {/* Achievement Icon - Large Emoji */}
+                    <div className={`text-4xl leading-none p-3 rounded-xl bg-gradient-to-br ${getRarityColor(achievement.rarity)} bg-opacity-10`}>
+                      <span className="filter drop-shadow-lg">{getAchievementIcon(achievement.category, achievement.unlocked)}</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-1">
+                        {achievement.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                        {achievement.description}
+                      </p>
+                    </div>
+                  </div>
 
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium">
-                    <Zap className="w-3 h-3" />
-                    +{achievement.xp_reward} XP
-                  </span>
-                  <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-medium">
-                    <Sparkles className="w-3 h-3" />
-                    +{achievement.coins_reward}
-                  </span>
-                </div>
+                  {/* Rewards - Innovative Colors */}
+                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800">
+                      <Zap className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                      <span className="text-sm font-bold text-cyan-700 dark:text-cyan-300">+{achievement.xp_reward} XP</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 border border-rose-200 dark:border-rose-800">
+                      <Sparkles className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                      <span className="text-sm font-bold text-rose-700 dark:text-rose-300">+{achievement.coins_reward}</span>
+                    </div>
+                  </div>
 
-                {achievement.unlocked && achievement.unlocked_at && (
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                    Получено: {new Date(achievement.unlocked_at).toLocaleDateString('ru-RU')}
-                  </p>
-                )}
-
-                {/* Admin Force Unlock Button */}
-                {isAdmin && !achievement.unlocked && (
-                  <button
-                    onClick={() => handleForceUnlock(achievement.code)}
-                    className="mt-3 w-full py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2"
-                  >
-                    ⚡ Выполнить
-                  </button>
+                {/* Status */}
+                {achievement.unlocked ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span className="text-sm font-medium">
+                        Получено: {new Date(achievement.unlocked_at!).toLocaleDateString('ru-RU')}
+                      </span>
+                    </div>
+                    {/* Rarity Label */}
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-md bg-gradient-to-r ${getRarityColor(achievement.rarity)} bg-opacity-10 text-gray-700 dark:text-gray-300`}>
+                      {getRarityName(achievement.rarity)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                      <Lock className="w-5 h-5" />
+                      <span className="text-sm">Заблокировано</span>
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleForceUnlock(achievement.code)}
+                        className="text-xs px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-100 to-blue-100 dark:from-cyan-900/30 dark:to-blue-900/30 text-cyan-700 dark:text-cyan-400 hover:from-cyan-200 hover:to-blue-200 dark:hover:from-cyan-900/50 dark:hover:to-blue-900/50 transition-all border border-cyan-300 dark:border-cyan-700"
+                      >
+                        Разблокировать
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </motion.div>
-            ))
+              ))
+            )}
+          </div>
+
+          {!loading && sortedAchievements.length === 0 && (
+            <div className="text-center py-12">
+              <Trophy className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400 text-lg">Достижения не найдены</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'shop' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {shopCoupons.map((coupon) => {
+            // Calculate discount display - use correct field names from API
+            const discountValue = coupon.discount || 0;
+            const discountType = coupon.discountType || coupon.type || 'percent';
+            const discountDisplay = discountValue 
+              ? `${discountValue}${discountType === 'percent' ? '%' : '₽'}`
+              : '—';
+            
+            // Use priceCoins from API (not price or cost)
+            const price = coupon.priceCoins || coupon.price || coupon.cost || 0;
+            
+            return (
+              <motion.div
+                key={coupon.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.02, y: -4 }}
+                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-400 transition-all shadow-sm hover:shadow-2xl"
+              >
+                {/* Discount Badge - Top Left Corner */}
+                <div className="absolute top-0 left-0 bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 text-white px-4 py-2 rounded-br-2xl shadow-lg z-10">
+                  <p className="text-2xl font-black leading-none">{discountDisplay}</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wider opacity-90">скидка</p>
+                </div>
+
+                <div className="pt-16 pb-6 px-6">
+                  {/* Icon and Name */}
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                      <Gift className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">{coupon.name}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{coupon.description}</p>
+                    </div>
+                  </div>
+
+                  {/* Price and Action - Innovative Colors */}
+                  <div className="flex items-center justify-between pt-4 border-t-2 border-gray-100 dark:border-gray-700">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Цена</p>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center">
+                          <Sparkles className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-xl font-black bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
+                          {price.toLocaleString('ru-RU')}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handlePurchase(coupon.id)}
+                      disabled={purchasing === coupon.id || (userLevel?.coins || 0) < price}
+                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white font-bold shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                    >
+                      {purchasing === coupon.id ? (
+                        <span className="flex items-center gap-2">
+                          <motion.span
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                            className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                          />
+                          ...
+                        </span>
+                      ) : (
+                        'Купить'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+
+          {shopCoupons.length === 0 && (
+            <div className="col-span-full text-center py-12">
+              <Gift className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400 text-lg">Магазин временно пуст</p>
+            </div>
           )}
         </div>
-          </>
-        )}
-
-        {/* Shop Tab - Cyber-Glassmorphism Neo-Brutalism 2025 */}
-        {activeTab === 'shop' && (
-          <div className="relative">
-            {/* Particle Background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              {[...Array(20)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-1 h-1 bg-white/20 rounded-full animate-pulse"
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
-                    animationDelay: `${Math.random() * 3}s`,
-                    animationDuration: `${2 + Math.random() * 3}s`
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Hero Section - Clean Modern Design */}
-            <div className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-8 shadow-lg border border-gray-200 dark:border-gray-700">
-              {/* Subtle Background Pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="absolute inset-0" style={{
-                  backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
-                  backgroundSize: '30px 30px'
-                }} />
-              </div>
-
-              <div className="relative z-10 flex items-center justify-between">
-                <div>
-                  <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
-                    <span className="text-4xl">🛍️</span>
-                    <span>Магазин Промокодов</span>
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-base max-w-xl">
-                    Обменяйте монеты на эксклюзивные скидки
-                  </p>
-                </div>
-                
-                {/* Clean Balance Display */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="px-6 py-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md"
-                >
-                  <div className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Баланс</div>
-                  <div className="text-gray-900 dark:text-white text-2xl font-bold flex items-center gap-2">
-                    <span className="text-xl">💰</span>
-                    <span>{userLevel?.coins || 0}</span>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-
-            {/* Coupons Grid - Cyber-Glassmorphism Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
-              {shopCoupons.length === 0 ? (
-                <div className="col-span-full">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-20 rounded-[20px] border-2 border-dashed border-[#6C5CE7]/50"
-                    style={{
-                      background: 'rgba(255,255,255,0.03)',
-                      backdropFilter: 'blur(20px)'
-                    }}
-                  >
-                    <div className="text-7xl mb-4 animate-bounce">🎁</div>
-                    <p className="text-2xl font-bold text-white mb-2" style={{ textShadow: '0 0 20px #6C5CE7' }}>Скоро открытие!</p>
-                    <p className="text-white/60">Эксклюзивные кибер-промокоды уже в пути</p>
-                  </motion.div>
-                </div>
-              ) : (
-                shopCoupons.map((coupon, index) => {
-                  const accentColor = coupon.alreadyPurchased ? '#00FF88' : 
-                                     !coupon.inStock || !coupon.canAfford ? '#666' :
-                                     ['#6C5CE7', '#00D2FF', '#FF6B9D', '#FFD700'][index % 4];
-                  
-                  return (
-                  <motion.div
-                    key={coupon.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.08, type: "spring", stiffness: 100 }}
-                    whileHover={coupon.alreadyPurchased || (!coupon.inStock || !coupon.canAfford) ? {} : {
-                      translateY: -8,
-                      boxShadow: `0 0 30px ${accentColor}40, 0 0 60px ${accentColor}20`,
-                      transition: { duration: 0.2, ease: "easeOut" }
-                    }}
-                    className={`group relative overflow-hidden rounded-[20px] p-6 border transition-all duration-300 ${
-                      coupon.alreadyPurchased
-                        ? 'opacity-100'
-                        : !coupon.inStock || !coupon.canAfford
-                        ? 'opacity-50'
-                        : ''
-                    }`}
-                    style={{
-                      background: coupon.alreadyPurchased 
-                        ? 'rgba(0,255,136,0.05)'
-                        : 'rgba(255,255,255,0.05)',
-                      backdropFilter: 'blur(20px)',
-                      border: coupon.alreadyPurchased
-                        ? '1px solid rgba(0,255,136,0.5)'
-                        : !coupon.inStock || !coupon.canAfford
-                        ? '1px solid rgba(255,255,255,0.1)'
-                        : `1px solid linear-gradient(135deg, ${accentColor}40, ${accentColor}80)`,
-                      boxShadow: coupon.alreadyPurchased
-                        ? '0 0 20px rgba(0,255,136,0.3), inset 0 0 20px rgba(0,255,136,0.1)'
-                        : 'none'
-                    }}
-                  >
-                    {/* Shine Effect on Hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-
-                    <div className="relative z-10 flex flex-col h-full">
-                      {/* Coupon Header with Icon */}
-                      <div className="mb-4 flex items-start justify-between min-h-[48px]">
-                        <motion.div 
-                          whileHover={{ scale: 1.05 }}
-                          className="text-4xl p-2 bg-gray-100 dark:bg-gray-800 rounded-xl"
-                        >
-                          {coupon.alreadyPurchased ? '✅' : '🎫'}
-                        </motion.div>
-                        
-                        {/* Already Purchased Badge - Fixed Height */}
-                        <div className="min-h-[32px] flex items-center">
-                          {coupon.alreadyPurchased && (
-                            <motion.div 
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              className="px-3 py-1.5 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1.5"
-                            >
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Куплено
-                          </motion.div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Coupon Name & Description */}
-                      <div className="mb-4">
-                        <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-1 line-clamp-1">
-                          {coupon.name}
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                          {coupon.description}
-                        </p>
-                      </div>
-
-                      {/* Discount Display */}
-                      <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                        <div className="text-center">
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium">Ваша скидка</div>
-                          <div className="text-4xl font-bold text-purple-600 dark:text-purple-400">
-                            {coupon.discount}{coupon.discountType === 'percent' ? '%' : '₽'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Details Grid */}
-                      <div className="space-y-2 mb-4">
-                        {coupon.minOrder && (
-                          <div className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                            <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              Мин. заказ:
-                            </span>
-                            <span className="font-semibold text-gray-900 dark:text-white">
-                              {parseInt(coupon.minOrder).toLocaleString('ru-RU')} ₽
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                          <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            Срок действия:
-                          </span>
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {coupon.expiresDays} дней
-                          </span>
-                        </div>
-                        {coupon.stock && (
-                          <div className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                            <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                              </svg>
-                              Осталось:
-                            </span>
-                            <span className={`font-semibold ${
-                              coupon.stock - (coupon.purchasedCount || 0) <= 5
-                                ? 'text-red-600 dark:text-red-400'
-                                : 'text-orange-600 dark:text-orange-400'
-                            }`}>
-                              {coupon.stock - (coupon.purchasedCount || 0)} шт
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Purchase Button */}
-                      <motion.button
-                        onClick={() => handlePurchaseCoupon(coupon.id)}
-                        disabled={!coupon.canAfford || !coupon.inStock || coupon.alreadyPurchased || purchasing === coupon.id}
-                        whileHover={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 1.02, transition: { duration: 0.15 } } : {}}
-                        whileTap={coupon.canAfford && coupon.inStock && !coupon.alreadyPurchased ? { scale: 0.98, transition: { duration: 0.1 } } : {}}
-                        className={`w-full py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
-                          coupon.alreadyPurchased
-                            ? 'bg-green-500 text-white cursor-default'
-                            : !coupon.inStock || !coupon.canAfford
-                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-                            : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg'
-                        }`}
-                      >
-                        {purchasing === coupon.id ? (
-                          <>
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Покупка...</span>
-                          </>
-                        ) : coupon.alreadyPurchased ? (
-                          <>
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span>Уже куплено</span>
-                          </>
-                        ) : !coupon.inStock ? (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                            </svg>
-                            <span>Нет в наличии</span>
-                          </>
-                        ) : !coupon.canAfford ? (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                            <span>Недостаточно монет</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Купить за {coupon.priceCoins} 💰</span>
-                          </>
-                        )}
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                );
-              })
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Force Unlock Confirmation Modal */}
-      {showForceUnlockModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">⚡ Принудительная разблокировка</h3>
-              <button
-                onClick={() => setShowForceUnlockModal(null)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mb-6 text-gray-700 dark:text-gray-300">
-              <p className="mb-2">Разблокировать достижение:</p>
-              <p className="font-mono font-bold text-lg text-purple-600 dark:text-purple-400">{showForceUnlockModal}</p>
-              <p className="text-sm mt-4 text-gray-500 dark:text-gray-400">
-                Вы получите XP и монеты за это достижение.
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowForceUnlockModal(null)}
-                className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-all"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={executeForceUnlock}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-semibold transition-all"
-              >
-                Разблокировать
-              </button>
-            </div>
-          </div>
-        </div>
       )}
+
+      {/* Force Unlock Modal - Luxury Style */}
+      <AnimatePresence>
+        {showForceUnlockModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowForceUnlockModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full border-2 border-yellow-600/50 shadow-2xl shadow-yellow-500/20"
+            >
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-yellow-500" />
+                Принудительно разблокировать?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Это действие разблокирует достижение без выполнения условий. Использовать только для тестирования.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowForceUnlockModal(null)}
+                  className="flex-1 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={executeForceUnlock}
+                  className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-medium hover:shadow-lg transition-all"
+                >
+                  Разблокировать
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+const getRarityBorder = (rarity: string) => {
+  switch (rarity) {
+    case 'legendary': return 'yellow-500';
+    case 'epic': return 'purple-500';
+    case 'rare': return 'blue-500';
+    default: return 'gray-400';
+  }
+};

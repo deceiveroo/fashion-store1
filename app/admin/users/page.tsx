@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Search, Shield, Trash2, Edit3, Camera, X, Save, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
 
 interface StaffUser {
@@ -19,6 +20,7 @@ const ROLE_STYLE: Record<string, string> = {
 };
 
 export default function UsersPage() {
+  const { showConfirm } = useConfirm();
   const { data: session, update: updateSession } = useSession();
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [search, setSearch] = useState('');
@@ -42,7 +44,16 @@ export default function UsersPage() {
   useEffect(() => { load(); }, []);
 
   const deleteUser = async (id: string) => {
-    if (!confirm('Удалить пользователя?')) return;
+    const confirmed = await showConfirm({
+      title: 'Удаление пользователя',
+      message: 'Удалить пользователя? Это действие нельзя отменить.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
+    
     try {
       const res = await fetch(`/api/admin/users?id=${id}`, { method: 'DELETE', credentials: 'include' });
       if (res.ok) { setUsers(u => u.filter(x => x.id !== id)); toast.success('Удалён'); if (editing?.id === id) setEditing(null); }

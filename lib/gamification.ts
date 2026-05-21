@@ -75,19 +75,26 @@ async function levelUp(userId: string, currentLevel: number) {
     WHERE user_id = ${userId}
   `);
 
-  // Create notification for level up
+  // Create PERSONAL notification for level up
   try {
-    await db.insert(systemNotifications).values({
+    console.log('Creating level up notification for user:', userId, 'level:', newLevel);
+    const [notification] = await db.insert(systemNotifications).values({
       title: `🎉 Уровень ${newLevel} достигнут!`,
       message: `Поздравляем! Вы получили новый уровень и ${coinsAwarded} монет`,
       type: 'success',
-      targetAudience: 'registered',
+      targetAudience: 'specific', // Персональное уведомление
+      targetUserIds: [userId], // Только для этого пользователя
       isActive: true,
       createdAt: new Date(),
+    }).returning();
+    console.log('✅ Personal notification created successfully:', {
+      id: notification.id,
+      userId,
+      targetAudience: notification.targetAudience,
+      targetUserIds: notification.targetUserIds
     });
-    console.log('Notification created for level up');
   } catch (error) {
-    console.error('Error creating level up notification:', error);
+    console.error('❌ Error creating level up notification:', error);
   }
 
   let couponReward = null;
@@ -152,18 +159,19 @@ async function levelUp(userId: string, currentLevel: number) {
         discountType: reward.discount_type,
       };
       
-      // Create notification in system_notifications table
+      // Create PERSONAL notification for coupon reward
       try {
         await db.insert(systemNotifications).values({
           title: `🎁 Промокод за уровень ${newLevel}`,
           message: `Вам вручен промокод ${uniqueCode} на скидку ${reward.discount}${reward.discount_type === 'percent' ? '%' : '₽'}`,
           type: 'success',
-          targetAudience: 'registered',
+          targetAudience: 'specific', // Персональное уведомление
+          targetUserIds: [userId], // Только для этого пользователя
           isActive: true,
           createdAt: new Date(),
           expiresAt: new Date(Date.now() + (reward.expires_days || 30) * 24 * 60 * 60 * 1000),
         });
-        console.log('Notification created for coupon reward');
+        console.log('Personal notification created for coupon reward for user:', userId);
       } catch (error) {
         console.error('Error creating notification:', error);
       }
@@ -216,19 +224,27 @@ export async function unlockAchievement(userId: string, achievementCode: string)
       VALUES (${userId}, ${achievement.id}::uuid, NOW(), false)
     `);
 
-    // Create notification for achievement unlock
+    // Create PERSONAL notification for achievement unlock
     try {
-      await db.insert(systemNotifications).values({
+      console.log('Creating achievement notification for user:', userId, 'achievement:', achievementCode);
+      const [notification] = await db.insert(systemNotifications).values({
         title: `🏆 Достижение разблокировано!`,
         message: `Вы получили достижение "${achievement.name}" и ${achievement.xp_reward} XP + ${achievement.coins_reward} монет`,
         type: 'success',
-        targetAudience: 'registered',
+        targetAudience: 'specific', // Персональное уведомление
+        targetUserIds: [userId], // Только для этого пользователя
         isActive: true,
         createdAt: new Date(),
+      }).returning();
+      console.log('✅ Achievement notification created successfully:', {
+        id: notification.id,
+        userId,
+        achievementCode,
+        targetAudience: notification.targetAudience,
+        targetUserIds: notification.targetUserIds
       });
-      console.log('Notification created for achievement:', achievementCode);
     } catch (error) {
-      console.error('Error creating achievement notification:', error);
+      console.error('❌ Error creating achievement notification:', error);
     }
 
     // Award XP and coins

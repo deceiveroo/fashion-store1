@@ -4,11 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingBag, Play } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingBag, Play, Star } from 'lucide-react';
 import AddToCartButton from './AddToCartButton';
 import FavoriteButton from './FavoriteButton';
 import ProductCard from '@/components/product-card';
 import type { ProductCardProduct } from '@/components/product-card/types';
+import ReviewList from '@/components/reviews/ReviewList';
+import ReviewForm from '@/components/reviews/ReviewForm';
+import StarRating from '@/components/reviews/StarRating';
 
 interface ProductImage {
   id: string;
@@ -30,6 +33,26 @@ interface Product {
   isNew?: boolean;
   images: ProductImage[];
   mainImage?: string;
+  sizes?: Array<{
+    id: string;
+    sizeName?: string;
+    size_name?: string;
+    sizeType?: string;
+    size_type?: string;
+    inStock?: boolean;
+    in_stock?: boolean;
+    stockCount?: number;
+    stock_count?: number;
+  }>;
+  // Новые поля
+  brand?: string | null;
+  country?: string | null;
+  composition?: string | null;
+  compositionSecondary?: string | null;
+  color?: string | null;
+  articleNumber?: string | null;
+  productCode?: string | null;
+  modelParams?: string | null;
 }
 
 interface ProductClientProps {
@@ -56,6 +79,7 @@ export default function ProductClient({ product }: ProductClientProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [related, setRelated] = useState<ProductCardProduct[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   const price = toNumberPrice(product.price);
 
@@ -326,34 +350,108 @@ export default function ProductClient({ product }: ProductClientProps) {
                 {product.description || 'Премиальная вещь из курируемой коллекции ELEVATE.'}
               </p>
 
-              {/* Sizes */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-500 dark:text-neutral-500 mb-3">
-                  Размер
-                </p>
-                <motion.div className="flex flex-wrap gap-2" role="listbox" aria-label="Выбор размера">
-                  {SIZES.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      role="option"
-                      aria-selected={selectedSize === size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`min-w-[3rem] px-4 py-2.5 text-sm font-light border transition-all ${
-                        selectedSize === size
-                          ? 'border-purple-600 bg-purple-600 text-white dark:border-purple-500 dark:bg-purple-500'
-                          : 'border-gray-300 text-gray-800 hover:border-purple-400 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-purple-500'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+              {/* Детали товара */}
+              {(product.brand || product.country || product.composition || product.color || product.articleNumber || product.modelParams) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="mt-8 pt-8 border-t border-gray-200 dark:border-neutral-800"
+                >
+                  <h3 className="text-sm font-medium uppercase tracking-wider text-gray-900 dark:text-white mb-6">
+                    Характеристики
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    {product.brand && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Бренд</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{product.brand}</span>
+                      </div>
+                    )}
+                    {product.country && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Страна производства</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{product.country}</span>
+                      </div>
+                    )}
+                    {product.composition && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Состав</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{product.composition}</span>
+                      </div>
+                    )}
+                    {product.compositionSecondary && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Дополнительный состав</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{product.compositionSecondary}</span>
+                      </div>
+                    )}
+                    {product.color && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Цвет</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{product.color}</span>
+                      </div>
+                    )}
+                    {product.articleNumber && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Артикул</span>
+                        <span className="text-sm font-mono text-gray-900 dark:text-white">{product.articleNumber}</span>
+                      </div>
+                    )}
+                    {product.productCode && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Код товара</span>
+                        <span className="text-sm font-mono text-gray-900 dark:text-white">{product.productCode}</span>
+                      </div>
+                    )}
+                    {product.modelParams && (
+                      <div className="flex items-baseline gap-2 md:col-span-2">
+                        <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Параметры модели</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{product.modelParams}</span>
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
-              </motion.div>
+              )}
+
+              {/* Sizes */}
+              {product.sizes && product.sizes.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-500 dark:text-neutral-500 mb-3">
+                    Размер
+                  </p>
+                  <motion.div className="flex flex-wrap gap-2" role="listbox" aria-label="Выбор размера">
+                    {product.sizes.map((sizeData) => {
+                      const sizeLabel = sizeData.sizeName || sizeData.size_name || '';
+                      const isInStock = sizeData.inStock !== undefined ? sizeData.inStock : sizeData.in_stock !== undefined ? sizeData.in_stock : true;
+                      
+                      return (
+                        <button
+                          key={sizeData.id}
+                          type="button"
+                          role="option"
+                          aria-selected={selectedSize === sizeLabel}
+                          disabled={!isInStock}
+                          onClick={() => isInStock && setSelectedSize(sizeLabel)}
+                          className={`min-w-[3rem] px-4 py-2.5 text-sm font-light border transition-all ${
+                            !isInStock
+                              ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-600'
+                              : selectedSize === sizeLabel
+                                ? 'border-purple-600 bg-purple-600 text-white dark:border-purple-500 dark:bg-purple-500'
+                                : 'border-gray-300 text-gray-800 hover:border-purple-400 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-purple-500'
+                          }`}
+                        >
+                          {sizeLabel}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                </motion.div>
+              )}
 
               <div className="flex flex-wrap items-center gap-6 pt-2 border-t border-gray-200 dark:border-neutral-800">
                 <motion.div>
@@ -412,6 +510,54 @@ export default function ProductClient({ product }: ProductClientProps) {
             </div>
           </div>
         </motion.div>
+
+        {/* Reviews Section */}
+        <motion.section
+          className="mt-20 md:mt-28 pt-16 border-t border-gray-200 dark:border-neutral-800"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-purple-600 dark:text-purple-400 mb-2">
+                Отзывы покупателей
+              </p>
+              <h2 className="text-2xl md:text-3xl font-light text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
+                Мнения клиентов
+                <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+              </h2>
+            </div>
+            <button
+              onClick={() => setShowReviewForm(!showReviewForm)}
+              className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-lg hover:from-violet-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+            >
+              {showReviewForm ? 'Закрыть форму' : 'Написать отзыв'}
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {showReviewForm && (
+              <motion.div
+                key="form"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mb-10 overflow-hidden"
+              >
+                <ReviewForm
+                  productId={product.id}
+                  onSuccess={() => setShowReviewForm(false)}
+                  onCancel={() => setShowReviewForm(false)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <ReviewList productId={product.id} />
+        </motion.section>
 
         {/* Complete the look */}
         {related.length > 0 && (

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productImages, productCategory } from '@/lib/schema';
+import { products, productImages, productCategory, productSizes } from '@/lib/schema';
 import { productInStock, productFeatured } from '@/lib/product-query';
 import { eq, inArray } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
@@ -68,6 +68,15 @@ export async function GET(
           slug: products.slug,
           sku: products.sku,
           createdAt: products.createdAt,
+          // Новые поля
+          brand: products.brand,
+          country: products.country,
+          composition: products.composition,
+          compositionSecondary: products.compositionSecondary,
+          color: products.color,
+          articleNumber: products.articleNumber,
+          productCode: products.productCode,
+          modelParams: products.modelParams,
         })
         .from(products)
         .where(eq(products.id, id))
@@ -105,6 +114,22 @@ export async function GET(
 
     const categoryIds = categoryRows.map((r) => r.categoryId).filter(Boolean);
 
+    // Загружаем размеры
+    const sizes = await queryWithRetry(() =>
+      db
+        .select({
+          id: productSizes.id,
+          sizeName: productSizes.sizeName,
+          sizeType: productSizes.sizeType,
+          inStock: productSizes.inStock,
+          stockCount: productSizes.stockCount,
+          sortOrder: productSizes.sortOrder,
+        })
+        .from(productSizes)
+        .where(eq(productSizes.productId, id))
+        .orderBy(productSizes.sortOrder)
+    );
+
     console.log('[admin/products GET] Returning images:', images.map((img) => img.url));
 
     return NextResponse.json(
@@ -113,6 +138,7 @@ export async function GET(
         price: parseFloat(String(product.price ?? '0')) || 0,
         categories: categoryIds,
         images: images, // Возвращаем полные объекты, не только URL
+        sizes: sizes,
         mainImage: images.find((img) => img.isMain)?.url ?? images[0]?.url ?? '/placeholder-image.jpg',
       },
       {
@@ -196,6 +222,16 @@ export async function PUT(
       featured,
       isNew,
       images,
+      sizes,
+      // Новые поля
+      brand,
+      country,
+      composition,
+      compositionSecondary,
+      color,
+      articleNumber,
+      productCode,
+      modelParams,
     } = body;
 
     console.log('[admin/products PUT] Received images:', images);
@@ -239,6 +275,7 @@ export async function PUT(
           : 0
         : Number(existing[0].stock) || 0;
 
+    // Обновляем товар
     await db
       .update(products)
       .set({
@@ -250,10 +287,20 @@ export async function PUT(
         featured: featured !== undefined ? Boolean(featured) : existing[0].featured,
         isNew: isNew !== undefined ? Boolean(isNew) : existing[0].isNew,
         categoryId: categoryIds[0] ?? existing[0].categoryId,
+        // Новые поля
+        brand: brand !== undefined ? (brand || null) : existing[0].brand,
+        country: country !== undefined ? (country || null) : existing[0].country,
+        composition: composition !== undefined ? (composition || null) : existing[0].composition,
+        compositionSecondary: compositionSecondary !== undefined ? (compositionSecondary || null) : existing[0].compositionSecondary,
+        color: color !== undefined ? (color || null) : existing[0].color,
+        articleNumber: articleNumber !== undefined ? (articleNumber || null) : existing[0].articleNumber,
+        productCode: productCode !== undefined ? (productCode || null) : existing[0].productCode,
+        modelParams: modelParams !== undefined ? (modelParams || null) : existing[0].modelParams,
         updatedAt: new Date(),
       })
       .where(eq(products.id, id));
 
+    // Обновляем категории
     await db.delete(productCategory).where(eq(productCategory.productId, id));
 
     if (categoryIds.length > 0) {
@@ -289,6 +336,9 @@ export async function PUT(
       : [];
 
     if (mediaItems.length > 0) {
+      // Удаляем старые записи о медиа перед сохранением новых
+      await db.delete(productImages).where(eq(productImages.productId, id));
+      
       console.log('[admin/products PUT] Saving media:', mediaItems);
       await db.insert(productImages).values(
         mediaItems.map((item, index) => ({
@@ -305,6 +355,30 @@ export async function PUT(
       console.log('[admin/products PUT] Media saved successfully');
     } else {
       console.log('[admin/products PUT] No media to save');
+    }
+
+    // Сохраняем размеры
+    if (sizes && Array.isArray(sizes)) {
+      // Удаляем старые размеры
+      await db.delete(productSizes).where(eq(productSizes.productId, id));
+      
+      console.log('[admin/products PUT] Saving sizes:', sizes);
+      if (sizes.length > 0) {
+        await db.insert(productSizes).values(
+          sizes.map((size: any, index: number) => ({
+            id: crypto.randomUUID(),
+            productId: id,
+            sizeName: size.sizeName || size.size_name,
+            sizeType: size.sizeType || size.size_type || 'international',
+            inStock: size.inStock !== undefined ? size.inStock : size.in_stock !== undefined ? size.in_stock : true,
+            stockCount: size.stockCount || size.stock_count || 0,
+            sortOrder: size.sortOrder || index,
+          }))
+        );
+        console.log('[admin/products PUT] Sizes saved successfully');
+      }
+    } else {
+      console.log('[admin/products PUT] No sizes to save');
     }
 
     return NextResponse.json({ success: true, message: 'Товар сохранён' });

@@ -1,154 +1,145 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, Save, X, Tag, Percent, Calendar, Users, CheckCircle, XCircle, Copy } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Ticket,
+  Plus,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  Edit2,
+  Trash2,
+  Copy,
+  Users,
+  X,
+  TrendingUp,
+  CheckCircle2,
+  ShoppingBag,
+  XCircle,
+  Clock,
+  RefreshCw,
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
+
+interface UserWithCoupons {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string;
+  role: string;
+  createdAt: string;
+  coupons: Coupon[];
+  totalCoupons: number;
+  activeCount: number;
+  usedCount: number;
+  expiredCount: number;
+  totalSavings: number;
+}
 
 interface Coupon {
   id: string;
   code: string;
   discount: number;
   type: 'percent' | 'fixed';
-  minOrder?: string;
-  maxUses?: number;
-  usedCount: number;
-  active: boolean;
+  status: string;
+  isValid: boolean;
+  isExpired: boolean;
+  discountAmount?: string;
   expiresAt?: string;
+  usedAt?: string;
+  orderId?: string;
   createdAt: string;
 }
 
 export default function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const { showConfirm } = useConfirm();
+  const [users, setUsers] = useState<UserWithCoupons[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
-  const [formData, setFormData] = useState({
-    code: '',
-    discount: '',
-    type: 'percent' as 'percent' | 'fixed',
-    minOrder: '',
-    maxUses: '',
-    expiresAt: '',
-    active: true
-  });
+  const [search, setSearch] = useState('');
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadCoupons();
-  }, []);
-
-  const loadCoupons = async () => {
+  // Load users with their coupons
+  const loadData = async () => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/admin/coupons', { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to load');
+      const res = await fetch('/api/admin/coupons/users', {
+        credentials: 'include',
+      });
+      
+      if (!res.ok) {
+        toast.error('Не удалось загрузить данные');
+        return;
+      }
+
       const data = await res.json();
-      setCoupons(data.coupons || []);
+      setUsers(data.users || []);
     } catch (error) {
-      toast.error('Ошибка загрузки купонов');
+      console.error('Error loading data:', error);
+      toast.error('Ошибка сети');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.code || !formData.discount) {
-      toast.error('Заполните обязательные поля');
-      return;
-    }
-
-    try {
-      const url = editingCoupon 
-        ? `/api/admin/coupons/${editingCoupon.id}`
-        : '/api/admin/coupons';
-      
-      const method = editingCoupon ? 'PUT' : 'POST';
-      
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          code: formData.code.toUpperCase(),
-          discount: parseInt(formData.discount),
-          type: formData.type,
-          minOrder: formData.minOrder ? parseFloat(formData.minOrder) : null,
-          maxUses: formData.maxUses ? parseInt(formData.maxUses) : null,
-          expiresAt: formData.expiresAt || null,
-          active: formData.active
-        })
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Ошибка сохранения');
-      }
-
-      toast.success(editingCoupon ? 'Купон обновлён' : 'Купон создан');
-      setShowForm(false);
-      setEditingCoupon(null);
-      resetForm();
-      loadCoupons();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Удалить купон?')) return;
-    
-    try {
-      const res = await fetch(`/api/admin/coupons/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      
-      if (!res.ok) throw new Error('Failed to delete');
-      
-      toast.success('Купон удалён');
-      loadCoupons();
-    } catch (error) {
-      toast.error('Ошибка удаления');
-    }
-  };
-
-  const handleEdit = (coupon: Coupon) => {
-    setEditingCoupon(coupon);
-    setFormData({
-      code: coupon.code,
-      discount: coupon.discount.toString(),
-      type: coupon.type,
-      minOrder: coupon.minOrder || '',
-      maxUses: coupon.maxUses?.toString() || '',
-      expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().split('T')[0] : '',
-      active: coupon.active
-    });
-    setShowForm(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      code: '',
-      discount: '',
-      type: 'percent',
-      minOrder: '',
-      maxUses: '',
-      expiresAt: '',
-      active: true
-    });
-  };
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const copyToClipboard = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast.success('Код скопирован!');
+    toast.success('Код скопирован!', { icon: '📋' });
   };
 
-  const isExpired = (expiresAt?: string) => {
-    if (!expiresAt) return false;
-    return new Date(expiresAt) < new Date();
+  const deleteCoupon = async (couponId: string, couponCode: string) => {
+    const confirmed = await showConfirm({
+      title: 'Удаление записи о промокоде',
+      message: `Удалить запись о использовании промокода ${couponCode}? Это действие нельзя отменить.`,
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/profile/coupons/${couponId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (res.ok) {
+        toast.success('Запись удалена', { icon: '🗑️' });
+        loadData();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Error deleting coupon usage:', error);
+      toast.error('Ошибка сети');
+    }
   };
+
+  // Filter users based on search
+  const filteredUsers = users.filter(user => {
+    const searchTerm = search.toLowerCase();
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
+    return (
+      user.email.toLowerCase().includes(searchTerm) ||
+      fullName.includes(searchTerm) ||
+      user.coupons.some(c => c.code.toLowerCase().includes(searchTerm))
+    );
+  });
+
+  // Stats
+  const totalUsers = users.length;
+  const totalCoupons = users.reduce((sum, u) => sum + u.totalCoupons, 0);
+  const totalActive = users.reduce((sum, u) => sum + u.activeCount, 0);
+  const totalSavings = users.reduce((sum, u) => sum + u.totalSavings, 0);
 
   return (
     <AdminShell>
@@ -156,277 +147,293 @@ export default function AdminCouponsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Промокоды</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Всего: {coupons.length} | Активных: {coupons.filter(c => c.active).length}
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Промокоды пользователей
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              Управление персональными промокодами пользователей
             </p>
           </div>
-          <button
-            onClick={() => {
-              setEditingCoupon(null);
-              resetForm();
-              setShowForm(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
+          
+          <motion.button
+            onClick={loadData}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-4 py-2 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            <Plus size={18} />
-            Создать купон
-          </button>
+            <RefreshCw className="inline-block w-4 h-4 mr-2" />
+            Обновить
+          </motion.button>
         </div>
 
-        {/* Form Modal */}
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowForm(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {editingCoupon ? 'Редактировать купон' : 'Новый купон'}
-                </h2>
-                <button onClick={() => setShowForm(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-                  <X size={20} />
-                </button>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                <Users size={18} className="text-purple-600 dark:text-purple-400" />
               </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Пользователей</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{totalUsers}</p>
+              </div>
+            </div>
+          </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Код купона *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
-                    placeholder="SUMMER2024"
-                    className="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  />
-                </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <Ticket size={18} className="text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Всего промокодов</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{totalCoupons}</p>
+              </div>
+            </div>
+          </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Тип скидки *
-                    </label>
-                    <select
-                      value={formData.type}
-                      onChange={(e) => setFormData({...formData, type: e.target.value as 'percent' | 'fixed'})}
-                      className="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value="percent">Процент (%)</option>
-                      <option value="fixed">Фиксированная сумма (₽)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Размер скидки *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.discount}
-                      onChange={(e) => setFormData({...formData, discount: e.target.value})}
-                      placeholder={formData.type === 'percent' ? '10' : '500'}
-                      min={formData.type === 'percent' ? '1' : '1'}
-                      max={formData.type === 'percent' ? '100' : undefined}
-                      className="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500"
-                      required
-                    />
-                  </div>
-                </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                <CheckCircle2 size={18} className="text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Активных</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{totalActive}</p>
+              </div>
+            </div>
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Минимальная сумма заказа (₽)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.minOrder}
-                    onChange={(e) => setFormData({...formData, minOrder: e.target.value})}
-                    placeholder="1000"
-                    min="0"
-                    className="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                <TrendingUp size={18} className="text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Сэкономлено</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  {totalSavings.toLocaleString('ru-RU')} ₽
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Макс. использований
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.maxUses}
-                      onChange={(e) => setFormData({...formData, maxUses: e.target.value})}
-                      placeholder="∞"
-                      min="1"
-                      className="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Срок действия
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.expiresAt}
-                      onChange={(e) => setFormData({...formData, expiresAt: e.target.value})}
-                      className="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                </div>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Поиск по email, имени или коду промокода..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="active"
-                    checked={formData.active}
-                    onChange={(e) => setFormData({...formData, active: e.target.checked})}
-                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                  />
-                  <label htmlFor="active" className="text-sm text-gray-700 dark:text-gray-300">
-                    Активен
-                  </label>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="flex-1 px-4 py-2 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    Отмена
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
-                  >
-                    <Save size={18} />
-                    Сохранить
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* Coupons List */}
+        {/* Users List */}
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Загрузка...</div>
-        ) : coupons.length === 0 ? (
-          <div className="text-center py-12">
-            <Tag size={48} className="mx-auto mb-4 text-gray-300" />
-            <p className="text-gray-500">Нет созданных купонов</p>
+          <div className="flex items-center justify-center py-20">
+            <RefreshCw className="w-8 h-8 animate-spin text-purple-600" />
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="text-center py-20">
+            <Ticket className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Нет пользователей с промокодами
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              {search ? 'Попробуйте изменить поисковый запрос' : 'Промокоды появятся здесь после использования'}
+            </p>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {coupons.map((coupon) => {
-              const expired = isExpired(coupon.expiresAt);
-              const usagePercent = coupon.maxUses ? (coupon.usedCount / coupon.maxUses) * 100 : 0;
-              
-              return (
-                <motion.div
-                  key={coupon.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`bg-white dark:bg-gray-800 rounded-xl p-5 border-2 ${
-                    !coupon.active || expired 
-                      ? 'border-gray-200 dark:border-gray-700 opacity-60' 
-                      : 'border-purple-200 dark:border-purple-800'
-                  }`}
+          <div className="space-y-4">
+            {filteredUsers.map((user) => (
+              <motion.div
+                key={user.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+              >
+                {/* User Header */}
+                <button
+                  onClick={() => setExpandedUserId(expandedUserId === user.id ? null : user.id)}
+                  className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg">
-                          <Tag size={16} className="text-purple-600" />
-                          <span className="font-mono font-bold text-lg text-purple-700 dark:text-purple-400">
-                            {coupon.code}
-                          </span>
-                          <button
-                            onClick={() => copyToClipboard(coupon.code)}
-                            className="p-1 hover:bg-white/50 rounded"
-                            title="Копировать"
-                          >
-                            <Copy size={14} className="text-purple-600" />
-                          </button>
-                        </div>
-                        {coupon.active && !expired ? (
-                          <CheckCircle size={18} className="text-green-500" />
-                        ) : (
-                          <XCircle size={18} className="text-red-500" />
-                        )}
-                      </div>
+                  {/* Avatar */}
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                    ) : (
+                      (user.firstName?.[0] || user.email[0]).toUpperCase()
+                    )}
+                  </div>
 
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-1">
-                          {coupon.type === 'percent' ? <Percent size={14} /> : <span className="font-bold">₽</span>}
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {coupon.type === 'percent' ? `${coupon.discount}%` : `${coupon.discount} ₽`}
-                          </span>
-                        </div>
-                        
-                        {coupon.minOrder && (
-                          <div>Мин. заказ: {parseInt(coupon.minOrder).toLocaleString('ru-RU')} ₽</div>
-                        )}
-                        
-                        {coupon.maxUses && (
-                          <div className="flex items-center gap-1">
-                            <Users size={14} />
-                            {coupon.usedCount}/{coupon.maxUses}
-                          </div>
-                        )}
-                        
-                        {coupon.expiresAt && (
-                          <div className={`flex items-center gap-1 ${expired ? 'text-red-500' : ''}`}>
-                            <Calendar size={14} />
-                            {new Date(coupon.expiresAt).toLocaleDateString('ru-RU')}
-                            {expired && ' (истёк)'}
-                          </div>
-                        )}
-                      </div>
+                  {/* User Info */}
+                  <div className="flex-1 text-left">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      {user.firstName && user.lastName
+                        ? `${user.firstName} ${user.lastName}`
+                        : user.email}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                  </div>
 
-                      {coupon.maxUses && (
-                        <div className="mt-3">
-                          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
-                              style={{ width: `${usagePercent}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
+                  {/* Stats */}
+                  <div className="hidden md:flex items-center gap-6 text-sm">
+                    <div className="text-center">
+                      <p className="text-gray-500 dark:text-gray-400">Всего</p>
+                      <p className="font-bold text-gray-900 dark:text-white">{user.totalCoupons}</p>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEdit(coupon)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                        title="Редактировать"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(coupon.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        title="Удалить"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                    <div className="text-center">
+                      <p className="text-gray-500 dark:text-gray-400">Активных</p>
+                      <p className="font-bold text-green-600 dark:text-green-400">{user.activeCount}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-gray-500 dark:text-gray-400">Сэкономлено</p>
+                      <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                        {user.totalSavings.toLocaleString('ru-RU')} ₽
+                      </p>
                     </div>
                   </div>
-                </motion.div>
-              );
-            })}
+
+                  {/* Expand Icon */}
+                  <motion.div
+                    animate={{ rotate: expandedUserId === user.id ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  </motion.div>
+                </button>
+
+                {/* Expanded Coupons List */}
+                <AnimatePresence>
+                  {expandedUserId === user.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="border-t border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="p-6 space-y-3">
+                        {user.coupons.map((coupon) => {
+                          const isActive = coupon.isValid && !coupon.isExpired;
+                          const isUsed = !coupon.isValid;
+                          const isExpired = coupon.isExpired;
+
+                          return (
+                            <div
+                              key={coupon.id}
+                              className="group rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all"
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                {/* Left side - Coupon Info */}
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <div className={`p-2 rounded-lg ${
+                                      isActive
+                                        ? 'bg-purple-100 dark:bg-purple-900/30'
+                                        : isUsed
+                                        ? 'bg-blue-100 dark:bg-blue-900/30'
+                                        : 'bg-red-100 dark:bg-red-900/30'
+                                    }`}>
+                                      <Ticket size={18} className={
+                                        isActive
+                                          ? 'text-purple-600 dark:text-purple-400'
+                                          : isUsed
+                                          ? 'text-blue-600 dark:text-blue-400'
+                                          : 'text-red-600 dark:text-red-400'
+                                      } />
+                                    </div>
+                                    
+                                    <div>
+                                      <h4 className="font-mono font-bold text-gray-900 dark:text-white">
+                                        {coupon.code}
+                                      </h4>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Скидка:{' '}
+                                        <span className="font-semibold text-gray-900 dark:text-white">
+                                          {coupon.type === 'percent' ? `${coupon.discount}%` : `${coupon.discount} ₽`}
+                                        </span>
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Status & Details */}
+                                  <div className="flex items-center gap-4 text-sm">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      isActive
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                        : isUsed
+                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                    }`}>
+                                      {isActive ? 'Активен' : isUsed ? 'Использован' : 'Истёк'}
+                                    </span>
+                                    
+                                    {coupon.discountAmount && (
+                                      <span className="text-gray-500 dark:text-gray-400">
+                                        Сэкономлено:{' '}
+                                        <span className="font-semibold text-green-600 dark:text-green-400">
+                                          {parseFloat(coupon.discountAmount).toLocaleString('ru-RU')} ₽
+                                        </span>
+                                      </span>
+                                    )}
+                                    
+                                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                      <Clock size={12} />
+                                      {isUsed
+                                        ? new Date(coupon.usedAt || '').toLocaleDateString('ru-RU')
+                                        : new Date(coupon.expiresAt || '').toLocaleDateString('ru-RU')}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Right side - Actions */}
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <motion.button
+                                    onClick={() => copyToClipboard(coupon.code)}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Копировать код"
+                                  >
+                                    <Copy className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                  </motion.button>
+                                  
+                                  {coupon.orderId && (
+                                    <a
+                                      href={`/orders/${coupon.orderId}`}
+                                      className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                                      title="Перейти к заказу"
+                                    >
+                                      <ShoppingBag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    </a>
+                                  )}
+                                  
+                                  <motion.button
+                                    onClick={() => deleteCoupon(coupon.id, coupon.code)}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                    title="Удалить"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                  </motion.button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
           </div>
         )}
       </div>

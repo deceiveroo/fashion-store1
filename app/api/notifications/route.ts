@@ -13,8 +13,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    // Check if admin is requesting notifications for a specific user via header
+    const targetUserId = request.headers.get('x-user-id');
+    const isAdmin = session.user.role === 'admin' || session.user.role === 'manager';
+    
+    // If admin provides x-user-id header, use that; otherwise use session user
+    const userId = (isAdmin && targetUserId) ? targetUserId : session.user.id;
     const userRole = (session.user as any).role || 'customer';
+
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Fetching notifications for user:', userId, 'role:', userRole);
+    }
 
     // Get active notifications for this user
     const now = new Date();
@@ -27,6 +37,8 @@ export async function GET(request: NextRequest) {
         type: systemNotifications.type,
         createdAt: systemNotifications.createdAt,
         expiresAt: systemNotifications.expiresAt,
+        targetAudience: systemNotifications.targetAudience,
+        targetUserIds: systemNotifications.targetUserIds,
       })
       .from(systemNotifications)
       .where(
@@ -39,12 +51,7 @@ export async function GET(request: NextRequest) {
               eq(systemNotifications.targetAudience, 'admins'),
               inArray(userRole, ['admin', 'manager'])
             ),
-            and(
-              eq(systemNotifications.targetAudience, 'specific'),
-              // For specific audience, show to everyone (simplified)
-              // TODO: Add proper user targeting logic
-              eq(systemNotifications.targetAudience, 'specific')
-            )
+            eq(systemNotifications.targetAudience, 'specific')
           ),
           or(
             isNull(systemNotifications.expiresAt),
@@ -56,9 +63,45 @@ export async function GET(request: NextRequest) {
 
     // Filter out notifications that don't apply to this user
     notifications = notifications.filter(notification => {
-      // For now, simplify the logic
+      // For specific audience, check if user is in targetUserIds
+      if (notification.targetAudience === 'specific') {
+        // Handle both array and string formats from database
+        const targetIds = Array.isArray(notification.targetUserIds) 
+          ? notification.targetUserIds 
+          : typeof notification.targetUserIds === 'string'
+            ? JSON.parse(notification.targetUserIds)
+            : [];
+        
+        const isTargeted = targetIds.includes(userId);
+        
+        // Debug logging
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Notification filtering:', {
+            notificationId: notification.id,
+            userId,
+            targetUserIds: notification.targetUserIds,
+            parsedTargetIds: targetIds,
+            isTargeted
+          });
+        }
+        
+        return isTargeted;
+      }
       return true;
     });
+
+    // Debug logging after filtering
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Notifications after filtering:', {
+        totalBeforeFilter: notifications.length,
+        totalAfterFilter: notifications.filter(n => n.targetAudience === 'specific').length + notifications.filter(n => n.targetAudience !== 'specific').length,
+        personalNotifications: notifications.filter(n => n.targetAudience === 'specific').map(n => ({
+          id: n.id,
+          title: n.title,
+          targetUserIds: n.targetUserIds
+        }))
+      });
+    }
 
     // Get read status for each notification
     const readStatuses = await db

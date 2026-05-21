@@ -271,14 +271,16 @@ export default function Header() {
                         <div className="relative">
                           {/* Pulsing Avatar Animation */}
                           <div className={unreadCount > 0 ? 'animate-pulse' : ''}>
-                            <Image 
-                              src={user.avatar || user.image} 
-                              alt="Avatar" 
-                              width={32}
-                              height={32}
-                              className="rounded-full object-cover"
-                              priority
-                            />
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-purple-500/30">
+                              <Image 
+                                src={user.avatar || user.image || ''} 
+                                alt="Avatar" 
+                                width={32}
+                                height={32}
+                                className="w-full h-full object-cover"
+                                priority
+                              />
+                            </div>
                           </div>
                           {/* Small notification dot */}
                           {unreadCount > 0 && (
@@ -481,13 +483,15 @@ export default function Header() {
                         {/* Mobile profile avatar */}
                         <div className="flex items-center gap-3 py-2 mb-2">
                           {(user.avatar || user.image) ? (
-                            <Image 
-                              src={user.avatar || user.image} 
-                              alt="Avatar" 
-                              width={36}
-                              height={36}
-                              className="rounded-full object-cover"
-                            />
+                            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
+                              <Image 
+                                src={user.avatar || user.image || ''} 
+                                alt="Avatar" 
+                                width={36}
+                                height={36}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                           ) : (
                             <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
                               {user?.name?.[0] || user?.email?.[0] || 'U'}

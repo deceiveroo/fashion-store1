@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ImageIcon, FileText, BookOpen, Plus, Edit2, Trash2, Save, X, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
 
 interface ContentItem {
@@ -16,6 +17,7 @@ interface ContentItem {
 }
 
 export default function AdminContentPage() {
+  const { showConfirm } = useConfirm();
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -79,7 +81,16 @@ export default function AdminContentPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Удалить этот контент?')) return;
+    const confirmed = await showConfirm({
+      title: 'Удаление контента',
+      message: 'Удалить этот контент?',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
+    
     try {
       const response = await fetch(`/api/admin/content/${id}`, {
         method: 'DELETE',

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Tag, X, Save, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
 
 interface Category {
@@ -13,6 +14,7 @@ interface Category {
 const toSlug = (s: string) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
 export default function CategoriesPage() {
+  const { showConfirm } = useConfirm();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -57,7 +59,16 @@ export default function CategoriesPage() {
   };
 
   const deleteCategory = async (id: string, name: string) => {
-    if (!confirm(`Удалить "${name}"?`)) return;
+    const confirmed = await showConfirm({
+      title: 'Удаление категории',
+      message: `Удалить "${name}"?`,
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
+    
     try {
       const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
       if (res.ok) { toast.success('Удалено'); load(); }

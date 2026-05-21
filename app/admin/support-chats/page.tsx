@@ -1,15 +1,19 @@
 ﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users } from 'lucide-react';
+import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
+import SLADashboard from '@/components/admin/SLADashboard';
+import { TypingIndicatorManager } from '@/lib/typing-indicator';
 import { supabase } from '@/lib/supabase-client';
 
 interface Msg { id: string; sessionId: string; message: string; sender: 'user'|'ai'|'admin'; createdAt: string; }
 interface Session { id: string; sessionId: string; userEmail: string|null; userName: string|null; status: 'active'|'resolved'|'archived'; messageCount: number|null; firstMessage: string|null; lastMessageAt: string|null; aiDisabled: boolean|null; createdAt: string; }
 
 function SupportChatsPage() {
+  const { showConfirm } = useConfirm();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sel, setSel] = useState<Session|null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -17,6 +21,9 @@ function SupportChatsPage() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState<'all'|'active'|'resolved'>('all');
+  const [activeTab, setActiveTab] = useState<'chats'|'analytics'>('chats');
+  const [userTyping, setUserTyping] = useState(false); // Пользователь печатает
+  const typingManagerRef = useRef<TypingIndicatorManager | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const selRef = useRef<Session|null>(null);
   const realtimeChannelRef = useRef<any>(null);
@@ -112,6 +119,24 @@ function SupportChatsPage() {
     realtimeChannelRef.current = channel;
   }, [sel?.sessionId]);
 
+  // Typing indicator для админа
+  useEffect(() => {
+    if (sel && sel.aiDisabled) {
+      // Инициализируем typing manager для админа
+      typingManagerRef.current = new TypingIndicatorManager(sel.sessionId, 'admin');
+      typingManagerRef.current.initialize(supabase, (userId, isTyping) => {
+        setUserTyping(isTyping);
+      });
+    } else {
+      typingManagerRef.current?.cleanup();
+      setUserTyping(false);
+    }
+    
+    return () => {
+      typingManagerRef.current?.cleanup();
+    };
+  }, [sel?.sessionId, sel?.aiDisabled]);
+
   // Realtime для списка сессий
   const subscribeToSessions = () => {
     const channel = supabase
@@ -181,7 +206,17 @@ function SupportChatsPage() {
 
   const del = async (sid: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Удалить чат?')) return;
+    
+    const confirmed = await showConfirm({
+      title: 'Удаление чата',
+      message: 'Удалить чат? Это действие нельзя отменить.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
+    
     const r = await fetch('/api/admin/support-chats/delete', {
       method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }),
     });
@@ -239,8 +274,48 @@ function SupportChatsPage() {
           ))}
         </div>
 
-        {/* Main Content - Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-320px)] min-h-[600px]">
+        {/* Tabs */}
+        <div className="flex gap-2 border-b border-gray-200 dark:border-white/10">
+          <button
+            onClick={() => setActiveTab('chats')}
+            className={`px-6 py-3 text-sm font-medium transition-colors relative ${
+              activeTab === 'chats'
+                ? 'text-violet-600 dark:text-violet-400'
+                : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Чаты
+            </div>
+            {activeTab === 'chats' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-400" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-6 py-3 text-sm font-medium transition-colors relative ${
+              activeTab === 'analytics'
+                ? 'text-violet-600 dark:text-violet-400'
+                : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Аналитика SLA
+            </div>
+            {activeTab === 'analytics' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-400" />
+            )}
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'analytics' ? (
+          <SLADashboard days={30} />
+        ) : (
+          // Main Content - Two Column Layout
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-320px)] min-h-[600px]">
           {/* Left Column - Chat List */}
           <div className="lg:col-span-1 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] backdrop-blur-sm flex flex-col overflow-hidden shadow-sm">
             {/* Filter Tabs */}
@@ -436,11 +511,30 @@ function SupportChatsPage() {
                       Перехватите чат чтобы писать
                     </p>
                   )}
+                  
+                  {/* Typing Indicator */}
+                  {userTyping && taken && (
+                    <div className="mb-3 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex gap-1">
+                        <span className="w-2 h-2 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
+                        <span className="w-2 h-2 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
+                      </div>
+                      <span>Пользователь печатает...</span>
+                    </div>
+                  )}
+                  
                   <div className="flex gap-3">
                     <input 
                       type="text" 
                       value={input} 
-                      onChange={e=>setInput(e.target.value)}
+                      onChange={e => {
+                        setInput(e.target.value);
+                        // Отправляем typing статус
+                        if (taken && typingManagerRef.current) {
+                          typingManagerRef.current.notifyTyping();
+                        }
+                      }}
                       onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}}
                       placeholder={taken?"Напишите сообщение...":"Сначала перехватите чат..."}
                       disabled={!taken||sending}
@@ -474,6 +568,7 @@ function SupportChatsPage() {
             )}
           </div>
         </div>
+        )}
       </div>
     </AdminShell>
   );

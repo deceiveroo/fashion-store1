@@ -7,7 +7,7 @@ import { getSession } from '@/lib/server-auth';
 // PATCH /api/admin/notifications/[id] - Update notification
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -16,7 +16,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
     const { title, message, type, isActive } = body;
 
@@ -62,7 +62,7 @@ export async function PATCH(
 // DELETE /api/admin/notifications/[id] - Delete notification
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -71,7 +71,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const id = params.id;
+    const { id } = await params;
 
     // Check if notification exists
     const existing = await db

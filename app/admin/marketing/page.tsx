@@ -16,6 +16,7 @@ import {
   DollarSign,
   Clock
 } from 'lucide-react';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 interface Coupon {
   id: string;
@@ -50,6 +51,7 @@ interface EmailTemplate {
 }
 
 export default function MarketingPage() {
+  const { showConfirm } = useConfirm();
   const [activeTab, setActiveTab] = useState<'coupons' | 'abandoned' | 'email'>('coupons');
   
   // Coupons state
@@ -107,7 +109,15 @@ export default function MarketingPage() {
   };
 
   const handleDeleteCoupon = async (id: string) => {
-    if (!confirm('Удалить этот купон?')) return;
+    const confirmed = await showConfirm({
+      title: 'Удаление купона',
+      message: 'Удалить этот купон?',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
     
     try {
       const response = await fetch(`/api/admin/coupons/${id}`, {

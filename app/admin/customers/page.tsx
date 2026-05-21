@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, User, Trash2, Edit3, Camera, X, Save, RefreshCw, Users, TrendingUp, Mail, Phone } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
 
 interface Customer {
@@ -20,6 +21,7 @@ const ROLE_STYLE: Record<string, string> = {
 };
 
 export default function CustomersPage() {
+  const { showConfirm } = useConfirm();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,16 @@ export default function CustomersPage() {
   useEffect(() => { load(); }, []);
 
   const deleteCustomer = async (id: string) => {
-    if (!confirm('Удалить клиента? Это действие нельзя отменить.')) return;
+    const confirmed = await showConfirm({
+      title: 'Удаление клиента',
+      message: 'Удалить клиента? Это действие нельзя отменить.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
+    
     try {
       console.log('[DELETE] Attempting to delete customer:', id);
       const res = await fetch(`/api/admin/users?id=${id}`, { method: 'DELETE', credentials: 'include' });

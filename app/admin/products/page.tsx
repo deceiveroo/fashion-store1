@@ -18,6 +18,7 @@ import {
   ToggleRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
 
 interface Product {
@@ -34,6 +35,7 @@ interface Product {
 
 export default function AdminProductsPage() {
   const router = useRouter();
+  const { showConfirm } = useConfirm();
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [stockFilter, setStockFilter] = useState('all');
@@ -91,7 +93,18 @@ export default function AdminProductsPage() {
   };
 
   const deleteProduct = async (id: string, hard = false) => {
-    if (!confirm(hard ? 'Удалить навсегда?' : 'Скрыть товар из каталога?')) return;
+    const confirmed = await showConfirm({
+      title: hard ? 'Удаление товара' : 'Скрытие товара',
+      message: hard 
+        ? 'Удалить товар навсегда? Это действие нельзя отменить.'
+        : 'Скрыть товар из каталога?',
+      confirmText: hard ? 'Удалить навсегда' : 'Скрыть',
+      cancelText: 'Отмена',
+      variant: hard ? 'danger' : 'warning',
+    });
+    
+    if (!confirmed) return;
+    
     setBusyId(id);
     try {
       const res = await fetch(`/api/admin/products/${id}?hard=${hard}`, {
@@ -100,10 +113,9 @@ export default function AdminProductsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setProducts((p) => p.filter((x) => x.id !== id));
+        // Перезагружаем список товаров с сервера
+        await load();
         toast.success(data.message || 'Готово');
-        // Обновляем кэш сервера
-        router.refresh();
       } else {
         toast.error(data.error || 'Ошибка удаления');
       }
@@ -157,12 +169,23 @@ export default function AdminProductsPage() {
 
   const bulkDelete = async () => {
     if (selected.size === 0) return;
-    if (!confirm(`Скрыть ${selected.size} товар(ов)?`)) return;
+    
+    const confirmed = await showConfirm({
+      title: 'Массовое удаление',
+      message: `Удалить ${selected.size} товар(ов) навсегда? Это действие нельзя отменить.`,
+      confirmText: 'Удалить навсегда',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
+    
     for (const id of selected) {
-      await fetch(`/api/admin/products/${id}`, { method: 'DELETE', credentials: 'include' });
+      await fetch(`/api/admin/products/${id}?hard=true`, { method: 'DELETE', credentials: 'include' });
     }
     setSelected(new Set());
-    toast.success('Выбранные товары скрыты');
+    toast.success('Выбранные товары удалены');
+    // Перезагружаем список
     await load();
   };
 
@@ -382,7 +405,7 @@ export default function AdminProductsPage() {
                             />
                             <ActionBtn title="Редактировать" onClick={() => router.push(`/admin/products/${p.id}`)} icon={Edit3} />
                             <ActionBtn title="Дубликат" onClick={() => void duplicateProduct(p)} icon={Copy} />
-                            <ActionBtn title="Удалить" onClick={() => void deleteProduct(p.id)} icon={Trash2} danger />
+                            <ActionBtn title="Удалить навсегда" onClick={() => void deleteProduct(p.id, true)} icon={Trash2} danger />
                           </div>
                         </td>
                       </motion.tr>

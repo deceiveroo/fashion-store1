@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ticket, Clock, Copy, CheckCircle2, XCircle, AlertCircle, TrendingUp, ShoppingBag } from 'lucide-react';
+import { Ticket, Clock, Copy, CheckCircle2, XCircle, AlertCircle, TrendingUp, ShoppingBag, Trash2 } from 'lucide-react';
 import { UserCoupon } from '@/app/profile/hooks/useProfileData';
 import { Loader } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,11 +10,12 @@ import { toast } from 'sonner';
 interface CouponsSectionProps {
   coupons: UserCoupon[];
   isLoadingData: boolean;
+  loadCoupons?: () => Promise<void>;
 }
 
 type TabType = 'all' | 'active' | 'used' | 'expired';
 
-export default function CouponsSection({ coupons, isLoadingData }: CouponsSectionProps) {
+export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: CouponsSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [stats, setStats] = useState({
     totalSavings: 0,
@@ -57,6 +58,35 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
     });
   };
 
+  const deleteCoupon = async (couponId: string, couponCode: string) => {
+    if (!confirm(`Удалить запись о использовании промокода ${couponCode}?\n\nЭто действие нельзя отменить.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/profile/coupons/${couponId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (res.ok) {
+        toast.success('Запись удалена', { icon: '🗑️' });
+        // Reload coupons data
+        if (loadCoupons) {
+          await loadCoupons();
+        } else {
+          window.location.reload();
+        }
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Error deleting coupon usage:', error);
+      toast.error('Ошибка сети');
+    }
+  };
+
   if (isLoadingData) {
     return (
       <div className="text-center py-16">
@@ -87,25 +117,20 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards - Cyber Glassmorphism */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Stats Cards - Clean Design */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl p-4 border"
-          style={{
-            background: 'linear-gradient(135deg, rgba(108,92,231,0.1), rgba(0,210,255,0.1))',
-            borderColor: 'rgba(108,92,231,0.3)',
-            backdropFilter: 'blur(10px)'
-          }}
+          className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500">
-              <TrendingUp size={20} className="text-white" />
+            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+              <TrendingUp size={18} className="text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Всего сэкономлено</p>
-              <p className="text-2xl font-black text-white" style={{ textShadow: '0 0 10px rgba(108,92,231,0.5)' }}>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Сэкономлено</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {stats.totalSavings.toLocaleString('ru-RU')} ₽
               </p>
             </div>
@@ -116,20 +141,15 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative overflow-hidden rounded-2xl p-4 border"
-          style={{
-            background: 'linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,210,255,0.1))',
-            borderColor: 'rgba(0,255,136,0.3)',
-            backdropFilter: 'blur(10px)'
-          }}
+          className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-cyan-500">
-              <CheckCircle2 size={20} className="text-white" />
+            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+              <CheckCircle2 size={18} className="text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Активных</p>
-              <p className="text-2xl font-black text-white" style={{ textShadow: '0 0 10px rgba(0,255,136,0.5)' }}>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Активных</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {stats.activeCount}
               </p>
             </div>
@@ -140,20 +160,15 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="relative overflow-hidden rounded-2xl p-4 border"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255,107,157,0.1), rgba(255,215,0,0.1))',
-            borderColor: 'rgba(255,107,157,0.3)',
-            backdropFilter: 'blur(10px)'
-          }}
+          className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-pink-500 to-yellow-500">
-              <ShoppingBag size={20} className="text-white" />
+            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+              <ShoppingBag size={18} className="text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Использовано</p>
-              <p className="text-2xl font-black text-white" style={{ textShadow: '0 0 10px rgba(255,107,157,0.5)' }}>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Использовано</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {stats.usedCount}
               </p>
             </div>
@@ -164,20 +179,15 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="relative overflow-hidden rounded-2xl p-4 border"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255,0,0,0.1), rgba(255,107,157,0.1))',
-            borderColor: 'rgba(255,0,0,0.3)',
-            backdropFilter: 'blur(10px)'
-          }}
+          className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-pink-500">
-              <XCircle size={20} className="text-white" />
+            <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
+              <XCircle size={18} className="text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Истекло</p>
-              <p className="text-2xl font-black text-white" style={{ textShadow: '0 0 10px rgba(255,0,0,0.5)' }}>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Истекло</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {stats.expiredCount}
               </p>
             </div>
@@ -185,13 +195,8 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
         </motion.div>
       </div>
 
-      {/* Tabs - Cyber Glassmorphism */}
-      <div className="flex gap-2 p-2 rounded-2xl"
-           style={{
-             background: 'rgba(255,255,255,0.05)',
-             border: '1px solid rgba(255,255,255,0.1)',
-             backdropFilter: 'blur(20px)'
-           }}>
+      {/* Tabs - Clean Design */}
+      <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg w-fit">
         {[
           { id: 'all', label: 'Все', count: coupons.length },
           { id: 'active', label: 'Активные', count: stats.activeCount },
@@ -203,27 +208,18 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
             onClick={() => setActiveTab(tab.id as TabType)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`flex-1 px-4 py-3 rounded-xl font-bold text-sm transition-all relative overflow-hidden ${
-              activeTab === tab.id ? 'text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            className={`px-4 py-2 rounded-md font-medium text-sm transition-all ${
+              activeTab === tab.id
+                ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
-            style={{
-              background: activeTab === tab.id
-                ? 'linear-gradient(135deg, #6C5CE7, #00D2FF)'
-                : 'transparent',
-              boxShadow: activeTab === tab.id
-                ? '0 0 20px rgba(108,92,231,0.5), inset 0 0 10px rgba(255,255,255,0.2)'
-                : 'none',
-              border: activeTab === tab.id
-                ? '1px solid rgba(255,255,255,0.3)'
-                : '1px solid transparent'
-            }}
           >
-            <span className="relative z-10 flex items-center justify-center gap-2">
+            <span className="flex items-center gap-2">
               {tab.label}
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                 activeTab === tab.id
-                  ? 'bg-white/20'
-                  : 'bg-gray-200 dark:bg-gray-700'
+                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
               }`}>
                 {tab.count}
               </span>
@@ -259,79 +255,32 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -4, scale: 1.01 }}
-                  className="relative overflow-hidden rounded-2xl p-6 border-2 group"
-                  style={{
-                    background: isUsed
-                      ? 'linear-gradient(135deg, rgba(0,255,136,0.05), rgba(0,210,255,0.05))'
-                      : isExpired
-                      ? 'linear-gradient(135deg, rgba(255,0,0,0.05), rgba(255,107,157,0.05))'
-                      : 'linear-gradient(135deg, rgba(108,92,231,0.1), rgba(0,210,255,0.1))',
-                    borderColor: isUsed
-                      ? 'rgba(0,255,136,0.3)'
-                      : isExpired
-                      ? 'rgba(255,0,0,0.3)'
-                      : 'rgba(108,92,231,0.3)',
-                    boxShadow: isActive
-                      ? '0 0 30px rgba(108,92,231,0.2)'
-                      : 'none',
-                    backdropFilter: 'blur(20px)'
-                  }}
+                  className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-all"
                 >
-                  {/* Status Badge */}
-                  <div className="absolute top-4 right-4">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className={`px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                  {/* Header with Status */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-lg ${
                         isActive
-                          ? 'text-white'
+                          ? 'bg-purple-100 dark:bg-purple-900/30'
                           : isUsed
-                          ? 'text-white'
-                          : 'text-white'
-                      }`}
-                      style={{
-                        background: isActive
-                          ? 'linear-gradient(135deg, #00FF88, #00D2FF)'
-                          : isUsed
-                          ? 'linear-gradient(135deg, #6C5CE7, #00D2FF)'
-                          : 'linear-gradient(135deg, #FF0000, #FF6B9D)',
-                        boxShadow: isActive
-                          ? '0 0 20px rgba(0,255,136,0.5)'
-                          : isUsed
-                          ? '0 0 20px rgba(108,92,231,0.5)'
-                          : '0 0 20px rgba(255,0,0,0.5)'
-                      }}
-                    >
-                      {isActive && <CheckCircle2 size={14} />}
-                      {isUsed && <ShoppingBag size={14} />}
-                      {isExpired && <XCircle size={14} />}
-                      {isActive ? 'Активен' : isUsed ? 'Использован' : 'Истёк'}
-                    </motion.div>
-                  </div>
-
-                  {/* Coupon Code & Discount */}
-                  <div className="mb-4 pr-32">
-                    <div className="flex items-center gap-3 mb-2">
-                      <motion.div
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        className="p-3 rounded-xl"
-                        style={{
-                          background: isActive
-                            ? 'linear-gradient(135deg, rgba(108,92,231,0.2), rgba(0,210,255,0.2))'
-                            : 'rgba(255,255,255,0.05)',
-                          border: '1px solid rgba(255,255,255,0.1)'
-                        }}
-                      >
-                        <Ticket size={24} className={isActive ? 'text-purple-400' : 'text-gray-400'} />
-                      </motion.div>
+                          ? 'bg-blue-100 dark:bg-blue-900/30'
+                          : 'bg-red-100 dark:bg-red-900/30'
+                      }`}>
+                        <Ticket size={20} className={
+                          isActive
+                            ? 'text-purple-600 dark:text-purple-400'
+                            : isUsed
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-red-600 dark:text-red-400'
+                        } />
+                      </div>
                       <div>
-                        <h4 className="font-black text-white text-xl font-mono tracking-wider"
-                            style={{ textShadow: isActive ? '0 0 20px rgba(108,92,231,0.5)' : 'none' }}>
+                        <h4 className="font-mono font-bold text-gray-900 dark:text-white text-lg">
                           {coupon.code || coupon.couponCode}
                         </h4>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Скидка: <span className="font-bold text-white">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                          Скидка: <span className="font-semibold text-gray-900 dark:text-white">
                             {(coupon.type || coupon.couponType) === 'percent' 
                               ? `${coupon.discount || coupon.couponDiscount}%` 
                               : `${coupon.discount || coupon.couponDiscount} ₽`}
@@ -339,30 +288,33 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
                         </p>
                       </div>
                     </div>
+
+                    {/* Status Badge */}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      isActive
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : isUsed
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                      {isActive ? 'Активен' : isUsed ? 'Использован' : 'Истёк'}
+                    </span>
                   </div>
 
-                  {/* Savings & Date */}
+                  {/* Info Grid */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="p-3 rounded-xl"
-                         style={{
-                           background: 'rgba(255,255,255,0.05)',
-                           border: '1px solid rgba(255,255,255,0.1)'
-                         }}>
-                      <p className="text-xs text-gray-400 mb-1 font-medium">Сэкономлено</p>
-                      <p className="text-lg font-black text-green-400" style={{ textShadow: '0 0 10px rgba(0,255,136,0.5)' }}>
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Сэкономлено</p>
+                      <p className="text-lg font-bold text-green-600 dark:text-green-400">
                         {coupon.discountAmount ? parseFloat(coupon.discountAmount).toLocaleString('ru-RU') : '0'} ₽
                       </p>
                     </div>
-                    <div className="p-3 rounded-xl"
-                         style={{
-                           background: 'rgba(255,255,255,0.05)',
-                           border: '1px solid rgba(255,255,255,0.1)'
-                         }}>
-                      <p className="text-xs text-gray-400 mb-1 font-medium flex items-center gap-1">
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
                         <Clock size={12} />
                         {isUsed ? 'Использован' : 'Действует до'}
                       </p>
-                      <p className="text-sm font-bold text-white">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
                         {new Date(isUsed ? (coupon.usedAt || '') : (coupon.expiresAt || coupon.couponExpiresAt || '')).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
@@ -375,13 +327,7 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
                         onClick={() => copyToClipboard(coupon.code || coupon.couponCode || '')}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"
-                        style={{
-                          background: 'linear-gradient(135deg, #6C5CE7, #00D2FF)',
-                          color: '#fff',
-                          boxShadow: '0 0 20px rgba(108,92,231,0.5)',
-                          border: '1px solid rgba(255,255,255,0.2)'
-                        }}
+                        className="flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white transition-colors"
                       >
                         <Copy size={16} />
                         Копировать код
@@ -390,16 +336,23 @@ export default function CouponsSection({ coupons, isLoadingData }: CouponsSectio
                     {coupon.orderId && (
                       <a
                         href={`/orders/${coupon.orderId}`}
-                        className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 text-center"
-                        style={{
-                          background: 'rgba(255,255,255,0.05)',
-                          color: '#fff',
-                          border: '1px solid rgba(255,255,255,0.2)'
-                        }}
+                        className="flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 text-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors"
                       >
                         <ShoppingBag size={16} />
                         К заказу
                       </a>
+                    )}
+                    {/* Delete button - only for used coupons */}
+                    {isUsed && (
+                      <motion.button
+                        onClick={() => deleteCoupon(coupon.id, coupon.code || coupon.couponCode || '')}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="p-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors"
+                        title="Удалить запись об использовании"
+                      >
+                        <Trash2 size={18} />
+                      </motion.button>
                     )}
                   </div>
                 </motion.div>

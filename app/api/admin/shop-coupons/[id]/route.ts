@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
 // PUT /api/admin/shop-coupons/[id] - Update shop coupon
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     
@@ -18,7 +18,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
 
     const [updated] = await db
@@ -42,7 +42,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/admin/shop-coupons/[id] - Delete shop coupon
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     
@@ -55,7 +55,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const id = params.id;
+    const { id } = await params;
 
     // Delete associated purchases first
     await db
@@ -80,7 +80,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 }
 
 // POST /api/admin/shop-coupons/[id]/reset - Reset all purchases for this coupon
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const id = params.id;
+    const { id } = await params;
 
     // Delete all purchases for this coupon
     await db
