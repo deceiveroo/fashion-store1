@@ -39,30 +39,44 @@ export default function ReviewList({ productId }: ReviewListProps) {
       }
 
       const response = await fetch(`/api/reviews?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      
+      if (!data || !data.reviews) {
+        throw new Error('Invalid response format');
+      }
 
-      if (response.ok) {
-        setReviews(data.reviews);
-        setPagination(data.pagination);
-        setStatistics(data.statistics);
-        
-        // Загружаем голоса пользователя для каждого отзыва
-        const votes: Record<string, boolean> = {};
-        await Promise.all(
-          data.reviews.map(async (review: any) => {
-            try {
-              const voteResponse = await fetch(`/api/reviews/${review.id}/helpful`);
+      setReviews(data.reviews);
+      setPagination(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
+      setStatistics(data.statistics || { averageRating: 0, totalCount: 0, distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } });
+      
+      // Загружаем голоса пользователя для каждого отзыва
+      const votes: Record<string, boolean> = {};
+      await Promise.all(
+        data.reviews.map(async (review: any) => {
+          try {
+            const voteResponse = await fetch(`/api/reviews/${review.id}/helpful`);
+            if (voteResponse.ok) {
               const voteData = await voteResponse.json();
               votes[review.id] = voteData.voted;
-            } catch {
-              votes[review.id] = false;
             }
-          })
-        );
-        setUserVotes(votes);
-      }
+          } catch (err) {
+            console.warn(`Failed to load vote for review ${review.id}:`, err);
+            votes[review.id] = false;
+          }
+        })
+      );
+      setUserVotes(votes);
     } catch (error) {
       console.error('Error loading reviews:', error);
+      // Устанавливаем пустые данные при ошибке
+      setReviews([]);
+      setPagination({ page: 1, limit: 10, total: 0, totalPages: 0 });
+      setStatistics({ averageRating: 0, totalCount: 0, distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } });
     } finally {
       setLoading(false);
     }
