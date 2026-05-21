@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Send, MessageCircle, Search, ChevronDown, Package, CreditCard, HelpCircle,
-  Check, CheckCheck, Loader, ArrowLeft, Sparkles
+  Check, CheckCheck, Loader, ArrowLeft, Sparkles, User
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AUTO_RESPONSES } from '@/lib/chat-auto-responses';
@@ -453,10 +453,27 @@ export default function SupportChatMinimalist() {
                       key={msg.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                      className={`flex gap-2 sm:gap-3 ${msg.sender === 'user' ? 'justify-end flex-row-reverse' : 'justify-start'}`}
                     >
+                      {/* Avatar */}
+                      {!msg.imageUrl && (
+                        <div
+                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            msg.sender === 'user'
+                              ? 'bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D]'
+                              : 'bg-gray-200 dark:bg-white/10'
+                          }`}
+                        >
+                          {msg.sender === 'user' ? (
+                            <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                          ) : (
+                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#9D4EDD]" />
+                          )}
+                        </div>
+                      )}
+                      
                       <div
-                        className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                        className={`max-w-[70%] sm:max-w-[80%] px-4 py-3 rounded-2xl ${
                           msg.sender === 'user'
                             ? 'bg-gradient-to-r from-[#9D4EDD] to-[#FF6B9D] text-white'
                             : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white/90 border border-gray-200 dark:border-white/10'

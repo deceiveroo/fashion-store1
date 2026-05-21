@@ -205,19 +205,19 @@ export default function SupportChat() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {messages.map(msg => (
-              <div key={msg.id} className={`flex gap-2.5 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div key={msg.id} className={`flex gap-2 sm:gap-2.5 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                 {/* Avatar */}
-                <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full ${
+                <div className={`flex h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full ${
                   msg.sender === 'user' ? 'bg-violet-600' :
                   msg.sender === 'admin' ? 'bg-emerald-600' : 'bg-white/10'
                 }`}>
-                  {msg.sender === 'user' ? <User className="h-3.5 w-3.5 text-white" /> :
-                   msg.sender === 'admin' ? <Shield className="h-3.5 w-3.5 text-white" /> :
-                   <Bot className="h-3.5 w-3.5 text-white/60" />}
+                  {msg.sender === 'user' ? <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" /> :
+                   msg.sender === 'admin' ? <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" /> :
+                   <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white/60" />}
                 </div>
 
                 {/* Bubble */}
-                <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 ${
+                <div className={`max-w-[70%] sm:max-w-[75%] rounded-2xl px-3 sm:px-3.5 py-2 sm:py-2.5 ${
                   msg.sender === 'user'
                     ? 'rounded-tr-sm bg-violet-600 text-white'
                     : msg.sender === 'admin'

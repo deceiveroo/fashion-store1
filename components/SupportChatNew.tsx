@@ -523,11 +523,11 @@ export default function SupportChatNew() {
                   initial={{ opacity: 0, y: 20, scale: 0.8 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ delay: i < 3 ? 0 : 0.05 }}
-                  className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                  className={`flex gap-2 sm:gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   {/* Avatar */}
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                       msg.sender === 'user'
                         ? 'bg-gradient-to-br from-blue-500 to-purple-600'
                         : msg.sender === 'admin'
@@ -536,11 +536,11 @@ export default function SupportChatNew() {
                     }`}
                   >
                     {msg.sender === 'user' ? (
-                      <User className="w-5 h-5 text-white" />
+                      <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     ) : msg.sender === 'admin' ? (
-                      <Shield className="w-5 h-5 text-white" />
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     ) : (
-                      <Bot className="w-5 h-5 text-white" />
+                      <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     )}
                   </div>
 
@@ -548,7 +548,7 @@ export default function SupportChatNew() {
                   <div
                     role="article"
                     aria-label={`Сообщение от ${msg.sender === 'user' ? 'вас' : msg.sender === 'admin' ? 'оператора' : 'AI ассистента'}`}
-                    className={`max-w-[75%] rounded-2xl p-4 ${
+                    className={`max-w-[70%] sm:max-w-[75%] rounded-2xl p-3 sm:p-4 ${
                       msg.sender === 'user'
                         ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
                         : msg.sender === 'admin'
