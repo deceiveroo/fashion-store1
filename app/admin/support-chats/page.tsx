@@ -9,8 +9,29 @@ import SLADashboard from '@/components/admin/SLADashboard';
 import { TypingIndicatorManager } from '@/lib/typing-indicator';
 import { supabase } from '@/lib/supabase-client';
 
-interface Msg { id: string; sessionId: string; message: string; sender: 'user'|'ai'|'admin'; createdAt: string; }
-interface Session { id: string; sessionId: string; userEmail: string|null; userName: string|null; status: 'active'|'resolved'|'archived'; messageCount: number|null; firstMessage: string|null; lastMessageAt: string|null; aiDisabled: boolean|null; createdAt: string; }
+interface Msg { 
+  id: string; 
+  sessionId: string; 
+  message: string; 
+  sender: 'user'|'ai'|'admin';
+  senderName?: string | null;
+  senderAvatar?: string | null;
+  createdAt: string; 
+}
+
+interface Session { 
+  id: string; 
+  sessionId: string; 
+  userEmail: string|null; 
+  userName: string|null;
+  userAvatar?: string | null;
+  status: 'active'|'resolved'|'archived'; 
+  messageCount: number|null; 
+  firstMessage: string|null; 
+  lastMessageAt: string|null; 
+  aiDisabled: boolean|null; 
+  createdAt: string; 
+}
 
 function SupportChatsPage() {
   const { showConfirm } = useConfirm();
@@ -226,6 +247,24 @@ function SupportChatsPage() {
 
   const filtered = sessions.filter(s => filter === 'all' || s.status === filter);
 
+  // Функция для получения аватара пользователя
+  const getUserAvatar = (userEmail: string | null, userName: string | null, userAvatar?: string | null) => {
+    if (userAvatar) return userAvatar;
+    if (userEmail) {
+      // Генерируем avatar через UI Avatars API
+      const name = userName || userEmail.split('@')[0];
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128`;
+    }
+    return null; // Гость - будет стандартная иконка
+  };
+
+  // Функция для получения аватара оператора (админа)
+  const getAdminAvatar = () => {
+    // Здесь можно добавить реальный аватар админа из сессии
+    // Пока используем placeholder
+    return 'https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff&size=128';
+  };
+
   return (
     <AdminShell>
       <div className="space-y-6">
@@ -352,7 +391,9 @@ function SupportChatsPage() {
                   <p>Нет чатов</p>
                 </div>
               ) : (
-                filtered.map(s => (
+                filtered.map(s => {
+                  const avatarUrl = getUserAvatar(s.userEmail, s.userName, s.userAvatar);
+                  return (
                   <div 
                     key={s.id} 
                     onClick={() => setSel(s)}
@@ -360,36 +401,51 @@ function SupportChatsPage() {
                       sel?.id===s.id ? 'bg-violet-100 dark:bg-violet-500/10 border-l-2 border-l-violet-500' : ''
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.status==='active'?'bg-emerald-500 animate-pulse':'bg-gray-300 dark:bg-white/20'}`}/>
-                        <span className="text-sm font-medium truncate text-gray-900 dark:text-white">{s.userName||s.userEmail||'Гость'}</span>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                        {s.aiDisabled && <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400"/>}
-                        <button 
-                          onClick={(e)=>del(s.sessionId,e)} 
-                          className="p-1 text-gray-400 dark:text-white/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4"/>
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-white/40 truncate ml-4 mb-2">{s.firstMessage||''}</p>
-                    <div className="flex justify-between ml-4">
-                      <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {s.messageCount||0}
-                      </span>
-                      {s.lastMessageAt && (
-                        <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(s.lastMessageAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
-                        </span>
+                    <div className="flex items-center gap-3 mb-2">
+                      {/* Avatar */}
+                      {avatarUrl ? (
+                        <img 
+                          src={avatarUrl} 
+                          alt={s.userName || 'User'}
+                          className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-gray-200 dark:border-white/10"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                          <User className="h-5 w-5 text-white" />
+                        </div>
                       )}
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium truncate text-gray-900 dark:text-white">{s.userName||s.userEmail||'Гость'}</span>
+                          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                            {s.aiDisabled && <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400"/>}
+                            <button 
+                              onClick={(e)=>del(s.sessionId,e)} 
+                              className="p-1 text-gray-400 dark:text-white/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4"/>
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-white/40 truncate mt-1">{s.firstMessage||''}</p>
+                        <div className="flex justify-between mt-2">
+                          <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {s.messageCount||0}
+                          </span>
+                          {s.lastMessageAt && (
+                            <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(s.lastMessageAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ))
+                );
+              })
               )}
             </div>
           </div>
@@ -472,33 +528,59 @@ function SupportChatsPage() {
                         </div>
                       </div>
                     )
-                    : messages.map(m => (
-                      <div key={m.id} className={`flex gap-3 ${m.sender==='user'?'justify-start':'justify-end'}`}>
-                        {/* Avatar */}
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          m.sender==='user' ? 'bg-blue-500/20 text-blue-400' :
-                          m.sender==='admin' ? 'bg-emerald-500/20 text-emerald-400' :
-                          'bg-violet-500/20 text-violet-400'
-                        }`}>
-                          {m.sender==='user' ? <User className="w-4 h-4"/> :
-                           m.sender==='admin' ? <Shield className="w-4 h-4"/> :
-                           <Bot className="w-4 h-4"/>}
-                        </div>
+                    : messages.map(m => {
+                      const isAdmin = m.sender === 'admin';
+                      const isUser = m.sender === 'user';
+                      const adminAvatar = getAdminAvatar();
+                      const userAvatar = sel ? getUserAvatar(sel.userEmail, sel.userName, sel.userAvatar) : null;
+                      
+                      return (
+                      <div key={m.id} className={`flex gap-3 ${isUser?'justify-start':'justify-end'}`}>
+                        {/* Avatar - слева для пользователя, справа для админа */}
+                        {!isAdmin && (
+                          <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border-2 border-gray-200 dark:border-white/10">
+                            {userAvatar ? (
+                              <img src={userAvatar} alt="User" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                <User className="w-4 h-4 text-white"/>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         
                         {/* Message Bubble */}
                         <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                          m.sender==='user' ? 'bg-white/5 text-white border border-white/10 rounded-tl-none' :
-                          m.sender==='admin' ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-500/30 rounded-tr-none' :
+                          isUser ? 'bg-white/5 text-white border border-white/10 rounded-tl-none' :
+                          isAdmin ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-500/30 rounded-tr-none' :
                           'bg-violet-500/20 text-violet-100 border border-violet-500/30 rounded-tr-none'
                         }`}>
+                          {/* Sender name for admin messages */}
+                          {isAdmin && (
+                            <p className="text-xs font-medium text-emerald-400 mb-1">Администратор</p>
+                          )}
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.message}</p>
                           <span className="text-xs mt-2 block opacity-50">
                             {new Date(m.createdAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
-                            {m.sender==='admin' && ' • Вы'}
+                            {isAdmin && ' • Вы'}
                           </span>
                         </div>
+                        
+                        {/* Admin Avatar - справа */}
+                        {!isUser && (
+                          <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border-2 border-gray-200 dark:border-white/10">
+                            {isAdmin ? (
+                              <img src={adminAvatar} alt="Admin" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                                <Bot className="w-4 h-4 text-white"/>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    ))
+                    );
+                  })
                   }
                   <div ref={endRef}/>
                 </div>
