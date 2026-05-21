@@ -14,6 +14,8 @@ import {
   Sparkles,
   Play,
   Image as ImageIcon,
+  Ruler,
+  Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -652,6 +654,127 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                   ))}
                 </div>
               )}
+            </Section>
+
+            <Section title="Размеры и наличие">
+              <div className="space-y-4">
+                {/* Size list */}
+                {sizes.length > 0 ? (
+                  <div className="space-y-2">
+                    {sizes.map((size, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col sm:flex-row gap-3 p-4 rounded-xl border border-white/10 bg-white/[0.02]"
+                      >
+                        {/* Size name */}
+                        <div className="flex-1">
+                          <label className="text-xs text-white/50 mb-1 block">Размер</label>
+                          <input
+                            type="text"
+                            value={size.sizeName}
+                            onChange={(e) => updateSize(index, 'sizeName', e.target.value)}
+                            className={`${inputCls} font-medium`}
+                            placeholder="M, 42RU, S, L..."
+                          />
+                        </div>
+
+                        {/* Size type */}
+                        <div className="flex-1">
+                          <label className="text-xs text-white/50 mb-1 block">Тип размера</label>
+                          <select
+                            value={size.sizeType}
+                            onChange={(e) => updateSize(index, 'sizeType', e.target.value)}
+                            className={inputCls}
+                          >
+                            <option value="international">International (XS/S/M/L)</option>
+                            <option value="ru">Russian (42/44/46)</option>
+                            <option value="eu">European (36/38/40)</option>
+                            <option value="us">US (2/4/6/8)</option>
+                          </select>
+                        </div>
+
+                        {/* Stock count */}
+                        <div className="flex-1">
+                          <label className="text-xs text-white/50 mb-1 block">Количество</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={size.stockCount}
+                            onChange={(e) => updateSize(index, 'stockCount', parseInt(e.target.value) || 0)}
+                            className={inputCls}
+                            placeholder="0"
+                          />
+                        </div>
+
+                        {/* In stock toggle */}
+                        <div className="flex items-end">
+                          <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5">
+                            <input
+                              type="checkbox"
+                              checked={size.inStock}
+                              onChange={(e) => updateSize(index, 'inStock', e.target.checked)}
+                              className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-600 focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-white/80">В наличии</span>
+                          </label>
+                        </div>
+
+                        {/* Remove button */}
+                        <button
+                          type="button"
+                          onClick={() => removeSize(index)}
+                          className="p-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 rounded-xl border border-dashed border-white/10 bg-white/[0.02]">
+                    <Ruler className="h-12 w-12 mx-auto text-white/20 mb-3" />
+                    <p className="text-sm text-white/40">Нет размеров. Добавьте первый размер.</p>
+                  </div>
+                )}
+
+                {/* Add size button */}
+                <button
+                  type="button"
+                  onClick={addSize}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-violet-500/30 bg-violet-500/5 px-4 py-3 text-sm text-violet-400 hover:bg-violet-500/10 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Добавить размер
+                </button>
+
+                {/* Quick add common sizes */}
+                {sizes.length === 0 && (
+                  <div className="pt-2">
+                    <p className="text-xs text-white/40 mb-2">Быстрое добавление:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['XS', 'S', 'M', 'L', 'XL'].map((sizeName) => (
+                        <button
+                          key={sizeName}
+                          type="button"
+                          onClick={() => {
+                            setSizes([...sizes, {
+                              sizeName,
+                              sizeType: 'international',
+                              inStock: true,
+                              stockCount: 10,
+                            }]);
+                          }}
+                          className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-white/60 hover:border-violet-500/50 hover:text-white transition-colors"
+                        >
+                          + {sizeName}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </Section>
 
             <Section title="Детали товара">
