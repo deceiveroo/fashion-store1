@@ -4,7 +4,7 @@ import ProductCard from '@/components/ProductCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import PageHero from '@/components/PageHero';
 
-export const revalidate = 60; // ISR: regenerate every 60 seconds
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 async function AllProducts() {

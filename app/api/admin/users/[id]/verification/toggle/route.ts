@@ -10,7 +10,7 @@ import { isAdmin } from '@/lib/server-auth';
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const admin = await isAdmin();
@@ -18,7 +18,7 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const targetUserId = params.id;
+    const { id: targetUserId } = await params;
     const body = await request.json().catch(() => ({}));
     const action: unknown = (body as { action?: unknown }).action;
 
