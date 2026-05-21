@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, MessageCircle,
   Shield, Tag, LineChart, Settings, LogOut, Menu, X, Home,
   Bell, ChevronRight, Zap, Search, Command,
-  Plus, TrendingUp, AlertCircle, CheckCircle2, Sparkles,
+  Plus, TrendingUp, AlertCircle, CheckCircle2, Sparkles, Star,
 } from 'lucide-react';
 import CommandPalette from './CommandPalette';
 import AnimatedGradient from './AnimatedGradient';
@@ -58,6 +58,7 @@ const NAV = [
       { label: 'Заказы',    href: '/admin/orders',          icon: ShoppingCart,    roles: ['admin','manager','support'] },
       { label: 'Товары',    href: '/admin/products',        icon: Package,         roles: ['admin','manager'] },
       { label: 'Клиенты',   href: '/admin/customers',       icon: Users,           roles: ['admin','manager','support'] },
+      { label: 'Отзывы',    href: '/admin/reviews',         icon: Star,            roles: ['admin','manager','support'] },
       { label: 'Чаты',      href: '/admin/support-chats',   icon: MessageCircle,   roles: ['admin','manager','support'] },
     ],
   },
