@@ -3,12 +3,13 @@ import { db, safeQuery } from '@/lib/db';
 import {
   users, userProfiles, orders, orderItems,
   userWishlistItems, products, productImages,
-  paymentMethods, userSessions, notificationSettings,
+  paymentMethods, notificationSettings,
   coupons, userCouponUsage
 } from '@/lib/schema';
 import { eq, desc } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
+import { parseUserAgent } from '@/lib/user-agent';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
         .orderBy(desc(orders.createdAt))
       ).catch(() => []),
 
-      // Wishlist
+      // Wishlist with images
       safeQuery(() =>
         db.select({
           id: userWishlistItems.id,
@@ -76,9 +77,14 @@ export async function GET(request: NextRequest) {
           addedAt: userWishlistItems.createdAt,
           productName: products.name,
           productPrice: products.price,
+          productImage: productImages.url,
         })
         .from(userWishlistItems)
         .leftJoin(products, eq(userWishlistItems.productId, products.id))
+        .leftJoin(productImages, and(
+          eq(productImages.productId, userWishlistItems.productId),
+          eq(productImages.isPrimary, true)
+        ))
         .where(eq(userWishlistItems.userId, userId))
       ).catch(() => []),
 
@@ -89,13 +95,8 @@ export async function GET(request: NextRequest) {
         .where(eq(paymentMethods.userId, userId))
       ).catch(() => []),
 
-      // Sessions
-      safeQuery(() =>
-        db.select()
-        .from(userSessions)
-        .where(eq(userSessions.userId, userId))
-        .orderBy(desc(userSessions.lastActive))
-      ).catch(() => []),
+      // Sessions - generate from request headers (mock)
+      Promise.resolve(null), // Placeholder, we'll generate mock session below
 
       // Notification settings
       safeQuery(() =>
