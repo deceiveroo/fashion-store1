@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatMessages } from '@/lib/schema';
 import { eq, asc } from 'drizzle-orm';
+import { redis, isRedisAvailable } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,10 +30,35 @@ export async function GET(req: NextRequest) {
         if (msgs.length > 0) lastId = msgs[msgs.length - 1].id;
       } catch { send({ type: 'init', messages: [] }); }
 
-      // Poll DB every 500ms for new messages — fast but cheap
+      // Initialize Redis timestamp for tracking updates
+      let lastRedisTime = '';
+      if (isRedisAvailable() && redis) {
+        try {
+          const res = await redis.get(`chat:update:${sessionId}`);
+          lastRedisTime = (res as string) || '';
+        } catch {}
+      }
+
+      // Poll DB every 500ms for new messages — optimized with Redis flag
       const interval = setInterval(async () => {
         if (closed) { clearInterval(interval); return; }
+        
         try {
+          // If Redis is active, check the lightweight cache flag first
+          if (isRedisAvailable() && redis) {
+            try {
+              const latestTime = (await redis.get(`chat:update:${sessionId}`)) as string | null;
+              if (latestTime === lastRedisTime) {
+                // No new messages according to Redis — skip heavy PostgreSQL query!
+                return;
+              }
+              lastRedisTime = latestTime || '';
+            } catch (redisErr) {
+              console.error('[CHAT SSE REDIS CHECK ERROR] Falling back to direct SQL:', redisErr);
+            }
+          }
+
+          // Fetch only if Redis says there are updates or if Redis is unavailable
           const all = await db.select().from(supportChatMessages)
             .where(eq(supportChatMessages.sessionId, sessionId))
             .orderBy(asc(supportChatMessages.createdAt));
@@ -65,4 +91,4 @@ export async function GET(req: NextRequest) {
       'X-Accel-Buffering': 'no',
     },
   });
-}
+}

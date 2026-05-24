@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Package, ExternalLink, Calendar, CreditCard, Truck } from 'lucide-react';
 import { Order } from '@/app/profile/hooks/useProfileData';
+import ProxyImage from '@/components/ProxyImage';
 
 interface OrdersSectionProps {
   orders: Order[];
@@ -109,10 +110,11 @@ export default function OrdersSection({ orders }: OrdersSectionProps) {
                   {order.items.slice(0, 3).map((item: any, itemIndex: number) => (
                     <div key={itemIndex} className="flex items-center gap-3">
                       {item.image && (
-                        <img
+                        <ProxyImage
                           src={item.image}
                           alt={item.productName || item.name}
                           className="w-12 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                          proxyWidth={128}
                         />
                       )}
                       <div className="flex-1 min-w-0">

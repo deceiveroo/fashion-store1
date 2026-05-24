@@ -6,7 +6,7 @@ import {
   paymentMethods, notificationSettings,
   coupons, userCouponUsage
 } from '@/lib/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 import { parseUserAgent } from '@/lib/user-agent';
@@ -96,7 +96,22 @@ export async function GET(request: NextRequest) {
       ).catch(() => []),
 
       // Sessions - generate from request headers (mock)
-      Promise.resolve(null), // Placeholder, we'll generate mock session below
+      Promise.resolve([
+        (() => {
+          const userAgent = request.headers.get('user-agent') || 'Unknown';
+          const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                     request.headers.get('x-real-ip') || 'Unknown';
+          const parsedUA = parseUserAgent(userAgent);
+          return {
+            id: `current_${userId}_${Date.now()}`,
+            device: parsedUA.device || 'Неизвестное устройство',
+            location: 'Россия',
+            ip: ip,
+            lastActive: new Date(),
+            isCurrent: true,
+          };
+        })()
+      ]),
 
       // Notification settings
       safeQuery(() =>
@@ -142,6 +157,7 @@ export async function GET(request: NextRequest) {
       price: parseFloat(String(item.productPrice || '0')),
       inStock: true,
     },
+    image: item.productImage || '',
   }));
 
   // Format sessions
@@ -151,7 +167,7 @@ export async function GET(request: NextRequest) {
     location: s.location || 'Неизвестно',
     ip: s.ip || '',
     lastActive: s.lastActive,
-    isCurrent: false,
+    isCurrent: s.isCurrent || false,
   }));
 
   // Format coupons

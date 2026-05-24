@@ -1,48 +1,26 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { supportChatMessages, supportChatSessions, users, userProfiles } from '@/lib/schema';
+import { supportChatMessages, supportChatSessions } from '@/lib/schema';
 import { eq, asc, desc } from 'drizzle-orm';
 import { findAutoResponse } from '@/lib/chat-auto-responses';
 import { validateMessage } from '@/lib/chat-utils';
 import { validateCSRF } from '@/lib/csrf-protection';
-import { chatRateLimiter, memoryRateLimitCheck, isRedisAvailable } from '@/lib/redis';
-import { getSession } from '@/lib/server-auth';
+import { chatRateLimiter, memoryRateLimitCheck, isRedisAvailable, redis } from '@/lib/redis';
 
-async function upsertSession(sessionId: string, firstMsg?: string, userId?: string | null, userEmail?: string | null, userName?: string | null) {
+async function upsertSession(sessionId: string, firstMsg?: string) {
   const existing = await db.select().from(supportChatSessions)
     .where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
-  
   if (existing.length === 0) {
     await db.insert(supportChatSessions).values({
-      id: crypto.randomUUID(), 
-      sessionId, 
-      userId: userId || null,
-      userEmail: userEmail || null,
-      userName: userName || null,
-      status: 'active',
-      messageCount: 1, 
-      firstMessage: firstMsg || null,
-      lastMessageAt: new Date(), 
-      createdAt: new Date(), 
-      updatedAt: new Date(),
+      id: crypto.randomUUID(), sessionId, status: 'active',
+      messageCount: 1, firstMessage: firstMsg || null,
+      lastMessageAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
     });
   } else {
-    // Обновляем информацию о пользователе если она появилась
-    const updateData: any = {
+    await db.update(supportChatSessions).set({
       messageCount: (existing[0].messageCount || 0) + 1,
-      lastMessageAt: new Date(), 
-      updatedAt: new Date(),
-    };
-    
-    // Если сессия была без пользователя, а теперь пользователь авторизован - привязываем
-    if (!existing[0].userId && userId) {
-      updateData.userId = userId;
-      updateData.userEmail = userEmail;
-      updateData.userName = userName;
-    }
-    
-    await db.update(supportChatSessions).set(updateData)
-      .where(eq(supportChatSessions.sessionId, sessionId));
+      lastMessageAt: new Date(), updatedAt: new Date(),
+    }).where(eq(supportChatSessions.sessionId, sessionId));
   }
 }
 
@@ -55,7 +33,17 @@ async function saveMsg(sessionId: string, message: string, sender: 'user' | 'ai'
     sender,
     createdAt: new Date(),
   });
+
+  // Notify listeners via Redis for real-time SSE stream
+  if (isRedisAvailable() && redis) {
+    try {
+      await redis.set(`chat:update:${sessionId}`, Date.now().toString());
+    } catch (err) {
+      console.error('[CHAT REDIS NOTIFY] Failed to set update key:', err);
+    }
+  }
 }
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -73,36 +61,6 @@ export async function POST(req: NextRequest) {
     
     if (!sessionId) {
       return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
-    }
-
-    // Получаем информацию о пользователе из сессии
-    const session = await getSession();
-    let userId: string | null = null;
-    let userEmail: string | null = null;
-    let userName: string | null = null;
-
-    if (session?.user?.id) {
-      userId = session.user.id;
-      userEmail = session.user.email || null;
-      userName = session.user.name || null;
-      
-      // Пытаемся получить имя из профиля
-      try {
-        const profile = await db
-          .select({
-            firstName: userProfiles.firstName,
-            lastName: userProfiles.lastName,
-          })
-          .from(userProfiles)
-          .where(eq(userProfiles.userId, userId))
-          .limit(1);
-        
-        if (profile.length > 0 && (profile[0].firstName || profile[0].lastName)) {
-          userName = `${profile[0].firstName || ''} ${profile[0].lastName || ''}`.trim();
-        }
-      } catch (err) {
-        console.warn('Failed to fetch user profile:', err);
-      }
     }
 
     // Rate limiting with Redis (fallback to in-memory)
@@ -150,8 +108,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'message or image required' }, { status: 400 });
     }
 
-    // Создаем или обновляем сессию с информацией о пользователе
-    await upsertSession(sessionId, message, userId, userEmail, userName);
+    await upsertSession(sessionId, message);
     
     // Если это авто-ответ, просто сохраняем и возвращаем
     if (isAutoReply) {
@@ -162,10 +119,10 @@ export async function POST(req: NextRequest) {
     // Сохраняем сообщение пользователя
     await saveMsg(sessionId, message || '📷 Изображение', 'user', imageUrl);
 
-    const [currentSession] = await db.select().from(supportChatSessions)
+    const [session] = await db.select().from(supportChatSessions)
       .where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
 
-    if (currentSession?.aiDisabled) {
+    if (session?.aiDisabled) {
       return NextResponse.json({ takenOver: true, message: '👨‍💼 Оператор подключён. Ожидайте ответа...' });
     }
 
@@ -211,25 +168,10 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    // Получаем информацию о сессии для данных об админе
-    const session = await db.query.supportChatSessions.findFirst({
-      where: eq(supportChatSessions.sessionId, sessionId),
-      columns: {
-        adminName: true,
-        adminAvatar: true,
-        adminEmail: true,
-      },
-    });
-
     return NextResponse.json({ 
       messages,
       hasMore: messages.length === limit,
-      total: messages.length,
-      adminInfo: session ? {
-        name: session.adminName,
-        avatar: session.adminAvatar,
-        email: session.adminEmail,
-      } : null,
+      total: messages.length
     });
   } catch (error) {
     console.error('[CHAT GET] Error:', error);

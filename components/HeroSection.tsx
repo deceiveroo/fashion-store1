@@ -52,7 +52,7 @@ export default function HeroSection() {
             transition={{ delay: 0.3 }}
           >
             <Link
-              href="/kollektsii"
+              href="/collections"
               className="group inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-200"
             >
               Смотреть Коллекцию
@@ -60,7 +60,7 @@ export default function HeroSection() {
             </Link>
             
             <Link
-              href="/o-nas"
+              href="/company/about"
               className="inline-flex items-center gap-2 bg-white text-gray-900 px-8 py-4 rounded-full font-semibold border border-gray-300 hover:shadow-lg transform hover:scale-105 transition-all duration-200"
             >
               Узнать Больше

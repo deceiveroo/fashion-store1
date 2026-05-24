@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions, users, userProfiles } from '@/lib/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import { isStaff } from '@/lib/server-auth';
+import { redis, isRedisAvailable } from '@/lib/redis';
 
 export async function POST(req: NextRequest) {
   try {
@@ -73,6 +74,15 @@ export async function POST(req: NextRequest) {
       imageUrl: imageUrl || null, // Store image URL if provided
       sender: 'admin',
     });
+
+    // Notify listeners via Redis for real-time SSE stream
+    if (isRedisAvailable() && redis) {
+      try {
+        await redis.set(`chat:update:${sessionId}`, Date.now().toString());
+      } catch (err) {
+        console.error('[ADMIN CHAT REDIS NOTIFY] Failed to set update key:', err);
+      }
+    }
 
     // Update session stats with admin info
     await db.update(supportChatSessions)

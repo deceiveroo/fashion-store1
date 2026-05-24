@@ -1,11 +1,12 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Minus, ShoppingBag, Sparkles, Rocket, Gift } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, Sparkles, Rocket, Gift, ShieldCheck, ArrowRight, Trash2 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ProxyImage from '@/components/ProxyImage';
 
 interface CartProps {
   isOpen: boolean;
@@ -14,12 +15,23 @@ interface CartProps {
 
 export default function Cart({ isOpen, onClose }: CartProps) {
   const { state, removeItem, updateQuantity, clearCart } = useCart();
-  const [isAnimating, setIsAnimating] = useState(false);
   const router = useRouter();
   
   const items = state?.items || [];
   const total = state?.total || 0;
   const itemCount = state?.itemCount || 0;
+
+  // Блокируем скролл основной страницы при открытой корзине
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   // Группируем товары по ID (одинаковые товары с разными размерами)
   const groupedItems = items.reduce((acc, item) => {
@@ -33,6 +45,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
       };
     }
     acc[item.id].variants.push({
+      variantId: item.id, // ID в корзине
       size: item.size,
       color: item.color,
       quantity: item.quantity
@@ -43,52 +56,27 @@ export default function Cart({ isOpen, onClose }: CartProps) {
     name: string;
     price: number;
     image: string;
-    variants: Array<{ size?: string; color?: string; quantity: number }>;
+    variants: Array<{ variantId: string; size?: string; color?: string; quantity: number }>;
   }>);
 
   const groupedItemsList = Object.values(groupedItems);
 
-  // Close cart when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      // Check if click is outside the cart panel
-      if (!target.closest('[data-cart-panel]')) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen, onClose]);
-
-  // Анимация при изменении количества товаров
-  // useEffect(() => {
-  //   if (items.length > 0) {
-  //     setIsAnimating(true);
-  //     const timer = setTimeout(() => setIsAnimating(false), 300);
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [items]);
-
-  const handleUpdateQuantity = (id: string, quantity: number) => {
+  const handleUpdateQuantity = (variantId: string, quantity: number) => {
     if (quantity < 1) {
-      removeItem(id);
+      removeItem(variantId);
+      toast.success('Товар удален из корзины ✨');
       return;
     }
-    updateQuantity(id, quantity);
+    updateQuantity(variantId, quantity);
   };
 
-  const handleRemoveItem = (id: string) => {
-    removeItem(id);
+  const handleRemoveItem = (variantId: string) => {
+    removeItem(variantId);
     toast.success('Товар удален из корзины ✨');
   };
 
   const handleCheckout = () => {
     onClose();
-    // Редирект на страницу оформления заказа
     router.push('/checkout');
   };
 
@@ -108,9 +96,9 @@ export default function Cart({ isOpen, onClose }: CartProps) {
 
   // Next discount tier
   const getNextDiscountTier = () => {
-    if (total < 1000) return { threshold: 1000, discount: 100, label: 'Скидка 100₽' };
-    if (total < 3000) return { threshold: 3000, discount: 300, label: 'Скидка 300₽' };
-    if (total < 5000) return { threshold: 5000, discount: 500, label: 'Скидка 500₽' };
+    if (total < 1000) return { threshold: 1000, discount: 100, label: 'Скидка 100 ₽' };
+    if (total < 3000) return { threshold: 3000, discount: 300, label: 'Скидка 300 ₽' };
+    if (total < 5000) return { threshold: 5000, discount: 500, label: 'Скидка 500 ₽' };
     return null;
   };
 
@@ -119,214 +107,180 @@ export default function Cart({ isOpen, onClose }: CartProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ x: '100%', opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: '100%', opacity: 0 }}
-          transition={{ 
-            type: 'spring', 
-            damping: 25,
-            stiffness: 200
-          }}
-          data-cart-panel
-          className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-white to-gray-50/80 dark:from-gray-900 dark:to-gray-950/80 z-50 shadow-2xl border-l border-white/20 dark:border-gray-800 flex flex-col"
-        >
-            {/* Header with Gradient */}
-            <div className="relative p-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+        <>
+          {/* Backdrop Overlay с мягким размытием */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/40 dark:bg-black/70 backdrop-blur-[6px] z-50 cursor-pointer"
+          />
+
+          {/* Панель корзины с эффектом Glassmorphism */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+            data-cart-panel
+            className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-white/90 dark:bg-gray-900/95 backdrop-blur-2xl z-50 shadow-[0_0_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_60px_rgba(0,0,0,0.6)] border-l border-gray-100 dark:border-gray-800/80 flex flex-col"
+          >
+            {/* Header */}
+            <div className="relative p-6 border-b border-gray-100 dark:border-gray-800/80 bg-gradient-to-r from-purple-600/5 to-pink-600/5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <motion.div
-                    animate={{ rotate: [0, 10, -10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <ShoppingBag size={24} />
-                  </motion.div>
+                  <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl text-white shadow-md shadow-purple-500/20">
+                    <ShoppingBag size={20} className="animate-pulse" />
+                  </div>
                   <div>
-                    <h2 className="text-xl font-bold">Ваша корзина</h2>
-                    <p className="text-purple-200 text-sm">{itemCount} товара</p>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Корзина</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs font-medium mt-0.5">
+                      {itemCount} {itemCount === 1 ? 'товар' : itemCount > 1 && itemCount < 5 ? 'товара' : 'товаров'}
+                    </p>
                   </div>
                 </div>
+                
                 <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.08, rotate: 90 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={onClose}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-all"
+                  className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
                 >
                   <X size={20} />
                 </motion.button>
               </div>
-              
-              {/* Floating Elements */}
-              <motion.div
-                animate={{ y: [0, -5, 0] }}
-                transition={{ duration: 3, repeat: Infinity }}
-                className="absolute top-2 right-16"
-              >
-                <Sparkles size={16} className="text-yellow-300" />
-              </motion.div>
+
+              {/* Sparkle micro-animation */}
+              <div className="absolute top-4 right-16 pointer-events-none opacity-60">
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], rotate: [0, 15, -15, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <Sparkles size={14} className="text-purple-500" />
+                </motion.div>
+              </div>
             </div>
 
-            {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto">
+            {/* List Container */}
+            <div className="flex-1 overflow-y-auto py-4 px-6 space-y-4">
               {items.length === 0 ? (
                 <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
+                  initial={{ scale: 0.95, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="text-center py-16 px-6"
+                  className="text-center py-20 px-4 flex flex-col items-center justify-center h-full"
                 >
-                  <motion.div
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 4, repeat: Infinity }}
-                  >
-                    <ShoppingBag size={64} className="mx-auto text-gray-300 mb-4" />
-                  </motion.div>
-                  <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
-                    Корзина пуста
+                  <div className="w-24 h-24 rounded-full bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center mb-6 border border-gray-100 dark:border-gray-800/40">
+                    <ShoppingBag size={42} className="text-gray-300 dark:text-gray-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                    Ваша корзина пуста
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-500 text-sm mb-6">
-                    Наполните её стильными вещами!
+                  <p className="text-gray-500 dark:text-gray-400 text-sm max-w-[280px] mb-8 leading-relaxed">
+                    Добавьте в неё стильную одежду из нашего каталога, чтобы сделать заказ.
                   </p>
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={onClose}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
+                    className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-purple-500/20 hover:shadow-xl transition-all"
                   >
-                    Начать шоппинг
+                    Перейти в каталог
                   </motion.button>
                 </motion.div>
               ) : (
-                <motion.div 
-                  layout
-                  className="p-4 space-y-4"
-                >
+                <motion.div layout className="space-y-4">
                   {groupedItemsList.map((group, index) => (
                     <motion.div
                       key={group.id}
                       layout
-                      initial={{ opacity: 0, x: 50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -50 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/50 dark:border-gray-700 hover:shadow-xl transition-all"
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ duration: 0.25, delay: index * 0.05 }}
+                      className="group relative bg-white dark:bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800/60 hover:border-purple-500/30 dark:hover:border-purple-500/30 transition-all duration-300 overflow-hidden"
                     >
-                      {/* Background Glow Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                      
-                      <div className="relative flex items-start gap-4">
-                        {/* Product Image with Border Animation */}
-                        <motion.div
-                          whileHover={{ scale: 1.05 }}
-                          className="relative flex-shrink-0"
-                        >
-                          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-0.5 overflow-hidden">
-                            {group.image ? (
-                              <img
-                                src={group.image}
-                                alt={group.name}
-                                className="w-full h-full object-cover rounded-lg"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                <ShoppingBag size={24} />
-                              </div>
-                            )}
-                          </div>
-                          {/* Общее количество всех вариантов */}
-                          <motion.div
-                            animate={{ scale: [1, 1.1, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center"
-                          >
-                            <span className="text-white text-xs font-bold">
-                              {group.variants.reduce((sum, v) => sum + v.quantity, 0)}
-                            </span>
-                          </motion.div>
-                        </motion.div>
+                      {/* Subtly colored decorative corner */}
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-bl-full pointer-events-none" />
 
-                        {/* Product Info */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight line-clamp-2 mb-1">
-                            {group.name}
-                          </h3>
-                          
-                          {/* Все варианты размеров/цветов с управлением количеством */}
-                          <div className="space-y-2 mb-3">
-                            {group.variants.map((variant, vIdx) => {
-                              // Находим реальный item ID для этого варианта
-                              const variantItem = items.find(item => 
-                                item.id === group.id && 
-                                item.size === variant.size && 
-                                item.color === variant.color
-                              );
-                              
-                              if (!variantItem) return null;
-                              
-                              return (
-                                <div key={vIdx} className="flex items-center justify-between gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                  <div className="flex items-center gap-2 flex-1">
-                                    {variant.size && (
-                                      <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full font-medium">
-                                        {variant.size}
-                                      </span>
-                                    )}
-                                    {variant.color && (
-                                      <span className="text-xs text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full font-medium">
-                                        {variant.color}
-                                      </span>
-                                    )}
-                                  </div>
-                                  
-                                  {/* Quantity Controls для каждого варианта */}
-                                  <div className="flex items-center gap-2">
-                                    <motion.button
-                                      whileHover={{ scale: 1.1 }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => handleUpdateQuantity(variantItem.id, variant.quantity - 1)}
-                                      className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-600 transition-colors"
-                                    >
-                                      <Minus size={12} />
-                                    </motion.button>
-                                    
-                                    <motion.span
-                                      key={`${variantItem.id}-${variant.quantity}`}
-                                      animate={{ scale: [1, 1.2, 1] }}
-                                      className="text-sm font-bold text-gray-900 dark:text-gray-100 min-w-5 text-center"
-                                    >
-                                      {variant.quantity}
-                                    </motion.span>
-                                    
-                                    <motion.button
-                                      whileHover={{ scale: 1.1 }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => handleUpdateQuantity(variantItem.id, variant.quantity + 1)}
-                                      className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-600 transition-colors"
-                                    >
-                                      <Plus size={12} />
-                                    </motion.button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          
-                          <p className="text-lg font-bold text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">
-                            {Math.round(group.price)} ₽
-                          </p>
+                      <div className="flex gap-4">
+                        {/* Image */}
+                        <div className="relative w-20 h-20 bg-gray-50 dark:bg-gray-950 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-900/60 flex-shrink-0">
+                          {group.image ? (
+                            <ProxyImage
+                              src={group.image}
+                              alt={group.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              proxyWidth={128}
+                              fallbackSrc="/placeholder-image.jpg"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-gray-800 text-gray-300">
+                              <ShoppingBag size={24} />
+                            </div>
+                          )}
                         </div>
 
-                        {/* Remove Button - удаляет весь товар */}
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleRemoveItem(group.id)}
-                          className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-                        >
-                          <X size={16} />
-                        </motion.button>
+                        {/* Info & Variants */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div>
+                            <h4 className="font-bold text-gray-900 dark:text-white text-sm leading-snug line-clamp-2 pr-4 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                              {group.name}
+                            </h4>
+                          </div>
+
+                          <div className="space-y-2 mt-2">
+                            {group.variants.map((v, vIdx) => (
+                              <div key={vIdx} className="flex items-center justify-between bg-gray-50/70 dark:bg-gray-900/60 px-3 py-1.5 rounded-xl border border-gray-100/50 dark:border-gray-800/40">
+                                <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+                                  {v.size && (
+                                    <span className="text-[10px] text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-full font-bold border border-purple-100 dark:border-purple-900/30">
+                                      {v.size}
+                                    </span>
+                                  )}
+                                  {v.color && (
+                                    <span className="text-[10px] text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40 px-2 py-0.5 rounded-full font-bold border border-pink-100 dark:border-pink-900/30">
+                                      {v.color}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Controls */}
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleUpdateQuantity(v.variantId, v.quantity - 1)}
+                                    className="w-5.5 h-5.5 flex items-center justify-center bg-white dark:bg-gray-800 text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm hover:shadow transition-all"
+                                  >
+                                    <Minus size={10} />
+                                  </button>
+                                  <span className="text-xs font-bold text-gray-950 dark:text-white min-w-[14px] text-center">
+                                    {v.quantity}
+                                  </span>
+                                  <button
+                                    onClick={() => handleUpdateQuantity(v.variantId, v.quantity + 1)}
+                                    className="w-5.5 h-5.5 flex items-center justify-center bg-white dark:bg-gray-800 text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm hover:shadow transition-all"
+                                  >
+                                    <Plus size={10} />
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => handleRemoveItem(v.variantId)}
+                                    className="ml-1 p-1 text-gray-400 hover:text-red-500 rounded-md transition-colors"
+                                    title="Удалить этот вариант"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center justify-between mt-2.5">
+                            <span className="font-extrabold text-base bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                              {Math.round(group.price).toLocaleString('ru-RU')} ₽
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -334,162 +288,150 @@ export default function Cart({ isOpen, onClose }: CartProps) {
               )}
             </div>
 
-            {/* Free Shipping Progress Bar & Upsell */}
-            {items.length > 0 && remainingForFreeShipping > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="px-6 py-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-t border-purple-100 dark:border-purple-800"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    <Rocket className="w-4 h-4 text-purple-600" />
-                    До бесплатной доставки
-                  </span>
-                  <span className="text-sm font-bold text-purple-600">
-                    {remainingForFreeShipping.toLocaleString('ru-RU')} ₽
-                  </span>
-                </div>
-                
-                {/* Progress Bar */}
-                <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${freeShippingProgress}%` }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"
-                  />
-                </div>
-                
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                  Добавьте товаров на {remainingForFreeShipping.toLocaleString('ru-RU')} ₽ для бесплатной доставки!
-                </p>
-              </motion.div>
-            )}
-
-            {/* Discount Tier Upsell */}
-            {items.length > 0 && nextTier && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-t border-green-100 dark:border-green-800"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
-                    <Gift className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                      Получите {nextTier.label}!
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Добавьте ещё на {(nextTier.threshold - total).toLocaleString('ru-RU')} ₽
-                    </p>
-                    <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            {/* Upsell Sections & Summary */}
+            {items.length > 0 && (
+              <div className="border-t border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-gray-950/40">
+                {/* Free Shipping Progress */}
+                {remainingForFreeShipping > 0 ? (
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800/60 bg-gradient-to-r from-purple-500/5 to-pink-500/5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                        <Rocket size={14} className="text-purple-500" />
+                        До бесплатной доставки:
+                      </span>
+                      <span className="text-xs font-extrabold text-purple-600 dark:text-purple-400">
+                        {remainingForFreeShipping.toLocaleString('ru-RU')} ₽
+                      </span>
+                    </div>
+                    
+                    <div className="h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, (total / nextTier.threshold) * 100)}%` }}
-                        transition={{ duration: 0.5 }}
-                        className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
+                        animate={{ width: `${freeShippingProgress}%` }}
+                        transition={{ duration: 0.6, ease: 'easeOut' }}
+                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.3)]"
                       />
                     </div>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
+                      Добавьте вещи на {remainingForFreeShipping.toLocaleString('ru-RU')} ₽, чтобы сэкономить на доставке!
+                    </p>
                   </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Footer with Enhanced Design */}
-            {items.length > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="border-t border-white/20 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-6 space-y-4"
-              >
-                {/* Discount Badge */}
-                {getDiscount() > 0 && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white p-3 rounded-xl"
-                  >
-                    <Gift size={16} />
-                    <span className="text-sm font-semibold">
-                      Ваша скидка: {getDiscount()} ₽
+                ) : (
+                  <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800/60 bg-emerald-500/5 flex items-center gap-2">
+                    <div className="p-1 bg-emerald-500 rounded-full text-white">
+                      <Rocket size={10} />
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      Поздравляем! Вам доступна бесплатная доставка 🎉
                     </span>
-                  </motion.div>
+                  </div>
                 )}
 
-                {/* Pricing */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Товары ({itemCount} шт.)</span>
-                    <span className="font-medium dark:text-gray-200">{Math.round(total)} ₽</span>
-                  </div>
-                  
-                  {getDiscount() > 0 && (
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-green-600">Скидка</span>
-                      <span className="text-green-600 font-semibold">-{getDiscount()} ₽</span>
+                {/* Discount Tier progress */}
+                {nextTier && (
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800/60 bg-gradient-to-r from-green-500/5 to-emerald-500/5">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl text-white shadow-sm flex-shrink-0">
+                        <Gift size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white mb-0.5">
+                          Получите {nextTier.label}
+                        </p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                          Нужно добавить ещё на {(nextTier.threshold - total).toLocaleString('ru-RU')} ₽
+                        </p>
+                        <div className="mt-2 h-1 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min(100, (total / nextTier.threshold) * 100)}%` }}
+                            transition={{ duration: 0.6 }}
+                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
+                          />
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Доставка</span>
-                    {total >= FREE_SHIPPING_THRESHOLD ? (
-                      <span className="text-green-600 font-semibold flex items-center gap-1">
-                        <Rocket size={14} />
-                        Бесплатно
-                      </span>
-                    ) : (
-                      <span className="text-gray-900 dark:text-gray-200">300 ₽</span>
-                    )}
                   </div>
-                  
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3 flex justify-between items-center">
-                    <span className="font-bold text-gray-900 dark:text-gray-100">Итого:</span>
-                    <motion.span
-                      key={finalTotal}
-                      animate={{ scale: [1, 1.1, 1] }}
-                      className="font-bold text-xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
-                    >
-                      {Math.round(finalTotal)} ₽
-                    </motion.span>
-                  </div>
-                </div>
+                )}
 
-                {/* Checkout Button */}
-                <motion.button
-                  whileHover={{ 
-                    scale: 1.02,
-                    boxShadow: "0 10px 30px -10px rgba(168, 85, 247, 0.5)"
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleCheckout}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-6 rounded-2xl font-bold text-lg relative overflow-hidden group"
-                >
-                  {/* Shine Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  
-                  <span className="relative flex items-center justify-center gap-2">
-                    Оформить заказ
+                {/* Pricing Footer */}
+                <div className="p-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800/80 space-y-4">
+                  {/* Discount Badge */}
+                  {getDiscount() > 0 && (
                     <motion.div
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2.5 rounded-xl shadow-sm text-xs font-bold"
                     >
-                      <Rocket size={20} />
+                      <Gift size={14} className="animate-bounce" />
+                      <span>Ваша скидка активирована: -{getDiscount()} ₽</span>
                     </motion.div>
-                  </span>
-                </motion.button>
+                  )}
 
-                {/* Security Badge */}
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    🔒 Безопасная оплата • 🚚 Быстрая доставка
-                  </p>
+                  <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-400">
+                    <div className="flex justify-between items-center">
+                      <span>Товары ({itemCount} шт.)</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{Math.round(total).toLocaleString('ru-RU')} ₽</span>
+                    </div>
+
+                    {getDiscount() > 0 && (
+                      <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                        <span>Скидка по сумме заказа</span>
+                        <span className="font-bold">-{getDiscount()} ₽</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center">
+                      <span>Доставка</span>
+                      {total >= FREE_SHIPPING_THRESHOLD ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                          <Rocket size={12} />
+                          Бесплатно
+                        </span>
+                      ) : (
+                        <span className="font-bold text-gray-900 dark:text-white">300 ₽</span>
+                      )}
+                    </div>
+
+                    <div className="border-t border-gray-100 dark:border-gray-800/60 pt-3 mt-3 flex justify-between items-center text-sm">
+                      <span className="font-bold text-gray-900 dark:text-white">Итого к оплате:</span>
+                      <motion.span
+                        key={finalTotal}
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ duration: 0.3 }}
+                        className="text-lg font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
+                      >
+                        {Math.round(finalTotal).toLocaleString('ru-RU')} ₽
+                      </motion.span>
+                    </div>
+                  </div>
+
+                  {/* Checkout Button */}
+                  <motion.button
+                    whileHover={{ 
+                      scale: 1.02,
+                      boxShadow: "0 10px 25px -5px rgba(168, 85, 247, 0.4)"
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleCheckout}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3.5 px-6 rounded-xl font-bold text-sm relative overflow-hidden group shadow-md transition-all flex items-center justify-center gap-2"
+                  >
+                    {/* Shiny hover effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    
+                    <span>Оформить заказ</span>
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  </motion.button>
+
+                  <div className="flex items-center justify-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                    <ShieldCheck size={12} className="text-emerald-500" />
+                    <span>Безопасная оплата • Экспресс-доставка</span>
+                  </div>
                 </div>
-              </motion.div>
+              </div>
             )}
           </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

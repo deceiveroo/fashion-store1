@@ -4,6 +4,7 @@ import { Heart, ExternalLink, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { WishlistItem } from '@/app/profile/hooks/useProfileData';
+import ProxyImage from '@/components/ProxyImage';
 
 interface WishlistSectionProps {
   wishlist: WishlistItem[];
@@ -40,10 +41,11 @@ export default function WishlistSection({ wishlist, handleRemoveFromWishlist }: 
           <Link href={`/products/${item.productId}`} className="block">
             <div className="relative aspect-square overflow-hidden">
               {item.image ? (
-                <img
+                <ProxyImage
                   src={item.image}
                   alt={item.product.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  proxyWidth={384}
                 />
               ) : (
                 <div className="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">

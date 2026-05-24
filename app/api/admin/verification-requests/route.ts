@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { userProfiles, userVerificationRequests, users } from '@/lib/schema';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { isAdmin } from '@/lib/server-auth';
+import { decrypt } from '@/lib/encryption';
 
 /**
  * Получить все заявки на верификацию (только для админов)
@@ -82,19 +83,48 @@ export async function GET() {
     );
 
     return NextResponse.json({
-      requests: requests.map((req) => ({
-        ...req,
-        userInfo:
-          userMap.get(req.userId) ??
-          ({
-            id: req.userId,
-            email: '',
-            firstName: null,
-            lastName: null,
-            avatarUrl: null,
-          } as const),
-        reviewerInfo: req.reviewedBy ? userMap.get(req.reviewedBy) ?? null : null,
-      })),
+      requests: requests.map((req) => {
+        // Дешифруем паспортные данные для администратора с поддержкой обратной совместимости
+        let passportSeries = req.passportSeries || '';
+        let passportNumber = req.passportNumber || '';
+        let issuedBy = req.issuedBy || '';
+        let departmentCode = req.departmentCode || '';
+
+        try {
+          if (passportSeries && passportSeries.includes(':')) {
+            passportSeries = decrypt(passportSeries);
+          }
+          if (passportNumber && passportNumber.includes(':')) {
+            passportNumber = decrypt(passportNumber);
+          }
+          if (issuedBy && issuedBy.includes(':')) {
+            issuedBy = decrypt(issuedBy);
+          }
+          if (departmentCode && departmentCode.includes(':')) {
+            departmentCode = decrypt(departmentCode);
+          }
+        } catch (e) {
+          console.error('Decryption failed for verification request:', req.id, e);
+        }
+
+        return {
+          ...req,
+          passportSeries,
+          passportNumber,
+          issuedBy,
+          departmentCode: departmentCode || null,
+          userInfo:
+            userMap.get(req.userId) ??
+            ({
+              id: req.userId,
+              email: '',
+              firstName: null,
+              lastName: null,
+              avatarUrl: null,
+            } as const),
+          reviewerInfo: req.reviewedBy ? userMap.get(req.reviewedBy) ?? null : null,
+        };
+      }),
     });
   } catch (error) {
     console.error('[ADMIN VERIFICATION] Error fetching requests:', error);

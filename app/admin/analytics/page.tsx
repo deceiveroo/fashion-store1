@@ -7,6 +7,9 @@ import AdminShell from '@/components/admin/AdminShell';
 import { RevenueChart } from '@/components/admin/charts/RevenueChart';
 import { OrdersDonutChart } from '@/components/admin/charts/OrdersDonutChart';
 import { CategoryBarChart } from '@/components/admin/charts/CategoryBarChart';
+import { CohortDonutChart } from '@/components/admin/charts/CohortDonutChart';
+import { SalesDayOfWeekChart } from '@/components/admin/charts/SalesDayOfWeekChart';
+import { FunnelChart } from '@/components/admin/charts/FunnelChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useChartTheme } from '@/hooks/useChartTheme';
 
@@ -15,6 +18,9 @@ interface Analytics {
   ordersByStatus: Record<string, number>;
   topProducts: { id: string; name: string; sales: number; revenue: number }[];
   customerGrowth: { totalCustomers: number; newCustomers: number; growthRate: number; chartData: { month: string; customers: number }[] };
+  cohortData?: Array<{ name: string; value: number; color: string }>;
+  salesByDayOfWeek?: Array<{ day: string; revenue: number; orders: number }>;
+  funnelData?: Array<{ name: string; count: number; rate: number }>;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -165,55 +171,119 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Customer growth */}
-        {analytics?.customerGrowth && (
+        {/* Funnel & Retention row */}
+        <div className="grid gap-5 lg:grid-cols-2">
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 backdrop-blur-sm shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                Рост клиентской базы
+                <BarChart3 className="h-4 w-4 text-pink-500" />
+                Воронка конверсии (Shopping Funnel)
               </h3>
-              <div className="flex items-center gap-4 text-xs">
-                <span className="text-gray-500 dark:text-white/40">Всего: <span className="text-gray-900 dark:text-white font-semibold">{analytics.customerGrowth.totalCustomers}</span></span>
-                <span className="text-gray-500 dark:text-white/40">Новых: <span className="text-emerald-600 dark:text-emerald-400 font-semibold">+{analytics.customerGrowth.newCustomers}</span></span>
-                <span className={`font-semibold ${analytics.customerGrowth.growthRate >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {analytics.customerGrowth.growthRate >= 0 ? '+' : ''}{analytics.customerGrowth.growthRate}%
-                </span>
+              <ArrowUpRight className="h-4 w-4 text-gray-300 dark:text-white/20" />
+            </div>
+            {loading ? (
+              <div className="flex h-48 items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              </div>
+            ) : analytics?.funnelData ? (
+              <FunnelChart data={analytics.funnelData} />
+            ) : (
+              <div className="flex h-48 items-center justify-center text-gray-400 dark:text-white/20 text-sm">Нет данных</div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 backdrop-blur-sm shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Users className="h-4 w-4 text-violet-500" />
+                Удержание клиентов (Returning Customers)
+              </h3>
+              <ArrowUpRight className="h-4 w-4 text-gray-300 dark:text-white/20" />
+            </div>
+            {loading ? (
+              <div className="flex h-48 items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              </div>
+            ) : analytics?.cohortData ? (
+              <CohortDonutChart data={analytics.cohortData} />
+            ) : (
+              <div className="flex h-48 items-center justify-center text-gray-400 dark:text-white/20 text-sm">Нет данных</div>
+            )}
+          </div>
+        </div>
+
+        {/* Weekday sales & Customer growth */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 backdrop-blur-sm shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                Распределение выручки по дням недели
+              </h3>
+              <ArrowUpRight className="h-4 w-4 text-gray-300 dark:text-white/20" />
+            </div>
+            {loading ? (
+              <div className="flex h-48 items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              </div>
+            ) : analytics?.salesByDayOfWeek ? (
+              <SalesDayOfWeekChart data={analytics.salesByDayOfWeek} />
+            ) : (
+              <div className="flex h-48 items-center justify-center text-gray-400 dark:text-white/20 text-sm">Нет данных</div>
+            )}
+          </div>
+
+          {/* Customer growth */}
+          {analytics?.customerGrowth && (
+            <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 backdrop-blur-sm shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  Рост клиентской базы
+                </h3>
+                <div className="flex items-center gap-4 text-xs">
+                  <span className="text-gray-500 dark:text-white/40">Всего: <span className="text-gray-900 dark:text-white font-semibold">{analytics.customerGrowth.totalCustomers}</span></span>
+                  <span className="text-gray-500 dark:text-white/40">Новых: <span className="text-emerald-600 dark:text-emerald-400 font-semibold">+{analytics.customerGrowth.newCustomers}</span></span>
+                  <span className={`font-semibold ${analytics.customerGrowth.growthRate >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {analytics.customerGrowth.growthRate >= 0 ? '+' : ''}{analytics.customerGrowth.growthRate}%
+                  </span>
+                </div>
+              </div>
+              <div className="h-[230px] w-full">
+                <ResponsiveContainer width="100%" height={230}>
+                  <BarChart data={analytics.customerGrowth.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke={chart.axis} 
+                      tick={{ fill: chart.axis, fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      stroke={chart.axis} 
+                      tick={{ fill: chart.axis, fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={chart.tooltip}
+                      labelStyle={{ color: chart.tooltip.color, fontWeight: 600 }}
+                      formatter={(value) => [`${Number(value)} клиентов`, 'Новые']}
+                    />
+                    <Bar 
+                      dataKey="customers" 
+                      fill="#8b5cf6"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={analytics.customerGrowth.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke={chart.axis} 
-                    tick={{ fill: chart.axis, fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    stroke={chart.axis} 
-                    tick={{ fill: chart.axis, fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={chart.tooltip}
-                    labelStyle={{ color: chart.tooltip.color, fontWeight: 600 }}
-                    formatter={(value) => [`${Number(value)} клиентов`, 'Новые']}
-                  />
-                  <Bar 
-                    dataKey="customers" 
-                    fill="#8b5cf6"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </AdminShell>
   );
 }
+

@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { userVerificationRequests, users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
+import { encrypt } from '@/lib/encryption';
 
 /**
  * Получить статус верификации текущего пользователя
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Создаем новую заявку
+    // Создаем новую заявку с зашифрованными паспортными данными
     const requestId = crypto.randomUUID();
     await db.insert(userVerificationRequests).values({
       id: requestId,
@@ -111,11 +112,11 @@ export async function POST(request: NextRequest) {
       firstName: firstName as string,
       lastName: lastName as string,
       middleName: middleName || null,
-      passportSeries: passportSeries as string,
-      passportNumber: passportNumber as string,
-      issuedBy: issuedBy as string,
+      passportSeries: encrypt(passportSeries as string),
+      passportNumber: encrypt(passportNumber as string),
+      issuedBy: encrypt(issuedBy as string),
       issueDate: new Date(issueDate),
-      departmentCode: departmentCode || null,
+      departmentCode: departmentCode ? encrypt(departmentCode as string) : null,
       dateOfBirth: new Date(dateOfBirth),
       phoneNumber: phoneNumber as string,
       additionalInfo: additionalInfo || null,

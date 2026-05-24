@@ -16,6 +16,7 @@ import OrderDownloadButton from '@/components/receipts/OrderDownloadButton';
 import OrderTrackingModal from '@/components/orders/OrderTrackingModal';
 import OrderSupportModal from '@/components/orders/OrderSupportModal';
 import { receiptService, Receipt } from '@/lib/receipt-client';
+import ProxyImage from '@/components/ProxyImage';
 
 export interface OrderItem {
   id: string;
@@ -276,7 +277,12 @@ export default function OrdersPage() {
                                 <div key={item.id} className="flex gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
                                   <div className="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-xl flex items-center justify-center overflow-hidden">
                                     {item.image ? (
-                                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                      <ProxyImage
+                                        src={item.image}
+                                        alt={item.name}
+                                        className="w-full h-full object-cover"
+                                        proxyWidth={256}
+                                      />
                                     ) : (
                                       <Package className="text-gray-400" size={24} />
                                     )}
