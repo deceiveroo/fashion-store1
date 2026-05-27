@@ -37,17 +37,17 @@
   }
 
   :root {
-    /* Light theme colors */
-    --background: #ffffff;
-    --foreground: #0f172a;
-    --surface: #f8fafc;
-    --surface-hover: #f1f5f9;
-    --border: #e2e8f0;
-    --text-secondary: #64748b;
+    /* Light theme colors - Luxury Minimalist Warm Tone */
+    --background: #faf9f6; /* Warm alabaster/ivory white for high-end luxury feel */
+    --foreground: #111111; /* Chic matte black for premium contrast */
+    --surface: #ffffff; /* Pure white surface cards for elegant overlay on warm alabaster */
+    --surface-hover: #f5f4f0;
+    --border: #e8e6e0; /* Warm, ultra-thin elegant borders */
+    --text-secondary: #707070; /* Muted warm charcoal text */
     
-    /* Primary colors */
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
+    /* Primary colors - Matte Black Action Buttons */
+    --primary: #111111;
+    --primary-hover: #000000;
     
     /* Admin colors (from nextjs-admin-dashboard-main) */
     --admin-primary: #5750F1;

@@ -1,17 +1,17 @@
 'use client';
-
+ 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
+ 
 export default function Home() {
   const [isClient, setIsClient] = useState(false);
-
+ 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
+ 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
       {/* Hero Section */}
@@ -43,7 +43,7 @@ export default function Home() {
                 Будущее моды здесь
               </span>
             </motion.div>
-
+ 
             <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
               <span className="bg-gradient-to-r from-purple-200 to-pink-200 dark:from-purple-300 dark:to-pink-300 bg-clip-text text-transparent">
                 ELEVATE
@@ -51,11 +51,11 @@ export default function Home() {
               <br />
               <span>Ваш стиль</span>
             </h1>
-
+ 
             <p className="text-xl text-white/90 dark:text-white/80 mb-8 max-w-2xl mx-auto leading-relaxed">
               Откройте для себя нашу инновационную коллекцию, где передовой дизайн соответствует устойчивой роскоши.
             </p>
-
+ 
             <motion.div
               className="flex flex-col sm:flex-row gap-4 justify-center"
               initial={{ opacity: 0, y: 20 }}
@@ -79,7 +79,7 @@ export default function Home() {
             </motion.div>
           </motion.div>
         </div>
-
+ 
         {/* Анимированные элементы */}
         {isClient && (
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -105,6 +105,8 @@ export default function Home() {
           </div>
         )}
       </section>
+ 
+
     </div>
   );
 }

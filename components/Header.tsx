@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, User, Menu, X, Search as SearchIcon, Plus, LogOut, ChevronDown, Package, Heart, Bell, CheckCheck, Trash2 } from 'lucide-react';
+import { ShoppingBag, User, Menu, X, Search as SearchIcon, Plus, LogOut, ChevronDown, Package, Heart, Bell, CheckCheck, Trash2, Sparkles } from 'lucide-react';
 import SearchComponent from './SearchNew';
 import Cart from './Cart';
 import ThemeToggle from './ThemeToggle';
@@ -299,7 +299,7 @@ export default function Header() {
                         <div className="relative">
                           {/* Pulsing Avatar Animation */}
                           <div className={unreadCount > 0 ? 'animate-pulse' : ''}>
-                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-purple-500/30">
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-black/10 dark:ring-white/10">
                               <Image 
                                 src={user.avatar || user.image || ''} 
                                 alt="Avatar" 
@@ -312,7 +312,7 @@ export default function Header() {
                           </div>
                           {/* Small notification dot */}
                           {unreadCount > 0 && (
-                            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full border-2 border-white dark:border-gray-900 shadow-md"></span>
+                            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-black dark:bg-white rounded-full border-2 border-white dark:border-gray-900 shadow-md"></span>
                           )}
                         </div>
                       ) : (
@@ -650,8 +650,8 @@ export default function Header() {
                 <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                   {notifications.length === 0 ? (
                     <div className="px-6 py-16 text-center">
-                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 flex items-center justify-center">
-                        <Bell size={36} className="text-purple-400 dark:text-purple-500" />
+                      <div className="w-20 h-20 mx-auto mb-4 bg-[#faf9f6] dark:bg-neutral-900 flex items-center justify-center border border-neutral-200 dark:border-neutral-800">
+                        <Bell size={36} className="text-gray-400 dark:text-neutral-500" />
                       </div>
                       <p className="text-gray-900 dark:text-white font-semibold text-lg">Нет уведомлений</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Все прочитано ✓</p>
@@ -665,18 +665,18 @@ export default function Header() {
                           animate={{ opacity: 1, x: 0 }}
                           onClick={() => {
                             if (!notification.isRead) {
-                              markAsRead(notification.id);
+                               markAsRead(notification.id);
                             }
                           }}
                           className={`w-full px-6 py-4 text-left transition-all group ${
                             !notification.isRead 
-                              ? 'bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10 hover:from-purple-100/70 hover:to-pink-100/70 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20' 
+                              ? 'bg-neutral-100/50 dark:bg-neutral-900/20 hover:bg-neutral-100/80 dark:hover:bg-neutral-900/40' 
                               : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                           }`}
                         >
                           <div className="flex items-start gap-4">
                             {!notification.isRead && (
-                              <span className="w-2.5 h-2.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mt-1.5 flex-shrink-0 animate-pulse shadow-lg shadow-purple-500/50"></span>
+                              <span className="w-2.5 h-2.5 bg-black dark:bg-white rounded-full mt-1.5 flex-shrink-0 animate-pulse"></span>
                             )}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-3 mb-2">
@@ -686,7 +686,7 @@ export default function Header() {
                                   {notification.title}
                                 </p>
                                 {!notification.isRead && (
-                                  <span className="text-[10px] px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full font-medium flex-shrink-0">
+                                  <span className="text-[9px] px-2.5 py-0.5 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-wider">
                                     New
                                   </span>
                                 )}
@@ -704,7 +704,7 @@ export default function Header() {
                                   })}
                                 </p>
                                 {!notification.isRead && (
-                                  <span className="text-xs text-purple-600 dark:text-purple-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <span className="text-xs text-gray-400 dark:text-gray-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                                     Нажмите чтобы отметить как прочитанное
                                   </span>
                                 )}

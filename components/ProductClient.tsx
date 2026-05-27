@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingBag, Play, Star } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingBag, Play, Star, Sparkles } from 'lucide-react';
 import AddToCartButton from './AddToCartButton';
 import FavoriteButton from './FavoriteButton';
 import ProductCard from '@/components/product-card';
@@ -12,6 +12,7 @@ import type { ProductCardProduct } from '@/components/product-card/types';
 import ReviewList from '@/components/reviews/ReviewList';
 import ReviewForm from '@/components/reviews/ReviewForm';
 import StarRating from '@/components/reviews/StarRating';
+import SizeAdvisorModal from '@/components/SizeAdvisorModal';
 
 interface ProductImage {
   id: string;
@@ -80,6 +81,11 @@ export default function ProductClient({ product }: ProductClientProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [related, setRelated] = useState<ProductCardProduct[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [isSizeAdvisorOpen, setIsSizeAdvisorOpen] = useState(false);
+
+  const availableSizes = useMemo(() => {
+    return product.sizes?.map(s => s.sizeName || s.size_name || '').filter(Boolean) as string[] || [];
+  }, [product.sizes]);
 
   const price = toNumberPrice(product.price);
 
@@ -421,9 +427,19 @@ export default function ProductClient({ product }: ProductClientProps) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-500 dark:text-neutral-500 mb-3">
-                    Размер
-                  </p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-500 dark:text-neutral-500">
+                      Размер
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsSizeAdvisorOpen(true)}
+                      className="text-xs font-light tracking-wide text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 underline underline-offset-4 flex items-center gap-1.5 transition-colors focus:outline-none"
+                    >
+                      <Sparkles className="h-3 w-3 animate-pulse" />
+                      Подобрать размер
+                    </button>
+                  </div>
                   <motion.div className="flex flex-wrap gap-2" role="listbox" aria-label="Выбор размера">
                     {product.sizes.map((sizeData) => {
                       const sizeLabel = sizeData.sizeName || sizeData.size_name || '';
@@ -591,6 +607,14 @@ export default function ProductClient({ product }: ProductClientProps) {
             </div>
           </motion.section>
         )}
+
+        {/* Size Advisor Modal */}
+        <SizeAdvisorModal
+          isOpen={isSizeAdvisorOpen}
+          onClose={() => setIsSizeAdvisorOpen(false)}
+          onSelectSize={(size) => setSelectedSize(size)}
+          availableSizes={availableSizes}
+        />
       </motion.div>
     </div>
   );
