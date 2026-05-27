@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, userProfiles } from '@/lib/schema';
-import { and, eq, or, ilike, desc } from 'drizzle-orm';
+import { eq, or, ilike, desc } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
 // GET /api/admin/customers - Search and list customers/users
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search') || '';
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseInt(searchParams.get('limit') || '500');
 
     // Build query with proper order: select -> from -> join -> where -> orderBy -> limit
     let results: any[];
@@ -50,13 +50,10 @@ export async function GET(request: NextRequest) {
         .from(users)
         .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
         .where(
-          and(
-            eq(users.role, 'customer'),
-            or(
-              ilike(users.email, searchTerm),
-              ilike(userProfiles.firstName, searchTerm),
-              ilike(userProfiles.lastName, searchTerm)
-            )
+          or(
+            ilike(users.email, searchTerm),
+            ilike(userProfiles.firstName, searchTerm),
+            ilike(userProfiles.lastName, searchTerm)
           )
         )
         .orderBy(desc(users.createdAt))
@@ -83,7 +80,6 @@ export async function GET(request: NextRequest) {
         })
         .from(users)
         .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
-        .where(eq(users.role, 'customer'))
         .orderBy(desc(users.createdAt))
         .limit(limit);
     }

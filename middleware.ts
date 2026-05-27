@@ -203,6 +203,16 @@ export async function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
+  // Prevent CDN caching for user-specific API routes
+  const userSpecificPaths = ['/api/profile', '/api/orders', '/api/auth', '/api/user', '/api/wishlist', '/api/favorites', '/api/notifications', '/api/gamification', '/api/coupons'];
+  if (userSpecificPaths.some(p => pathname.startsWith(p))) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('CDN-Cache-Control', 'no-store');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Vary', 'Cookie, Authorization');
+  }
+
   // Apply security headers to all responses
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(key, value);

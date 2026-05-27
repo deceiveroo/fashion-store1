@@ -10,6 +10,7 @@ import { eq, desc, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 import { parseUserAgent } from '@/lib/user-agent';
+import { jsonWithNoCache } from '@/lib/no-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -188,7 +189,7 @@ export async function GET(request: NextRequest) {
     isValid: c.couponActive && (!c.couponExpiresAt || new Date(c.couponExpiresAt) > now),
   }));
 
-  return NextResponse.json({
+  return jsonWithNoCache({
     profile: user ? {
       id: user.id,
       email: user.email,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { supportChatSessions, supportChatMessages, users } from '@/lib/schema';
+import { supportChatSessions, supportChatMessages, users, userProfiles } from '@/lib/schema';
 import { desc, eq, count, sql } from 'drizzle-orm';
 import { isAdmin } from '@/lib/server-auth';
 import { cache, CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
@@ -50,14 +50,15 @@ export async function GET(request: NextRequest) {
           category: supportChatSessions.category,
           createdAt: supportChatSessions.createdAt,
           updatedAt: supportChatSessions.updatedAt,
-          // User profile data
-          userFirstName: users.firstName,
-          userLastName: users.lastName,
-          userAvatar: users.avatar,
+          // User profile data (firstName/lastName/avatar are in userProfiles, not users)
+          userFirstName: userProfiles.firstName,
+          userLastName: userProfiles.lastName,
+          userAvatar: userProfiles.avatar,
           userImage: users.image,
         })
         .from(supportChatSessions)
         .leftJoin(users, eq(supportChatSessions.userId, users.id))
+        .leftJoin(userProfiles, eq(supportChatSessions.userId, userProfiles.userId))
         .orderBy(desc(supportChatSessions.lastMessageAt))
         .limit(limit)
         .offset(offset);

@@ -405,7 +405,7 @@ export default function NotFoundPage() {
               На главную
             </button>
           </Link>
-          <Link href="/products">
+          <Link href="/collections">
             <button className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-2xl font-semibold shadow-lg shadow-violet-500/30 transition-all hover:scale-105 active:scale-95">
               <ShoppingBag className="w-5 h-5 group-hover:bounce transition-transform" />
               К товарам
