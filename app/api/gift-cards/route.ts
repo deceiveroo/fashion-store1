@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { giftCards } from '@/lib/schema';
 import { safeQuery } from '@/lib/db';
 import { eq } from 'drizzle-orm';
+import { sendEmail, renderGiftCardEmail } from '@/lib/email';
 
 // POST /api/gift-cards - Create a new gift card
 export async function POST(request: NextRequest) {
@@ -89,9 +90,25 @@ export async function POST(request: NextRequest) {
       }).returning()
     ) || [];
 
-    // TODO: Send email to recipient with gift card details
-    // For now, we'll just return the code in the response
-    // In production, integrate with email service (SendGrid, Resend, etc.)
+    // Send email to recipient (Resend in prod, dev log fallback if not configured).
+    try {
+      const { html, text } = renderGiftCardEmail({
+        recipientName: recipientName || null,
+        code,
+        amount: `${Number(amount).toLocaleString('ru-RU')} ₽`,
+        message: message || null,
+      });
+      await sendEmail({
+        to: recipientEmail,
+        subject: 'Вам подарили подарочную карту',
+        html,
+        text,
+        tags: [{ name: 'category', value: 'gift-card' }],
+      });
+    } catch (emailError) {
+      console.error('[gift-cards] sendEmail failed:', emailError);
+      // Email failure should not block card creation — purchaser can resend manually.
+    }
 
     return NextResponse.json({
       success: true,

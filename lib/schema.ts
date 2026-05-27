@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, decimal, timestamp, boolean, json, jsonb, varchar, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, decimal, timestamp, boolean, json, jsonb, varchar, uniqueIndex, index, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // Enum types for PostgreSQL
@@ -22,6 +22,7 @@ export const users = pgTable('users', {
   isVerified: boolean('is_verified').default(false), // Верифицирован ли пользователь
   verifiedAt: timestamp('verified_at', { mode: 'date' }), // Дата верификации
   lastSignIn: timestamp('last_sign_in', { mode: 'date' }), // Последний вход пользователя
+  twoFactorSecret: text('two_factor_secret'), // Base32 TOTP secret; null = 2FA disabled
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
@@ -78,7 +79,7 @@ export const categories = pgTable('categories', {
   slug: text('slug').notNull().unique(),
   description: text('description'),
   image: text('image'),
-  parentId: text('parent_id').references(() => categories.id, { onDelete: 'set null' }),
+  parentId: text('parent_id').references((): AnyPgColumn => categories.id, { onDelete: 'set null' }),
   isActive: boolean('is_active').default(true),
   sortOrder: integer('sort_order').default(0),
   materializedPath: text('materialized_path'),
@@ -203,13 +204,16 @@ export const productSizes = pgTable('product_sizes', {
 // Orders table
 export const orders = pgTable('orders', {
   id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  orderNumber: text('order_number').unique(),
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'restrict' }),
+  guestEmail: text('guest_email'),
   status: text('status', { enum: orderStatusEnum }).default('pending').notNull(),
   subtotal: decimal('subtotal', { precision: 12, scale: 2 }).notNull(), // Subtotal before discount and delivery
   total: decimal('total', { precision: 12, scale: 2 }).notNull(),
   discount: decimal('discount', { precision: 10, scale: 2 }).default('0'),
+  currency: text('currency').default('RUB'),
   deliveryPrice: decimal('delivery_price', { precision: 10, scale: 2 }).default('0'),
   deliveryMethod: text('delivery_method').default('courier'),
   paymentMethod: text('payment_method').default('card'),
@@ -684,11 +688,11 @@ export const usersRelations = relations(users, ({ many }) => ({
   activityLogs: many(activityLogs),
 }));
 
-export const sessionsRelations = relations(users, ({ one }) => ({
+export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 
-export const accountsRelations = relations(users, ({ one }) => ({
+export const accountsRelations = relations(accounts, ({ one }) => ({
   user: one(users, { fields: [accounts.userId], references: [users.id] }),
 }));
 
@@ -1132,4 +1136,43 @@ export const userVerificationRequests = pgTable('user_verification_requests', {
 export const userVerificationRequestsRelations = relations(userVerificationRequests, ({ one }) => ({
   user: one(users, { fields: [userVerificationRequests.userId], references: [users.id] }),
   reviewer: one(users, { fields: [userVerificationRequests.reviewedBy], references: [users.id] }),
+}));
+
+// Contact form submissions from the public site (/support/contact).
+export const contactMessages = pgTable('contact_messages', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  email: text('email').notNull(),
+  subject: text('subject'),
+  message: text('message').notNull(),
+  status: text('status', { enum: ['new', 'in_progress', 'resolved', 'spam'] }).default('new').notNull(),
+  adminNote: text('admin_note'),
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  resolvedBy: text('resolved_by').references(() => users.id, { onDelete: 'set null' }),
+  resolvedAt: timestamp('resolved_at', { mode: 'date' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  statusIdx: index('idx_contact_messages_status').on(table.status),
+  createdAtIdx: index('idx_contact_messages_created_at').on(table.createdAt),
+}));
+
+// Append-only audit trail for sensitive actions (e.g. viewing passport data).
+export const auditLog = pgTable('audit_log', {
+  id: text('id').primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  actorId: text('actor_id').references(() => users.id, { onDelete: 'set null' }),
+  actorEmail: text('actor_email'),
+  action: text('action').notNull(), // e.g. 'verification.view', 'verification.approve'
+  resourceType: text('resource_type').notNull(), // e.g. 'verification_request'
+  resourceId: text('resource_id'),
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  meta: jsonb('meta'),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  actorIdx: index('idx_audit_log_actor').on(table.actorId),
+  resourceIdx: index('idx_audit_log_resource').on(table.resourceType, table.resourceId),
+  createdAtIdx: index('idx_audit_log_created_at').on(table.createdAt),
 }));

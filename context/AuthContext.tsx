@@ -125,8 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const getToken = (): string | null => {
     // NextAuth uses cookies for authentication, not localStorage
     // We can check if user is authenticated by checking the user state
-    if (user && session?.accessToken) {
-      return session.accessToken as string;
+    const sessionWithToken = session as (typeof session & { accessToken?: string }) | null;
+    if (user && sessionWithToken?.accessToken) {
+      return sessionWithToken.accessToken;
     }
     // Fallback to localStorage for legacy tokens
     if (typeof window !== 'undefined') {

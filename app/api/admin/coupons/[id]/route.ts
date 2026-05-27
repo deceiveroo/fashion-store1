@@ -5,8 +5,9 @@ import { eq } from 'drizzle-orm';
 import { isStaff } from '@/lib/server-auth';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
+import { getJwtSecret } from '@/lib/jwt-secret';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+const JWT_SECRET = getJwtSecret();
 
 // GET /api/admin/coupons/[id] - Get single coupon
 export async function GET(

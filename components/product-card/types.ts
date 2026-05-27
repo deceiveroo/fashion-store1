@@ -5,9 +5,9 @@ export interface ProductCardProduct {
   name: string;
   description: string;
   price: number;
-  categories: string[];
+  categories?: string[];
   inStock: boolean;
-  featured: boolean;
+  featured?: boolean;
   isNew?: boolean;
   mainImage?: string;
   images?: { id: string; url: string; isMain: boolean }[];

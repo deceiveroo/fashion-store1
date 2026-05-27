@@ -65,7 +65,14 @@ export async function requireUser(): Promise<{ id: string; email: string; name: 
   if (!session?.user) {
     throw new Error('User not authenticated');
   }
-  return session.user;
+  const u = session.user;
+  return {
+    id: u.id,
+    email: u.email ?? '',
+    name: u.name ?? '',
+    role: u.role,
+    image: u.image ?? undefined,
+  };
 }
 
 export async function isStaff() {
@@ -85,7 +92,7 @@ export async function isAdmin() {
 }
 
 export async function checkStaff(): Promise<boolean> {
-  return isStaff();
+  return Boolean(await isStaff());
 }
 
 export async function checkCanManageProducts(): Promise<boolean> {

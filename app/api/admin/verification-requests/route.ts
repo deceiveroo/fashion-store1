@@ -4,12 +4,13 @@ import { userProfiles, userVerificationRequests, users } from '@/lib/schema';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { isAdmin } from '@/lib/server-auth';
 import { decrypt } from '@/lib/encryption';
+import { logAudit } from '@/lib/audit';
 
 /**
  * Получить все заявки на верификацию (только для админов)
  * GET /api/admin/verification-requests
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const admin = await isAdmin();
     if (!admin?.id) {
@@ -43,6 +44,16 @@ export async function GET() {
       })
       .from(userVerificationRequests)
       .orderBy(desc(userVerificationRequests.createdAt));
+
+    // Audit: admin viewed the entire verification queue (sensitive — passport data exposed).
+    await logAudit({
+      actorId: admin.id,
+      actorEmail: admin.email,
+      action: 'verification.list',
+      resourceType: 'verification_request',
+      headers: request.headers,
+      meta: { count: requests.length },
+    });
 
     const ids = Array.from(
       new Set(

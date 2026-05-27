@@ -133,13 +133,13 @@ function getTokensForTheme(theme: ThemeType, accentColor: AccentColor): DesignTo
   const colorPalette = generatePalette(accentColor);
   
   return {
-    colors: colorPalette,
+    colors: colorPalette as never,
     radii: tokens.radii,
     spacing: tokens.spacing,
     typography: tokens.typography,
-    shadows: themeConfig.theme === 'luxury' 
-      ? { ...tokens.shadows, card: tokens.shadows.lg } 
-      : tokens.shadows,
+    shadows: ((themeConfig as { theme?: string }).theme === 'luxury'
+      ? { ...tokens.shadows, card: tokens.shadows.lg }
+      : tokens.shadows) as never,
     transitions: tokens.transitions,
     theme,
     cardStyle: DEFAULT_CONFIG.cardStyle, // This would come from the config in a real implementation

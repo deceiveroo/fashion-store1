@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy file, not currently imported anywhere; references obsolete schema entities (productCategoryLinks, linkEvents) that no longer exist
 'use server';
 
 import { revalidatePath } from 'next/cache';

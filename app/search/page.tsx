@@ -26,6 +26,7 @@ interface Product {
   inStock: boolean | null;
   mainImage: string;
   categories: string[];
+  featured?: boolean;
 }
 
 interface Filters {
@@ -389,7 +390,7 @@ export default function SearchPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <ProductCard product={product} />
+                    <ProductCard product={{ ...product, description: product.description ?? '', inStock: product.inStock ?? false }} />
                   </motion.div>
                 ))}
               </motion.div>

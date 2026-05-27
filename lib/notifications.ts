@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
-import { userNotifications, notificationSettings } from '@/lib/schema';
+import { userNotifications, notificationSettings, users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
+import { sendEmail } from '@/lib/email';
 
 export interface NotificationData {
   userId: string;
@@ -67,22 +68,32 @@ export async function sendNotification(data: NotificationData) {
       })
       .returning();
 
-    // TODO: Implement actual email sending
+    // Email delivery via lib/email (Resend in prod, log in dev).
     if (shouldSendEmail) {
-      console.log(`Would send email to user ${data.userId}: ${data.title}`);
-      // await sendEmailNotification(data.userId, data);
+      try {
+        const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, data.userId)).limit(1);
+        if (u?.email) {
+          await sendEmail({
+            to: u.email,
+            subject: data.title,
+            html: `<p>${data.message.replace(/</g, '&lt;')}</p>${data.actionUrl ? `<p><a href="${data.actionUrl}">Перейти</a></p>` : ''}`,
+            text: data.message,
+            tags: [{ name: 'category', value: data.category }],
+          });
+        }
+      } catch (emailError) {
+        console.error('[notifications] sendEmail failed:', emailError);
+      }
     }
 
-    // TODO: Implement actual push notifications
+    // Push notifications: not implemented yet (no Web Push / FCM provider configured).
     if (shouldSendPush) {
-      console.log(`Would send push to user ${data.userId}: ${data.title}`);
-      // await sendPushNotification(data.userId, data);
+      console.log(`[notifications] push channel not configured, skipping (user ${data.userId})`);
     }
 
-    // TODO: Implement actual SMS sending
+    // SMS: not implemented yet (no SMS provider configured — Twilio/SMS.ru).
     if (shouldSendSms) {
-      console.log(`Would send SMS to user ${data.userId}: ${data.title}`);
-      // await sendSmsNotification(data.userId, data);
+      console.log(`[notifications] sms channel not configured, skipping (user ${data.userId})`);
     }
 
     return notification;

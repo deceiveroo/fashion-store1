@@ -150,7 +150,7 @@ export default function InteractiveMap({ stores, selectedStore, onStoreSelect, s
           window.ymaps.route([userCoords, storeCoords]).then(
             (route: any) => {
               // Удаляем предыдущие маршруты
-              mapInstance.geoObjects.each(obj => {
+              mapInstance.geoObjects.each((obj: any) => {
                 if (obj.geometry && obj.geometry.getType() === 'LineString') {
                   mapInstance.geoObjects.remove(obj);
                 }

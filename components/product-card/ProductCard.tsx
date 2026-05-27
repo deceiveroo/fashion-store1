@@ -165,7 +165,7 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
         </motion.div>
 
         <div className="mt-4 space-y-1.5">
-          {variant === 'collections' && product.categories[0] && (
+          {variant === 'collections' && product.categories?.[0] && (
             <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-purple-600 dark:text-purple-400">
               {product.categories[0]}
             </p>

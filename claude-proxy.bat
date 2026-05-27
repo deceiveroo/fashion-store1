@@ -4,7 +4,7 @@ echo Запуск Claude Code с прокси
 echo ========================================
 
 set ANTHROPIC_BASE_URL=https://cc.freemodel.dev
-set ANTHROPIC_API_KEY=fe_oa_256c58f756e4aed73385346089f760187e97aaacd6d11c87
+set ANTHROPIC_API_KEY=fe_oa_9baa91aec3ba40bb5183c04f0d7a14b5907c2a014105dc9e
 set ANTHROPIC_MODEL=claude-sonnet-4-20250514
 set CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 set CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1

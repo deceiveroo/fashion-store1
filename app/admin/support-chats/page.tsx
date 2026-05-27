@@ -70,6 +70,8 @@ function SupportChatsPage() {
       const r = await fetch(`/api/admin/support-chats/${encodeURIComponent(sessionId)}`);
       if (!r.ok) return;
       const d = await r.json();
+      // Guard: if admin already switched to a different chat, drop this response.
+      if (selRef.current?.sessionId !== sessionId) return;
       const list: Msg[] = (d.messages || []).map((m: Record<string, unknown>) => ({
         id: String(m.id),
         sessionId: String(m.sessionId ?? m.session_id ?? sessionId),
@@ -93,8 +95,11 @@ function SupportChatsPage() {
       setMessages([]);
       return;
     }
+    // Clear messages immediately when switching sessions to avoid showing
+    // the previous chat while the new one loads.
+    setMessages([]);
     loadMessages(sel.sessionId);
-    
+
     // Отмечаем сообщения пользователя как прочитанные админом
     const markAsRead = async () => {
       try {
@@ -133,41 +138,49 @@ function SupportChatsPage() {
 
   // Supabase Realtime для сообщений
   useEffect(() => {
-    if (!sel) { 
+    if (!sel) {
       setMessages([]);
       // Очищаем канал при закрытии чата
       if (realtimeChannelRef.current) {
-        supabase.removeChannel(realtimeChannelRef.current);
+        try { supabase.removeChannel(realtimeChannelRef.current); } catch {}
         realtimeChannelRef.current = null;
       }
-      return; 
+      return;
     }
+
+    // Capture the sessionId we're subscribing for. If the admin switches to a
+    // different chat before this effect tears down, we drop incoming messages
+    // for the previous session — otherwise messages from chat A could leak
+    // into chat B's UI.
+    const subscribedSessionId = sel.sessionId;
 
     // Сначала удаляем старый канал если есть
     if (realtimeChannelRef.current) {
-      console.log('Removing old channel:', realtimeChannelRef.current.topic);
-      supabase.removeChannel(realtimeChannelRef.current);
+      try { supabase.removeChannel(realtimeChannelRef.current); } catch {}
       realtimeChannelRef.current = null;
     }
 
-    // Создаем НОВЫЙ канал
-    const channelName = `admin-chat-${sel.sessionId}`;
-    const channel = supabase.channel(channelName);
-    
-    // Добавляем callback ДО subscribe
+    const channelName = `admin-chat-${subscribedSessionId}`;
+    const channel: any = supabase.channel(channelName);
+
     channel.on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
         table: 'support_chat_messages',
-        filter: `session_id=eq.${sel.sessionId}`,
+        filter: `session_id=eq.${subscribedSessionId}`,
       },
-      (payload) => {
+      (payload: any) => {
+        // Guard against stragglers from a channel we already abandoned.
+        if (selRef.current?.sessionId !== subscribedSessionId) return;
         const raw = payload.new as Record<string, unknown>;
+        const incomingSid = String(raw.session_id ?? raw.sessionId ?? '');
+        if (incomingSid && incomingSid !== subscribedSessionId) return;
+
         const newMsg: Msg = {
           id: String(raw.id),
-          sessionId: String(raw.session_id ?? raw.sessionId ?? sel.sessionId),
+          sessionId: incomingSid || subscribedSessionId,
           message: String(raw.message ?? ''),
           sender: (raw.sender as Msg['sender']) ?? 'user',
           createdAt: String(raw.created_at ?? raw.createdAt ?? new Date().toISOString()),
@@ -182,17 +195,24 @@ function SupportChatsPage() {
         });
       }
     );
-    
-    // Теперь подписываемся
-    channel.subscribe((status) => {
+
+    channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
-        console.log('✅ Admin chat realtime connected:', sel.sessionId);
+        console.log('✅ Admin chat realtime connected:', subscribedSessionId);
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ Admin chat realtime error:', sel.sessionId);
+        console.error('❌ Admin chat realtime error:', subscribedSessionId);
       }
     });
 
+    channel.__sid = subscribedSessionId;
     realtimeChannelRef.current = channel;
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch {}
+      if (realtimeChannelRef.current === channel) {
+        realtimeChannelRef.current = null;
+      }
+    };
   }, [sel?.sessionId]);
 
   // Typing indicator для админа

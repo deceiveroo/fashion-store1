@@ -4,9 +4,9 @@ import { orders, orderItems } from '@/lib/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
+import { getJwtSecret } from '@/lib/jwt-secret';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
-const secret = new TextEncoder().encode(JWT_SECRET);
+const secret = getJwtSecret();
 
 async function getUserId(request: NextRequest): Promise<string | null> {
   const session = await auth();

@@ -873,5 +873,5 @@ export default function StoresPage() {
   );
 }
 
-// Экспортируем интерфейсы и типы, чтобы они были доступны в других файлах
-export type { StoreItem, Coordinates };
+// StoreItem is already exported via `export interface StoreItem`. Coordinates is internal.
+export type { Coordinates };

@@ -2,8 +2,11 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { products } from '@/lib/db/schema';  // Updated import path
+import { debugRouteGuard } from '@/lib/debug-guard';
 
 export async function GET() {
+  const blocked = await debugRouteGuard();
+  if (blocked) return blocked;
   try {
     const allProducts = await db.select().from(products);
     return new Response(JSON.stringify(allProducts), {

@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, products, categories } from '@/lib/schema';
 import { sql } from 'drizzle-orm';
+import { debugRouteGuard } from '@/lib/debug-guard';
 
 export async function GET() {
+  const blocked = await debugRouteGuard();
+  if (blocked) return blocked;
+
   const results: Record<string, unknown> = {};
 
   try {

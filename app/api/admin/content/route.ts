@@ -5,8 +5,9 @@ import { eq, and } from 'drizzle-orm';
 import { isStaff } from '@/lib/server-auth';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
+import { getJwtSecret } from '@/lib/jwt-secret';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+const JWT_SECRET = getJwtSecret();
 
 // GET /api/admin/content - Get all content items
 export async function GET(request: NextRequest) {
@@ -31,7 +32,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (conditions.length > 0) {
-      query = query.where(conditions.length === 1 ? conditions[0] : and(...conditions));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      query = (query as any).where(conditions.length === 1 ? conditions[0] : and(...conditions));
     }
 
     const content = await query.orderBy(siteContent.sortOrder, siteContent.createdAt);

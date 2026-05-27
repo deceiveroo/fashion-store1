@@ -45,14 +45,14 @@ const CATEGORIES = [
   }
 ];
 
-function getSessionId() {
-  if (typeof window === 'undefined') return '';
-  let id = localStorage.getItem('chat_session_id');
-  if (!id) {
-    id = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    localStorage.setItem('chat_session_id', id);
-  }
-  return id;
+function clearLegacyChatStorage() {
+  // Old versions of the app stored a chat session id in localStorage. That's a
+  // privacy leak (two users sharing a browser inherit each other's chat). Wipe it
+  // once on mount; the server now hands us the correct sessionId via cookie.
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem('chat_session_id');
+  } catch {}
 }
 
 export default function SupportChatMinimalist() {
@@ -62,7 +62,7 @@ export default function SupportChatMinimalist() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [takenOver, setTakenOver] = useState(false);
-  const [sessionId] = useState(() => getSessionId());
+  const [sessionId, setSessionId] = useState<string>('');
   const [typing, setTyping] = useState(false);
   const [view, setView] = useState<'search' | 'chat'>('search'); // search or chat view
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +72,23 @@ export default function SupportChatMinimalist() {
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const realtimeChannelRef = useRef<any>(null);
+  const sessionIdRef = useRef<string>('');
+
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+
+  // Wipe legacy localStorage key once.
+  useEffect(() => { clearLegacyChatStorage(); }, []);
+
+  // When the auth identity changes (login / logout / switching account),
+  // throw away the previous sessionId, conversation state and admin info.
+  // The next loadMessages() call will fetch the correct identity from the server.
+  useEffect(() => {
+    setSessionId('');
+    setMessages([]);
+    setAdminInfo(null);
+    setTakenOver(false);
+    unsubscribeFromRealtime();
+  }, [user?.id]);
 
   // Listen for cart state changes
   useEffect(() => {
@@ -94,27 +111,29 @@ export default function SupportChatMinimalist() {
   useEffect(() => {
     if (isOpen && view === 'chat') {
       inputRef.current?.focus();
-      loadMessages();
-      subscribeToRealtime();
-      
-      // Отмечаем сообщения админа как прочитанные пользователем
-      const markAsRead = async () => {
-        try {
-          await fetch('/api/chat/mark-read', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId }),
-          });
-        } catch (err) {
-          console.error('Failed to mark messages as read:', err);
+      // Sequentially: load messages (server returns the canonical sessionId),
+      // then subscribe to realtime for that sessionId.
+      (async () => {
+        const sid = await loadMessages();
+        if (sid) {
+          subscribeToRealtime(sid);
+
+          try {
+            await fetch('/api/chat/mark-read', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId: sid }),
+            });
+          } catch (err) {
+            console.error('Failed to mark messages as read:', err);
+          }
         }
-      };
-      markAsRead();
+      })();
     } else {
       unsubscribeFromRealtime();
     }
     return () => unsubscribeFromRealtime();
-  }, [isOpen, view, sessionId]);
+  }, [isOpen, view, user?.id]);
 
   // Close chat when clicking outside
   useEffect(() => {
@@ -132,69 +151,78 @@ export default function SupportChatMinimalist() {
     }
   }, [isOpen]);
 
-  const loadMessages = async () => {
+  // Returns the sessionId the server used so the caller can subscribe with it.
+  const loadMessages = async (): Promise<string> => {
     try {
-      const res = await fetch(`/api/chat?sessionId=${sessionId}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.messages && data.messages.length > 0) {
-          setMessages(data.messages.map((m: any) => ({
-            id: m.id,
-            text: m.message,
-            imageUrl: m.imageUrl || m.image_url,
-            sender:
-              m.sender === 'admin' ? 'admin' : m.sender === 'user' ? 'user' : 'ai',
-            timestamp: new Date(m.createdAt || m.created_at),
-            read: m.isRead ?? false,
-            readByAdmin: m.read_by_admin ?? m.readByAdmin ?? false,
-          })));
-        }
-        // Сохраняем информацию об админе
-        if (data.adminInfo) {
-          setAdminInfo(data.adminInfo);
-        }
+      const res = await fetch(`/api/chat`, { credentials: 'include' });
+      if (!res.ok) return '';
+      const data = await res.json();
+      const serverSid: string = data.sessionId || '';
+      if (serverSid && serverSid !== sessionIdRef.current) {
+        setSessionId(serverSid);
       }
+      if (Array.isArray(data.messages)) {
+        setMessages(data.messages.map((m: any) => ({
+          id: m.id,
+          text: m.message,
+          imageUrl: m.imageUrl || m.image_url,
+          sender:
+            m.sender === 'admin' ? 'admin' : m.sender === 'user' ? 'user' : 'ai',
+          timestamp: new Date(m.createdAt || m.created_at),
+          read: m.isRead ?? false,
+          readByAdmin: m.read_by_admin ?? m.readByAdmin ?? false,
+        })));
+      } else {
+        setMessages([]);
+      }
+      if (data.adminInfo) {
+        setAdminInfo(data.adminInfo);
+      }
+      return serverSid;
     } catch (error) {
       console.error('Failed to load messages:', error);
+      return '';
     }
   };
 
-  const subscribeToRealtime = () => {
+  const subscribeToRealtime = (sid: string) => {
+    if (!sid) return;
+    // If we're already subscribed to the right session, keep it. Otherwise drop and resubscribe.
+    if (realtimeChannelRef.current && realtimeChannelRef.current.__sid === sid) return;
     if (realtimeChannelRef.current) {
-      console.log('Realtime already subscribed, skipping...');
-      return;
+      try { supabase.removeChannel(realtimeChannelRef.current); } catch {}
+      realtimeChannelRef.current = null;
     }
 
-    // Создаем канал
-    const channelName = `chat-${sessionId}`;
-    const channel = supabase.channel(channelName);
-    
-    // Добавляем callback ДО subscribe
+    const channelName = `chat-${sid}`;
+    const channel: any = supabase.channel(channelName);
+
     channel.on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
         table: 'support_chat_messages',
-        filter: `session_id=eq.${sessionId}`,
+        filter: `session_id=eq.${sid}`,
       },
-      (payload) => {
+      (payload: any) => {
+        // Defensive guard: if the user logged in/out between subscribe and callback,
+        // the active sessionId may have changed. Drop stragglers from the old session.
+        if (sessionIdRef.current && sessionIdRef.current !== sid) return;
         const newMsg = payload.new as any;
-        
+        // Extra defensive: server-side filter should already match, but double-check.
+        if (newMsg.session_id && newMsg.session_id !== sid) return;
+
         setMessages(prev => {
-          // Проверяем есть ли уже это сообщение по ID
           const exists = prev.some(m => m.id === newMsg.id);
           if (exists) return prev;
-          
-          // Если это сообщение от пользователя, удаляем временное сообщение
+
           const isUserMessage = newMsg.sender === 'user';
           let filtered = prev;
-          
           if (isUserMessage) {
-            // Удаляем все временные сообщения пользователя (с ID начинающимся на 'temp-')
             filtered = prev.filter(m => !(m.sender === 'user' && m.id.startsWith('temp-')));
           }
-          
+
           return [...filtered, {
             id: newMsg.id,
             text: newMsg.message,
@@ -213,41 +241,38 @@ export default function SupportChatMinimalist() {
 
         if (newMsg.sender === 'admin') {
           setTakenOver(true);
-          // Загружаем информацию об админе если еще не загружена
           if (!adminInfo) {
-            fetch(`/api/chat?sessionId=${sessionId}`)
+            fetch(`/api/chat`, { credentials: 'include' })
               .then(res => res.json())
               .then(data => {
-                if (data.adminInfo) {
-                  setAdminInfo(data.adminInfo);
-                }
+                if (data.adminInfo) setAdminInfo(data.adminInfo);
               })
               .catch(err => console.error('Failed to load admin info:', err));
           }
         }
       }
     );
-    
-    // Подписываемся с обработкой статуса
-    channel.subscribe((status) => {
+
+    channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
-        console.log('✅ Realtime connected for chat:', sessionId);
+        console.log('✅ Realtime connected for chat:', sid);
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ Realtime channel error:', sessionId);
+        console.error('❌ Realtime channel error:', sid);
       } else if (status === 'TIMED_OUT') {
-        console.warn('⚠️ Realtime channel timed out:', sessionId);
+        console.warn('⚠️ Realtime channel timed out:', sid);
       }
     });
 
+    channel.__sid = sid;
     realtimeChannelRef.current = channel;
   };
 
-  const unsubscribeFromRealtime = () => {
+  function unsubscribeFromRealtime() {
     if (realtimeChannelRef.current) {
-      supabase.removeChannel(realtimeChannelRef.current);
+      try { supabase.removeChannel(realtimeChannelRef.current); } catch {}
       realtimeChannelRef.current = null;
     }
-  };
+  }
 
   const send = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -268,7 +293,8 @@ export default function SupportChatMinimalist() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, sessionId }),
+        credentials: 'include',
+        body: JSON.stringify({ message: text }),
       });
 
       if (!res.ok) {
@@ -277,6 +303,13 @@ export default function SupportChatMinimalist() {
       }
 
       const data = await res.json();
+
+      // First write — server may have just minted our sessionId. Subscribe now.
+      if (data.sessionId && data.sessionId !== sessionIdRef.current) {
+        setSessionId(data.sessionId);
+        subscribeToRealtime(data.sessionId);
+      }
+
       const operatorActive = Boolean(data.takenOver);
       if (operatorActive) setTakenOver(true);
 
@@ -301,7 +334,6 @@ export default function SupportChatMinimalist() {
         console.log('⚠️ Realtime timeout, loading messages manually...');
         await loadMessages();
       }, 5000);
-      
       setTyping(false);
       setLoading(false);
     } catch (error) {

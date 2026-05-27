@@ -25,7 +25,7 @@ async function queryWithRetry<T>(queryFn: () => Promise<T>, maxRetries = 3): Pro
         errorCode === 'ECONNRESET';
       
       if (isConnectionError && i < maxRetries - 1) {
-        console.warn(`Query failed (attempt ${i + 1}), retrying...`, error.message);
+        console.warn(`Query failed (attempt ${i + 1}), retrying...`, errorMessage);
         // Wait before retry (exponential backoff)
         await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
         continue;

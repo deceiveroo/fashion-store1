@@ -23,7 +23,7 @@ interface FavoriteItem {
 
 export default function FavoritesPage() {
   const { user } = useAuth();
-  const { addToCart } = useCart();
+  const { addItem } = useCart();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
@@ -137,12 +137,11 @@ export default function FavoritesPage() {
     }
 
     inStockItems.forEach(item => {
-      addToCart({
+      addItem({
         id: item.id,
         name: item.name,
         price: item.price,
         image: item.image,
-        quantity: 1,
       });
     });
 

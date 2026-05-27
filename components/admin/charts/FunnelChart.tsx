@@ -44,10 +44,10 @@ export function FunnelChart({ data }: FunnelChartProps) {
           <Tooltip
             contentStyle={chart.tooltip}
             labelStyle={{ color: chart.tooltip.color, fontWeight: 600 }}
-            formatter={(value: number, name, props) => {
-              const rate = props.payload.rate;
+            formatter={((value: number, _name: unknown, props: { payload?: { rate?: number } }) => {
+              const rate = props.payload?.rate;
               return [`${value.toLocaleString('ru-RU')} (${rate}%)`, 'Объем'];
-            }}
+            }) as never}
           />
           <Bar 
             dataKey="count" 

@@ -153,7 +153,7 @@ export default function CheckoutPage() {
   };
   
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<unknown> | null>(null);
   
   // Обновляем данные формы при изменении пользователя
   useEffect(() => {

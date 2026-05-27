@@ -29,9 +29,18 @@ export async function GET(request: NextRequest) {
         email: user.email,
         name: user.name,
         role: user.role,
-        createdAt: user.createdAt,
       },
     };
+
+    // Fetch user's createdAt separately (verifyAuth returns a minimal user)
+    const fullUser = await db
+      .select({ createdAt: users.createdAt })
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+    if (fullUser[0]) {
+      userData.user.createdAt = fullUser[0].createdAt;
+    }
 
     // Get profile
     const profile = await db
@@ -49,18 +58,18 @@ export async function GET(request: NextRequest) {
       .select()
       .from(orders)
       .where(eq(orders.userId, user.id));
-    
-    userData.orders = userOrders;
 
     // Get order items for each order
+    const ordersWithItems: any[] = [];
     for (const order of userOrders) {
       const items = await db
         .select()
         .from(orderItems)
         .where(eq(orderItems.orderId, order.id));
-      
-      order.items = items;
+
+      ordersWithItems.push({ ...order, items });
     }
+    userData.orders = ordersWithItems;
 
     // Get wishlist
     const wishlist = await db

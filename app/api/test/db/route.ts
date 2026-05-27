@@ -1,8 +1,11 @@
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema/users';
 import { NextRequest } from 'next/server';
+import { debugRouteGuard } from '@/lib/debug-guard';
 
 export async function GET(request: NextRequest) {
+  const blocked = await debugRouteGuard();
+  if (blocked) return blocked;
   try {
     // Test the database connection by attempting a simple query
     const userCount = await db.select({ count: users.id }).from(users).limit(1);

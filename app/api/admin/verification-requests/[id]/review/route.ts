@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { userVerificationRequests, users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { isAdmin } from '@/lib/server-auth';
+import { logAudit } from '@/lib/audit';
 
 /**
  * Одобрить или отклонить заявку на верификацию
@@ -71,6 +72,19 @@ export async function POST(
           verifiedAt: null,
         }).where(eq(users.id, verificationRequest.userId));
       }
+    });
+
+    await logAudit({
+      actorId: admin.id,
+      actorEmail: admin.email,
+      action: action === 'approve' ? 'verification.approve' : 'verification.reject',
+      resourceType: 'verification_request',
+      resourceId: requestId,
+      headers: request.headers,
+      meta: {
+        targetUserId: verificationRequest.userId,
+        rejectionReason: action === 'reject' ? rejectionReason || null : null,
+      },
     });
 
     return NextResponse.json({

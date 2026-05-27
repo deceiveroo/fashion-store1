@@ -36,7 +36,7 @@ export function SalesDayOfWeekChart({ data }: SalesDayOfWeekChartProps) {
           <Tooltip
             contentStyle={chart.tooltip}
             labelStyle={{ color: chart.tooltip.color, fontWeight: 600 }}
-            formatter={(value: number) => [`${Math.round(value).toLocaleString('ru-RU')} ₽`, 'Выручка']}
+            formatter={((value: number) => [`${Math.round(value).toLocaleString('ru-RU')} ₽`, 'Выручка']) as never}
           />
           <Bar 
             dataKey="revenue" 

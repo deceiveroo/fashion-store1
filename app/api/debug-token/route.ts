@@ -1,11 +1,15 @@
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { debugRouteGuard } from '@/lib/debug-guard';
 
 export async function GET(req: NextRequest) {
+  const blocked = await debugRouteGuard();
+  if (blocked) return blocked;
+
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  
+
   const cookies = req.cookies.getAll().map(c => c.name);
-  
+
   return NextResponse.json({
     token: token ? { id: token.sub, role: token.role, email: token.email } : null,
     cookies,

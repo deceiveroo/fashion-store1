@@ -1,16 +1,19 @@
 // app/api/debug-products/route.ts
-import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productImages } from '@/lib/db/schema';
+import { products, productImages } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
+import { debugRouteGuard } from '@/lib/debug-guard';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
+  const blocked = await debugRouteGuard();
+  if (blocked) return blocked;
   try {
     const allProducts = await db
       .select()
       .from(products)
-      .leftJoin(productImages, productImages.productId === products.id);
-    
+      .leftJoin(productImages, eq(productImages.productId, products.id));
+
     return new Response(JSON.stringify(allProducts), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

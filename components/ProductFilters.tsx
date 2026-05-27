@@ -1,7 +1,13 @@
 // components/ProductFilters.tsx
 'use client';
 
-export default function ProductFilters({ onFilterChange }) {
+import { useState } from 'react';
+
+interface ProductFiltersProps {
+  onFilterChange?: (filters: { category: string; gender: string; collection: string; priceRange: number[] }) => void;
+}
+
+export default function ProductFilters({ onFilterChange }: ProductFiltersProps) {
   const [filters, setFilters] = useState({
     category: '',
     gender: '',

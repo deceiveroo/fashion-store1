@@ -8,6 +8,7 @@ import { users } from './schema';
 import type { NextAuthConfig } from 'next-auth';
 import { jwtVerify } from 'jose';
 import { checkAchievements, awardXP } from './gamification';
+import { verifyTotp } from './totp';
 
 // NextAuth v5 конфигурация
 export const authConfig: NextAuthConfig = {
@@ -37,42 +38,37 @@ export const authConfig: NextAuthConfig = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        totpCode: { label: 'TOTP code', type: 'text' },
       },
       async authorize(credentials) {
         try {
-          console.log('[AUTH] authorize called');
-          if (!credentials?.email || !credentials?.password) {
-            console.log('[AUTH] Missing credentials');
-            return null;
-          }
+          if (!credentials?.email || !credentials?.password) return null;
           const email = String(credentials.email).toLowerCase().trim();
           const passwordPlain = String(credentials.password);
-          console.log('[AUTH] Email:', email);
-          
+          const totpCode = credentials.totpCode ? String(credentials.totpCode).trim() : '';
+
           const [user] = await db
             .select()
             .from(users)
             .where(sql`lower(${users.email}) = ${email}`)
             .limit(1);
-          
-          console.log('[AUTH] User found:', !!user, user ? `id=${user.id}` : 'null');
-          if (!user?.password) {
-            console.log('[AUTH] No password in user object');
-            return null;
-          }
-          
-          console.log('[AUTH] Comparing password...');
+
+          if (!user?.password) return null;
+
           const ok = await compare(passwordPlain, user.password);
-          console.log('[AUTH] Password match:', ok);
-          if (!ok) {
-            console.log('[AUTH] Password mismatch, returning null');
-            return null;
+          if (!ok) return null;
+
+          // 2FA enforcement: if user has a stored secret, require a valid code.
+          if (user.twoFactorSecret) {
+            if (!totpCode) {
+              throw new Error('TOTP_REQUIRED');
+            }
+            if (!verifyTotp(user.twoFactorSecret, totpCode)) {
+              throw new Error('TOTP_INVALID');
+            }
           }
-          
+
           const role = String(user.role ?? 'customer').toLowerCase();
-          console.log('[AUTH] Role:', role);
-          // Разрешаем вход всем ролям
-          console.log('[AUTH] Success! Returning user object');
           return {
             id: user.id,
             email: user.email,
@@ -80,7 +76,11 @@ export const authConfig: NextAuthConfig = {
             role,
             image: user.image ?? undefined,
           };
-        } catch (error) {
+        } catch (error: any) {
+          // Surface 2FA-specific errors so the UI can show a code prompt.
+          if (error?.message === 'TOTP_REQUIRED' || error?.message === 'TOTP_INVALID') {
+            throw error;
+          }
           console.error('[AUTH] Error in authorize:', error);
           return null;
         }
@@ -130,7 +130,7 @@ export const authConfig: NextAuthConfig = {
     },
     async jwt({ token, user, trigger }) {
       if (user) {
-        token.id = user.id;
+        if (user.id) token.id = user.id;
         token.role = ((user as { role?: string }).role ?? 'customer') as string;
         token.image = (user as { image?: string | null }).image ?? undefined;
       }

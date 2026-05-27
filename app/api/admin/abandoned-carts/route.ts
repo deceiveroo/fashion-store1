@@ -6,8 +6,9 @@ import { isStaff } from '@/lib/server-auth';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { subHours } from 'date-fns';
+import { getJwtSecret } from '@/lib/jwt-secret';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+const JWT_SECRET = getJwtSecret();
 
 // GET /api/admin/abandoned-carts - Get abandoned carts (incomplete orders)
 export async function GET(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
         userId: orders.userId,
         userEmail: users.email,
         userName: users.name,
-        totalAmount: orders.totalAmount,
+        totalAmount: orders.total,
         createdAt: orders.createdAt,
         itemCount: orderItems.quantity,
       })

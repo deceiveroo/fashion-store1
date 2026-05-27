@@ -2,8 +2,11 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/schema';
 import { sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { debugRouteGuard } from '@/lib/debug-guard';
 
 export async function GET() {
+  const blocked = await debugRouteGuard();
+  if (blocked) return blocked;
   try {
     // Test basic connection by getting database info
     const result = await db.execute(sql`SELECT current_database(), inet_server_addr()`);

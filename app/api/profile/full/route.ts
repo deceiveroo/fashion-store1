@@ -4,19 +4,20 @@ import {
   users, userProfiles, orders, orderItems,
   userWishlistItems, products, productImages,
   paymentMethods, notificationSettings,
-  coupons, userCouponUsage
+  coupons, userCouponUsage, userSessions
 } from '@/lib/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 import { parseUserAgent } from '@/lib/user-agent';
 import { jsonWithNoCache } from '@/lib/no-cache';
+import { getJwtSecret } from '@/lib/jwt-secret';
+import { touchUserSession, currentSessionToken } from '@/lib/track-session';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
-const secret = new TextEncoder().encode(JWT_SECRET);
+const secret = getJwtSecret();
 
 async function getUserId(request: NextRequest): Promise<string | null> {
   const session = await auth();
@@ -39,6 +40,10 @@ export async function GET(request: NextRequest) {
   if (!userId) {
     return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
   }
+
+  // Refresh current session row in DB (best-effort, no throw).
+  await touchUserSession(userId, request.headers);
+  const currentToken = currentSessionToken(userId, request.headers);
 
   // Run all queries in parallel
   const [profile, userOrders, wishlist, payments, sessions, notifications, userCoupons] =
@@ -84,7 +89,7 @@ export async function GET(request: NextRequest) {
         .leftJoin(products, eq(userWishlistItems.productId, products.id))
         .leftJoin(productImages, and(
           eq(productImages.productId, userWishlistItems.productId),
-          eq(productImages.isPrimary, true)
+          eq(productImages.isMain, true)
         ))
         .where(eq(userWishlistItems.userId, userId))
       ).catch(() => []),
@@ -96,23 +101,13 @@ export async function GET(request: NextRequest) {
         .where(eq(paymentMethods.userId, userId))
       ).catch(() => []),
 
-      // Sessions - generate from request headers (mock)
-      Promise.resolve([
-        (() => {
-          const userAgent = request.headers.get('user-agent') || 'Unknown';
-          const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
-                     request.headers.get('x-real-ip') || 'Unknown';
-          const parsedUA = parseUserAgent(userAgent);
-          return {
-            id: `current_${userId}_${Date.now()}`,
-            device: parsedUA.device || 'Неизвестное устройство',
-            location: 'Россия',
-            ip: ip,
-            lastActive: new Date(),
-            isCurrent: true,
-          };
-        })()
-      ]),
+      // Sessions — real rows from user_sessions, ordered by last_active desc.
+      safeQuery(() =>
+        db.select()
+          .from(userSessions)
+          .where(eq(userSessions.userId, userId))
+          .orderBy(desc(userSessions.lastActive))
+      ).catch(() => []),
 
       // Notification settings
       safeQuery(() =>
@@ -165,10 +160,10 @@ export async function GET(request: NextRequest) {
   const formattedSessions = (sessions || []).map((s: any) => ({
     id: s.id,
     device: s.device || 'Неизвестное устройство',
-    location: s.location || 'Неизвестно',
+    location: s.location || '—',
     ip: s.ip || '',
     lastActive: s.lastActive,
-    isCurrent: s.isCurrent || false,
+    isCurrent: s.token === currentToken,
   }));
 
   // Format coupons

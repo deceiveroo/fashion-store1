@@ -86,7 +86,8 @@ export async function GET(request: NextRequest) {
         .leftJoin(userProfiles, eq(users.id, userProfiles.userId));
 
       if (!includeAll) {
-        q = q.where(inArray(users.role, ['admin', 'manager', 'support']));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        q = (q as any).where(inArray(users.role, ['admin', 'manager', 'support']));
       }
 
       return q.orderBy(users.createdAt).limit(limit).offset(offset);

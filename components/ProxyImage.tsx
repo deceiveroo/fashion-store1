@@ -46,7 +46,7 @@ export default function ProxyImage({
   }, [src]);
   
   const actualSrc = (() => {
-    if (!src) return fallbackSrc;
+    if (!src || typeof src !== 'string') return fallbackSrc;
     if (stage === 0) return getProxiedUrl(src, proxyWidth);
     if (stage === 1) return src; // Пробуем напрямую на клиенте
     return fallbackSrc;

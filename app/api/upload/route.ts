@@ -4,9 +4,9 @@ import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
+import { getJwtSecret } from '@/lib/jwt-secret';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
-const secret = new TextEncoder().encode(JWT_SECRET);
+const secret = getJwtSecret();
 
 // 创建 Supabase 客户端的函数，仅在运行时调用
 function getSupabaseClient() {

@@ -94,19 +94,26 @@ export default function SizeAdvisorModal({
     setRecommendedText(text);
   }, [height, weight, bodyType, availableSizes]);
 
-  // Mannequin scale parameters for Framer Motion animation
-  const heightScale = 0.85 + ((height - 140) / 70) * 0.3; // 0.85 to 1.15
+  // Mannequin transforms — single coordinated animation.
+  // Map height (140–210) → vertical scale 0.85–1.10
+  // Map BMI (15–35) → body width scale 0.78–1.22, then nudge by body type.
+  const heightScale = 0.85 + ((height - 140) / 70) * 0.25;
   const heightM = height / 100;
   const bmi = weight / (heightM * heightM);
-  const baseWidthScale = 0.8 + ((bmi - 15) / 20) * 0.4; // 0.8 to 1.2
-  
+  const bmiClamped = Math.max(15, Math.min(35, bmi));
+  const baseWidthScale = 0.78 + ((bmiClamped - 15) / 20) * 0.44;
+
   const bodyTypeModifiers = {
-    slim: 0.9,
+    slim: 0.94,
     normal: 1.0,
-    athletic: 1.03,
-    heavy: 1.16,
-  };
+    athletic: 1.04,
+    heavy: 1.12,
+  } as const;
   const widthScale = baseWidthScale * bodyTypeModifiers[bodyType];
+
+  // Single transition reused for every animated element so head, torso and legs
+  // arrive at their target frame at exactly the same time.
+  const figureTransition = { type: 'spring' as const, damping: 24, stiffness: 170, mass: 0.9 };
 
   return (
     <AnimatePresence>
@@ -156,28 +163,83 @@ export default function SizeAdvisorModal({
             <div className="flex-1 overflow-y-auto p-6 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
               {/* Left Side: SVG Mannequin Animation */}
               <div className="md:col-span-5 flex flex-col items-center justify-center bg-gray-50/60 dark:bg-neutral-900/20 border border-gray-100/60 dark:border-neutral-900/40 rounded-2xl py-6 min-h-[300px]">
-                <div className="relative w-full aspect-[2/3] max-w-[150px] flex items-center justify-center">
-                  <svg 
-                    viewBox="0 0 100 220" 
-                    className="w-full h-full"
+                <div className="relative w-full aspect-[2/3] max-w-[170px] flex items-center justify-center">
+                  <svg
+                    viewBox="0 0 100 220"
+                    className="w-full h-full overflow-visible"
+                    aria-hidden
                   >
-                    {/* Head */}
-                    <motion.circle
-                      cx="50"
-                      cy="30"
-                      r="13"
-                      animate={{ scale: heightScale * 0.95 }}
-                      transition={{ type: 'spring', damping: 22 }}
-                      className="fill-purple-600/10 dark:fill-purple-500/10 stroke-purple-600/50 dark:stroke-purple-400/50 stroke-1.5"
-                    />
-                    
-                    {/* Body Silhouette */}
-                    <motion.path
-                      d="M 50,44 C 47,44 46,47 46,50 L 46,54 C 36,58 32,68 32,78 L 36,115 C 37,125 34,135 36,145 L 36,205 C 36,210 39,211 41,211 C 43,211 44,207 44,202 L 47,150 L 50,150 L 53,150 L 56,202 C 56,207 57,211 59,211 C 61,211 64,210 64,205 L 64,145 C 66,135 63,125 64,115 L 68,78 C 68,68 64,58 54,54 L 54,50 C 54,47 53,44 50,44 Z"
-                      animate={{ scaleX: widthScale, scaleY: heightScale, originX: 0.5, originY: 0.4 }}
-                      transition={{ type: 'spring', damping: 20, stiffness: 120 }}
-                      className="fill-purple-600/15 dark:fill-purple-500/15 stroke-purple-600/60 dark:stroke-purple-400/60 stroke-2"
-                    />
+                    {/* Soft ground ellipse — visual anchor */}
+                    <ellipse cx="50" cy="212" rx="22" ry="3" className="fill-purple-600/10 dark:fill-purple-400/10" />
+
+                    {/*
+                      Whole figure scales together along Y for height changes,
+                      pivoting from the feet so the figure "grows up" instead
+                      of jumping out of frame.
+                    */}
+                    <motion.g
+                      animate={{ scaleY: heightScale }}
+                      transition={figureTransition}
+                      style={{ transformOrigin: '50px 210px', transformBox: 'fill-box' as any }}
+                    >
+                      {/* Body — independent X scale for weight, anchored at the waist. */}
+                      <motion.g
+                        animate={{ scaleX: widthScale }}
+                        transition={figureTransition}
+                        style={{ transformOrigin: '50px 110px', transformBox: 'fill-box' as any }}
+                      >
+                        {/* Neck */}
+                        <path
+                          d="M 46,42 L 46,52 Q 50,56 54,52 L 54,42 Z"
+                          className="fill-purple-600/15 dark:fill-purple-500/15 stroke-purple-600/55 dark:stroke-purple-400/55 stroke-[1.2]"
+                        />
+                        {/* Torso + arms + legs as one continuous silhouette */}
+                        <path
+                          d="
+                            M 50,52
+                            C 38,52 30,60 28,72
+                            L 26,108
+                            C 26,116 30,118 34,118
+                            L 36,108
+                            L 38,82
+                            L 40,82
+                            L 40,128
+                            C 40,140 38,150 38,162
+                            L 36,206
+                            C 36,210 39,212 41,212
+                            C 43,212 44,210 45,206
+                            L 48,160
+                            L 49,140
+                            L 51,140
+                            L 52,160
+                            L 55,206
+                            C 56,210 57,212 59,212
+                            C 61,212 64,210 64,206
+                            L 62,162
+                            C 62,150 60,140 60,128
+                            L 60,82
+                            L 62,82
+                            L 64,108
+                            L 66,118
+                            C 70,118 74,116 74,108
+                            L 72,72
+                            C 70,60 62,52 50,52
+                            Z
+                          "
+                          className="fill-purple-600/15 dark:fill-purple-500/15 stroke-purple-600/55 dark:stroke-purple-400/55 stroke-[1.4]"
+                          strokeLinejoin="round"
+                        />
+                      </motion.g>
+
+                      {/* Head — sits inside the figure group so it scales with height,
+                          but does NOT scale with weight. */}
+                      <circle
+                        cx="50"
+                        cy="28"
+                        r="14"
+                        className="fill-purple-600/15 dark:fill-purple-500/15 stroke-purple-600/55 dark:stroke-purple-400/55 stroke-[1.4]"
+                      />
+                    </motion.g>
                   </svg>
                 </div>
                 <div className="mt-4 text-center">

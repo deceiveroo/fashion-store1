@@ -78,19 +78,19 @@ export const pool = new Proxy({} as Pool, {
   },
 });
 
-let dbInstance: ReturnType<typeof drizzle> | undefined;
-function getDbInstance(): ReturnType<typeof drizzle> {
+let dbInstance: ReturnType<typeof drizzle<typeof schema>> | undefined;
+function getDbInstance(): ReturnType<typeof drizzle<typeof schema>> {
   if (!dbInstance) {
     dbInstance = drizzle(getPoolInstance(), { schema, logger: false });
   }
   return dbInstance;
 }
 
-export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
   get(_target, prop) {
-    const instance = getDbInstance() as any;
+    const instance = getDbInstance() as unknown as Record<string | symbol, unknown>;
     const value = Reflect.get(instance, prop, instance);
-    return typeof value === 'function' ? value.bind(instance) : value;
+    return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(instance) : value;
   },
 });
 

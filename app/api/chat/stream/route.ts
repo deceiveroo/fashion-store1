@@ -3,12 +3,14 @@ import { db } from '@/lib/db';
 import { supportChatMessages } from '@/lib/schema';
 import { eq, asc } from 'drizzle-orm';
 import { redis, isRedisAvailable } from '@/lib/redis';
+import { resolveChatSession } from '@/lib/chat-session';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const sessionId = new URL(req.url).searchParams.get('sessionId');
-  if (!sessionId) return new Response('sessionId required', { status: 400 });
+  // Resolve sessionId server-side — visitor can only stream their own session.
+  const resolved = await resolveChatSession(req);
+  const sessionId = resolved.sessionId;
 
   const encoder = new TextEncoder();
   let lastId: string | null = null;

@@ -76,13 +76,16 @@ export async function GET(request: NextRequest) {
         });
       }
       if (row.itemId) {
-        grouped.get(row.orderId).items.push({
-          id: row.itemId,
-          name: row.itemName,
-          quantity: row.itemQuantity,
-          price: row.itemPrice,
-          image: row.itemImage,
-        });
+        const order = grouped.get(row.orderId);
+        if (order) {
+          (order.items as unknown[]).push({
+            id: row.itemId,
+            name: row.itemName,
+            quantity: row.itemQuantity,
+            price: row.itemPrice,
+            image: row.itemImage,
+          });
+        }
       }
     }
 

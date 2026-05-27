@@ -36,13 +36,13 @@ interface Product {
   mainImage?: string;
   sizes?: Array<{
     id: string;
-    sizeName?: string;
-    size_name?: string;
-    sizeType?: string;
-    size_type?: string;
-    inStock?: boolean;
-    in_stock?: boolean;
-    stockCount?: number;
+    sizeName?: string | null;
+    size_name?: string | null;
+    sizeType?: string | null;
+    size_type?: string | null;
+    inStock?: boolean | null;
+    in_stock?: boolean | null;
+    stockCount?: number | null;
     stock_count?: number;
   }>;
   // Новые поля

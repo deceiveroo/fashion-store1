@@ -3,12 +3,13 @@
 
 import { useState, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function ContactPage() {
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
-  
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -16,24 +17,41 @@ export default function ContactPage() {
     subject: '',
     message: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Здесь будет обработка отправки формы
-    console.log('Form submitted:', formData);
-    alert('Сообщение отправлено! Мы свяжемся с вами в ближайшее время.');
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      subject: '',
-      message: ''
-    });
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data?.error || 'Не удалось отправить сообщение');
+        return;
+      }
+      toast.success('Сообщение отправлено! Мы свяжемся с вами в ближайшее время.');
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        subject: '',
+        message: ''
+      });
+    } catch {
+      toast.error('Сетевая ошибка. Попробуйте позже.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -283,12 +301,13 @@ export default function ContactPage() {
               
               <motion.button
                 type="submit"
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-xl transition-all transform hover:-translate-y-0.5"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                disabled={submitting}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                whileHover={{ scale: submitting ? 1 : 1.02 }}
+                whileTap={{ scale: submitting ? 1 : 0.98 }}
               >
                 <div className="flex items-center justify-center gap-2">
-                  <span>Отправить сообщение</span>
+                  <span>{submitting ? 'Отправка…' : 'Отправить сообщение'}</span>
                 </div>
               </motion.button>
             </form>

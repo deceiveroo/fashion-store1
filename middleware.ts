@@ -82,12 +82,37 @@ async function getFingerprint(ip: string, ua: string): Promise<string> {
     .join('');
 }
 
+function getClientIp(request: NextRequest): string {
+  // On Vercel `x-forwarded-for` is set by the platform: client IP first, then proxies.
+  // Outside Vercel we cannot trust it. We accept it but do not derive any auth from it —
+  // it's only used as a rate-limit key, where IP spoofing only hurts the spoofer.
+  const xff = request.headers.get('x-forwarded-for');
+  if (xff) {
+    const parts = xff.split(',').map((s) => s.trim()).filter(Boolean);
+    // Prefer the first non-private IP. If all are private, fall back to the first entry.
+    const isPrivate = (ip: string) =>
+      ip.startsWith('10.') ||
+      ip.startsWith('192.168.') ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(ip) ||
+      ip === '127.0.0.1' ||
+      ip === '::1';
+    const publicIp = parts.find((p) => !isPrivate(p));
+    if (publicIp) return publicIp;
+    if (parts[0]) return parts[0];
+  }
+  return request.headers.get('x-real-ip') ?? '127.0.0.1';
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
+  const ip = getClientIp(request);
 
-  // --- SESSION HIJACKING PROTECTION (Edge Redis-based) ---
-  const tokenCookie = request.cookies.get('authjs.session-token') || 
+  // --- SESSION FINGERPRINT (Edge Redis-based) ---
+  // Detects when the same NextAuth cookie is reused from a noticeably different
+  // environment (e.g. another User-Agent family). We deliberately do NOT include
+  // raw IP in the fingerprint — mobile clients change IPs constantly, and locking
+  // them out is worse than the marginal hijack-detection benefit.
+  const tokenCookie = request.cookies.get('authjs.session-token') ||
                       request.cookies.get('__Secure-authjs.session-token') ||
                       request.cookies.get('next-auth.session-token') ||
                       request.cookies.get('__Secure-next-auth.session-token');
@@ -96,39 +121,35 @@ export async function middleware(request: NextRequest) {
   if (token && redis) {
     try {
       const ua = request.headers.get('user-agent') ?? '';
-      const currentFingerprint = await getFingerprint(ip, ua);
+      // Coarse UA family (browser+os words) — survives minor version bumps.
+      const uaCoarse = ua.replace(/\b\d+(\.\d+)*\b/g, '').replace(/\s+/g, ' ').trim().slice(0, 200);
+      const currentFingerprint = await getFingerprint('', uaCoarse);
       const redisKey = `session:fingerprint:${token}`;
-      
+
       const storedFingerprint = await redis.get(redisKey) as string | null;
-      
+
       if (!storedFingerprint) {
-        // First request with this token: save fingerprint for 30 days
-        await redis.setex(redisKey, 30 * 24 * 60 * 60, currentFingerprint);
+        // Save for 7 days — short enough to recover from device changes when user re-logs in.
+        await redis.setex(redisKey, 7 * 24 * 60 * 60, currentFingerprint);
       } else if (storedFingerprint !== currentFingerprint) {
-        console.warn(`[SECURITY WARNING] Session hijacking attempt detected for token: ${token.slice(0, 8)}... IP: ${ip}`);
-        
-        // Block the request with a Forbidden response
+        console.warn(`[SECURITY] Session fingerprint mismatch for token ${token.slice(0, 8)}…`);
+
         const errorResponse = new NextResponse(
-          JSON.stringify({ 
-            error: 'Security violation: Session terminated due to device or network change.' 
-          }), 
+          JSON.stringify({
+            error: 'Security violation: Session terminated due to device change. Please sign in again.',
+          }),
           {
             status: 403,
-            headers: {
-              'Content-Type': 'application/json',
-            }
+            headers: { 'Content-Type': 'application/json' },
           }
         );
-        
-        // Force logout by deleting NextAuth cookies
+
         errorResponse.cookies.delete('authjs.session-token');
         errorResponse.cookies.delete('__Secure-authjs.session-token');
         errorResponse.cookies.delete('next-auth.session-token');
         errorResponse.cookies.delete('__Secure-next-auth.session-token');
-        
-        // Invalidate in Redis
+
         await redis.del(redisKey);
-        
         return errorResponse;
       }
     } catch (secError) {

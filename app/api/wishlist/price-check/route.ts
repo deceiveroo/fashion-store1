@@ -5,8 +5,9 @@ import { eq, and } from 'drizzle-orm';
 import { safeQuery } from '@/lib/db';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
+import { getJwtSecret } from '@/lib/jwt-secret';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+const JWT_SECRET = getJwtSecret();
 
 // GET /api/wishlist/price-check - Check for price drops in wishlist
 export async function GET(request: NextRequest) {
