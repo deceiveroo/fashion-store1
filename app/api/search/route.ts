@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { products, productImages, categories, productCategory } from '@/lib/schema';
 import { productInStock, productFeatured } from '@/lib/product-query';
-import { or, eq, desc, sql } from 'drizzle-orm';
+import { or, eq, desc, sql, inArray } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const searchPattern = `%${query.toLowerCase()}%`;
 
-    // Search in products by name and description
+    // Search in products by name and description (limited to prevent runaway queries)
     const results = await db
       .select({
         id: products.id,
@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
           sql`LOWER(${products.description}) LIKE ${searchPattern}`
         )
       )
-      .orderBy(desc(products.featured), desc(products.createdAt));
+      .orderBy(desc(products.featured), desc(products.createdAt))
+      .limit(200);
 
     // Group products and get main image
     const productMap = new Map();
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
       }
 
       const product = productMap.get(item.id);
-      
+
       // Set main image
       if (item.imageUrl && !product.mainImage) {
         if (item.imageIsMain) {
@@ -66,23 +67,35 @@ export async function GET(request: NextRequest) {
     }
 
     const productsArray = Array.from(productMap.values());
+    const productIds = productsArray.map(p => p.id);
 
-    // Get categories for each product
-    for (const product of productsArray) {
-      const productCats = await db
+    // Batch-fetch categories for all products in a single query (was N+1)
+    if (productIds.length > 0) {
+      const allCategories = await db
         .select({
+          productId: productCategory.productId,
           categoryName: categories.name,
         })
         .from(productCategory)
         .leftJoin(categories, eq(productCategory.categoryId, categories.id))
-        .where(eq(productCategory.productId, product.id));
+        .where(inArray(productCategory.productId, productIds));
 
-      product.categories = productCats
-        .map(pc => pc.categoryName)
-        .filter(Boolean);
+      const categoriesByProduct = new Map<string, string[]>();
+      for (const row of allCategories) {
+        if (!row.categoryName) continue;
+        const list = categoriesByProduct.get(row.productId) || [];
+        list.push(row.categoryName);
+        categoriesByProduct.set(row.productId, list);
+      }
+
+      for (const product of productsArray) {
+        product.categories = categoriesByProduct.get(product.id) || [];
+      }
     }
 
-    return NextResponse.json({ products: productsArray });
+    const response = NextResponse.json({ products: productsArray });
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return response;
   } catch (error) {
     console.error('Search error:', error);
     return NextResponse.json({ products: [] }, { status: 500 });

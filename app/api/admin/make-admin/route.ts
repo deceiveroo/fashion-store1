@@ -2,8 +2,13 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
+import { isAdmin } from '@/lib/server-auth';
 
 export async function POST(request: NextRequest) {
+  const admin = await isAdmin();
+  if (!admin) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     const { email } = await request.json();
 

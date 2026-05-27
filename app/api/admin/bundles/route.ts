@@ -3,9 +3,11 @@ import { db } from '@/lib/db';
 import { bundleDeals } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { safeQuery } from '@/lib/db';
+import { isStaff } from '@/lib/server-auth';
 
 // GET /api/admin/bundles - Get all bundles
 export async function GET() {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const bundles = await safeQuery(() =>
       db.select().from(bundleDeals).orderBy(eq(bundleDeals.isActive, true))
@@ -25,6 +27,7 @@ export async function GET() {
 
 // POST /api/admin/bundles - Create new bundle
 export async function POST(request: NextRequest) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const body = await request.json();
     const { name, slug, description, discountPercent, isActive } = body;

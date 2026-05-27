@@ -5,16 +5,25 @@ import { NextRequest, NextResponse } from 'next/server';
  * Validates Origin and Referer headers for state-changing requests
  */
 
-// Allowed origins for CSRF validation
+// Allowed origins for CSRF validation.
+// Configured via env: CSRF_ALLOWED_ORIGINS (comma-separated list of origins).
+// Falls back to NEXT_PUBLIC_APP_URL, VERCEL_URL, and localhost for dev.
+const extraOrigins = (process.env.CSRF_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 const ALLOWED_ORIGINS = [
   process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : null,
   // Vercel preview/production deployments
   'https://fashion-store1-seven.vercel.app',
   'https://shonheii.vercel.app',
   // Localhost for development
   'http://localhost:3000',
   'http://localhost:3001',
+  ...extraOrigins,
 ].filter(Boolean) as string[];
 
 export function validateCSRF(request: NextRequest): { valid: boolean; error?: string } {

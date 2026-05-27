@@ -95,7 +95,9 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json(productsWithImages);
+    const response = NextResponse.json(productsWithImages);
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return response;
   } catch (error: unknown) {
     console.error('Error fetching products:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);

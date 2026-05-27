@@ -110,6 +110,7 @@ export const products = pgTable('products', {
   categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
   inStock: boolean('in_stock').default(true),
   featured: boolean('featured').default(false),
+  // @deprecated — historical duplicate of `featured`. Use `featured`. Kept only for legacy compatibility.
   isFeatured: boolean('is_featured').default(false),
   isActive: boolean('is_active').default(true),
   isNew: boolean('is_new').default(false),

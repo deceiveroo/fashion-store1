@@ -196,7 +196,8 @@ export async function verifyAuth(request: Request) {
 
     const token = authHeader.replace('Bearer ', '');
 
-    const secretValue = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key';
+    const secretValue = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
+    if (!secretValue) return null;
     const secret = new TextEncoder().encode(secretValue);
     const { payload } = await jwtVerify(token, secret);
 

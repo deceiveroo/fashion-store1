@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { categories } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
+import { isStaff } from '@/lib/server-auth';
 
 export async function GET(
   request: NextRequest,
@@ -36,6 +37,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const { id } = await params;
     const body = await request.json();
@@ -73,6 +75,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const { id } = await params;
 

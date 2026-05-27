@@ -4,6 +4,7 @@ import { categories } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { cacheGet, cacheSet } from '@/lib/redis';
+import { isStaff } from '@/lib/server-auth';
 
 const CATEGORIES_CACHE_KEY = 'categories:all';
 const CATEGORIES_CACHE_TTL = 300; // 5 minutes
@@ -13,7 +14,9 @@ export async function GET(_request: NextRequest) {
     // Try Redis cache first
     const cached = await cacheGet<any[]>(CATEGORIES_CACHE_KEY);
     if (cached && Array.isArray(cached) && cached.length > 0) {
-      return NextResponse.json(cached);
+      const r = NextResponse.json(cached);
+      r.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+      return r;
     }
 
     let categoriesList;
@@ -50,7 +53,9 @@ export async function GET(_request: NextRequest) {
       cacheSet(CATEGORIES_CACHE_KEY, categoriesList, CATEGORIES_CACHE_TTL).catch(() => {});
     }
 
-    return NextResponse.json(categoriesList);
+    const r = NextResponse.json(categoriesList);
+    r.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    return r;
   } catch (error) {
     console.error('Ошибка получения категорий:', error);
     return NextResponse.json(
@@ -61,6 +66,7 @@ export async function GET(_request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const body = await request.json();
     const { name, slug, parentId, isFeatured } = body;
@@ -91,6 +97,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const body = await request.json();
     const { categoryId, name, slug, parentId, isFeatured } = body;
@@ -131,6 +138,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const body = await request.json();
     const { categoryId } = body;

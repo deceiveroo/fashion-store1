@@ -63,11 +63,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid recommendation type' }, { status: 400 });
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       type,
       count: recommendations.length,
       recommendations,
     });
+    // Recommendations change slowly — short edge cache reduces DB load
+    response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600');
+    return response;
   } catch (error) {
     console.error('Error fetching recommendations:', error);
     return NextResponse.json(

@@ -3,9 +3,11 @@ import { db } from '@/lib/db';
 import { curatedCollections } from '@/lib/schema';
 import { asc } from 'drizzle-orm';
 import { safeQuery } from '@/lib/db';
+import { isStaff } from '@/lib/server-auth';
 
 // GET /api/admin/collections - Get all collections
 export async function GET() {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const collections = await safeQuery(() =>
       db
@@ -28,6 +30,7 @@ export async function GET() {
 
 // POST /api/admin/collections - Create new collection
 export async function POST(request: NextRequest) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const body = await request.json();
     const { name, slug, description, coverImage, isActive } = body;

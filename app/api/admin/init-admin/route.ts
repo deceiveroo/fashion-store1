@@ -3,8 +3,26 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
+const INIT_SECRET = process.env.ADMIN_INIT_SECRET;
+
 export async function POST(request: NextRequest) {
   try {
+    // Require a secret token to prevent unauthorized use
+    if (!INIT_SECRET) {
+      return new Response(
+        JSON.stringify({ error: 'Маршрут инициализации отключён' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${INIT_SECRET}`) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Проверяем, есть ли уже администратор в системе
     const existingAdmin = await db
       .select()
@@ -14,8 +32,8 @@ export async function POST(request: NextRequest) {
     // Если уже есть администраторы, запрещаем инициализацию
     if (existingAdmin.length > 0) {
       return new Response(
-        JSON.stringify({ 
-          error: 'Уже существуют пользователи с ролью администратора. Инициализация нового администратора через этот маршрут запрещена.' 
+        JSON.stringify({
+          error: 'Уже существуют пользователи с ролью администратора. Инициализация нового администратора через этот маршрут запрещена.'
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );

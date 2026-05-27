@@ -82,7 +82,7 @@ export async function GET(
         order: item.imageOrder,
       }));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       id: firstProduct.id,
       name: firstProduct.name,
       description: firstProduct.description,
@@ -94,6 +94,8 @@ export async function GET(
       mainImage:
         images.find((img) => img.isMain)?.url || images[0]?.url || '/placeholder-image.jpg',
     });
+    response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600');
+    return response;
   } catch (error: unknown) {
     console.error('Error fetching product:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);

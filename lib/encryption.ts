@@ -6,10 +6,13 @@
 import crypto from 'crypto';
 
 // Encryption key from environment (must be 32 bytes for AES-256)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-key-change-in-production-32bytes';
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
 // Ensure key is exactly 32 bytes
 function getEncryptionKey(): Buffer {
+  if (!ENCRYPTION_KEY) {
+    throw new Error('ENCRYPTION_KEY environment variable is required for encryption operations');
+  }
   const key = ENCRYPTION_KEY.padEnd(32, '0').slice(0, 32);
   return Buffer.from(key, 'utf-8');
 }
@@ -134,6 +137,6 @@ export function decryptPassportData(data: PassportData): PassportData {
  * Check if encryption key is properly configured
  */
 export function isEncryptionConfigured(): boolean {
-  return ENCRYPTION_KEY !== 'default-key-change-in-production-32bytes';
+  return !!ENCRYPTION_KEY;
 }
 
