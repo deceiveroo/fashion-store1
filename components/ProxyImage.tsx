@@ -22,7 +22,10 @@ function shouldProxy(src?: string): boolean {
 
 function getProxiedUrl(src: string, width: number = 256): string {
   if (!shouldProxy(src)) return src;
-  return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
+  // Удваиваем ширину под retina/2x-экраны (иначе картинка мылит) и поднимаем
+  // качество до 90. Next-оптимизатор сам ужмёт в AVIF/WebP, так что вес растёт умеренно.
+  const retinaWidth = Math.min(width * 2, 1920);
+  return `/_next/image?url=${encodeURIComponent(src)}&w=${retinaWidth}&q=90`;
 }
 
 interface ProxyImageProps extends ImgHTMLAttributes<HTMLImageElement> {

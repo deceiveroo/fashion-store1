@@ -11,11 +11,39 @@ import AchievementNotification from '@/components/gamification/AchievementNotifi
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react';
 
+// Базовый URL сайта — для абсолютных canonical/OG-ссылок (иначе соцсети и Google
+// не резолвят относительные пути). Берём прод-домен, c фолбэком на Vercel-превью/localhost.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '') ||
+  'https://e1evate.vercel.app';
+
+const SITE_DESCRIPTION =
+  'Переосмысливая роскошную моду с инновационным дизайном и устойчивыми практиками';
+
 export const metadata: Metadata = {
-  title: 'ELEVATE',
-  description: 'Переосмысливая роскошную моду с инновационным дизайном и устойчивыми практиками',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'ELEVATE',
+    template: '%s — ELEVATE',
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: 'ELEVATE',
   icons: {
     icon: '/favicon.svg',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'ELEVATE',
+    locale: 'ru_RU',
+    url: SITE_URL,
+    title: 'ELEVATE',
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ELEVATE',
+    description: SITE_DESCRIPTION,
   },
 };
 

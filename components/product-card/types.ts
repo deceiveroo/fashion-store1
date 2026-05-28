@@ -11,6 +11,8 @@ export interface ProductCardProduct {
   isNew?: boolean;
   mainImage?: string;
   images?: { id: string; url: string; isMain: boolean }[];
+  rating?: number;
+  reviewCount?: number;
 }
 
 export interface ProductCardProps {

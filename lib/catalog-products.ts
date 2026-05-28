@@ -1,7 +1,7 @@
 import { db, safeQuery } from '@/lib/db';
-import { products, productCategory, productImages, categories } from '@/lib/schema';
+import { products, productCategory, productImages, categories, reviews } from '@/lib/schema';
 import { productInStock, productFeatured } from '@/lib/product-query';
-import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
+import { and, avg, count, desc, eq, inArray, or, sql } from 'drizzle-orm';
 import { cacheGet, cacheSet, cacheDelete } from '@/lib/redis';
 
 export type CatalogProduct = {
@@ -16,6 +16,8 @@ export type CatalogProduct = {
   category?: string;
   images: { id: string; url: string; isMain: boolean }[];
   mainImage: string;
+  rating: number;
+  reviewCount: number;
 };
 
 export type CatalogOptions = {
@@ -112,6 +114,30 @@ async function attachImages(
     {} as Record<string, (typeof productImages.$inferSelect)[]>
   );
 
+  // Один групповой запрос рейтинга по одобренным отзывам для всех товаров (без N+1).
+  const ratingRows = await safeQuery(() =>
+    db
+      .select({
+        productId: reviews.productId,
+        avg: avg(reviews.rating),
+        count: count(),
+      })
+      .from(reviews)
+      .where(and(inArray(reviews.productId, productIds), eq(reviews.isApproved, true)))
+      .groupBy(reviews.productId)
+  );
+
+  const ratingByProduct = (ratingRows ?? []).reduce(
+    (acc, r) => {
+      acc[r.productId] = {
+        rating: r.avg ? Number(r.avg) : 0,
+        reviewCount: Number(r.count ?? 0),
+      };
+      return acc;
+    },
+    {} as Record<string, { rating: number; reviewCount: number }>
+  );
+
   return rows.map((product) => {
     const list = imagesByProduct[product.id] ?? [];
     const formatted = list.map((img) => ({
@@ -120,6 +146,7 @@ async function attachImages(
       isMain: img.isMain ?? false,
     }));
     const priceNum = parseFloat(String(product.price ?? '0'));
+    const rating = ratingByProduct[product.id] ?? { rating: 0, reviewCount: 0 };
 
     return {
       id: product.id,
@@ -135,6 +162,8 @@ async function attachImages(
         formatted.find((img) => img.isMain)?.url ||
         formatted[0]?.url ||
         '/placeholder-image.jpg',
+      rating: rating.rating,
+      reviewCount: rating.reviewCount,
     };
   });
 }

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { Star } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import FavoriteButton from '@/components/FavoriteButton';
@@ -92,7 +93,7 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             priority={false}
             loading="lazy"
-            quality={75}
+            quality={90}
             onLoadingComplete={() => setImageLoaded(true)}
             onError={() => setImageLoaded(true)}
             className={`object-cover transition-all duration-700 ease-out ${
@@ -109,7 +110,7 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               loading="lazy"
-              quality={75}
+              quality={90}
               className={`object-cover transition-all duration-700 ease-out ${
                 hovered ? 'scale-105 opacity-100' : 'scale-100 opacity-0'
               }`}
@@ -173,6 +174,25 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
           <h3 className="text-sm font-light tracking-wide text-gray-900 transition-colors group-hover/card:text-purple-700 dark:text-white dark:group-hover/card:text-purple-300 line-clamp-1">
             {product.name}
           </h3>
+          {product.reviewCount ? (
+            <div className="flex items-center gap-1.5" aria-label={`Рейтинг ${product.rating?.toFixed(1)} из 5`}>
+              <div className="flex gap-px">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star
+                    key={i}
+                    className={`w-3 h-3 ${
+                      i <= Math.round(product.rating ?? 0)
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-300 dark:text-neutral-600'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-[11px] text-gray-400 dark:text-neutral-500">
+                {(product.rating ?? 0).toFixed(1)} ({product.reviewCount})
+              </span>
+            </div>
+          ) : null}
           <div className="flex items-baseline justify-between gap-2">
             <p className="text-sm font-medium text-gray-900 dark:text-white">
               {currentPrice.toLocaleString('ru-RU')}&nbsp;₽

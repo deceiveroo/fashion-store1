@@ -286,7 +286,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                       sizes="(max-width: 1024px) 100vw, 50vw"
                       priority={selectedImage === 0}
                       loading={selectedImage === 0 ? 'eager' : 'lazy'}
-                      quality={85}
+                      quality={95}
                       className="object-cover"
                     />
                   )}
@@ -362,7 +362,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                         fill
                         sizes="(max-width: 640px) 25vw, 15vw"
                         loading="lazy"
-                        quality={60}
+                        quality={80}
                         className="object-cover"
                       />
                     ) : (
@@ -372,7 +372,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                         fill
                         sizes="(max-width: 640px) 25vw, 15vw"
                         loading="lazy"
-                        quality={60}
+                        quality={80}
                         className="object-cover"
                       />
                     )}

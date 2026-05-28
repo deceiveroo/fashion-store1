@@ -3,6 +3,7 @@ import { getCatalogProducts, type CatalogProduct } from '@/lib/catalog-products'
 import { getCatalogConfig, type CatalogTabId } from '@/lib/catalog-config';
 import CatalogShell from '@/components/catalog/CatalogShell';
 import ProductGrid from '@/components/catalog/ProductGrid';
+import CatalogBrowser from '@/components/catalog/CatalogBrowser';
 import ProductGridSkeleton from '@/components/ProductGridSkeleton';
 
 export const dynamic = 'force-dynamic';
@@ -69,12 +70,16 @@ export default async function CatalogPage({ tab }: CatalogPageProps) {
   return (
     <CatalogShell active={tab} productCount={products.length}>
       <Suspense fallback={<ProductGridSkeleton count={8} />}>
-        <ProductSection
-          products={products}
-          tab={tab}
-          emptyTitle={`${config.title} — пока пусто`}
-          emptyMessage={emptyMessages[tab]}
-        />
+        {products.length === 0 ? (
+          <ProductSection
+            products={products}
+            tab={tab}
+            emptyTitle={`${config.title} — пока пусто`}
+            emptyMessage={emptyMessages[tab]}
+          />
+        ) : (
+          <CatalogBrowser products={products} variant={tab} />
+        )}
       </Suspense>
     </CatalogShell>
   );

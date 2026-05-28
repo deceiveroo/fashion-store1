@@ -1,17 +1,29 @@
 // app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { orders, orderItems, users, coupons, userCouponUsage } from '@/lib/schema';
+import { orders, orderItems, coupons, userCouponUsage } from '@/lib/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
 import { getSession } from '@/lib/server-auth';
 import { verifyAuth } from '@/lib/auth';
 import { checkAchievements, awardXP } from '@/lib/gamification';
+import { sendEmail, renderOrderConfirmationEmail } from '@/lib/email';
 
 // Force dynamic rendering - never cache
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+// Человекочитаемый номер заказа: ELV-YYMMDD-XXXX
+function generateOrderNumber(): string {
+  const d = new Date();
+  const ymd =
+    String(d.getFullYear()).slice(2) +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0');
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `ELV-${ymd}-${rand}`;
+}
 
 // Функция с повторными попытками для надежной работы с базой данных
 async function queryWithRetry<T>(queryFn: () => Promise<T>): Promise<T> {
@@ -107,91 +119,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Не авторизован' }, { status: 401 });
     }
 
-    // Получаем роль пользователя для определения доступа
-    const isAdminUser = currentUser.role === 'admin';
-
-    // Оптимизированный запрос без JOIN
-    let ordersList;
-    if (isAdminUser) {
-      // Администратор получает все заказы
-      ordersList = await queryWithRetry(() =>
-        db
-          .select({
-            id: orders.id,
-            userId: orders.userId,
-            total: orders.total,
-            status: orders.status,
-            createdAt: orders.createdAt,
-            updatedAt: orders.updatedAt,
-            discount: orders.discount,
-            deliveryPrice: orders.deliveryPrice,
-            deliveryMethod: orders.deliveryMethod,
-            paymentMethod: orders.paymentMethod,
-            recipient: orders.recipient,
-            comment: orders.comment,
-          })
-          .from(orders)
-          .orderBy(desc(orders.createdAt))
-          .limit(100) // Ограничиваем количество для производительности
-      );
-      
-      // Получаем информацию о пользователях отдельным запросом
-      if (ordersList.length > 0) {
-        const userIds = [...new Set(ordersList.map(o => o.userId))];
-        const usersData: any[] = [];
-        
-        // Загружаем пользователей батчами
-        for (let i = 0; i < Math.min(userIds.length, 10); i++) {
-          try {
-            const userData = await queryWithRetry(() =>
-              db
-                .select({
-                  id: users.id,
-                  email: users.email,
-                  name: users.name,
-                })
-                .from(users)
-                .where(eq(users.id, userIds[i]))
-            );
-            usersData.push(...userData);
-          } catch (err) {
-            console.warn(`Failed to fetch user ${userIds[i]}`);
-          }
-        }
-        
-        const usersMap = new Map(usersData.map(u => [u.id, u]));
-        
-        // Добавляем информацию о пользователях
-        ordersList = ordersList.map(order => ({
-          ...order,
-          userEmail: usersMap.get(order.userId)?.email || '',
-          userName: usersMap.get(order.userId)?.name || '',
-        }));
-      }
-    } else {
-      // Обычный пользователь получает только свои заказы
-      ordersList = await queryWithRetry(() =>
-        db
-          .select({
-            id: orders.id,
-            userId: orders.userId,
-            total: orders.total,
-            status: orders.status,
-            createdAt: orders.createdAt,
-            updatedAt: orders.updatedAt,
-            discount: orders.discount,
-            deliveryPrice: orders.deliveryPrice,
-            deliveryMethod: orders.deliveryMethod,
-            paymentMethod: orders.paymentMethod,
-            recipient: orders.recipient,
-            comment: orders.comment,
-          })
-          .from(orders)
-          .where(eq(orders.userId, currentUser.id))
-          .orderBy(desc(orders.createdAt))
-          .limit(50)
-      );
-    }
+    // Личная страница «Мои заказы» всегда показывает только заказы текущего
+    // пользователя — даже администратору. Управление всеми заказами — в /admin/orders.
+    const ordersList = await queryWithRetry(() =>
+      db
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          userId: orders.userId,
+          total: orders.total,
+          status: orders.status,
+          createdAt: orders.createdAt,
+          updatedAt: orders.updatedAt,
+          discount: orders.discount,
+          deliveryPrice: orders.deliveryPrice,
+          deliveryMethod: orders.deliveryMethod,
+          paymentMethod: orders.paymentMethod,
+          recipient: orders.recipient,
+          comment: orders.comment,
+        })
+        .from(orders)
+        .where(eq(orders.userId, currentUser.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(50)
+    );
 
     // Получаем items для всех заказов
     const orderIds = ordersList.map(o => o.id);
@@ -241,6 +192,7 @@ export async function GET(request: NextRequest) {
       
       const baseOrder = {
         id: order.id,
+        orderNumber: order.orderNumber || null,
         userId: order.userId,
         total: Number(order.total),
         discount: Number(order.discount || 0),
@@ -264,15 +216,6 @@ export async function GET(request: NextRequest) {
           color: item.color || ''
         }))
       };
-
-      // Добавляем информацию о пользователе только для админа
-      if (isAdminUser && 'userEmail' in order && 'userName' in order) {
-        return {
-          ...baseOrder,
-          userEmail: order.userEmail || '',
-          userName: order.userName || '',
-        };
-      }
 
       return baseOrder;
     });
@@ -324,6 +267,7 @@ export async function POST(request: NextRequest) {
         // Create the order
         const [order] = await trx.insert(orders).values({
           userId: currentUser.id,
+          orderNumber: generateOrderNumber(), // Человекочитаемый номер заказа
           subtotal: subtotalValue.toString(), // Subtotal before discount and delivery
           total: total.toString(), // Convert to string to match decimal field
           discount: discount ? discount.toString() : '0',
@@ -394,6 +338,30 @@ export async function POST(request: NextRequest) {
     } catch (gamificationError) {
       console.error('Gamification error:', gamificationError);
       // Don't fail the order if gamification fails
+    }
+
+    // Письмо-подтверждение (best-effort: не валим заказ, если почта недоступна)
+    try {
+      const recipientEmail = recipient?.email;
+      if (recipientEmail) {
+        const customerName = `${recipient?.firstName ?? ''} ${recipient?.lastName ?? ''}`.trim();
+        const { html, text } = renderOrderConfirmationEmail({
+          name: customerName || null,
+          orderNumber: newOrder.orderNumber || newOrder.id,
+          total: String(newOrder.total),
+          currency: (newOrder.currency || 'RUB').toUpperCase(),
+        });
+        await sendEmail({
+          to: recipientEmail,
+          subject: `Заказ #${newOrder.orderNumber || newOrder.id} подтверждён`,
+          html,
+          text,
+          tags: [{ name: 'category', value: 'order-confirmation' }],
+        });
+      }
+    } catch (emailError) {
+      console.error('Order confirmation email error:', emailError);
+      // Don't fail the order if email fails
     }
 
     return NextResponse.json(newOrder, { status: 201 });
