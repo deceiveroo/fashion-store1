@@ -185,7 +185,6 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Email</h3>
                   <p className="text-gray-700 dark:text-gray-300">ELEVATE111@yandex.com</p>
-                  <p className="text-gray-700 dark:text-gray-300">support@elevate-fashion.ru</p>
                 </div>
               </motion.div>
               
