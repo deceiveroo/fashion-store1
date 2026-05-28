@@ -304,7 +304,7 @@ export default function Footer() {
               </div>
             </motion.a>
             <motion.a
-              href="mailto:hello@elevate-fashion.ru"
+              href="mailto:ELEVATE111@yandex.com"
               whileHover={{ scale: 1.02 }}
               className="flex items-center gap-3 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors group"
             >
@@ -313,7 +313,7 @@ export default function Footer() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-500 mb-0.5">Email</p>
-                <p className="text-sm">hello@elevate-fashion.ru</p>
+                <p className="text-sm">ELEVATE111@yandex.com</p>
               </div>
             </motion.a>
             <motion.div
