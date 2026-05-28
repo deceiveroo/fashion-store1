@@ -106,6 +106,7 @@ async function getProduct(id: string) {
         mediaType: (img.mediaType as 'image' | 'video') || 'image',
         duration: img.duration || undefined,
         thumbnailUrl: img.thumbnailUrl || undefined,
+        color: img.color ?? null,
       })),
       sizes: sizeRows.map(size => ({
         id: size.id,

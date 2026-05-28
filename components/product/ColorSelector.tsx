@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 export interface ColorOption {
   /** Уникальный идентификатор варианта цвета */
@@ -21,13 +21,21 @@ interface ColorSelectorProps {
   onSelect: (colorId: string) => void;
 }
 
+/** Склонение слова «цвет»: 1 цвет, 2 цвета, 5 цветов. */
+function colorWord(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'цвет';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'цвета';
+  return 'цветов';
+}
+
 /**
- * Выбор цвета в стиле ЦУМ:
- *  - заголовок «Цвет»
- *  - горизонтальная лента превью ~70px с подписью под каждой плиткой
- *  - активный вариант обведён, неактивные — слегка приглушены
- *
- * Никаких внешних классов/иконок ЦУМа — только собственный Tailwind.
+ * Премиальный выбор цвета:
+ *  - заголовок «Цвет» + выбранное название
+ *  - лента превью-карточек 3:4 (формат каталога моды) с плавным подъёмом и тенью
+ *  - активный вариант обведён тонким контуром и помечен галочкой
+ *  - стрелки прокрутки, когда вариантов много
  */
 export default function ColorSelector({ colors, activeColorId, onSelect }: ColorSelectorProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -39,25 +47,33 @@ export default function ColorSelector({ colors, activeColorId, onSelect }: Color
   };
 
   const showArrows = colors.length > 4;
+  const activeName = colors.find((c) => c.id === activeColorId)?.name;
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm font-medium text-gray-900 dark:text-white">
-        Цвет
-        {activeColorId && (
-          <span className="ml-2 text-gray-500 dark:text-neutral-400 font-normal">
-            {colors.find((c) => c.id === activeColorId)?.name}
+    <div className="space-y-3.5">
+      <div className="flex items-baseline gap-2">
+        <p className="text-xs font-medium uppercase tracking-[0.22em] text-gray-500 dark:text-neutral-400">
+          Цвет
+        </p>
+        {activeName && (
+          <span className="text-sm font-light tracking-wide text-gray-900 dark:text-white">
+            {activeName}
           </span>
         )}
-      </p>
+        {colors.length > 1 && (
+          <span className="ml-auto text-[11px] font-light text-gray-400 dark:text-neutral-600">
+            {colors.length}&nbsp;{colorWord(colors.length)}
+          </span>
+        )}
+      </div>
 
       <div className="relative">
         {showArrows && (
           <button
             type="button"
             aria-label="Прокрутить влево"
-            onClick={() => scrollBy(-200)}
-            className="hidden md:flex absolute -left-3 top-1/2 -translate-y-1/2 z-10 h-8 w-8 items-center justify-center rounded-full bg-white shadow-md ring-1 ring-gray-200 hover:bg-gray-50 dark:bg-neutral-800 dark:ring-neutral-700 dark:hover:bg-neutral-700"
+            onClick={() => scrollBy(-220)}
+            className="hidden md:flex absolute -left-3.5 top-[42%] -translate-y-1/2 z-10 h-8 w-8 items-center justify-center rounded-full bg-white/90 backdrop-blur shadow-md ring-1 ring-gray-200 hover:bg-white hover:scale-105 transition-all dark:bg-neutral-800/90 dark:ring-neutral-700 dark:hover:bg-neutral-700"
           >
             <ChevronLeft className="h-4 w-4 text-gray-700 dark:text-neutral-200" />
           </button>
@@ -65,7 +81,7 @@ export default function ColorSelector({ colors, activeColorId, onSelect }: Color
 
         <div
           ref={scrollerRef}
-          className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1"
+          className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 pt-1 px-0.5"
           style={{ scrollbarWidth: 'none' }}
         >
           {colors.map((color) => {
@@ -77,30 +93,51 @@ export default function ColorSelector({ colors, activeColorId, onSelect }: Color
                 onClick={() => onSelect(color.id)}
                 aria-pressed={isActive}
                 aria-label={`Цвет: ${color.name}`}
-                className="group/color flex-shrink-0 snap-start text-left focus:outline-none"
-                style={{ width: 70 }}
+                className="group/color flex-shrink-0 snap-start text-center focus:outline-none"
+                style={{ width: 76 }}
               >
                 <div
-                  className={`relative aspect-square w-[70px] overflow-hidden rounded-md bg-neutral-100 dark:bg-neutral-900 transition-all ${
+                  className={`relative aspect-[3/4] w-[76px] overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900 transition-all duration-300 ease-out ${
                     isActive
-                      ? 'ring-2 ring-gray-900 dark:ring-white ring-offset-2 ring-offset-white dark:ring-offset-neutral-950'
-                      : 'ring-1 ring-gray-200 dark:ring-neutral-800 opacity-70 group-hover/color:opacity-100 group-hover/color:ring-gray-400 dark:group-hover/color:ring-neutral-500'
+                      ? 'ring-[1.5px] ring-gray-900 dark:ring-white ring-offset-[3px] ring-offset-white dark:ring-offset-neutral-950 shadow-lg'
+                      : 'ring-1 ring-gray-200 dark:ring-neutral-800 group-hover/color:-translate-y-1 group-hover/color:shadow-xl group-hover/color:ring-gray-300 dark:group-hover/color:ring-neutral-600'
                   }`}
                 >
                   <Image
                     src={color.image}
                     alt={color.name}
                     fill
-                    sizes="70px"
-                    quality={70}
-                    className="object-cover"
+                    sizes="76px"
+                    quality={75}
+                    className="object-cover transition-transform duration-500 ease-out group-hover/color:scale-105"
                   />
+
+                  {/* Вуаль на неактивных — мягко гаснет при наведении */}
+                  <span
+                    className={`pointer-events-none absolute inset-0 transition-opacity duration-300 ${
+                      isActive
+                        ? 'opacity-0'
+                        : 'bg-white/35 dark:bg-black/40 opacity-100 group-hover/color:opacity-0'
+                    }`}
+                    aria-hidden
+                  />
+
+                  {/* Галочка на активном */}
+                  <span
+                    className={`absolute right-1.5 top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-gray-900 dark:bg-white shadow-md transition-all duration-300 ${
+                      isActive ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
+                    }`}
+                    aria-hidden
+                  >
+                    <Check className="h-3 w-3 text-white dark:text-gray-900" strokeWidth={3} />
+                  </span>
                 </div>
+
                 <p
-                  className={`mt-1.5 text-[11px] leading-tight line-clamp-2 transition-colors ${
+                  className={`mt-2 text-[11px] leading-tight line-clamp-2 transition-colors ${
                     isActive
                       ? 'text-gray-900 dark:text-white font-medium'
-                      : 'text-gray-500 dark:text-neutral-400'
+                      : 'text-gray-400 dark:text-neutral-500 group-hover/color:text-gray-700 dark:group-hover/color:text-neutral-300'
                   }`}
                 >
                   {color.name}
@@ -114,8 +151,8 @@ export default function ColorSelector({ colors, activeColorId, onSelect }: Color
           <button
             type="button"
             aria-label="Прокрутить вправо"
-            onClick={() => scrollBy(200)}
-            className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-8 w-8 items-center justify-center rounded-full bg-white shadow-md ring-1 ring-gray-200 hover:bg-gray-50 dark:bg-neutral-800 dark:ring-neutral-700 dark:hover:bg-neutral-700"
+            onClick={() => scrollBy(220)}
+            className="hidden md:flex absolute -right-3.5 top-[42%] -translate-y-1/2 z-10 h-8 w-8 items-center justify-center rounded-full bg-white/90 backdrop-blur shadow-md ring-1 ring-gray-200 hover:bg-white hover:scale-105 transition-all dark:bg-neutral-800/90 dark:ring-neutral-700 dark:hover:bg-neutral-700"
           >
             <ChevronRight className="h-4 w-4 text-gray-700 dark:text-neutral-200" />
           </button>

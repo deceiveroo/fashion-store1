@@ -22,6 +22,7 @@ interface ProductImage {
   mediaType?: 'image' | 'video';
   duration?: number;
   thumbnailUrl?: string;
+  color?: string | null;
 }
 
 interface Product {
@@ -89,22 +90,42 @@ export default function ProductClient({ product }: ProductClientProps) {
   }, [product.sizes]);
 
   // Цветовые варианты в стиле ЦУМ.
-  // Пока в БД хранится одна строка `product.color` — собираем единственный
-  // вариант, используя первую картинку как превью. Когда появится таблица
-  // product_colors с привязкой фото к цвету — массив будет наполняться оттуда.
+  // Источник правды — привязка фото к цвету (product_images.color). Собираем
+  // уникальные цвета в порядке появления; превью каждого цвета — его первое фото.
+  const imageColorNames = useMemo(() => {
+    const seen = new Set<string>();
+    const order: string[] = [];
+    for (const img of product.images) {
+      const c = img?.color?.trim();
+      if (c && !seen.has(c)) {
+        seen.add(c);
+        order.push(c);
+      }
+    }
+    return order;
+  }, [product.images]);
+
   const colorOptions = useMemo<ColorOption[]>(() => {
-    if (!product.color) return [];
-    const firstImage = product.images.find((i) => i?.url)?.url
-      || product.mainImage
-      || getPlaceholderImage(product.id);
-    return [
-      {
-        id: product.color,
-        name: product.color,
-        image: firstImage,
-      },
-    ];
-  }, [product.color, product.images, product.mainImage, product.id]);
+    // Есть фото с привязкой к цвету — строим варианты из них.
+    if (imageColorNames.length > 0) {
+      return imageColorNames.map((name) => {
+        const img = product.images.find((i) => i?.color?.trim() === name && i?.url);
+        return {
+          id: name,
+          name,
+          image: img?.url || product.mainImage || getPlaceholderImage(product.id),
+        };
+      });
+    }
+    // Фолбэк: одно текстовое поле `product.color` (без фильтрации галереи).
+    if (product.color) {
+      const firstImage = product.images.find((i) => i?.url)?.url
+        || product.mainImage
+        || getPlaceholderImage(product.id);
+      return [{ id: product.color, name: product.color, image: firstImage }];
+    }
+    return [];
+  }, [imageColorNames, product.color, product.images, product.mainImage, product.id]);
 
   const [selectedColorId, setSelectedColorId] = useState<string | null>(
     () => colorOptions[0]?.id ?? null
@@ -117,21 +138,32 @@ export default function ProductClient({ product }: ProductClientProps) {
     }
   }, [colorOptions, selectedColorId]);
 
+  // При смене цвета показываем первое фото нового цвета.
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [selectedColorId]);
+
   const price = toNumberPrice(product.price);
 
   const allImages = useMemo(() => {
-    if (product.images.length > 0) {
-      return product.images.filter((img) => img?.url);
+    const valid = product.images.filter((img) => img?.url);
+    if (valid.length > 0) {
+      // Если фото привязаны к цветам — показываем только фото выбранного цвета.
+      if (imageColorNames.length > 0 && selectedColorId) {
+        const filtered = valid.filter((img) => img.color?.trim() === selectedColorId);
+        if (filtered.length > 0) return filtered;
+      }
+      return valid;
     }
-    return [{ 
-      id: '1', 
-      url: getPlaceholderImage(product.id), 
-      isMain: true, 
+    return [{
+      id: '1',
+      url: getPlaceholderImage(product.id),
+      isMain: true,
       mediaType: 'image' as const,
       duration: undefined,
       thumbnailUrl: undefined
     }];
-  }, [product.id, product.images]);
+  }, [product.id, product.images, imageColorNames, selectedColorId]);
 
   const cartItemData = {
     id: product.id,

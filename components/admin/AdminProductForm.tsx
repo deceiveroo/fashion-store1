@@ -28,6 +28,7 @@ type MediaItem = {
   type: 'image' | 'video';
   thumbnailUrl?: string;
   duration?: number;
+  color?: string;
 };
 
 export type CategoryOption = { id: string; name: string; slug: string };
@@ -151,6 +152,7 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
             type: (img.mediaType as 'image' | 'video') || 'image',
             thumbnailUrl: img.thumbnailUrl,
             duration: img.duration,
+            color: img.color ?? '',
           };
           console.log('[AdminProductForm] Processing media item:', mediaItem);
           initialMedia.push(mediaItem);
@@ -289,12 +291,29 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
     setSizes(sizes.filter((_, i) => i !== index));
   };
 
+  // Привязка фото к цвету
+  const updateMediaColor = (index: number, color: string) => {
+    setMedia((prev) => prev.map((m, i) => (i === index ? { ...m, color } : m)));
+  };
+  const usedColors = Array.from(
+    new Set(media.map((m) => m.color?.trim()).filter((c): c is string => Boolean(c)))
+  );
+
   const payload = () => {
     const data = {
       ...form,
       price: parseFloat(form.price),
       categories: selectedCategories,
-      images: media.length > 0 ? media : [{ url: '/placeholder-image.jpg', type: 'image' }],
+      images:
+        media.length > 0
+          ? media.map((m) => ({
+              url: m.url,
+              mediaType: m.type,
+              duration: m.duration,
+              thumbnailUrl: m.thumbnailUrl,
+              color: m.color?.trim() || null,
+            }))
+          : [{ url: '/placeholder-image.jpg', mediaType: 'image' }],
       sizes: sizes.map((s, index) => ({
         ...s,
         sortOrder: index,
@@ -581,8 +600,8 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
               {media.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {media.map((item, i) => (
+                    <div key={`${item.url}-${i}`} className="flex flex-col gap-1.5">
                     <div
-                      key={`${item.url}-${i}`}
                       draggable
                       onDragStart={() => handleDragStart(i)}
                       onDragOver={(e) => handleDragOver(e, i)}
@@ -641,10 +660,34 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                           Видео
                         </span>
                       )}
+                      {item.color?.trim() && (
+                        <span className="absolute bottom-2 right-2 max-w-[80%] truncate rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
+                          {item.color.trim()}
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      list="media-colors"
+                      value={item.color ?? ''}
+                      onChange={(e) => updateMediaColor(i, e.target.value)}
+                      placeholder="Цвет (напр. Чёрный)"
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder-white/25 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+                    />
                     </div>
                   ))}
+                  <datalist id="media-colors">
+                    {usedColors.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
                 </div>
               )}
+              <p className="mt-3 text-xs text-white/40">
+                Укажите цвет у фото, чтобы на странице товара покупатель мог переключать
+                цвета — галерея покажет фото только выбранного цвета. Оставьте пустым,
+                если у товара один цвет.
+              </p>
             </Section>
 
             <Section title="Размеры и наличие">

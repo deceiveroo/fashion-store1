@@ -153,6 +153,7 @@ export const productImages = pgTable('product_images', {
   mediaType: text('media_type').default('image').notNull(), // 'image' or 'video'
   duration: integer('duration'), // Duration in seconds for videos
   thumbnailUrl: text('thumbnail_url'), // Thumbnail for video preview
+  color: text('color'), // Цвет, к которому относится фото (группировка вариантов)
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
   return {

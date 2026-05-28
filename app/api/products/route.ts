@@ -186,19 +186,41 @@ export async function POST(request: NextRequest) {
     }));
     await db.insert(productCategory).values(categoryLinks);
 
-    const rawImages: unknown[] = Array.isArray(data.images) ? data.images : [];
-    const imageUrls = rawImages
-      .map((image) => (typeof image === 'string' ? image : (image as { url?: string })?.url))
-      .filter((url): url is string => Boolean(url));
+    const rawImages: Array<string | { url?: string; mediaType?: string; duration?: number; thumbnailUrl?: string; color?: string | null }> =
+      Array.isArray(data.images) ? data.images : [];
+    const mediaItems: Array<{
+      url: string;
+      mediaType: 'image' | 'video';
+      duration?: number;
+      thumbnailUrl?: string;
+      color?: string | null;
+    }> = rawImages
+      .map((image) => {
+        if (typeof image === 'string') {
+          return { url: image, mediaType: 'image' as const };
+        }
+        return {
+          url: image.url ?? '',
+          mediaType: (image.mediaType as 'image' | 'video') || 'image',
+          duration: image.duration,
+          thumbnailUrl: image.thumbnailUrl,
+          color: image.color,
+        };
+      })
+      .filter((item) => Boolean(item.url));
 
-    if (imageUrls.length > 0) {
+    if (mediaItems.length > 0) {
       await db.insert(productImages).values(
-        imageUrls.map((url, index) => ({
+        mediaItems.map((item, index) => ({
           id: uuidv4(),
           productId: newProduct.id,
-          url,
+          url: item.url,
           isMain: index === 0,
           order: index,
+          mediaType: item.mediaType || 'image',
+          duration: item.duration || null,
+          thumbnailUrl: item.thumbnailUrl || null,
+          color: item.color || null,
         }))
       );
     }

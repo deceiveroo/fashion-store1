@@ -99,6 +99,7 @@ export async function GET(
           mediaType: productImages.mediaType,
           duration: productImages.duration,
           thumbnailUrl: productImages.thumbnailUrl,
+          color: productImages.color,
         })
         .from(productImages)
         .where(eq(productImages.productId, id))
@@ -327,8 +328,9 @@ export async function PUT(
       mediaType?: 'image' | 'video';
       duration?: number;
       thumbnailUrl?: string;
+      color?: string | null;
     }> = Array.isArray(images)
-      ? images.map((img: string | { url: string; mediaType?: string; duration?: number; thumbnailUrl?: string }) => {
+      ? images.map((img: string | { url: string; mediaType?: string; duration?: number; thumbnailUrl?: string; color?: string | null }) => {
           if (typeof img === 'string') {
             return { url: img, mediaType: 'image' as const };
           }
@@ -337,6 +339,7 @@ export async function PUT(
             mediaType: (img.mediaType as 'image' | 'video') || 'image',
             duration: img.duration,
             thumbnailUrl: img.thumbnailUrl,
+            color: img.color,
           };
         }).filter(item => item.url)
       : [];
@@ -356,6 +359,7 @@ export async function PUT(
           mediaType: item.mediaType || 'image',
           duration: item.duration || null,
           thumbnailUrl: item.thumbnailUrl || null,
+          color: item.color || null,
         }))
       );
       console.log('[admin/products PUT] Media saved successfully');
