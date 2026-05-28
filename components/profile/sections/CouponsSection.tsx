@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ticket, Clock, Copy, CheckCircle2, XCircle, AlertCircle, TrendingUp, ShoppingBag, Trash2 } from 'lucide-react';
+import { Ticket, Clock, Copy, CheckCircle2, XCircle, AlertCircle, TrendingUp, ShoppingBag, Trash2, Coins } from 'lucide-react';
 import { UserCoupon } from '@/app/profile/hooks/useProfileData';
 import { Loader } from 'lucide-react';
 import { toast } from 'sonner';
@@ -248,27 +248,44 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
               const isUsed = !coupon.isValid;
               const isExpired = coupon.isExpired;
               const isActive = coupon.isValid && !isExpired;
-              
+              const fromShop = coupon.source === 'shop';
+
               return (
                 <motion.div
                   key={coupon.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-all"
+                  className={`group relative overflow-hidden rounded-xl border p-5 transition-all hover:shadow-md ${
+                    isActive && fromShop
+                      ? 'bg-gradient-to-br from-amber-50 via-white to-orange-50/50 dark:from-amber-950/30 dark:via-gray-800 dark:to-orange-950/20 border-amber-200 dark:border-amber-800'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                  }`}
                 >
+                  {isActive && fromShop && (
+                    <>
+                      <div className="pointer-events-none absolute -top-12 -right-12 w-40 h-40 rounded-full bg-amber-300/20 blur-3xl" />
+                      <div className="pointer-events-none absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-orange-300/15 blur-3xl" />
+                    </>
+                  )}
+
+                  <div className="relative">
                   {/* Header with Status */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className={`p-2.5 rounded-lg ${
-                        isActive
+                        isActive && fromShop
+                          ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-amber-500/30'
+                          : isActive
                           ? 'bg-purple-100 dark:bg-purple-900/30'
                           : isUsed
                           ? 'bg-blue-100 dark:bg-blue-900/30'
                           : 'bg-red-100 dark:bg-red-900/30'
                       }`}>
                         <Ticket size={20} className={
-                          isActive
+                          isActive && fromShop
+                            ? 'text-white'
+                            : isActive
                             ? 'text-purple-600 dark:text-purple-400'
                             : isUsed
                             ? 'text-blue-600 dark:text-blue-400'
@@ -281,8 +298,8 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
                         </h4>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                           Скидка: <span className="font-semibold text-gray-900 dark:text-white">
-                            {(coupon.type || coupon.couponType) === 'percent' 
-                              ? `${coupon.discount || coupon.couponDiscount}%` 
+                            {(coupon.type || coupon.couponType) === 'percent'
+                              ? `${coupon.discount || coupon.couponDiscount}%`
                               : `${coupon.discount || coupon.couponDiscount} ₽`}
                           </span>
                         </p>
@@ -291,31 +308,50 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
 
                     {/* Status Badge */}
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      isActive
+                      isActive && fromShop
+                        ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/30'
+                        : isActive
                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                         : isUsed
                         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                         : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                     }`}>
-                      {isActive ? 'Активен' : isUsed ? 'Использован' : 'Истёк'}
+                      {isActive && fromShop ? 'Из магазина' : isActive ? 'Активен' : isUsed ? 'Использован' : 'Истёк'}
                     </span>
                   </div>
 
                   {/* Info Grid */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Сэкономлено</p>
-                      <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                        {coupon.discountAmount ? parseFloat(coupon.discountAmount).toLocaleString('ru-RU') : '0'} ₽
-                      </p>
-                    </div>
+                    {fromShop ? (
+                      <div className="bg-amber-50/70 dark:bg-amber-950/30 rounded-lg p-3 border border-amber-100 dark:border-amber-900/50">
+                        <p className="text-xs text-amber-700 dark:text-amber-300 mb-1 flex items-center gap-1">
+                          <Coins size={12} />
+                          Куплен за
+                        </p>
+                        <p className="text-lg font-bold text-amber-700 dark:text-amber-300">
+                          {(coupon.coinsSpent || 0).toLocaleString('ru-RU')} монет
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Сэкономлено</p>
+                        <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                          {coupon.discountAmount ? parseFloat(coupon.discountAmount).toLocaleString('ru-RU') : '0'} ₽
+                        </p>
+                      </div>
+                    )}
                     <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
                         <Clock size={12} />
                         {isUsed ? 'Использован' : 'Действует до'}
                       </p>
                       <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {new Date(isUsed ? (coupon.usedAt || '') : (coupon.expiresAt || coupon.couponExpiresAt || '')).toLocaleDateString('ru-RU')}
+                        {(() => {
+                          const d = isUsed
+                            ? coupon.usedAt
+                            : (coupon.expiresAt || coupon.couponExpiresAt);
+                          return d ? new Date(d).toLocaleDateString('ru-RU') : '—';
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -327,7 +363,11 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
                         onClick={() => copyToClipboard(coupon.code || coupon.couponCode || '')}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                        className={`flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 text-white transition-colors ${
+                          fromShop
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
+                            : 'bg-purple-600 hover:bg-purple-700'
+                        }`}
                       >
                         <Copy size={16} />
                         Копировать код
@@ -354,6 +394,7 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
                         <Trash2 size={18} />
                       </motion.button>
                     )}
+                  </div>
                   </div>
                 </motion.div>
               );

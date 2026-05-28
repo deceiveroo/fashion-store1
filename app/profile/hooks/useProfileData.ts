@@ -86,6 +86,9 @@ export interface UserCoupon {
   isExpired: boolean;
   isValid: boolean;
   status?: 'active' | 'used' | 'expired';
+  source?: 'order' | 'shop';
+  coinsSpent?: number;
+  purchasedAt?: string;
   discount?: number;
   type?: string;
   minOrder?: string;

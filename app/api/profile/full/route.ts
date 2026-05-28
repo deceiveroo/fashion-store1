@@ -6,7 +6,8 @@ import {
   paymentMethods, notificationSettings,
   coupons, userCouponUsage, userSessions
 } from '@/lib/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { userPurchasedCoupons } from '@/lib/db/gamification-schema';
+import { eq, desc, and, isNull, gt } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 import { parseUserAgent } from '@/lib/user-agent';
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
   const currentToken = currentSessionToken(userId, request.headers);
 
   // Run all queries in parallel
-  const [profile, userOrders, wishlist, payments, sessions, notifications, userCoupons] =
+  const [profile, userOrders, wishlist, payments, sessions, notifications, userCoupons, purchasedCoupons] =
     await Promise.all([
       // Profile
       safeQuery(() =>
@@ -101,11 +102,13 @@ export async function GET(request: NextRequest) {
         .where(eq(paymentMethods.userId, userId))
       ).catch(() => []),
 
-      // Sessions — real rows from user_sessions, ordered by last_active desc.
+      // Sessions — only active rows (not revoked), ordered by last_active desc.
+      // Без isNull(revokedAt) сюда попадают только что отозванные строки,
+      // и после F5 они «возвращаются» в UI, хотя /api/profile/sessions их уже скрывает.
       safeQuery(() =>
         db.select()
           .from(userSessions)
-          .where(eq(userSessions.userId, userId))
+          .where(and(eq(userSessions.userId, userId), isNull(userSessions.revokedAt)))
           .orderBy(desc(userSessions.lastActive))
       ).catch(() => []),
 
@@ -134,6 +137,26 @@ export async function GET(request: NextRequest) {
         .from(userCouponUsage)
         .leftJoin(coupons, eq(userCouponUsage.couponId, coupons.id))
         .where(eq(userCouponUsage.userId, userId))
+      ).catch(() => []),
+
+      // Coupons purchased with coins (active, not yet redeemed and not expired).
+      safeQuery(() =>
+        db.select({
+          id: userPurchasedCoupons.id,
+          couponCode: userPurchasedCoupons.couponCode,
+          coinsSpent: userPurchasedCoupons.coinsSpent,
+          purchasedAt: userPurchasedCoupons.purchasedAt,
+          expiresAt: userPurchasedCoupons.expiresAt,
+          couponDiscount: coupons.discount,
+          couponType: coupons.type,
+        })
+        .from(userPurchasedCoupons)
+        .leftJoin(coupons, eq(userPurchasedCoupons.couponCode, coupons.code))
+        .where(and(
+          eq(userPurchasedCoupons.userId, userId),
+          eq(userPurchasedCoupons.redeemed, false),
+          gt(userPurchasedCoupons.expiresAt, new Date()),
+        ))
       ).catch(() => []),
     ]);
 
@@ -166,9 +189,8 @@ export async function GET(request: NextRequest) {
     isCurrent: s.token === currentToken,
   }));
 
-  // Format coupons
-  const now = new Date();
-  const formattedCoupons = (userCoupons || []).map((c: any) => ({
+  // Format coupons — used + purchased-with-coins (active).
+  const formattedUsed = (userCoupons || []).map((c: any) => ({
     id: c.id,
     couponId: c.couponId,
     code: c.couponCode,
@@ -180,9 +202,31 @@ export async function GET(request: NextRequest) {
     couponType: c.couponType,
     couponActive: c.couponActive,
     couponExpiresAt: c.couponExpiresAt,
-    isExpired: c.couponExpiresAt ? new Date(c.couponExpiresAt) < now : false,
-    isValid: c.couponActive && (!c.couponExpiresAt || new Date(c.couponExpiresAt) > now),
+    source: 'order' as const,
+    status: 'used' as const,
+    isExpired: false,
+    isValid: false,
   }));
+
+  const formattedPurchased = (purchasedCoupons || []).map((p: any) => ({
+    id: `purchased:${p.id}`,
+    couponId: undefined as string | undefined,
+    code: p.couponCode,
+    couponCode: p.couponCode,
+    couponDiscount: p.couponDiscount,
+    couponType: p.couponType,
+    couponActive: true,
+    couponExpiresAt: p.expiresAt,
+    expiresAt: p.expiresAt,
+    purchasedAt: p.purchasedAt,
+    coinsSpent: p.coinsSpent,
+    source: 'shop' as const,
+    status: 'active' as const,
+    isExpired: false,
+    isValid: true,
+  }));
+
+  const formattedCoupons = [...formattedPurchased, ...formattedUsed];
 
   return jsonWithNoCache({
     profile: user ? {

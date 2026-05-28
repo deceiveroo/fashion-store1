@@ -87,15 +87,6 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
     }
   };
 
-  const getRarityRing = (rarity: string) => {
-    switch (rarity) {
-      case 'legendary': return 'ring-2 ring-amber-400/50';
-      case 'epic': return 'ring-2 ring-violet-400/50';
-      case 'rare': return 'ring-2 ring-sky-400/50';
-      default: return 'ring-1 ring-gray-300/50 dark:ring-gray-600/50';
-    }
-  };
-
   const getRarityName = (rarity: string) => {
     switch (rarity) {
       case 'legendary': return 'Легендарное';
@@ -404,89 +395,115 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
               ))
             ) : (
               // Actual achievements
-              sortedAchievements.map((achievement, index) => (
-              <motion.div
-                key={achievement.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.04 }}
-                whileHover={{ y: -4, scale: 1.015 }}
-                className={`relative group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
-                  achievement.unlocked
-                    ? getRarityGlow(achievement.rarity)
-                    : 'border-gray-200 dark:border-gray-700 opacity-60 hover:opacity-80 grayscale hover:grayscale-0'
-                }`}
-              >
-                {/* Rarity Gradient Bar - Top */}
-                <div className={`h-1.5 w-full bg-gradient-to-r ${getRarityColor(achievement.rarity)}`} />
+              sortedAchievements.map((achievement, index) => {
+                const rarityGradient = getRarityColor(achievement.rarity);
+                const isLegendary = achievement.rarity === 'legendary';
+                const isEpic = achievement.rarity === 'epic';
 
-                {/* Decorative glow for unlocked legendary/epic */}
-                {achievement.unlocked && (achievement.rarity === 'legendary' || achievement.rarity === 'epic') && (
-                  <div className={`pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity bg-gradient-to-br ${getRarityColor(achievement.rarity)}`} />
-                )}
+                return (
+                <motion.div
+                  key={achievement.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04 }}
+                  whileHover={{ y: -6 }}
+                  className={`group relative overflow-hidden rounded-3xl bg-white dark:bg-gray-900 border transition-all duration-500 flex flex-col min-h-[340px] ${
+                    achievement.unlocked
+                      ? `${getRarityGlow(achievement.rarity)} shadow-md`
+                      : 'border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md'
+                  }`}
+                >
+                  {/* Hero band — gradient by rarity */}
+                  <div className={`relative h-44 overflow-hidden bg-gradient-to-br ${rarityGradient} ${achievement.unlocked ? '' : 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-90 transition-all'}`}>
+                    {/* Decorative blobs */}
+                    <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/25 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-12 -left-10 w-40 h-40 rounded-full bg-black/10 blur-3xl" />
 
-                <div className="relative p-6">
-                  <div className="flex items-start gap-3 mb-4">
-                    {/* Achievement Icon */}
-                    <div className={`text-3xl leading-none p-3 rounded-xl bg-gradient-to-br ${getRarityColor(achievement.rarity)} ${achievement.unlocked ? getRarityRing(achievement.rarity) : 'opacity-40'} flex items-center justify-center shadow-md transition-all group-hover:scale-110`}>
-                      <span className="drop-shadow-sm">{getAchievementIcon(achievement.category, achievement.unlocked)}</span>
+                    {/* Diagonal shine on hover */}
+                    <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12" />
+
+                    {/* Rarity label top-right */}
+                    <span className="absolute top-3 right-3 z-10 text-[10px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-md text-white border border-white/20">
+                      {getRarityName(achievement.rarity)}
+                    </span>
+
+                    {/* Lock badge for locked */}
+                    {!achievement.unlocked && (
+                      <span className="absolute top-3 left-3 z-10 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-white border border-white/20">
+                        <Lock className="w-3 h-3" />
+                        Закрыто
+                      </span>
+                    )}
+
+                    {/* Unlocked checkmark */}
+                    {achievement.unlocked && (
+                      <span className="absolute top-3 left-3 z-10 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-500/90 backdrop-blur-md text-white border border-white/20">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Получено
+                      </span>
+                    )}
+
+                    {/* Big emoji icon — centered in the hero band, no overlap */}
+                    <div className={`absolute inset-0 flex items-center justify-center pointer-events-none`}>
+                      <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-6xl shadow-xl ring-4 ring-white/40 bg-gradient-to-br ${rarityGradient} group-hover:scale-110 transition-transform duration-300`}>
+                        <span className="drop-shadow-lg">
+                          {getAchievementIcon(achievement.category, achievement.unlocked)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                  </div>
+
+                  {/* Body */}
+                  <div className="relative px-6 pt-6 pb-5 flex-1 flex flex-col">
+                    <div className="text-center mb-4">
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight mb-1.5">
                         {achievement.name}
-                        {!achievement.unlocked && <Lock className="w-3.5 h-3.5 text-gray-400" />}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
                         {achievement.description}
                       </p>
                     </div>
+
+                    {/* Rewards row */}
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/30 dark:to-blue-900/30 border border-cyan-200/70 dark:border-cyan-800/50">
+                        <Zap className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <span className="text-sm font-bold text-cyan-700 dark:text-cyan-300">+{achievement.xp_reward} XP</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border border-amber-200/70 dark:border-amber-800/50">
+                        <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-300">+{achievement.coins_reward}</span>
+                      </div>
+                    </div>
+
+                    {/* Footer — date or admin button */}
+                    <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-800">
+                      {achievement.unlocked ? (
+                        <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                          Получено {new Date(achievement.unlocked_at!).toLocaleDateString('ru-RU')}
+                        </p>
+                      ) : isAdmin ? (
+                        <button
+                          onClick={() => handleForceUnlock(achievement.code)}
+                          className="w-full text-xs font-medium px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 transition-all shadow-sm"
+                        >
+                          Разблокировать
+                        </button>
+                      ) : (
+                        <p className="text-xs text-center text-gray-400 dark:text-gray-500">
+                          Выполните условие, чтобы открыть
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Rewards - Innovative Colors */}
-                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800">
-                      <Zap className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                      <span className="text-sm font-bold text-cyan-700 dark:text-cyan-300">+{achievement.xp_reward} XP</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 border border-rose-200 dark:border-rose-800">
-                      <Sparkles className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                      <span className="text-sm font-bold text-rose-700 dark:text-rose-300">+{achievement.coins_reward}</span>
-                    </div>
-                  </div>
-
-                {/* Status */}
-                {achievement.unlocked ? (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="w-5 h-5" />
-                      <span className="text-sm font-medium">
-                        Получено: {new Date(achievement.unlocked_at!).toLocaleDateString('ru-RU')}
-                      </span>
-                    </div>
-                    {/* Rarity Label */}
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-md bg-gradient-to-r ${getRarityColor(achievement.rarity)} bg-opacity-10 text-gray-700 dark:text-gray-300`}>
-                      {getRarityName(achievement.rarity)}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                      <Lock className="w-5 h-5" />
-                      <span className="text-sm">Заблокировано</span>
-                    </div>
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleForceUnlock(achievement.code)}
-                        className="text-xs px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-100 to-blue-100 dark:from-cyan-900/30 dark:to-blue-900/30 text-cyan-700 dark:text-cyan-400 hover:from-cyan-200 hover:to-blue-200 dark:hover:from-cyan-900/50 dark:hover:to-blue-900/50 transition-all border border-cyan-300 dark:border-cyan-700"
-                      >
-                        Разблокировать
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-              ))
+                  {/* Legendary/Epic outer glow */}
+                  {achievement.unlocked && (isLegendary || isEpic) && (
+                    <div className={`pointer-events-none absolute -inset-1 rounded-3xl blur-2xl opacity-25 group-hover:opacity-40 transition-opacity bg-gradient-to-br ${rarityGradient} -z-10`} />
+                  )}
+                </motion.div>
+                );
+              })
             )}
           </div>
 
