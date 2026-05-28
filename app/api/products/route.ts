@@ -144,7 +144,11 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9а-яё]+/gi, '-')
       .replace(/^-|-$/g, '') || 'product';
     const slug = data.slug || `${slugBase}-${id.slice(0, 8)}`;
-    const sku = data.sku || `SKU-${id.replace(/-/g, '').slice(0, 14)}`;
+    // SKU задаётся вручную в админке. Если не указан — берём articleNumber как фолбэк,
+    // и только в крайнем случае генерируем технический id-based, чтобы соблюсти unique-constraint.
+    const sku = (data.sku && String(data.sku).trim())
+      || (data.articleNumber && String(data.articleNumber).trim())
+      || `SKU-${id.replace(/-/g, '').slice(0, 14)}`;
     const inStock = data.inStock !== false;
     const stock = inStock ? Math.max(Number(data.stock) || 10, 1) : 0;
 

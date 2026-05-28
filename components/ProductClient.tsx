@@ -13,6 +13,7 @@ import ReviewList from '@/components/reviews/ReviewList';
 import ReviewForm from '@/components/reviews/ReviewForm';
 import StarRating from '@/components/reviews/StarRating';
 import SizeAdvisorModal from '@/components/SizeAdvisorModal';
+import ColorSelector, { type ColorOption } from '@/components/product/ColorSelector';
 
 interface ProductImage {
   id: string;
@@ -86,6 +87,35 @@ export default function ProductClient({ product }: ProductClientProps) {
   const availableSizes = useMemo(() => {
     return product.sizes?.map(s => s.sizeName || s.size_name || '').filter(Boolean) as string[] || [];
   }, [product.sizes]);
+
+  // Цветовые варианты в стиле ЦУМ.
+  // Пока в БД хранится одна строка `product.color` — собираем единственный
+  // вариант, используя первую картинку как превью. Когда появится таблица
+  // product_colors с привязкой фото к цвету — массив будет наполняться оттуда.
+  const colorOptions = useMemo<ColorOption[]>(() => {
+    if (!product.color) return [];
+    const firstImage = product.images.find((i) => i?.url)?.url
+      || product.mainImage
+      || getPlaceholderImage(product.id);
+    return [
+      {
+        id: product.color,
+        name: product.color,
+        image: firstImage,
+      },
+    ];
+  }, [product.color, product.images, product.mainImage, product.id]);
+
+  const [selectedColorId, setSelectedColorId] = useState<string | null>(
+    () => colorOptions[0]?.id ?? null
+  );
+
+  // Если набор цветов изменился извне — синхронизируем выбор.
+  useEffect(() => {
+    if (!selectedColorId && colorOptions.length > 0) {
+      setSelectedColorId(colorOptions[0].id);
+    }
+  }, [colorOptions, selectedColorId]);
 
   const price = toNumberPrice(product.price);
 
@@ -392,12 +422,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                         <span className="text-sm font-medium text-gray-900 dark:text-white">{product.compositionSecondary}</span>
                       </div>
                     )}
-                    {product.color && (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Цвет</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{product.color}</span>
-                      </div>
-                    )}
+                    {/* Цвет вынесен в отдельный ColorSelector над блоком размеров */}
                     {product.articleNumber && (
                       <div className="flex items-baseline gap-2">
                         <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-500 min-w-[140px]">Артикул</span>
@@ -417,6 +442,21 @@ export default function ProductClient({ product }: ProductClientProps) {
                       </div>
                     )}
                   </div>
+                </motion.div>
+              )}
+
+              {/* Color selector — стиль ЦУМ: превью-фото + название */}
+              {colorOptions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.17 }}
+                >
+                  <ColorSelector
+                    colors={colorOptions}
+                    activeColorId={selectedColorId}
+                    onSelect={(id) => setSelectedColorId(id)}
+                  />
                 </motion.div>
               )}
 
@@ -482,14 +522,6 @@ export default function ProductClient({ product }: ProductClientProps) {
                     }`}
                   >
                     {product.inStock ? 'В наличии' : 'Нет в наличии'}
-                  </span>
-                </motion.div>
-                <motion.div>
-                  <span className="text-xs uppercase tracking-wider text-gray-400 dark:text-neutral-500 block mb-1">
-                    Артикул
-                  </span>
-                  <span className="text-sm font-light text-gray-700 dark:text-neutral-300 uppercase tracking-wide">
-                    {product.id}
                   </span>
                 </motion.div>
               </div>

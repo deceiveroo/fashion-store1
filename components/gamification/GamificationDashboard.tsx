@@ -78,6 +78,24 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
     }
   };
 
+  const getRarityGlow = (rarity: string) => {
+    switch (rarity) {
+      case 'legendary': return 'shadow-[0_0_40px_-10px_rgba(245,158,11,0.55)] hover:shadow-[0_0_60px_-10px_rgba(245,158,11,0.8)] border-amber-300/60 dark:border-amber-500/40';
+      case 'epic': return 'shadow-[0_0_40px_-10px_rgba(139,92,246,0.5)] hover:shadow-[0_0_60px_-10px_rgba(139,92,246,0.75)] border-violet-300/60 dark:border-violet-500/40';
+      case 'rare': return 'shadow-[0_0_30px_-12px_rgba(59,130,246,0.45)] hover:shadow-[0_0_50px_-10px_rgba(59,130,246,0.65)] border-sky-300/60 dark:border-sky-500/40';
+      default: return 'shadow-md hover:shadow-lg border-gray-200 dark:border-gray-700';
+    }
+  };
+
+  const getRarityRing = (rarity: string) => {
+    switch (rarity) {
+      case 'legendary': return 'ring-2 ring-amber-400/50';
+      case 'epic': return 'ring-2 ring-violet-400/50';
+      case 'rare': return 'ring-2 ring-sky-400/50';
+      default: return 'ring-1 ring-gray-300/50 dark:ring-gray-600/50';
+    }
+  };
+
   const getRarityName = (rarity: string) => {
     switch (rarity) {
       case 'legendary': return 'Легендарное';
@@ -391,25 +409,32 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                 key={achievement.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`relative group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 transition-all hover:shadow-xl ${
+                transition={{ delay: index * 0.04 }}
+                whileHover={{ y: -4, scale: 1.015 }}
+                className={`relative group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
                   achievement.unlocked
-                    ? `border-${getRarityBorder(achievement.rarity)} shadow-lg`
-                    : 'border-gray-200 dark:border-gray-700 opacity-75'
+                    ? getRarityGlow(achievement.rarity)
+                    : 'border-gray-200 dark:border-gray-700 opacity-60 hover:opacity-80 grayscale hover:grayscale-0'
                 }`}
               >
                 {/* Rarity Gradient Bar - Top */}
                 <div className={`h-1.5 w-full bg-gradient-to-r ${getRarityColor(achievement.rarity)}`} />
 
-                <div className="p-6">
+                {/* Decorative glow for unlocked legendary/epic */}
+                {achievement.unlocked && (achievement.rarity === 'legendary' || achievement.rarity === 'epic') && (
+                  <div className={`pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity bg-gradient-to-br ${getRarityColor(achievement.rarity)}`} />
+                )}
+
+                <div className="relative p-6">
                   <div className="flex items-start gap-3 mb-4">
-                    {/* Achievement Icon - Smaller and more subtle */}
-                    <div className={`text-2xl leading-none p-2 rounded-lg bg-gradient-to-br ${getRarityColor(achievement.rarity)} bg-opacity-10 border border-gray-200 dark:border-gray-700`}>
-                      <span>{getAchievementIcon(achievement.category, achievement.unlocked)}</span>
+                    {/* Achievement Icon */}
+                    <div className={`text-3xl leading-none p-3 rounded-xl bg-gradient-to-br ${getRarityColor(achievement.rarity)} ${achievement.unlocked ? getRarityRing(achievement.rarity) : 'opacity-40'} flex items-center justify-center shadow-md transition-all group-hover:scale-110`}>
+                      <span className="drop-shadow-sm">{getAchievementIcon(achievement.category, achievement.unlocked)}</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-bold text-gray-900 dark:text-white mb-1">
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
                         {achievement.name}
+                        {!achievement.unlocked && <Lock className="w-3.5 h-3.5 text-gray-400" />}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                         {achievement.description}
@@ -475,76 +500,103 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
       )}
 
       {activeTab === 'shop' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {shopCoupons.map((coupon) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {shopCoupons.map((coupon, idx) => {
             // Calculate discount display - use correct field names from API
             const discountValue = coupon.discount || 0;
             const discountType = coupon.discountType || coupon.type || 'percent';
-            const discountDisplay = discountValue 
+            const discountDisplay = discountValue
               ? `${discountValue}${discountType === 'percent' ? '%' : '₽'}`
               : '—';
-            
+
             // Use priceCoins from API (not price or cost)
             const price = coupon.priceCoins || coupon.price || coupon.cost || 0;
-            
+            const userCoins = userLevel?.coins || 0;
+            const canAfford = userCoins >= price;
+            const shortage = canAfford ? 0 : price - userCoins;
+
             return (
               <motion.div
                 key={coupon.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.02, y: -4 }}
-                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-400 transition-all shadow-sm hover:shadow-2xl flex flex-col"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                whileHover={{ y: -6 }}
+                className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-amber-50/40 to-orange-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-amber-950/30 border border-amber-200/50 dark:border-amber-900/50 shadow-md hover:shadow-[0_25px_60px_-15px_rgba(245,158,11,0.4)] transition-all duration-500 flex flex-col min-h-[340px]"
               >
-                {/* Discount Badge - Top Left Corner */}
-                <div className="absolute top-0 left-0 bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 text-white px-4 py-2 rounded-br-2xl shadow-lg z-10">
-                  <p className="text-2xl font-black leading-none">{discountDisplay}</p>
-                  <p className="text-[10px] font-medium uppercase tracking-wider opacity-90">скидка</p>
+                {/* Decorative gold blobs */}
+                <div className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full bg-amber-400/20 blur-3xl group-hover:bg-amber-400/30 transition-colors" />
+                <div className="pointer-events-none absolute -bottom-20 -left-20 w-56 h-56 rounded-full bg-orange-400/10 blur-3xl" />
+
+                {/* Diagonal shine on hover */}
+                <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/30 dark:via-white/10 to-transparent skew-x-12" />
+
+                {/* Big discount label */}
+                <div className="relative z-10 px-7 pt-7 pb-2 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-amber-700/80 dark:text-amber-300/80 font-semibold mb-2">
+                      Скидка
+                    </p>
+                    <p className="text-6xl font-black leading-none bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent drop-shadow-sm">
+                      {discountDisplay}
+                    </p>
+                  </div>
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/40 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
+                    <Gift className="w-7 h-7 text-white" />
+                  </div>
                 </div>
 
-                <div className="pt-16 px-6 pb-6 flex-1 flex flex-col">
-                  {/* Icon and Name */}
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="p-2.5 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex-shrink-0">
-                      <Gift className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-base text-gray-900 dark:text-white mb-1 line-clamp-2">{coupon.name}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">{coupon.description}</p>
-                    </div>
-                  </div>
+                {/* Name + description */}
+                <div className="relative z-10 px-7 pt-3 pb-2 flex-1">
+                  <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-2 leading-snug line-clamp-2">
+                    {coupon.name}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-3">
+                    {coupon.description}
+                  </p>
+                </div>
 
-                  {/* Spacer to push price/action to bottom */}
-                  <div className="flex-1" />
-
-                  {/* Price and Action - Bottom aligned */}
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t-2 border-gray-100 dark:border-gray-700">
+                {/* Footer: price + button */}
+                <div className="relative z-10 px-7 pb-6 pt-4 mt-auto">
+                  <div className="border-t border-dashed border-amber-300/50 dark:border-amber-800/40 pt-4 flex items-end justify-between gap-3">
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Цена</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                        Цена
+                      </p>
                       <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center">
-                          <Sparkles className="w-3 h-3 text-white" />
-                        </div>
-                        <span className="text-xl font-black bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <span className="text-2xl font-black text-gray-900 dark:text-white tabular-nums">
                           {price.toLocaleString('ru-RU')}
                         </span>
                       </div>
+                      {!canAfford && (
+                        <p className="mt-1.5 text-[11px] font-medium text-rose-500 dark:text-rose-400">
+                          Не хватает {shortage.toLocaleString('ru-RU')} 💰
+                        </p>
+                      )}
                     </div>
                     <button
                       onClick={() => handlePurchase(coupon.id)}
-                      disabled={purchasing === coupon.id || (userLevel?.coins || 0) < price}
-                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white font-semibold shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none whitespace-nowrap"
+                      disabled={purchasing === coupon.id || !canAfford}
+                      className={`px-5 py-3 rounded-2xl font-semibold text-sm whitespace-nowrap transition-all ${
+                        canAfford
+                          ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-lg shadow-amber-500/40 hover:shadow-xl hover:shadow-amber-500/60 hover:scale-105 active:scale-95'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      } disabled:opacity-70`}
                     >
                       {purchasing === coupon.id ? (
                         <span className="flex items-center gap-2">
                           <motion.span
                             animate={{ rotate: 360 }}
                             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                            className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                            className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"
                           />
-                          ...
+                          Покупка
                         </span>
-                      ) : (
+                      ) : canAfford ? (
                         'Купить'
+                      ) : (
+                        'Недоступно'
                       )}
                     </button>
                   </div>
@@ -554,9 +606,10 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
           })}
 
           {shopCoupons.length === 0 && (
-            <div className="col-span-full text-center py-12">
-              <Gift className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 text-lg">Магазин временно пуст</p>
+            <div className="col-span-full text-center py-16">
+              <Gift className="w-20 h-20 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">Магазин временно пуст</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Скоро здесь появятся новые промокоды</p>
             </div>
           )}
         </div>
