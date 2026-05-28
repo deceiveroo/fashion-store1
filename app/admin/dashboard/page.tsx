@@ -138,7 +138,7 @@ function StatCard({
       : value;
 
   const inner = (
-    <AdminCard interactive={!!href} className="group relative overflow-hidden">
+    <AdminCard interactive={!!href} className="group relative overflow-hidden h-full">
       <div
         className={`absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${accents[accent]} opacity-40 blur-2xl transition-opacity group-hover:opacity-70`}
       />
@@ -148,13 +148,15 @@ function StatCard({
             {title}
           </p>
           <p className="mt-2 text-3xl font-bold tracking-tight text-[var(--admin-text)]">{display}</p>
-          {sub && <p className="mt-1.5 text-xs text-[var(--admin-text-muted)]">{sub}</p>}
-          {trend !== undefined && (
-            <div className="mt-2 flex items-center gap-2">
-              <TrendBadge value={trend} />
-              <span className="text-[10px] text-[var(--admin-text-faint)]">к прошлому месяцу</span>
-            </div>
-          )}
+          <p className="mt-1.5 text-xs text-[var(--admin-text-muted)]">{sub ?? ' '}</p>
+          <div className="mt-2 flex items-center gap-2 min-h-[18px]">
+            {trend !== undefined ? (
+              <>
+                <TrendBadge value={trend} />
+                <span className="text-[10px] text-[var(--admin-text-faint)]">к прошлому месяцу</span>
+              </>
+            ) : null}
+          </div>
         </div>
         <div
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ${accents[accent]}`}
@@ -168,7 +170,7 @@ function StatCard({
     </AdminCard>
   );
 
-  return href ? <Link href={href}>{inner}</Link> : inner;
+  return href ? <Link href={href} className="h-full block">{inner}</Link> : inner;
 }
 
 export default function DashboardPage() {

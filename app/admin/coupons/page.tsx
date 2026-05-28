@@ -4,11 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Ticket,
-  Plus,
   Search,
   ChevronDown,
-  ChevronRight,
-  Edit2,
   Trash2,
   Copy,
   Users,
@@ -16,13 +13,16 @@ import {
   TrendingUp,
   CheckCircle2,
   ShoppingBag,
-  XCircle,
   Clock,
   RefreshCw,
+  Gift,
+  Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatCard from '@/components/admin/AdminStatCard';
 
 interface UserWithCoupons {
   id: string;
@@ -46,12 +46,14 @@ interface Coupon {
   discount: number;
   type: 'percent' | 'fixed';
   status: string;
+  source?: 'order' | 'shop' | 'gift';
   isValid: boolean;
   isExpired: boolean;
   discountAmount?: string;
   expiresAt?: string;
   usedAt?: string;
   orderId?: string;
+  coinsSpent?: number;
   createdAt: string;
 }
 
@@ -61,6 +63,17 @@ export default function AdminCouponsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+
+  const [grantOpen, setGrantOpen] = useState(false);
+  const [grantTargetUser, setGrantTargetUser] = useState<UserWithCoupons | null>(null);
+  const [grantForm, setGrantForm] = useState({
+    discount: 10,
+    type: 'percent' as 'percent' | 'fixed',
+    expiresDays: 30,
+    minOrder: '',
+    code: '',
+  });
+  const [granting, setGranting] = useState(false);
 
   // Load users with their coupons
   const loadData = async () => {
@@ -102,7 +115,7 @@ export default function AdminCouponsPage() {
       cancelText: 'Отмена',
       variant: 'danger',
     });
-    
+
     if (!confirmed) return;
 
     try {
@@ -121,6 +134,82 @@ export default function AdminCouponsPage() {
     } catch (error) {
       console.error('Error deleting coupon usage:', error);
       toast.error('Ошибка сети');
+    }
+  };
+
+  const revokeCoupon = async (purchasedId: string, couponCode: string) => {
+    const confirmed = await showConfirm({
+      title: 'Отозвать промокод',
+      message: `Отозвать активный промокод ${couponCode} у пользователя? Код перестанет действовать.`,
+      confirmText: 'Отозвать',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/admin/coupons/grant/${encodeURIComponent(purchasedId)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        toast.success('Промокод отозван');
+        loadData();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Ошибка отзыва');
+      }
+    } catch (error) {
+      console.error('Error revoking coupon:', error);
+      toast.error('Ошибка сети');
+    }
+  };
+
+  const openGrantModal = (user: UserWithCoupons) => {
+    setGrantTargetUser(user);
+    setGrantForm({ discount: 10, type: 'percent', expiresDays: 30, minOrder: '', code: '' });
+    setGrantOpen(true);
+  };
+
+  const submitGrant = async () => {
+    if (!grantTargetUser) return;
+    if (!grantForm.discount || grantForm.discount <= 0) {
+      toast.error('Укажите размер скидки больше 0');
+      return;
+    }
+    if (grantForm.type === 'percent' && grantForm.discount > 100) {
+      toast.error('Процентная скидка не может быть больше 100');
+      return;
+    }
+    setGranting(true);
+    try {
+      const res = await fetch('/api/admin/coupons/grant', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: grantTargetUser.id,
+          discount: Number(grantForm.discount),
+          type: grantForm.type,
+          expiresDays: Number(grantForm.expiresDays) || 30,
+          minOrder: grantForm.minOrder ? Number(grantForm.minOrder) : null,
+          code: grantForm.code.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Не удалось выдать промокод');
+        return;
+      }
+      toast.success(`Выдан промокод ${data.coupon?.code}`, { icon: '🎁' });
+      setGrantOpen(false);
+      setGrantTargetUser(null);
+      loadData();
+    } catch (error) {
+      console.error('Error granting coupon:', error);
+      toast.error('Ошибка сети');
+    } finally {
+      setGranting(false);
     }
   };
 
@@ -144,79 +233,48 @@ export default function AdminCouponsPage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Промокоды пользователей
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Управление персональными промокодами пользователей
-            </p>
-          </div>
-          
-          <motion.button
-            onClick={loadData}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            <RefreshCw className="inline-block w-4 h-4 mr-2" />
-            Обновить
-          </motion.button>
-        </div>
+        <AdminPageHeader
+          title="Промокоды пользователей"
+          description="Управление персональными промокодами пользователей"
+          actions={
+            <motion.button
+              onClick={loadData}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card)] text-sm font-medium text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)] hover:text-[var(--admin-text)] transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Обновить
+            </motion.button>
+          }
+        />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                <Users size={18} className="text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Пользователей</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{totalUsers}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <Ticket size={18} className="text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Всего промокодов</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{totalCoupons}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <CheckCircle2 size={18} className="text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Активных</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{totalActive}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                <TrendingUp size={18} className="text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Сэкономлено</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  {totalSavings.toLocaleString('ru-RU')} ₽
-                </p>
-              </div>
-            </div>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <AdminStatCard
+            title="Пользователей"
+            value={totalUsers}
+            icon={Users}
+            accent="violet"
+          />
+          <AdminStatCard
+            title="Всего промокодов"
+            value={totalCoupons}
+            icon={Ticket}
+            accent="blue"
+          />
+          <AdminStatCard
+            title="Активных"
+            value={totalActive}
+            icon={CheckCircle2}
+            accent="emerald"
+          />
+          <AdminStatCard
+            title="Сэкономлено"
+            value={`${totalSavings.toLocaleString('ru-RU')} ₽`}
+            icon={TrendingUp}
+            accent="amber"
+          />
         </div>
 
         {/* Search */}
@@ -299,6 +357,19 @@ export default function AdminCouponsPage() {
                     </div>
                   </div>
 
+                  {/* Grant button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openGrantModal(user);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-sm hover:shadow-md transition-all"
+                  >
+                    <Gift size={14} />
+                    <span className="hidden sm:inline">Выдать</span>
+                  </button>
+
                   {/* Expand Icon */}
                   <motion.div
                     animate={{ rotate: expandedUserId === user.id ? 180 : 0 }}
@@ -327,28 +398,32 @@ export default function AdminCouponsPage() {
                           return (
                             <div
                               key={coupon.id}
-                              className="group rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all"
+                              className={`group rounded-xl border p-4 hover:shadow-md transition-all ${
+                                isActive && coupon.source === 'gift'
+                                  ? 'border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50/60 to-pink-50/40 dark:from-purple-950/30 dark:to-pink-950/20'
+                                  : isActive && coupon.source === 'shop'
+                                  ? 'border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-950/30 dark:to-orange-950/20'
+                                  : 'border-gray-200 dark:border-gray-700'
+                              }`}
                             >
                               <div className="flex items-start justify-between gap-4">
                                 {/* Left side - Coupon Info */}
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-3 mb-2">
                                     <div className={`p-2 rounded-lg ${
-                                      isActive
-                                        ? 'bg-purple-100 dark:bg-purple-900/30'
+                                      isActive && coupon.source === 'gift'
+                                        ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/30'
+                                        : isActive && coupon.source === 'shop'
+                                        ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/30'
+                                        : isActive
+                                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
                                         : isUsed
-                                        ? 'bg-blue-100 dark:bg-blue-900/30'
-                                        : 'bg-red-100 dark:bg-red-900/30'
+                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                        : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
                                     }`}>
-                                      <Ticket size={18} className={
-                                        isActive
-                                          ? 'text-purple-600 dark:text-purple-400'
-                                          : isUsed
-                                          ? 'text-blue-600 dark:text-blue-400'
-                                          : 'text-red-600 dark:text-red-400'
-                                      } />
+                                      <Ticket size={18} />
                                     </div>
-                                    
+
                                     <div>
                                       <h4 className="font-mono font-bold text-gray-900 dark:text-white">
                                         {coupon.code}
@@ -363,17 +438,29 @@ export default function AdminCouponsPage() {
                                   </div>
 
                                   {/* Status & Details */}
-                                  <div className="flex items-center gap-4 text-sm">
+                                  <div className="flex items-center gap-2 flex-wrap text-sm">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                      isActive
+                                      isActive && coupon.source === 'gift'
+                                        ? 'bg-purple-500 text-white'
+                                        : isActive && coupon.source === 'shop'
+                                        ? 'bg-amber-500 text-white'
+                                        : isActive
                                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                                         : isUsed
                                         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                                         : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                     }`}>
-                                      {isActive ? 'Активен' : isUsed ? 'Использован' : 'Истёк'}
+                                      {isActive && coupon.source === 'gift'
+                                        ? 'Выдан админом'
+                                        : isActive && coupon.source === 'shop'
+                                        ? 'Куплен за монеты'
+                                        : isActive
+                                        ? 'Активен'
+                                        : isUsed
+                                        ? 'Использован'
+                                        : 'Истёк'}
                                     </span>
-                                    
+
                                     {coupon.discountAmount && (
                                       <span className="text-gray-500 dark:text-gray-400">
                                         Сэкономлено:{' '}
@@ -382,7 +469,13 @@ export default function AdminCouponsPage() {
                                         </span>
                                       </span>
                                     )}
-                                    
+
+                                    {typeof coupon.coinsSpent === 'number' && coupon.coinsSpent > 0 && (
+                                      <span className="text-amber-600 dark:text-amber-400">
+                                        {coupon.coinsSpent} монет
+                                      </span>
+                                    )}
+
                                     <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                       <Clock size={12} />
                                       {isUsed
@@ -393,7 +486,7 @@ export default function AdminCouponsPage() {
                                 </div>
 
                                 {/* Right side - Actions */}
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1 md:gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                   <motion.button
                                     onClick={() => copyToClipboard(coupon.code)}
                                     whileHover={{ scale: 1.1 }}
@@ -403,7 +496,7 @@ export default function AdminCouponsPage() {
                                   >
                                     <Copy className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                                   </motion.button>
-                                  
+
                                   {coupon.orderId && (
                                     <a
                                       href={`/orders/${coupon.orderId}`}
@@ -413,16 +506,28 @@ export default function AdminCouponsPage() {
                                       <ShoppingBag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     </a>
                                   )}
-                                  
-                                  <motion.button
-                                    onClick={() => deleteCoupon(coupon.id, coupon.code)}
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                                    title="Удалить"
-                                  >
-                                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                                  </motion.button>
+
+                                  {isActive ? (
+                                    <motion.button
+                                      onClick={() => revokeCoupon(coupon.id, coupon.code)}
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                      title="Отозвать промокод"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                    </motion.button>
+                                  ) : (
+                                    <motion.button
+                                      onClick={() => deleteCoupon(coupon.id, coupon.code)}
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                      title="Удалить запись"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                    </motion.button>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -437,6 +542,168 @@ export default function AdminCouponsPage() {
           </div>
         )}
       </div>
+
+      {/* Grant modal */}
+      <AnimatePresence>
+        {grantOpen && grantTargetUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => !granting && setGrantOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.96, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+            >
+              <div className="relative px-6 py-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                <button
+                  type="button"
+                  onClick={() => !granting && setGrantOpen(false)}
+                  className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-white/15 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-white/15 backdrop-blur-sm">
+                    <Gift size={22} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold leading-tight">Выдать промокод</h3>
+                    <p className="text-sm text-white/85">
+                      {grantTargetUser.firstName || grantTargetUser.email}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                      Тип
+                    </label>
+                    <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setGrantForm({ ...grantForm, type: 'percent' })}
+                        className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                          grantForm.type === 'percent'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        %
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGrantForm({ ...grantForm, type: 'fixed' })}
+                        className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                          grantForm.type === 'fixed'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        ₽
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                      Скидка
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={grantForm.type === 'percent' ? 100 : undefined}
+                      value={grantForm.discount}
+                      onChange={(e) =>
+                        setGrantForm({ ...grantForm, discount: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                      Срок (дней)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={grantForm.expiresDays}
+                      onChange={(e) =>
+                        setGrantForm({ ...grantForm, expiresDays: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                      Мин. сумма заказа
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="—"
+                      value={grantForm.minOrder}
+                      onChange={(e) =>
+                        setGrantForm({ ...grantForm, minOrder: e.target.value })
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                    Код (необязательно)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="GIFT-ABCD1234 (если не указан — будет сгенерирован)"
+                    value={grantForm.code}
+                    onChange={(e) =>
+                      setGrantForm({ ...grantForm, code: e.target.value.toUpperCase() })
+                    }
+                    className="w-full px-3 py-2 font-mono rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setGrantOpen(false)}
+                    disabled={granting}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitGrant}
+                    disabled={granting}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                  >
+                    {granting ? (
+                      <RefreshCw size={16} className="animate-spin" />
+                    ) : (
+                      <Send size={16} />
+                    )}
+                    Выдать
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AdminShell>
   );
 }

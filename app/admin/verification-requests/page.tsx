@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, CheckCircle, XCircle, Clock, Eye, AlertTriangle, User, Search, Users, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatCard from '@/components/admin/AdminStatCard';
 
 interface VerificationRequest {
   id: string;
@@ -224,32 +226,26 @@ export default function AdminVerificationRequestsPage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <Shield className="h-8 w-8 text-purple-600" />
-            Управление верификациями
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Просмотр заявок и ручное управление верификацией пользователей
-          </p>
-        </div>
+        <AdminPageHeader
+          title="Управление верификациями"
+          description="Просмотр заявок и ручное управление верификацией пользователей"
+        />
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-2 border-b border-[var(--admin-border)]">
           <button
             onClick={() => setActiveTab('requests')}
             className={`px-6 py-3 font-medium transition-colors relative ${
               activeTab === 'requests'
-                ? 'text-purple-600 dark:text-purple-400'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                ? 'text-[var(--admin-accent)]'
+                : 'text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]'
             }`}
           >
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Заявки на верификацию
               {pendingCount > 0 && (
-                <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs">
+                <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs">
                   {pendingCount}
                 </span>
               )}
@@ -257,7 +253,7 @@ export default function AdminVerificationRequestsPage() {
             {activeTab === 'requests' && (
               <motion.div
                 layoutId="activeTab"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--admin-accent)]"
               />
             )}
           </button>
@@ -265,21 +261,21 @@ export default function AdminVerificationRequestsPage() {
             onClick={() => setActiveTab('users')}
             className={`px-6 py-3 font-medium transition-colors relative ${
               activeTab === 'users'
-                ? 'text-purple-600 dark:text-purple-400'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                ? 'text-[var(--admin-accent)]'
+                : 'text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]'
             }`}
           >
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Пользователи
-              <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs">
+              <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-xs">
                 {users.length}
               </span>
             </div>
             {activeTab === 'users' && (
               <motion.div
                 layoutId="activeTab"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--admin-accent)]"
               />
             )}
           </button>
@@ -287,43 +283,18 @@ export default function AdminVerificationRequestsPage() {
 
         {/* Stats */}
         {activeTab === 'requests' && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Всего заявок</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{requests.length}</p>
-                </div>
-                <User className="h-8 w-8 text-blue-500" />
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">На рассмотрении</p>
-                  <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{pendingCount}</p>
-                </div>
-                <Clock className="h-8 w-8 text-yellow-500" />
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Одобрено</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{approvedCount}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-500" />
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Отклонено</p>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{rejectedCount}</p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-500" />
-              </div>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <AdminStatCard title="Всего заявок" value={requests.length} icon={User} accent="blue" />
+            <AdminStatCard title="На рассмотрении" value={pendingCount} icon={Clock} accent="amber" />
+            <AdminStatCard title="Одобрено" value={approvedCount} icon={CheckCircle} accent="emerald" />
+            <AdminStatCard title="Отклонено" value={rejectedCount} icon={XCircle} accent="rose" />
+          </div>
+        )}
+        {activeTab === 'users' && (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <AdminStatCard title="Всего пользователей" value={users.length} icon={Users} accent="violet" />
+            <AdminStatCard title="Верифицированы" value={verifiedUsersCount} icon={Shield} accent="emerald" />
+            <AdminStatCard title="Не верифицированы" value={unverifiedUsersCount} icon={AlertTriangle} accent="amber" />
           </div>
         )}
 

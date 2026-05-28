@@ -1,13 +1,23 @@
-// Lightweight email sender. Currently supports Resend (https://resend.com).
-// If RESEND_API_KEY is not set, falls back to logging the message to the
-// server console — keeps dev environments working without forcing setup.
+// Email sender with support for SMTP (Yandex, Gmail, etc.) and Resend API.
+// Priority: SMTP → Resend → dev log fallback.
 //
-// Required env vars (production):
-//   RESEND_API_KEY       — your Resend API key (re_...)
-//   EMAIL_FROM           — verified sender address, e.g. "Fashion Store <noreply@example.com>"
+// SMTP setup (Yandex example):
+//   SMTP_HOST=smtp.yandex.ru
+//   SMTP_PORT=465
+//   SMTP_SECURE=true
+//   SMTP_USER=your-email@yandex.ru
+//   SMTP_PASSWORD=app-password-16-chars
+//   EMAIL_FROM="Fashion Store <your-email@yandex.ru>"
+//
+// Resend setup (alternative):
+//   RESEND_API_KEY=re_...
+//   EMAIL_FROM="Fashion Store <noreply@yourdomain.com>"
 //
 // Optional:
-//   EMAIL_REPLY_TO       — reply-to address shown in clients
+//   EMAIL_REPLY_TO — reply-to address shown in clients
+
+import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 export interface SendEmailParams {
   to: string | string[];
@@ -27,22 +37,60 @@ export interface SendEmailResult {
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 
-export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
+let smtpTransporter: Transporter | null = null;
+
+function getSmtpTransporter(): Transporter | null {
+  if (smtpTransporter) return smtpTransporter;
+
+  const host = process.env.SMTP_HOST;
+  const port = process.env.SMTP_PORT;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASSWORD;
+
+  if (!host || !port || !user || !pass) return null;
+
+  const secure = process.env.SMTP_SECURE === 'true';
+
+  smtpTransporter = nodemailer.createTransport({
+    host,
+    port: parseInt(port, 10),
+    secure,
+    auth: { user, pass },
+  });
+
+  return smtpTransporter;
+}
+
+async function sendViaSMTP(params: SendEmailParams): Promise<SendEmailResult> {
+  const transporter = getSmtpTransporter();
+  if (!transporter) return { ok: false, delivered: false, error: 'SMTP not configured' };
+
+  const from = process.env.EMAIL_FROM;
+  if (!from) return { ok: false, delivered: false, error: 'EMAIL_FROM not set' };
+
+  try {
+    const info = await transporter.sendMail({
+      from,
+      to: Array.isArray(params.to) ? params.to.join(', ') : params.to,
+      subject: params.subject,
+      html: params.html,
+      text: params.text,
+      replyTo: params.replyTo || process.env.EMAIL_REPLY_TO,
+    });
+
+    return { ok: true, delivered: true, id: info.messageId };
+  } catch (error: any) {
+    console.error('[email:smtp] Error:', error?.message || error);
+    return { ok: false, delivered: false, error: error?.message || 'SMTP error' };
+  }
+}
+
+async function sendViaResend(params: SendEmailParams): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
-  const replyTo = params.replyTo || process.env.EMAIL_REPLY_TO;
 
   if (!apiKey || !from) {
-    if (process.env.NODE_ENV === 'production') {
-      console.error('[email] RESEND_API_KEY or EMAIL_FROM is not set in production. Email not delivered.');
-      return { ok: false, delivered: false, error: 'Email transport not configured' };
-    }
-    console.log('[email:dev] Would send email:', {
-      to: params.to,
-      subject: params.subject,
-      preview: params.text?.slice(0, 200) || params.html.slice(0, 200),
-    });
-    return { ok: true, delivered: false };
+    return { ok: false, delivered: false, error: 'Resend not configured' };
   }
 
   try {
@@ -58,23 +106,49 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         subject: params.subject,
         html: params.html,
         text: params.text,
-        reply_to: replyTo,
+        reply_to: params.replyTo || process.env.EMAIL_REPLY_TO,
         tags: params.tags,
       }),
     });
 
     if (!res.ok) {
       const errBody = await res.text().catch(() => '');
-      console.error('[email] Resend error', res.status, errBody);
+      console.error('[email:resend] Error', res.status, errBody);
       return { ok: false, delivered: false, error: `Resend ${res.status}` };
     }
 
     const data = (await res.json().catch(() => ({}))) as { id?: string };
     return { ok: true, delivered: true, id: data.id };
   } catch (error: any) {
-    console.error('[email] Network error', error?.message || error);
+    console.error('[email:resend] Network error', error?.message || error);
     return { ok: false, delivered: false, error: error?.message || 'Network error' };
   }
+}
+
+export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
+  // Priority: SMTP → Resend → dev log fallback
+  if (process.env.SMTP_HOST) {
+    const result = await sendViaSMTP(params);
+    if (result.ok) return result;
+    console.warn('[email] SMTP failed, trying Resend...');
+  }
+
+  if (process.env.RESEND_API_KEY) {
+    return sendViaResend(params);
+  }
+
+  // Dev fallback: log to console
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[email] No email transport configured in production. Email not delivered.');
+    return { ok: false, delivered: false, error: 'Email transport not configured' };
+  }
+
+  console.log('[email:dev] Would send email:', {
+    to: params.to,
+    subject: params.subject,
+    preview: params.text?.slice(0, 200) || params.html.slice(0, 200),
+  });
+  return { ok: true, delivered: false };
 }
 
 // Helpers ---------------------------------------------------------------
@@ -88,21 +162,21 @@ export function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function renderResetPasswordEmail(opts: { name?: string | null; resetUrl: string; expiresMinutes: number }) {
+export function renderResetPasswordEmail(opts: { name?: string | null; resetCode: string; expiresMinutes: number }) {
   const name = opts.name ? escapeHtml(opts.name) : 'клиент';
-  const url = escapeHtml(opts.resetUrl);
+  const code = escapeHtml(opts.resetCode);
   const html = `<!doctype html>
   <html><body style="font-family: -apple-system, Segoe UI, sans-serif; color:#111; max-width:560px; margin: 0 auto; padding: 24px;">
-    <h2 style="margin:0 0 16px 0;">Сброс пароля</h2>
+    <h2 style="margin:0 0 16px 0;">Код для сброса пароля</h2>
     <p>Здравствуйте, ${name}.</p>
-    <p>Мы получили запрос на сброс пароля для вашего аккаунта. Нажмите на кнопку ниже, чтобы задать новый пароль.</p>
-    <p style="margin: 24px 0;">
-      <a href="${url}" style="background:#111;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;display:inline-block;">Сбросить пароль</a>
-    </p>
-    <p style="color:#666;font-size:13px;">Если кнопка не открывается, скопируйте ссылку: ${url}</p>
-    <p style="color:#666;font-size:13px;">Ссылка действует ${opts.expiresMinutes} минут. Если вы не запрашивали сброс — просто проигнорируйте письмо.</p>
+    <p>Мы получили запрос на сброс пароля для вашего аккаунта. Используйте код ниже для подтверждения:</p>
+    <div style="background:#f4f4f4;padding:20px;border-radius:8px;text-align:center;margin:24px 0;">
+      <div style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#111;">${code}</div>
+    </div>
+    <p style="color:#666;font-size:13px;">Код действует ${opts.expiresMinutes} минут. Если вы не запрашивали сброс — просто проигнорируйте письмо.</p>
+    <p style="color:#999;font-size:12px;margin-top:32px;">Никому не сообщайте этот код. Сотрудники Fashion Store никогда не попросят его у вас.</p>
   </body></html>`;
-  const text = `Сброс пароля\n\nЕсли вы запрашивали сброс пароля, перейдите по ссылке (действует ${opts.expiresMinutes} минут):\n${opts.resetUrl}\n\nЕсли это не вы — проигнорируйте письмо.`;
+  const text = `Код для сброса пароля: ${opts.resetCode}\n\nКод действует ${opts.expiresMinutes} минут. Если вы не запрашивали сброс — проигнорируйте письмо.`;
   return { html, text };
 }
 

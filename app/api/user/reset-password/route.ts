@@ -6,9 +6,9 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { sendEmail, renderResetPasswordEmail } from '@/lib/email';
 
-// Two-step password reset:
-//   1) POST { email }                 → always returns 200, generates token only if user exists, sends email.
-//   2) POST { email, token, newPassword } → verifies token + updates password.
+// Two-step password reset with 6-digit code:
+//   1) POST { email }                      → generates 6-digit code, sends email
+//   2) POST { email, code, newPassword }   → verifies code + updates password
 
 const TOKEN_TTL_MINUTES = 30;
 const RESET_PURPOSE = 'password-reset';
@@ -17,12 +17,8 @@ function hashToken(raw: string): string {
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
-function buildResetUrl(token: string, email: string): string {
-  const base = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-  const u = new URL('/auth/reset-password', base);
-  u.searchParams.set('token', token);
-  u.searchParams.set('email', email);
-  return u.toString();
+function generate6DigitCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 function validatePassword(pwd: unknown): string | null {
@@ -47,8 +43,8 @@ async function requestReset(email: string) {
     return;
   }
 
-  const rawToken = crypto.randomBytes(32).toString('hex');
-  const tokenHash = hashToken(rawToken);
+  const resetCode = generate6DigitCode();
+  const tokenHash = hashToken(resetCode);
   const expires = new Date(Date.now() + TOKEN_TTL_MINUTES * 60 * 1000);
 
   const identifier = `${RESET_PURPOSE}:${normalized}`;
@@ -62,25 +58,24 @@ async function requestReset(email: string) {
     expires,
   });
 
-  const resetUrl = buildResetUrl(rawToken, normalized);
   const { html, text } = renderResetPasswordEmail({
     name: userData[0].name,
-    resetUrl,
+    resetCode,
     expiresMinutes: TOKEN_TTL_MINUTES,
   });
 
   await sendEmail({
     to: userData[0].email,
-    subject: 'Сброс пароля — Fashion Store',
+    subject: 'Код для сброса пароля — Fashion Store',
     html,
     text,
     tags: [{ name: 'category', value: 'password-reset' }],
   });
 }
 
-async function confirmReset(email: string, token: string, newPassword: string) {
+async function confirmReset(email: string, code: string, newPassword: string) {
   const normalized = email.toLowerCase().trim();
-  const tokenHash = hashToken(token);
+  const tokenHash = hashToken(code);
   const identifier = `${RESET_PURPOSE}:${normalized}`;
 
   const [row] = await db
@@ -96,7 +91,7 @@ async function confirmReset(email: string, token: string, newPassword: string) {
     .limit(1);
 
   if (!row) {
-    return { ok: false, status: 400, message: 'Ссылка для сброса недействительна или просрочена' };
+    return { ok: false, status: 400, message: 'Неверный или просроченный код' };
   }
 
   const hashed = await bcrypt.hash(newPassword, 12);
@@ -114,26 +109,26 @@ async function confirmReset(email: string, token: string, newPassword: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, token, newPassword } = body || {};
+    const { email, code, newPassword } = body || {};
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json({ message: 'Email обязателен' }, { status: 400 });
     }
 
     // Step 2: verification + change.
-    if (token && newPassword) {
+    if (code && newPassword) {
       const pwdError = validatePassword(newPassword);
       if (pwdError) {
         return NextResponse.json({ message: pwdError }, { status: 400 });
       }
-      const result = await confirmReset(email, String(token), newPassword);
+      const result = await confirmReset(email, String(code), newPassword);
       return NextResponse.json({ message: result.message }, { status: result.status });
     }
 
     // Step 1: request — always 200 to avoid leaking which emails exist.
     await requestReset(email);
     return NextResponse.json({
-      message: 'Если такой email зарегистрирован, мы отправили инструкции на почту',
+      message: 'Если такой email зарегистрирован, мы отправили код на почту',
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);

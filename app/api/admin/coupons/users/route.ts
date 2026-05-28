@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, userProfiles, coupons, userCouponUsage } from '@/lib/schema';
-import { eq, desc, and, or, isNull, gte, lt } from 'drizzle-orm';
+import { userPurchasedCoupons } from '@/lib/db/gamification-schema';
+import { eq, desc, and, gt } from 'drizzle-orm';
 import { getSession } from '@/lib/server-auth';
 
-// GET /api/admin/coupons/users - Get all users with their coupons
-export async function GET(request: NextRequest) {
+// GET /api/admin/coupons/users — для каждого пользователя возвращает все его персональные коды:
+//   1) использованные при оформлении заказа (userCouponUsage)
+//   2) активные купленные за монеты или выданные админом (userPurchasedCoupons, redeemed=false, не истёкшие)
+export async function GET(_request: NextRequest) {
   try {
     const session = await getSession();
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -20,7 +22,6 @@ export async function GET(request: NextRequest) {
 
     const now = new Date();
 
-    // Get all users with profiles
     const allUsers = await db
       .select({
         id: users.id,
@@ -36,7 +37,6 @@ export async function GET(request: NextRequest) {
       .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
       .orderBy(desc(users.createdAt));
 
-    // Get all used coupons by all users
     const allUsedCoupons = await db
       .select({
         id: userCouponUsage.id,
@@ -54,87 +54,103 @@ export async function GET(request: NextRequest) {
       .innerJoin(coupons, eq(userCouponUsage.couponId, coupons.id))
       .orderBy(desc(userCouponUsage.usedAt));
 
-    // Get all active coupons (available to all users)
-    const allActiveCoupons = await db
-      .select()
-      .from(coupons)
+    // Активные коды: купленные за монеты или выданные админом, ещё не использованные.
+    const allActivePurchased = await db
+      .select({
+        id: userPurchasedCoupons.id,
+        userId: userPurchasedCoupons.userId,
+        couponCode: userPurchasedCoupons.couponCode,
+        coinsSpent: userPurchasedCoupons.coinsSpent,
+        purchasedAt: userPurchasedCoupons.purchasedAt,
+        expiresAt: userPurchasedCoupons.expiresAt,
+        couponDiscount: coupons.discount,
+        couponType: coupons.type,
+        couponId: coupons.id,
+      })
+      .from(userPurchasedCoupons)
+      .leftJoin(coupons, eq(userPurchasedCoupons.couponCode, coupons.code))
       .where(
         and(
-          eq(coupons.active, true),
-          or(
-            isNull(coupons.expiresAt),
-            gte(coupons.expiresAt, now)
-          )
-        )
-      );
+          eq(userPurchasedCoupons.redeemed, false),
+          gt(userPurchasedCoupons.expiresAt, now),
+        ),
+      )
+      .orderBy(desc(userPurchasedCoupons.purchasedAt));
 
-    // Group used coupons by user
-    const userUsedCouponsMap = new Map<string, any[]>();
-    allUsedCoupons.forEach(usage => {
-      const userId = usage.userId;
-      if (!userUsedCouponsMap.has(userId)) {
-        userUsedCouponsMap.set(userId, []);
-      }
-      userUsedCouponsMap.get(userId)?.push({
-        id: usage.id,
-        code: usage.couponCode,
-        discount: usage.couponDiscount,
-        type: usage.couponType,
-        status: 'used',
+    const usedByUser = new Map<string, any[]>();
+    for (const u of allUsedCoupons) {
+      const list = usedByUser.get(u.userId) ?? [];
+      list.push({
+        id: u.id,
+        couponId: u.couponId,
+        code: u.couponCode,
+        discount: u.couponDiscount,
+        type: u.couponType,
+        status: 'used' as const,
+        source: 'order' as const,
         isValid: false,
         isExpired: false,
-        discountAmount: usage.discountAmount,
-        expiresAt: usage.couponExpiresAt,
-        usedAt: usage.usedAt,
-        orderId: usage.orderId,
-        createdAt: usage.usedAt,
+        discountAmount: u.discountAmount,
+        expiresAt: u.couponExpiresAt,
+        usedAt: u.usedAt,
+        orderId: u.orderId,
+        createdAt: u.usedAt,
       });
+      usedByUser.set(u.userId, list);
+    }
+
+    const activeByUser = new Map<string, any[]>();
+    for (const p of allActivePurchased) {
+      const list = activeByUser.get(p.userId) ?? [];
+      list.push({
+        id: `purchased:${p.id}`,
+        couponId: p.couponId,
+        code: p.couponCode,
+        discount: p.couponDiscount,
+        type: p.couponType,
+        status: 'active' as const,
+        source: p.coinsSpent > 0 ? ('shop' as const) : ('gift' as const),
+        coinsSpent: p.coinsSpent,
+        isValid: true,
+        isExpired: false,
+        expiresAt: p.expiresAt,
+        purchasedAt: p.purchasedAt,
+        createdAt: p.purchasedAt,
+      });
+      activeByUser.set(p.userId, list);
+    }
+
+    const usersWithCoupons = allUsers.map((user) => {
+      const used = usedByUser.get(user.id) ?? [];
+      const active = activeByUser.get(user.id) ?? [];
+      const list = [...active, ...used];
+      const totalSavings = used.reduce((sum, c) => {
+        const amount = c.discountAmount || '0';
+        return sum + (typeof amount === 'string' ? parseFloat(amount) : amount);
+      }, 0);
+      return {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatar: user.avatar || user.image,
+        role: user.role,
+        createdAt: user.createdAt?.toISOString() || '',
+        coupons: list,
+        totalCoupons: list.length,
+        activeCount: active.length,
+        usedCount: used.length,
+        expiredCount: 0,
+        totalSavings,
+      };
     });
 
-    // Build response - for each user, show their used coupons + available active coupons
-    const usersWithCoupons = allUsers
-      .map(user => {
-        const usedCoupons = userUsedCouponsMap.get(user.id) || [];
-        
-        // For simplicity, show only used coupons per user
-        // Active coupons are available to everyone, so we don't duplicate them
-        const userCouponsList = usedCoupons;
-        
-        const activeCount = 0; // We're showing used coupons only
-        const usedCount = userCouponsList.length;
-        const expiredCount = 0;
-        const totalSavings = userCouponsList.reduce((sum, c) => {
-          const amount = c.discountAmount || '0';
-          return sum + (typeof amount === 'string' ? parseFloat(amount) : amount);
-        }, 0);
-
-        return {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          avatar: user.avatar || user.image,
-          role: user.role,
-          createdAt: user.createdAt?.toISOString() || '',
-          coupons: userCouponsList,
-          totalCoupons: userCouponsList.length,
-          activeCount,
-          usedCount,
-          expiredCount,
-          totalSavings,
-        };
-      })
-      .filter(user => user.totalCoupons > 0); // Only show users who have used coupons
-
-    return NextResponse.json({
-      success: true,
-      users: usersWithCoupons,
-    });
+    return NextResponse.json({ success: true, users: usersWithCoupons });
   } catch (error) {
     console.error('Error fetching users with coupons:', error);
     return NextResponse.json(
       { error: 'Failed to fetch users with coupons' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -139,7 +139,7 @@ export default function OrdersSection({ orders }: OrdersSectionProps) {
             {/* Order Actions */}
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <Link
-                href={`/orders/${order.id}`}
+                href={`/orders?id=${order.id}`}
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors group-hover:shadow-md"
               >
                 <ExternalLink size={16} />

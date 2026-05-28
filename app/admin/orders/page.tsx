@@ -459,8 +459,8 @@ export default function AdminOrdersPage() {
               <div>
                 <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Статус</label>
                 <select value={editingOrder.status} onChange={e => setEditingOrder({...editingOrder, status: e.target.value})}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50">
-                  {Object.entries(STATUS).map(([k,v]) => <option key={k} value={k} className="bg-[#0f0f1a]">{v.label}</option>)}
+                  className="w-full rounded-xl border border-white/10 bg-[#1a1a2a] px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50">
+                  {Object.entries(STATUS).map(([k,v]) => <option key={k} value={k} className="bg-[#0f0f1a] text-white">{v.label}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -470,8 +470,8 @@ export default function AdminOrdersPage() {
                     <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">{label as string}</label>
                     <select value={(editingOrder as any)[field as string] || (vals as string[])[0]}
                       onChange={e => setEditingOrder({...editingOrder, [field as string]: e.target.value})}
-                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50">
-                      {(vals as string[]).map((v,i) => <option key={v} value={v} className="bg-[#0f0f1a]">{(labels as string[])[i]}</option>)}
+                      className="w-full rounded-xl border border-white/10 bg-[#1a1a2a] px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50">
+                      {(vals as string[]).map((v,i) => <option key={v} value={v} className="bg-[#0f0f1a] text-white">{(labels as string[])[i]}</option>)}
                     </select>
                   </div>
                 ))}
@@ -521,11 +521,11 @@ export default function AdminOrdersPage() {
                       <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Статус</label>
                       <select value={editingOrder.trackingStatus||'pending'}
                         onChange={e => setEditingOrder({...editingOrder, trackingStatus:e.target.value})}
-                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50">
-                        <option value="pending" className="bg-[#0f0f1a]">Ожидает</option>
-                        <option value="in_transit" className="bg-[#0f0f1a]">В пути</option>
-                        <option value="out_for_delivery" className="bg-[#0f0f1a]">Доставляется</option>
-                        <option value="delivered" className="bg-[#0f0f1a]">Доставлен</option>
+                        className="w-full rounded-xl border border-white/10 bg-[#1a1a2a] px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50">
+                        <option value="pending" className="bg-[#0f0f1a] text-white">Ожидает</option>
+                        <option value="in_transit" className="bg-[#0f0f1a] text-white">В пути</option>
+                        <option value="out_for_delivery" className="bg-[#0f0f1a] text-white">Доставляется</option>
+                        <option value="delivered" className="bg-[#0f0f1a] text-white">Доставлен</option>
                       </select>
                     </div>
                   </div>

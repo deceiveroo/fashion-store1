@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingBag, Package, Truck, CheckCircle, Clock, MapPin, 
@@ -49,6 +50,8 @@ export interface Order {
 }
 
 export default function OrdersPage() {
+  const searchParams = useSearchParams();
+  const focusOrderId = searchParams.get('id');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -62,6 +65,19 @@ export default function OrdersPage() {
     loadOrders();
     loadReceipts();
   }, []);
+
+  // Auto-expand & scroll to specific order from ?id=… query param.
+  useEffect(() => {
+    if (!focusOrderId || orders.length === 0) return;
+    const match = orders.find((o) => o.id === focusOrderId);
+    if (!match) return;
+    setExpandedOrder(focusOrderId);
+    setFilterStatus('all');
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`order-${focusOrderId}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [focusOrderId, orders]);
 
   const loadReceipts = async () => {
     try {
@@ -209,10 +225,15 @@ export default function OrdersPage() {
               return (
                 <motion.div
                   key={order.id}
+                  id={`order-${order.id}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700"
+                  className={`bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border transition-all scroll-mt-24 ${
+                    focusOrderId === order.id
+                      ? 'border-purple-500 dark:border-purple-400 ring-2 ring-purple-500/30'
+                      : 'border-gray-200 dark:border-gray-700'
+                  }`}
                 >
                   {/* Order Header */}
                   <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">

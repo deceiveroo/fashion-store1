@@ -1,48 +1,74 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { Lock, Mail, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Lock, ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-export default function ResetPasswordPage() {
-  const [step, setStep] = useState<'email' | 'password'>('email');
+function ResetPasswordForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [token, setToken] = useState('');
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    // Move to password step (in production this would send an email)
-    setStep('password');
-    toast.info('Введите новый пароль');
-  };
+  useEffect(() => {
+    const tokenParam = searchParams.get('token');
+    const emailParam = searchParams.get('email');
+
+    if (tokenParam && emailParam) {
+      setToken(tokenParam);
+      setEmail(emailParam);
+      setHasToken(true);
+    } else {
+      setHasToken(false);
+    }
+  }, [searchParams]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (newPassword !== confirmPassword) {
       toast.error('Пароли не совпадают');
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error('Пароль должен содержать минимум 6 символов');
+
+    if (newPassword.length < 8) {
+      toast.error('Пароль должен содержать минимум 8 символов');
+      return;
+    }
+
+    if (!/[a-zA-Zа-яА-Я]/.test(newPassword)) {
+      toast.error('Пароль должен содержать хотя бы одну букву');
+      return;
+    }
+
+    if (!/[0-9]/.test(newPassword)) {
+      toast.error('Пароль должен содержать хотя бы одну цифру');
       return;
     }
 
     setIsLoading(true);
+
     try {
       const res = await fetch('/api/user/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword }),
+        body: JSON.stringify({ email, token, newPassword }),
       });
+
       const data = await res.json();
+
       if (res.ok) {
         toast.success(data.message || 'Пароль успешно изменён');
-        setTimeout(() => window.location.href = '/auth/signin', 1500);
+        setTimeout(() => router.push('/auth/signin'), 1500);
       } else {
         toast.error(data.message || 'Ошибка при сбросе пароля');
       }
@@ -53,81 +79,164 @@ export default function ResetPasswordPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        <Link href="/auth/signin" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 text-sm">
-          <ArrowLeft size={16} /> Назад к входу
-        </Link>
-
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Сброс пароля</h1>
-        <p className="text-gray-500 text-sm mb-6">
-          {step === 'email' ? 'Введите email вашего аккаунта' : 'Введите новый пароль'}
-        </p>
-
-        {step === 'email' ? (
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                  placeholder="your@email.com"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
+  if (!hasToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 px-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700"
+        >
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
-            <button type="submit"
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transition-all">
-              Продолжить
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Новый пароль</label>
+
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Недействительная ссылка
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Эта ссылка для сброса пароля недействительна или устарела.
+              Запросите новую ссылку через форму восстановления пароля.
+            </p>
+
+            <Link
+              href="/auth/forgot-password"
+              className="inline-block w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-xl font-medium hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
+            >
+              Запросить новую ссылку
+            </Link>
+
+            <Link
+              href="/auth/signin"
+              className="inline-flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors mt-4"
+            >
+              <ArrowLeft size={16} />
+              Вернуться к входу
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700">
+          <div className="text-center mb-8">
+            <motion.h1
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2"
+            >
+              Новый пароль
+            </motion.h1>
+            <p className="text-gray-700 dark:text-gray-300">
+              Введите новый пароль для вашего аккаунта
+            </p>
+          </div>
+
+          <form onSubmit={handlePasswordSubmit} className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Новый пароль
+              </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full pl-10 pr-12 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  placeholder="Минимум 8 символов"
                   required
-                  minLength={6}
-                  placeholder="Минимум 6 символов"
-                  className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  minLength={8}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Подтвердите пароль</label>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Минимум 8 символов, хотя бы одна буква и цифра
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Подтвердите пароль
+              </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  placeholder="Повторите новый пароль"
                   required
-                  placeholder="Повторите пароль"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
-            </div>
-            <button type="submit" disabled={isLoading}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50">
+            </motion.div>
+
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-xl font-medium hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
               {isLoading ? 'Сохранение...' : 'Сохранить пароль'}
-            </button>
+            </motion.button>
           </form>
-        )}
-      </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center mt-6"
+          >
+            <Link
+              href="/auth/signin"
+              className="inline-flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Вернуться к входу
+            </Link>
+          </motion.div>
+        </div>
+      </motion.div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-gray-600 dark:text-gray-300">Загрузка...</div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

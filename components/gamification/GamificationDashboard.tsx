@@ -303,55 +303,109 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
         </div>
       </motion.div>
 
-      {/* Tabs - Luxury Style */}
-      <div className="flex gap-3">
-        <button
-          onClick={() => setActiveTab('achievements')}
-          className={`px-8 py-3 rounded-xl font-semibold transition-all ${
-            activeTab === 'achievements'
-              ? 'bg-gradient-to-r from-gray-900 to-slate-900 text-yellow-400 shadow-lg border border-yellow-600/50'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-          }`}
-        >
-          🏆 Достижения ({unlockedCount}/{totalCount})
-        </button>
-        <button
-          onClick={() => setActiveTab('shop')}
-          className={`px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-            activeTab === 'shop'
-              ? 'bg-gradient-to-r from-gray-900 to-slate-900 text-amber-400 shadow-lg border border-amber-600/50'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-          }`}
-        >
-          🛒 Магазин
-          <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30">{userLevel?.coins} 💰</span>
-        </button>
+      {/* Segmented tabs + balance */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex p-1 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={() => setActiveTab('achievements')}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
+              activeTab === 'achievements'
+                ? 'bg-white dark:bg-gray-900 text-amber-600 dark:text-amber-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            Достижения
+            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
+              activeTab === 'achievements'
+                ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+            }`}>
+              {unlockedCount}/{totalCount}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('shop')}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
+              activeTab === 'shop'
+                ? 'bg-white dark:bg-gray-900 text-amber-600 dark:text-amber-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Gift className="w-4 h-4" />
+            Магазин
+          </button>
+        </div>
+
+        {/* Coins balance */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800">
+          <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <span className="text-sm font-bold text-amber-700 dark:text-amber-300">
+            {(userLevel?.coins ?? 0).toLocaleString('ru-RU')}
+          </span>
+          <span className="text-xs text-amber-600/70 dark:text-amber-400/70">монет</span>
+        </div>
       </div>
 
       {activeTab === 'achievements' && (
         <>
-          {/* Filters - Luxury Style */}
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as any)}
-              className="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-            >
-              <option value="all">Все достижения</option>
-              <option value="unlocked">Разблокированные</option>
-              <option value="locked">Заблокированные</option>
-            </select>
+          {/* Filters — compact */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-500 dark:text-gray-400">Показать:</span>
+            <div className="relative">
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as any)}
+                className="appearance-none pl-3 pr-9 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white font-medium hover:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
+              >
+                <option value="all">Все</option>
+                <option value="unlocked">Открытые</option>
+                <option value="locked">Закрытые</option>
+              </select>
+              <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rotate-90 pointer-events-none" />
+            </div>
 
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-            >
-              <option value="all">Все категории</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{getCategoryName(cat)}</option>
-              ))}
-            </select>
+            {categories.length > 0 && (
+              <div className="relative">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="appearance-none pl-3 pr-9 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white font-medium hover:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
+                >
+                  <option value="all">Все категории</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {getCategoryName(cat)}
+                    </option>
+                  ))}
+                </select>
+                <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rotate-90 pointer-events-none" />
+              </div>
+            )}
+
+            {(filter !== 'all' || categoryFilter !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilter('all');
+                  setCategoryFilter('all');
+                }}
+                className="ml-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Сбросить
+              </button>
+            )}
+
+            <span className="ml-auto text-gray-500 dark:text-gray-400 text-xs">
+              {sortedAchievements.length}{' '}
+              {sortedAchievements.length === 1
+                ? 'достижение'
+                : sortedAchievements.length < 5
+                ? 'достижения'
+                : 'достижений'}
+            </span>
           </div>
 
           {/* Achievements Grid */}

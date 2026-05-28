@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, User, Trash2, Edit3, Camera, X, Save, RefreshCw, Users, TrendingUp, Mail, Phone } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Search, User, Trash2, Edit3, Camera, X, Save, RefreshCw,
+  Users, Mail, Phone, ShieldCheck, BadgeCheck, ChevronRight, ChevronDown, Calendar,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
@@ -13,11 +17,11 @@ interface Customer {
   lastSignIn?: string | null;
 }
 
-const ROLE_STYLE: Record<string, string> = {
-  admin: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-  manager: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  support: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  customer: 'bg-white/5 text-white/40 border-white/10',
+const ROLE_BADGE: Record<string, string> = {
+  admin: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-500/15 dark:text-violet-300 dark:border-violet-500/30',
+  manager: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30',
+  support: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30',
+  customer: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/5 dark:text-white/60 dark:border-white/10',
 };
 
 export default function CustomersPage() {
@@ -28,6 +32,7 @@ export default function CustomersPage() {
   const [editing, setEditing] = useState<(Customer & { password?: string }) | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -104,6 +109,7 @@ export default function CustomersPage() {
       const res = await fetch('/api/admin/users', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify({ userId: editing.id, updates: {
+          email: editing.email,
           firstName: editing.firstName, lastName: editing.lastName, phone: editing.phone,
           role: editing.role, image: editing.avatar || editing.image, avatar: editing.avatar || editing.image,
           ...(editing.password && { password: editing.password }),
@@ -150,7 +156,7 @@ export default function CustomersPage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        {/* Enhanced Header */}
+        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -159,127 +165,210 @@ export default function CustomersPage() {
             </h1>
             <p className="text-sm text-gray-500 dark:text-white/40 mt-1">Управление клиентами магазина</p>
           </div>
-          <button onClick={load} className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2.5 text-sm text-gray-700 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
+          <button
+            onClick={load}
+            className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2.5 text-sm text-gray-700 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
+          >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Обновить
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Всего клиентов', value: customers.length, icon: Users, color: 'bg-gradient-to-br from-violet-500 to-purple-600 dark:from-violet-500/20 dark:to-purple-600/20 text-white dark:text-violet-400', trend: '+8%' },
-            { label: 'Администраторы', value: customers.filter(c => c.role === 'admin').length, icon: User, color: 'bg-gradient-to-br from-blue-500 to-cyan-600 dark:from-blue-500/20 dark:to-cyan-600/20 text-white dark:text-blue-400' },
-            { label: 'С менеджерами', value: customers.filter(c => c.phone).length, icon: Phone, color: 'bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-500/20 dark:to-teal-600/20 text-white dark:text-emerald-400' },
-            { label: 'Верифицированы', value: customers.filter(c => c.emailVerified).length, icon: Mail, color: 'bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-500/20 dark:to-orange-600/20 text-white dark:text-amber-400' },
-          ].map(({ label, value, icon: Icon, color, trend }) => (
-            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-gray-50 to-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 hover:from-gray-100 hover:to-gray-50 dark:hover:from-[#12121f] dark:hover:to-[#1a1a2e] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
-              {trend && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 px-2 py-1 shadow-sm">
-                  <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{trend}</span>
-                </div>
-              )}
-              <div className="relative z-10">
-                <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-3">{label}</p>
-                <div className="flex items-end justify-between">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
-                    <Icon className="h-6 w-6" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Enhanced Search */}
+        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-white/20" />
-          <input type="text" placeholder="Поиск по имени, фамилии или email..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 pl-9 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30" />
+          <input
+            type="text"
+            placeholder="Поиск по имени, фамилии или email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 pl-9 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+          />
         </div>
 
-        {/* Table */}
-        <div className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.03] overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center h-48">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-gray-400 dark:text-white/20">
-              <User className="h-10 w-10 mb-2 opacity-40" />
-              <p className="text-sm">Клиентов не найдено</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-white/5">
-                    {['Клиент','Email','Роль','Последний вход','Дата регистрации',''].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-gray-400 dark:text-white/30 uppercase tracking-wider last:text-right">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(c => (
-                    <tr key={c.id} className="border-b border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          {avatar(c) ? (
-                            <img src={avatar(c)} alt="" className="h-10 w-10 rounded-xl object-cover ring-2 ring-gray-200 dark:ring-white/10" />
-                          ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/10 text-sm font-bold text-violet-600 dark:text-violet-400">
-                              {(c.firstName||c.email||'?')[0].toUpperCase()}
-                            </div>
-                          )}
-                          <span className="text-xs font-semibold text-gray-900 dark:text-white">{displayName(c)}</span>
+        {/* Stats — gradient cards in the notifications style */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-violet-50 to-white dark:from-violet-900/10 dark:to-white/[0.02] p-5">
+            <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">Всего клиентов</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{customers.length}</p>
+          </div>
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/10 dark:to-white/[0.02] p-5">
+            <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">Администраторы</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {customers.filter((c) => c.role === 'admin').length}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/10 dark:to-white/[0.02] p-5">
+            <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">С телефоном</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {customers.filter((c) => c.phone).length}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/10 dark:to-white/[0.02] p-5">
+            <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">Верифицированы</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {customers.filter((c) => c.emailVerified).length}
+            </p>
+          </div>
+        </div>
+
+        {/* Customers list — expandable cards like /admin/notifications */}
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 animate-pulse rounded-2xl bg-gray-100 dark:bg-white/[0.03]" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16">
+            <User className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 text-lg">Клиентов не найдено</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <AnimatePresence mode="popLayout">
+              {filtered.map((c) => {
+                const isOpen = expandedId === c.id;
+                return (
+                  <motion.div
+                    key={c.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -100 }}
+                    className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.03] overflow-hidden"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(isOpen ? null : c.id)}
+                      className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
+                    >
+                      {avatar(c) ? (
+                        <img
+                          src={avatar(c)}
+                          alt=""
+                          className="h-12 w-12 rounded-xl object-cover ring-2 ring-violet-200 dark:ring-violet-900/30"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                          {(c.firstName || c.email)[0].toUpperCase()}
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-xs text-gray-600 dark:text-white/60 flex items-center gap-1">
-                          <Mail className="h-3 w-3 text-gray-400 dark:text-white/20" />
-                          {c.email}
-                        </p>
-                        {c.phone && (
-                          <p className="text-[10px] text-gray-500 dark:text-white/30 flex items-center gap-1 mt-0.5">
-                            <Phone className="h-2.5 w-2.5" />
-                            {c.phone}
+                      )}
+
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-gray-900 dark:text-white truncate">
+                            {displayName(c)}
                           </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${ROLE_STYLE[c.role] || ROLE_STYLE.customer}`}>
-                          {c.role}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-xs text-gray-600 dark:text-white/60 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                              ROLE_BADGE[c.role] || ROLE_BADGE.customer
+                            }`}
+                          >
+                            {c.role}
+                          </span>
+                          {c.emailVerified && (
+                            <span
+                              title="Email подтверждён"
+                              className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                            >
+                              <BadgeCheck className="h-3 w-3" />
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{c.email}</p>
+                      </div>
+
+                      <div className="hidden sm:flex flex-col items-end text-right">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {formatLastSignIn(c.lastSignIn)}
                         </p>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-white/30 whitespace-nowrap">
-                        {new Date(c.createdAt).toLocaleDateString('ru-RU')}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => setEditing({ ...c })}
-                            className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-500/10 transition-all">
-                            <Edit3 className="h-3.5 w-3.5" />
-                          </button>
-                          <button onClick={() => deleteCustomer(c.id)}
-                            className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/10 transition-all">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                        <p className="text-[10px] text-gray-400 dark:text-white/30">
+                          {new Date(c.createdAt).toLocaleDateString('ru-RU')}
+                        </p>
+                      </div>
+
+                      {isOpen ? (
+                        <ChevronDown className="h-5 w-5 text-gray-400 shrink-0" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-gray-400 shrink-0" />
+                      )}
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="border-t border-gray-200 dark:border-white/10"
+                        >
+                          <div className="p-6 grid sm:grid-cols-2 gap-4">
+                            <div className="rounded-xl border border-gray-100 dark:border-white/5 p-4 bg-gray-50/60 dark:bg-white/[0.02]">
+                              <p className="text-[10px] font-semibold text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2">
+                                Контакты
+                              </p>
+                              <div className="space-y-1.5 text-sm">
+                                <p className="flex items-center gap-2 text-gray-700 dark:text-white/80">
+                                  <Mail className="h-3.5 w-3.5 text-gray-400" />
+                                  {c.email}
+                                </p>
+                                {c.phone && (
+                                  <p className="flex items-center gap-2 text-gray-700 dark:text-white/80">
+                                    <Phone className="h-3.5 w-3.5 text-gray-400" />
+                                    {c.phone}
+                                  </p>
+                                )}
+                                {!c.phone && (
+                                  <p className="text-gray-400 dark:text-white/30 text-xs">Телефон не указан</p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="rounded-xl border border-gray-100 dark:border-white/5 p-4 bg-gray-50/60 dark:bg-white/[0.02]">
+                              <p className="text-[10px] font-semibold text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2">
+                                Активность
+                              </p>
+                              <div className="space-y-1.5 text-sm">
+                                <p className="flex items-center gap-2 text-gray-700 dark:text-white/80">
+                                  <ShieldCheck className="h-3.5 w-3.5 text-gray-400" />
+                                  Последний вход: {formatLastSignIn(c.lastSignIn)}
+                                </p>
+                                <p className="flex items-center gap-2 text-gray-700 dark:text-white/80">
+                                  <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                                  Зарегистрирован: {new Date(c.createdAt).toLocaleDateString('ru-RU')}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="px-6 pb-5 flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditing({ ...c })}
+                              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                              Редактировать
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteCustomer(c.id)}
+                              className="inline-flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-3.5 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Удалить
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
       {/* Edit Modal */}
@@ -313,6 +402,12 @@ export default function CustomersPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">Email</label>
+                  <input type="email" value={editing.email || ''}
+                    onChange={e => setEditing(prev => prev ? { ...prev, email: e.target.value } : prev)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
+                </div>
                 {[['Имя','firstName'],['Фамилия','lastName'],['Телефон','phone']].map(([label, field]) => (
                   <div key={field} className={field === 'phone' ? 'col-span-2' : ''}>
                     <label className="block text-[10px] font-semibold text-white/30 uppercase mb-1.5">{label}</label>

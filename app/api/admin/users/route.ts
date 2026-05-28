@@ -162,17 +162,37 @@ export async function PUT(request: NextRequest) {
       ...updates,
       updatedAt: new Date(),
     };
-    
+
     // Hash password if provided
     if (updates.password) {
       const bcrypt = await import('bcryptjs');
       userUpdates.password = await bcrypt.default.hash(updates.password, 10);
       console.log('[ADMIN USERS] Password hashed for user:', userId);
     }
-    
+
     // If avatar is being updated, also update the image field for consistency
     if (updates.avatar) {
       userUpdates.image = updates.avatar;
+    }
+
+    // Allow email updates (admin only)
+    if (updates.email) {
+      // Check if email is already taken by another user
+      const existingUser = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, updates.email))
+        .limit(1);
+
+      if (existingUser.length > 0 && existingUser[0].id !== userId) {
+        return new Response(
+          JSON.stringify({ error: 'Email уже используется другим пользователем' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      userUpdates.email = updates.email;
+      console.log('[ADMIN USERS] Email updated for user:', userId);
     }
     
     // Обновляем пользователя

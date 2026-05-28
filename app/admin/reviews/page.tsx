@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
-import { Star, ThumbsUp, MessageSquare, CheckCircle, XCircle, Trash2, Eye, ExternalLink, Package, User, AlertTriangle } from 'lucide-react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatCard from '@/components/admin/AdminStatCard';
+import { Star, ThumbsUp, MessageSquare, CheckCircle, XCircle, Trash2, Eye, ExternalLink, Package, User, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -191,44 +193,39 @@ export default function AdminReviewsPage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Управление отзывами</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Модерация и управление отзывами клиентов
-          </p>
-        </div>
+        <AdminPageHeader
+          title="Управление отзывами"
+          description="Модерация и управление отзывами клиентов"
+        />
 
         {/* Statistics */}
         {statistics && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Средний рейтинг</div>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {statistics.averageRating.toFixed(1)}
-                </span>
-                {renderStars(Math.round(statistics.averageRating))}
-              </div>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Всего отзывов</div>
-              <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
-                {statistics.totalCount}
-              </div>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Ожидают модерации</div>
-              <div className="mt-2 text-2xl font-bold text-orange-600">
-                {reviews.filter((r) => !r.isApproved).length}
-              </div>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Одобрено</div>
-              <div className="mt-2 text-2xl font-bold text-green-600">
-                {reviews.filter((r) => r.isApproved).length}
-              </div>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <AdminStatCard
+              title="Средний рейтинг"
+              value={statistics.averageRating.toFixed(1)}
+              sub="из 5 звёзд"
+              icon={Star}
+              accent="amber"
+            />
+            <AdminStatCard
+              title="Всего отзывов"
+              value={statistics.totalCount}
+              icon={MessageSquare}
+              accent="blue"
+            />
+            <AdminStatCard
+              title="Ожидают модерации"
+              value={reviews.filter((r) => !r.isApproved).length}
+              icon={Clock}
+              accent="amber"
+            />
+            <AdminStatCard
+              title="Одобрено"
+              value={reviews.filter((r) => r.isApproved).length}
+              icon={CheckCircle}
+              accent="emerald"
+            />
           </div>
         )}
 
