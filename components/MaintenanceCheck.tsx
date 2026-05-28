@@ -39,17 +39,18 @@ export default function MaintenanceCheck({ children }: { children: React.ReactNo
 
     // Check maintenance status for non-admin users
     const checkStatus = () => {
-      fetch('/api/maintenance/status', { cache: 'no-store' })
+      // Убрали cache: 'no-store' — сервер сам кеширует на 60 сек.
+      // Polling — 5 минут (раньше 30 сек = 120 запросов/час).
+      fetch('/api/maintenance/status')
         .then((res) => res.json())
         .then((data: MaintenanceStatus) => {
-          console.log('Maintenance status:', data.maintenanceMode);
           setIsMaintenanceMode(data.maintenanceMode);
-          
+
           // If maintenance mode is ON and user is on admin page, redirect to maintenance
           if (data.maintenanceMode && pathname?.startsWith('/admin')) {
             router.push('/maintenance');
           }
-          
+
           setIsLoading(false);
         })
         .catch((error) => {
@@ -59,10 +60,10 @@ export default function MaintenanceCheck({ children }: { children: React.ReactNo
     };
 
     checkStatus();
-    
-    // Refresh every 30 seconds to catch status changes
-    const interval = setInterval(checkStatus, 30000);
-    
+
+    // Refresh every 5 minutes (раньше 30 сек = слишком часто для редко меняющегося поля)
+    const interval = setInterval(checkStatus, 5 * 60_000);
+
     return () => clearInterval(interval);
   }, [isExemptPath, isAdmin, pathname, router]);
 

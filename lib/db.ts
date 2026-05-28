@@ -15,19 +15,24 @@ function buildPoolConfig(): PoolConfig {
   const isSupabase = raw.includes('supabase.com') || raw.includes('pooler.supabase.com');
   const base = parseIntoClientConfig(raw);
   const password = (base.password ? String(base.password) : '') || (process.env.DATABASE_PASSWORD ? String(process.env.DATABASE_PASSWORD) : '');
+  const isProd = process.env.NODE_ENV === 'production';
   return {
     ...base, password,
-    ssl: isSupabase ? { rejectUnauthorized: false } : process.env.NODE_ENV === 'production' ? true : base.ssl ?? false,
-    // CRITICAL: Supabase Pooler limits - keep minimal
-    max: isSupabase ? 3 : 8,
+    ssl: isSupabase ? { rejectUnauthorized: false } : isProd ? true : base.ssl ?? false,
+    // В Vercel serverless лимиты pooler-а критичны (max=3), но в локальной
+    // dev-сессии страница может стрелять 6–8 параллельных API-запросов —
+    // даём больший пул, чтобы не было очереди и таймаутов.
+    max: isSupabase ? (isProd ? 3 : 10) : 8,
     min: 0,
-    idleTimeoutMillis: 10000, // Reduced from 30s to 10s
-    connectionTimeoutMillis: 15000, // Reduced from 30s to 15s
+    // Дольше держим idle соединения в dev: иначе при каждом обновлении страницы
+    // pg создаёт коннекты с нуля (это и было причиной «медленно грузится»).
+    idleTimeoutMillis: isProd ? 10_000 : 60_000,
+    connectionTimeoutMillis: 15_000,
     allowExitOnIdle: false,
-    statement_timeout: 30000, // 30 seconds max per query
-    query_timeout: 30000, // 30 seconds
+    statement_timeout: 30_000,
+    query_timeout: 30_000,
     keepAlive: true,
-    keepAliveInitialDelayMillis: 5000,
+    keepAliveInitialDelayMillis: 5_000,
   };
 }
 
@@ -117,13 +122,18 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export async function safeQuery<T>(queryFn: () => Promise<T>, retries = 3): Promise<T | null> {
-  for (let i = 0; i < retries + 1; i++) {
+  // В dev уменьшаем число retry: задержка 1+2+4=7 сек на каждый запрос делает
+  // загрузку страницы непригодной если БД отвалилась хоть раз.
+  const isProd = process.env.NODE_ENV === 'production';
+  const effectiveRetries = isProd ? retries : Math.min(retries, 1);
+
+  for (let i = 0; i < effectiveRetries + 1; i++) {
     try {
       return await queryFn();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorCode = error instanceof Error && 'code' in error ? (error as { code?: string }).code : undefined;
-      
+
       const isConnectionError =
         errorMessage.includes('Connection terminated') ||
         errorMessage.includes('ECONNRESET') ||
@@ -131,10 +141,11 @@ export async function safeQuery<T>(queryFn: () => Promise<T>, retries = 3): Prom
         errorMessage.includes('timeout exceeded') ||
         errorMessage.includes('Query read timeout') ||
         errorCode === 'ECONNRESET' || errorCode === 'ETIMEDOUT' || errorCode === 'XX000';
-      
-      if (isConnectionError && i < retries) {
-        const delay = 1000 * Math.pow(2, i); // Exponential backoff: 1s, 2s, 4s
-        console.warn(`Query failed (attempt ${i + 1}/${retries + 1}), retrying in ${delay}ms...`);
+
+      if (isConnectionError && i < effectiveRetries) {
+        // Бэкофф мягче в dev: 200ms, 400ms (вместо 1с/2с/4с).
+        const delay = isProd ? 1000 * Math.pow(2, i) : 200 * Math.pow(2, i);
+        console.warn(`Query failed (attempt ${i + 1}/${effectiveRetries + 1}), retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }

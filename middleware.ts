@@ -4,8 +4,12 @@ import { generateCSPHeader } from '@/lib/xss-protection';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
-// Initialize Upstash Redis for rate limiting
-const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+// Initialize Upstash Redis for rate limiting.
+// В dev отключаем — каждый запрос в Upstash добавляет ~100–500 мс,
+// а на странице бывает 6+ API-запросов одновременно → суммарно несколько секунд.
+// В production включено как раньше.
+const isProd = process.env.NODE_ENV === 'production';
+const redis = isProd && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
   ? new Redis({
       url: process.env.UPSTASH_REDIS_REST_URL,
       token: process.env.UPSTASH_REDIS_REST_TOKEN,
