@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.50",
-    "@auth/core": "^0.37.0",
+    "@auth/core": "^0.34.3",
     "@auth/drizzle-adapter": "^1.11.1",
     "@hookform/resolvers": "^5.2.2",
     "@libsql/client": "^0.15.15",
