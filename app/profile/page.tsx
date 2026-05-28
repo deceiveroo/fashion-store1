@@ -239,7 +239,12 @@ export default function ProfilePage() {
                     )}
 
                     {section.id === 'security' && (
-                      <SecuritySection sessions={profileData.sessions} isLoadingData={profileData.isLoadingData} />
+                      <SecuritySection
+                        sessions={profileData.sessions}
+                        isLoadingData={profileData.isLoadingData}
+                        onTerminateSession={profileActions.handleTerminateSession}
+                        onTerminateAllOthers={profileActions.handleTerminateAllOtherSessions}
+                      />
                     )}
 
                     {section.id === 'notifications' && (

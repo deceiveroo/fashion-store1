@@ -893,6 +893,9 @@ export const userSessions = pgTable('user_sessions', {
   userAgent: text('user_agent'),
   lastActive: timestamp('last_active', { mode: 'date' }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  // Не NULL → сессия отозвана пользователем (logout с другого устройства).
+  // verifyAuth() блокирует токены с revokedAt != NULL.
+  revokedAt: timestamp('revoked_at', { mode: 'date' }),
 }, (table) => {
   return {
     userIdx: index('user_sessions_user_idx').on(table.userId),

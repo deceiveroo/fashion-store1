@@ -9,6 +9,7 @@ import type { NextAuthConfig } from 'next-auth';
 import { jwtVerify } from 'jose';
 import { checkAchievements, awardXP } from './gamification';
 import { verifyTotp } from './totp';
+import { isCurrentSessionActive } from './track-session';
 
 // NextAuth v5 конфигурация
 export const authConfig: NextAuthConfig = {
@@ -164,8 +165,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 // Для обратной совместимости
 export const authOptions = authConfig;
 
+// Кэш verifyAuth по cookie-токену. На странице профиля одновременно идёт
+// 6+ API запросов; раньше каждый делал SELECT users — то есть 6 одинаковых
+// запросов к БД. Теперь 1 запрос → остальные читают результат из памяти.
+// TTL короткий (30 сек), чтобы при logout/role-change быстро инвалидировалось.
+type CachedAuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  image?: string;
+};
+const authUserCache = new Map<string, { user: CachedAuthUser | null; until: number }>();
+const AUTH_CACHE_TTL_MS = 30_000;
+
+function getAuthCacheKey(request: Request): string | null {
+  const cookieHeader = request.headers.get('cookie') || '';
+  // Берём именно session-token (а не весь Cookie-string), чтобы ключ
+  // не менялся от не относящихся к авторизации кук.
+  const match = cookieHeader.match(/(?:__Secure-)?(?:authjs|next-auth)\.session-token=([^;]+)/);
+  if (match?.[1]) return `cookie:${match[1].slice(0, 64)}`;
+  const auth = request.headers.get('authorization');
+  if (auth?.startsWith('Bearer ')) return `bearer:${auth.slice(7, 71)}`;
+  return null;
+}
+
 // Helper function to verify authentication from API routes
 export async function verifyAuth(request: Request) {
+  // 1. Быстрый путь — отдаём из кэша.
+  const cacheKey = getAuthCacheKey(request);
+  const now = Date.now();
+  if (cacheKey) {
+    const hit = authUserCache.get(cacheKey);
+    if (hit && hit.until > now) {
+      return hit.user;
+    }
+  }
+
   try {
     // Сначала пробуем получить пользователя из NextAuth session (cookies)
     const session = await auth();
@@ -176,21 +212,34 @@ export async function verifyAuth(request: Request) {
         .from(users)
         .where(eq(users.id, session.user.id))
         .limit(1);
-      
+
       if (user) {
-        return {
+        // Проверка отзыва сессии (logout с другого устройства).
+        // В dev пропускаем — нужно только в проде с реальными сессиями.
+        if (process.env.NODE_ENV === 'production') {
+          const active = await isCurrentSessionActive(user.id, request.headers);
+          if (!active) {
+            if (cacheKey) authUserCache.set(cacheKey, { user: null, until: now + AUTH_CACHE_TTL_MS });
+            return null;
+          }
+        }
+
+        const result: CachedAuthUser = {
           id: user.id,
           email: user.email,
           name: user.name ?? '',
           role: user.role,
           image: user.image ?? undefined,
         };
+        if (cacheKey) authUserCache.set(cacheKey, { user: result, until: now + AUTH_CACHE_TTL_MS });
+        return result;
       }
     }
 
     // Если нет сессии, пробуем токен из заголовка Authorization
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
+      if (cacheKey) authUserCache.set(cacheKey, { user: null, until: now + AUTH_CACHE_TTL_MS });
       return null;
     }
 
@@ -215,18 +264,30 @@ export async function verifyAuth(request: Request) {
       .limit(1);
 
     if (!user) {
+      if (cacheKey) authUserCache.set(cacheKey, { user: null, until: now + AUTH_CACHE_TTL_MS });
       return null;
     }
 
-    return {
+    const result: CachedAuthUser = {
       id: user.id,
       email: user.email,
       name: user.name ?? '',
       role: user.role,
       image: user.image ?? undefined,
     };
+    if (cacheKey) authUserCache.set(cacheKey, { user: result, until: now + AUTH_CACHE_TTL_MS });
+    return result;
   } catch (error) {
     console.error('[AUTH] verifyAuth error:', error);
     return null;
   }
+}
+
+// Сбросить кэш авторизации — вызывать при logout/смене роли/удалении сессии.
+export function invalidateAuthCache(cookieToken?: string) {
+  if (!cookieToken) {
+    authUserCache.clear();
+    return;
+  }
+  authUserCache.delete(`cookie:${cookieToken.slice(0, 64)}`);
 }

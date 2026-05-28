@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { userSessions } from '@/lib/schema';
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne } from 'drizzle-orm';
 import { jsonWithNoCache } from '@/lib/no-cache';
 import { parseUserAgent } from '@/lib/user-agent';
 import { touchUserSession, currentSessionToken } from '@/lib/track-session';
@@ -20,7 +20,7 @@ function relative(ts: Date | string | null | undefined): string {
   return `${Math.floor(diff / 86_400_000)} д назад`;
 }
 
-// GET /api/profile/sessions — list real sessions stored in DB.
+// GET /api/profile/sessions — list active sessions (not revoked).
 export async function GET(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const rows = await db
       .select()
       .from(userSessions)
-      .where(eq(userSessions.userId, user.id))
+      .where(and(eq(userSessions.userId, user.id), isNull(userSessions.revokedAt)))
       .orderBy(desc(userSessions.lastActive));
 
     const sessions = rows.map((s) => ({
@@ -57,9 +57,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// DELETE /api/profile/sessions — terminate a specific session or all others.
-//   ?id=<session-id>  → delete that row
-//   ?all=true         → delete all sessions except the current one
+// DELETE /api/profile/sessions — revoke a specific session or all others.
+//   ?id=<session-id>  → mark that row revoked
+//   ?all=true         → revoke all sessions except the current one
+//
+// «Отзыв» = установка revoked_at = NOW(). На следующем запросе с
+// отозванным токеном verifyAuth() вернёт null и пользователь «вылетит».
 export async function DELETE(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
@@ -69,11 +72,19 @@ export async function DELETE(request: NextRequest) {
     const sessionId = sp.get('id');
     const terminateAll = sp.get('all') === 'true';
     const currentToken = currentSessionToken(user.id, request.headers);
+    const now = new Date();
 
     if (terminateAll) {
       await db
-        .delete(userSessions)
-        .where(and(eq(userSessions.userId, user.id), ne(userSessions.token, currentToken)));
+        .update(userSessions)
+        .set({ revokedAt: now })
+        .where(
+          and(
+            eq(userSessions.userId, user.id),
+            ne(userSessions.token, currentToken),
+            isNull(userSessions.revokedAt),
+          ),
+        );
       return NextResponse.json({ success: true, message: 'Другие сессии завершены' });
     }
 
@@ -92,7 +103,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Нельзя завершить текущую сессию. Используйте «Выйти».' }, { status: 400 });
     }
 
-    await db.delete(userSessions).where(eq(userSessions.id, sessionId));
+    await db
+      .update(userSessions)
+      .set({ revokedAt: now })
+      .where(eq(userSessions.id, sessionId));
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[profile/sessions] DELETE error:', error);

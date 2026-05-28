@@ -221,14 +221,36 @@ export function useProfileActions({
   // Handle terminate session
   const handleTerminateSession = async (sessionId: string) => {
     try {
-      await fetch(`/api/profile/sessions?id=${sessionId}`, {
+      const res = await fetch(`/api/profile/sessions?id=${sessionId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Не удалось завершить сессию');
+      }
       await loadSessions();
-      toast.success('Сессия завершена');
-    } catch (error) {
-      toast.error('Ошибка при завершении сессии');
+      toast.success('Сессия завершена. Устройство будет разлогинено при следующем запросе.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Ошибка при завершении сессии');
+    }
+  };
+
+  // Завершает все сессии кроме текущей одним запросом.
+  const handleTerminateAllOtherSessions = async () => {
+    try {
+      const res = await fetch('/api/profile/sessions?all=true', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Не удалось завершить сессии');
+      }
+      await loadSessions();
+      toast.success('Все другие сессии завершены');
+    } catch (error: any) {
+      toast.error(error?.message || 'Ошибка');
     }
   };
 
@@ -306,6 +328,7 @@ export function useProfileActions({
     handleSetDefaultPayment,
     handleRemoveFromWishlist,
     handleTerminateSession,
+    handleTerminateAllOtherSessions,
     handleExportData,
     handleDeleteAccount,
     saveProfile,

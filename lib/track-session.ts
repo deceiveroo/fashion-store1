@@ -29,8 +29,15 @@ function getClientIp(headers: Headers): string {
 
 const TOUCH_THROTTLE_MS = 5 * 60 * 1000; // upsert at most every 5 minutes per session
 
-export async function touchUserSession(userId: string, headers: Headers): Promise<void> {
-  if (!userId) return;
+/**
+ * Обновляет/создаёт строку user_sessions для текущего запроса.
+ *
+ * Возвращает `true` если текущая сессия активна (не отозвана), иначе `false`.
+ * `verifyAuth()` использует этот результат, чтобы блокировать отозванные
+ * устройства даже при валидной NextAuth-куке.
+ */
+export async function touchUserSession(userId: string, headers: Headers): Promise<boolean> {
+  if (!userId) return true;
   const ua = headers.get('user-agent') || 'unknown';
   const ip = getClientIp(headers);
   const token = deriveSessionToken(userId, ua, ip);
@@ -39,7 +46,11 @@ export async function touchUserSession(userId: string, headers: Headers): Promis
 
   try {
     const [existing] = await db
-      .select({ id: userSessions.id, lastActive: userSessions.lastActive })
+      .select({
+        id: userSessions.id,
+        lastActive: userSessions.lastActive,
+        revokedAt: userSessions.revokedAt,
+      })
       .from(userSessions)
       .where(and(eq(userSessions.userId, userId), eq(userSessions.token, token)))
       .limit(1);
@@ -57,19 +68,28 @@ export async function touchUserSession(userId: string, headers: Headers): Promis
           lastActive: now,
         })
         .onConflictDoNothing();
-      return;
+      return true;
+    }
+
+    // Сессия отозвана пользователем с другого устройства — не воскрешаем,
+    // не обновляем last_active. Возвращаем false: verifyAuth заблокирует.
+    if (existing.revokedAt) {
+      return false;
     }
 
     if (now.getTime() - new Date(existing.lastActive).getTime() < TOUCH_THROTTLE_MS) {
-      return;
+      return true;
     }
 
     await db
       .update(userSessions)
       .set({ lastActive: now, ip, userAgent: ua, device: parsed.device })
       .where(eq(userSessions.id, existing.id));
+    return true;
   } catch (err) {
     console.error('[track-session] failed:', err);
+    // На ошибке БД не блокируем — fail-open, чтобы не положить весь сайт.
+    return true;
   }
 }
 
@@ -88,4 +108,50 @@ export function currentSessionToken(userId: string, headers: Headers): string {
   const ua = headers.get('user-agent') || 'unknown';
   const ip = getClientIp(headers);
   return deriveSessionToken(userId, ua, ip);
+}
+
+/**
+ * Проверка «отозвана ли текущая сессия» для verifyAuth.
+ * Возвращает true если сессия НЕ отозвана (можно пускать).
+ *
+ * Кешируем результат в памяти на 10 секунд per-token, чтобы не делать
+ * лишний запрос к БД на каждый защищённый эндпоинт. Если пользователь
+ * отзовёт сессию — устройство «вылетит» в течение этих 10 секунд.
+ */
+const revocationCache = new Map<string, { active: boolean; until: number }>();
+const REVOCATION_CACHE_TTL_MS = 10_000;
+
+export async function isCurrentSessionActive(userId: string, headers: Headers): Promise<boolean> {
+  if (!userId) return true;
+  const token = currentSessionToken(userId, headers);
+  const cacheKey = `${userId}:${token}`;
+  const now = Date.now();
+
+  const cached = revocationCache.get(cacheKey);
+  if (cached && cached.until > now) {
+    return cached.active;
+  }
+
+  try {
+    const [row] = await db
+      .select({ revokedAt: userSessions.revokedAt })
+      .from(userSessions)
+      .where(and(eq(userSessions.userId, userId), eq(userSessions.token, token)))
+      .limit(1);
+    // нет строки → первый запрос, пускаем
+    const active = !row ? true : !row.revokedAt;
+    revocationCache.set(cacheKey, { active, until: now + REVOCATION_CACHE_TTL_MS });
+
+    // Cap memory: чистим старые записи если кеш разросся
+    if (revocationCache.size > 1000) {
+      for (const [k, v] of revocationCache) {
+        if (v.until <= now) revocationCache.delete(k);
+      }
+    }
+
+    return active;
+  } catch (err) {
+    console.error('[track-session] isCurrentSessionActive failed:', err);
+    return true; // fail-open
+  }
 }
