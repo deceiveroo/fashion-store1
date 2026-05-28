@@ -182,40 +182,44 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  // Общая загрузка списка файлов (из input, drag&drop или буфера обмена)
+  const uploadFiles = async (files: File[]) => {
     if (!files || files.length === 0) return;
-    
+
+    if (!productId) {
+      toast.error('Сначала сохраните товар, затем добавляйте фото/видео');
+      return;
+    }
+
     setUploading(true);
     let successCount = 0;
     let errorCount = 0;
-    
+
     try {
       // Загружаем файлы последовательно
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      for (const file of files) {
         const isVideo = file.type.startsWith('video/');
         const isImage = file.type.startsWith('image/');
-        
+
         if (!isVideo && !isImage) {
           toast.error(`Файл "${file.name}" не является изображением или видео`);
           errorCount++;
           continue;
         }
-        
+
         try {
           const fd = new FormData();
           fd.append('file', file);
-          fd.append('productId', productId || 'temp');
+          fd.append('productId', productId);
           fd.append('mediaType', isVideo ? 'video' : 'image');
-          
-          const res = await fetch(`/api/admin/products/${productId}/media`, { 
-            method: 'POST', 
-            credentials: 'include', 
-            body: fd 
+
+          const res = await fetch(`/api/admin/products/${productId}/media`, {
+            method: 'POST',
+            credentials: 'include',
+            body: fd,
           });
           const data = await res.json();
-          
+
           if (res.ok && data.media) {
             setMedia((prev) => [...prev, {
               id: data.media.id,
@@ -234,7 +238,7 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
           errorCount++;
         }
       }
-      
+
       // Показываем результат
       if (successCount > 0 && errorCount === 0) {
         toast.success(`Загружено файлов: ${successCount}`);
@@ -248,6 +252,40 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) void uploadFiles(Array.from(files));
+  };
+
+  // Вставка фото/видео из буфера обмена (Ctrl+V) в любом месте формы.
+  // Текстовая вставка в поля не затрагивается — реагируем только на файлы.
+  useEffect(() => {
+    if (loading) return;
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const files: File[] = [];
+      for (const item of Array.from(items)) {
+        if (item.kind === 'file' && (item.type.startsWith('image/') || item.type.startsWith('video/'))) {
+          const blob = item.getAsFile();
+          if (blob) files.push(pastedToFile(blob));
+        }
+      }
+      if (files.length === 0) return; // нет медиа — не мешаем обычной вставке текста
+      e.preventDefault();
+      if (!productId) {
+        toast.error('Сначала сохраните товар, затем вставляйте медиа из буфера');
+        return;
+      }
+      toast.message(`Вставка из буфера: ${files.length} файл(ов)…`);
+      void uploadFiles(files);
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+    // uploadFiles стабильна по productId; пересоздаём слушатель при смене id/loading
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, productId]);
 
   // Drag & Drop для фото
   const handleDragStart = (index: number) => {
@@ -289,6 +327,37 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
 
   const removeSize = (index: number) => {
     setSizes(sizes.filter((_, i) => i !== index));
+  };
+
+  // Авто-заполнение размеров готовыми наборами (RU / INT / EU и т.д.)
+  const [bulkQty, setBulkQty] = useState(10);
+  const applySizePreset = (preset: { type: ProductSize['sizeType']; names: string[] }) => {
+    setSizes((prev) => {
+      const existing = new Set(prev.map((s) => `${s.sizeType}:${s.sizeName.trim().toUpperCase()}`));
+      const additions = preset.names
+        .filter((n) => !existing.has(`${preset.type}:${n.toUpperCase()}`))
+        .map((n) => ({
+          sizeName: n,
+          sizeType: preset.type,
+          inStock: true,
+          stockCount: bulkQty,
+        }));
+      if (additions.length === 0) {
+        toast.info('Эти размеры уже добавлены');
+        return prev;
+      }
+      toast.success(`Добавлено размеров: ${additions.length}`);
+      return [...prev, ...additions];
+    });
+  };
+
+  // Массовое управление наличием
+  const setAllInStock = (val: boolean) => {
+    setSizes((prev) => prev.map((s) => ({ ...s, inStock: val })));
+  };
+  const applyQtyToAll = () => {
+    setSizes((prev) => prev.map((s) => ({ ...s, stockCount: bulkQty, inStock: bulkQty > 0 })));
+    toast.success(`Количество ${bulkQty} задано всем размерам`);
   };
 
   // Привязка фото к цвету
@@ -597,6 +666,13 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                 </label>
               </div>
               
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/45">
+                <kbd className="rounded border border-white/15 bg-white/10 px-1.5 py-0.5 font-mono text-[11px] text-white/80">Ctrl</kbd>
+                <span>+</span>
+                <kbd className="rounded border border-white/15 bg-white/10 px-1.5 py-0.5 font-mono text-[11px] text-white/80">V</kbd>
+                <span>— вставит скриншот / фото / видео прямо из буфера обмена ПК</span>
+              </div>
+
               {media.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {media.map((item, i) => (
@@ -783,29 +859,60 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                   Добавить размер
                 </button>
 
-                {/* Quick add common sizes */}
-                {sizes.length === 0 && (
-                  <div className="pt-2">
-                    <p className="text-xs text-white/40 mb-2">Быстрое добавление:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {['XS', 'S', 'M', 'L', 'XL'].map((sizeName) => (
-                        <button
-                          key={sizeName}
-                          type="button"
-                          onClick={() => {
-                            setSizes([...sizes, {
-                              sizeName,
-                              sizeType: 'international',
-                              inStock: true,
-                              stockCount: 10,
-                            }]);
-                          }}
-                          className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-white/60 hover:border-violet-500/50 hover:text-white transition-colors"
-                        >
-                          + {sizeName}
-                        </button>
-                      ))}
-                    </div>
+                {/* Авто-заполнение готовыми наборами размеров */}
+                <div className="pt-1">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-white/40">Авто-заполнение набором (одним кликом):</p>
+                    <label className="flex items-center gap-2 text-xs text-white/40">
+                      Кол-во на размер
+                      <input
+                        type="number"
+                        min="0"
+                        value={bulkQty}
+                        onChange={(e) => setBulkQty(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-20 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white focus:border-violet-500/50 focus:outline-none"
+                      />
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {SIZE_PRESETS.map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => applySizePreset(preset)}
+                        className="px-3 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 text-xs font-medium text-violet-300 hover:bg-violet-500/20 transition-colors"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Массовое управление наличием — когда размеры уже есть */}
+                {sizes.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 border-t border-white/5 pt-3">
+                    <span className="text-xs text-white/40">Применить ко всем:</span>
+                    <button
+                      type="button"
+                      onClick={applyQtyToAll}
+                      className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-white/70 hover:bg-white/10 transition-colors"
+                    >
+                      Количество = {bulkQty}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAllInStock(true)}
+                      className="px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                    >
+                      Все в наличии
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAllInStock(false)}
+                      className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+                    >
+                      Снять наличие
+                    </button>
                   </div>
                 )}
               </div>
@@ -961,3 +1068,38 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const inputCls =
   'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/25 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30';
+
+// Буфер обмена отдаёт картинку как Blob без имени — даём корректное имя/расширение,
+// чтобы серверный аплоад верно определил тип и сохранил файл.
+const MIME_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov',
+};
+function pastedToFile(blob: File): File {
+  if (blob.name && blob.name.includes('.')) return blob;
+  const ext = MIME_EXT[blob.type] || 'png';
+  return new File([blob], `pasted-${Date.now()}.${ext}`, {
+    type: blob.type || 'image/png',
+  });
+}
+
+// Готовые наборы размеров для авто-заполнения
+const SIZE_PRESETS: {
+  label: string;
+  type: 'international' | 'ru' | 'eu' | 'us';
+  names: string[];
+}[] = [
+  { label: 'INT · XS–XL', type: 'international', names: ['XS', 'S', 'M', 'L', 'XL'] },
+  { label: 'INT · XS–XXL', type: 'international', names: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
+  { label: 'RU · 42–52', type: 'ru', names: ['42', '44', '46', '48', '50', '52'] },
+  { label: 'RU · 40–56', type: 'ru', names: ['40', '42', '44', '46', '48', '50', '52', '54', '56'] },
+  { label: 'EU · 34–44', type: 'eu', names: ['34', '36', '38', '40', '42', '44'] },
+  { label: 'US · 2–12', type: 'us', names: ['2', '4', '6', '8', '10', '12'] },
+  { label: 'Один размер', type: 'international', names: ['One Size'] },
+];

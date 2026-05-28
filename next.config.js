@@ -27,6 +27,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'picsum.photos',
       },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.com',
+      },
     ],
     // Optimize image formats
     formats: ['image/avif', 'image/webp'],
