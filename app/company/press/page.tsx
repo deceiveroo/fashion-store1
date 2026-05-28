@@ -224,7 +224,7 @@ export default function PressPage() {
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Контакты для СМИ</h3>
             <p className="text-gray-700 mb-4">Связь с нашим PR-отделом</p>
-            <span className="text-blue-600 font-semibold">press@elevate-fashion.ru</span>
+            <span className="text-blue-600 font-semibold">ELEVATE111@yandex.com</span>
           </motion.div>
         </div>
 
@@ -354,12 +354,12 @@ export default function PressPage() {
             Наши специалисты всегда готовы помочь журналистам с материалами и организацией интервью
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a 
-              href="mailto:press@elevate-fashion.ru" 
+            <a
+              href="mailto:ELEVATE111@yandex.com"
               className="inline-flex items-center justify-center gap-2 bg-white text-purple-600 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-all"
             >
               <Mail size={18} />
-              press@elevate-fashion.ru
+              ELEVATE111@yandex.com
             </a>
             <a 
               href="tel:+74951234567" 
