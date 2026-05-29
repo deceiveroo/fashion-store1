@@ -1,11 +1,19 @@
 // app/company/stores/page.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { MapPin, Clock, Phone, Star, Globe, ShoppingCart, Package, Store, Navigation, Building, Users, Award, Search, Map, X, TrendingUp, Users2, Building2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { MapPin, Clock, Phone, Star, Globe, Store, Navigation, Building, Users, Award, Search, Crosshair, ArrowUpRight } from 'lucide-react';
 import InteractiveMap from '@/components/InteractiveMap';
-import AnimatedBackground from '@/components/AnimatedBackground';
+import {
+  PageShell,
+  PageHeader,
+  StatGrid,
+  Pill,
+  MagneticButton,
+  CTABand,
+  EASE,
+} from '@/components/company/PageKit';
 
 // Тип для координат
 interface Coordinates {
@@ -26,16 +34,21 @@ export interface StoreItem {
   distance?: number; // Опционально, для отображения расстояния
 }
 
-export default function StoresPage() {
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+const ACCENT = '#8b7cf6';
+const ACCENT_TO = '#c4b5fd';
+const FLAGSHIP = ['ELEVATE Центральный', 'ELEVATE Петровский Пассаж', 'ELEVATE Сити'];
 
-  // Используем useState для хранения данных магазинов
+// Декоративный список городов для кинетического маркизе в hero
+const MARQUEE_CITIES = [
+  'МОСКВА', 'САНКТ-ПЕТЕРБУРГ', 'КАЗАНЬ', 'ЕКАТЕРИНБУРГ', 'НОВОСИБИРСК',
+  'СОЧИ', 'КРАСНОДАР', 'НИЖНИЙ НОВГОРОД', 'ВЛАДИВОСТОК', 'КАЛИНИНГРАД',
+];
+
+export default function StoresPage() {
   const [stores, setStores] = useState<StoreItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const reduce = useReducedMotion();
 
-  // Загружаем данные с помощью useEffect
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -48,113 +61,79 @@ export default function StoresPage() {
         setLoading(false);
       }
     };
-    
     fetchData();
   }, []);
 
-  const [isVisible, setIsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [userCity, setUserCity] = useState('');
   const [searchRadius, setSearchRadius] = useState('50');
   const [nearbyStores, setNearbyStores] = useState<StoreItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [showMap, setShowMap] = useState(false);
   const [selectedStore, setSelectedStore] = useState<StoreItem | null>(null);
-  const [showAllStoresModal, setShowAllStoresModal] = useState(false);
-  const [expandedStore, setExpandedStore] = useState<string | null>(null);
-  const [mapKey, setMapKey] = useState(0); // Для принудительной перезагрузки карты
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
 
   const storeStats = [
-    { number: "25+", label: "Магазинов по России", icon: Building },
-    { number: "100%", label: "Онлайн-бронирование", icon: Globe },
-    { number: "24/7", label: "Поддержка", icon: Users },
-    { number: "5.0", label: "Средний рейтинг", icon: Award }
+    { value: '25+', label: 'Магазинов по России', icon: Building },
+    { value: '100%', label: 'Онлайн-бронирование', icon: Globe },
+    { value: '24/7', label: 'Поддержка', icon: Users },
+    { value: '5.0', label: 'Средний рейтинг', icon: Award },
   ];
 
   const storeTypes = [
-    { id: 'all', name: 'Все магазины', count: stores.length },
-    { id: 'flagship', name: 'Флагманские', count: 3 },
-    { id: 'mall', name: 'Торговые центры', count: 7 }
+    { id: 'all', name: 'Все', count: stores.length },
+    { id: 'flagship', name: 'Флагманские', count: stores.filter((s) => FLAGSHIP.includes(s.name)).length },
+    { id: 'mall', name: 'Торговые центры', count: stores.filter((s) => !FLAGSHIP.includes(s.name)).length },
   ];
 
-  // Фильтруем магазины в зависимости от активной вкладки
-  const filteredStores = activeTab === 'all' 
-    ? stores 
-    : stores.filter(store => 
-        activeTab === 'flagship' && ['ELEVATE Центральный', 'ELEVATE Петровский Пассаж', 'ELEVATE Сити'].includes(store.name) ||
-        activeTab === 'mall' && !['ELEVATE Центральный', 'ELEVATE Петровский Пассаж', 'ELEVATE Сити'].includes(store.name)
-      );
+  // Мемоизируем список — стабильная ссылка не даёт карте перемонтироваться в цикле
+  const displayedStores = useMemo(() => {
+    if (nearbyStores.length > 0) return nearbyStores;
+    if (activeTab === 'all') return stores;
+    if (activeTab === 'flagship') return stores.filter((s) => FLAGSHIP.includes(s.name));
+    return stores.filter((s) => !FLAGSHIP.includes(s.name));
+  }, [stores, activeTab, nearbyStores]);
 
-  // Ограничиваем количество магазинов на главной странице до 6
-  const displayedStores = nearbyStores.length > 0 ? nearbyStores : filteredStores.slice(0, 6);
+  // ─── Геометрия и поиск ───────────────────────────────────────
+  const deg2rad = (deg: number): number => deg * (Math.PI / 180);
 
-  // Функция для вычисления расстояния между двумя точками (в км) по формуле гаверсинусов
   const calculateDistance = (coord1: Coordinates, coord2: Coordinates): number => {
-    const R = 6371; // Радиус Земли в км
+    const R = 6371;
     const dLat = deg2rad(coord2.lat - coord1.lat);
     const dLon = deg2rad(coord2.lng - coord1.lng);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(coord1.lat)) *
-        Math.cos(deg2rad(coord2.lat)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos(deg2rad(coord1.lat)) * Math.cos(deg2rad(coord2.lat)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
-  const deg2rad = (deg: number): number => {
-    return deg * (Math.PI / 180);
-  };
-
-  // Функция поиска ближайших магазинов
   const findNearbyStores = async () => {
     if (!userCity.trim()) {
       setSearchError('Пожалуйста, укажите город');
       return;
     }
-
     setIsSearching(true);
     setSearchError(null);
-    
     try {
-      // Имитация задержки API
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Имитация геокодирования (в реальном приложении здесь будет вызов API)
-      // Для демонстрации мы используем упрощенную реализацию
+      await new Promise((resolve) => setTimeout(resolve, 800));
       const cityCoords = await geocodeCity(userCity);
-      
-      if (!cityCoords) {
-        throw new Error(`Не удалось найти координаты для города: ${userCity}`);
-      }
+      if (!cityCoords) throw new Error(`Не удалось найти координаты для города: ${userCity}`);
 
-      // Вычисляем расстояния до всех магазинов
-      const storesWithDistance = stores.map(store => {
-        const distance = calculateDistance(cityCoords, store.coordinates);
-        return {
-          ...store,
-          distance: Math.round(distance * 10) / 10 // Округляем до 1 знака после запятой
-        };
-      });
+      const storesWithDistance = stores.map((store) => ({
+        ...store,
+        distance: Math.round(calculateDistance(cityCoords, store.coordinates) * 10) / 10,
+      }));
 
-      // Фильтруем по радиусу и сортируем по расстоянию
       const radius = parseInt(searchRadius);
       const nearby = storesWithDistance
-        .filter(store => store.distance! <= radius)
-        .sort((a, b) => (a.distance! - b.distance!))
-        .slice(0, 3); // Ограничиваем до 3 ближайших
+        .filter((store) => store.distance! <= radius)
+        .sort((a, b) => a.distance! - b.distance!)
+        .slice(0, 3);
 
-      if (nearby.length === 0) {
-        throw new Error(`В радиусе ${radius} км от ${userCity} магазинов не найдено`);
-      }
+      if (nearby.length === 0) throw new Error(`В радиусе ${radius} км от ${userCity} магазинов не найдено`);
 
       setNearbyStores(nearby);
+      setSelectedStore(nearby[0]);
     } catch (error: any) {
       setSearchError(error.message || 'Произошла ошибка при поиске магазинов');
       setNearbyStores([]);
@@ -163,14 +142,7 @@ export default function StoresPage() {
     }
   };
 
-  // Упрощенная функция геокодирования (в реальном приложении должна вызывать API)
   const geocodeCity = async (city: string): Promise<Coordinates | null> => {
-    // В реальном приложении вы бы вызывали внешнее API:
-    // const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${process.env.GOOGLE_MAPS_API_KEY}`);
-    // const data = await response.json();
-    // return { lat: data.results[0].geometry.location.lat, lng: data.results[0].geometry.location.lng };
-
-    // Для демонстрации реализуем базовую симуляцию с фиксированными координатами для некоторых городов
     const cityCoordinates: Record<string, Coordinates> = {
       'Москва': { lat: 55.7558, lng: 37.6176 },
       'Санкт-Петербург': { lat: 59.9343, lng: 30.3351 },
@@ -243,633 +215,300 @@ export default function StoresPage() {
       'Нальчик': { lat: 43.4856, lng: 43.6077 },
       'Тверь': { lat: 56.8587, lng: 35.9176 },
       'Новочеркасск': { lat: 47.4067, lng: 40.0945 },
-      'Йошкар-Ола': { lat: 56.6342, lng: 47.8982 }
+      'Йошкар-Ола': { lat: 56.6342, lng: 47.8982 },
     };
 
-    // Проверяем, есть ли координаты для указанного города
     const lowerCaseCity = city.toLowerCase();
     for (const [cityName, coords] of Object.entries(cityCoordinates)) {
-      if (lowerCaseCity.includes(cityName.toLowerCase())) {
-        return coords;
-      }
+      if (lowerCaseCity.includes(cityName.toLowerCase())) return coords;
     }
-
-    // Если город не найден в списке, возвращаем null
     return null;
   };
 
-  // Сброс поиска
   const resetSearch = () => {
     setNearbyStores([]);
     setUserCity('');
     setSearchRadius('50');
+    setSelectedStore(null);
   };
 
-  // Показать магазин на карте
-  const viewOnMap = (store: StoreItem) => {
+  // Стабильный колбэк выбора метки — без него карта перемонтируется
+  const handleStoreSelect = useCallback((store: StoreItem) => {
     setSelectedStore(store);
-    setShowMap(true);
-  };
+  }, []);
 
-  // Показать все магазины на карте
-  const viewAllStoresOnMap = () => {
-    setShowAllStoresModal(true);
-    setMapKey(prev => prev + 1); // Принудительно перезагружаем карту
-  };
-
-  // Переключить раскрытие информации о магазине
-  const toggleStoreInfo = (storeId: string) => {
-    setExpandedStore(expandedStore === storeId ? null : storeId);
-  };
-
-  // Обработчик выбора магазина в списке
-  const handleStoreSelect = (store: StoreItem) => {
-    setSelectedStore(store);
-  };
+  const inputCls =
+    'w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-sm text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40 disabled:opacity-60';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-indigo-900/20 dark:to-gray-900 pt-24 pb-16 relative overflow-hidden">
-      {/* Animated background elements */}
-      <AnimatedBackground />
-      
-      {/* Модальное окно для просмотра всех магазинов на карте */}
-      {showAllStoresModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-3xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
-          >
-            <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex justify-between items-center">
-              <h3 className="text-xl font-bold">Все магазины на карте</h3>
-              <button 
-                onClick={() => {
-                  setShowAllStoresModal(false);
-                  setSelectedStore(null);
-                }}
-                className="text-white hover:text-gray-200"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div className="p-4 bg-gray-50 border-b border-gray-200">
-              <p className="text-gray-700">Выберите магазин на карте или в списке для получения дополнительной информации</p>
-            </div>
-            
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 overflow-auto">
-              <div className="h-96 lg:h-full">
-                <InteractiveMap 
-                  customKey={`all-stores-map-${mapKey}`} // Используем customKey вместо key
-                  stores={stores} 
-                  showAllStores={true}
-                  onStoreSelect={handleStoreSelect}
-                />
-              </div>
-              
-              <div className="space-y-4">
-                <h4 className="font-bold text-lg text-gray-900">Список магазинов</h4>
-                {stores.map((store) => (
-                  <div 
-                    key={store.id} 
-                    className={`border border-gray-200 rounded-xl p-4 cursor-pointer transition-all ${
-                      selectedStore?.id === store.id ? 'bg-indigo-50 border-indigo-300' : 'hover:bg-gray-50'
-                    }`}
-                    onClick={() => handleStoreSelect(store)}
-                  >
-                    <div className="flex justify-between items-center">
-                      <h5 className="font-bold text-gray-900">{store.name}</h5>
-                      <div className="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
-                        <Star size={12} fill="currentColor" />
-                        <span className="text-xs font-semibold">{store.rating}</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">{store.address}</p>
-                    <p className="text-sm text-gray-500 mt-2">{store.phone}</p>
-                    
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {store.services.slice(0, 3).map((service, idx) => (
-                        <span 
-                          key={idx} 
-                          className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs"
-                        >
-                          {service}
-                        </span>
-                      ))}
-                      {store.services.length > 3 && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-                          +{store.services.length - 3} еще
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
+    <PageShell>
+      <PageHeader
+        eyebrow="Компания"
+        title="Атлас"
+        highlight="ELEVATE"
+        description="Живая карта магазинов по всей России. Найдите ближайший — и почувствуйте бренд вживую."
+        icon={Store}
+      />
 
-      {/* Карта - модальное окно для одного магазина */}
-      {showMap && selectedStore && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-3xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
-          >
-            <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex justify-between items-center">
-              <h3 className="text-xl font-bold">{selectedStore.name}</h3>
-              <button 
-                onClick={() => {
-                  setShowMap(false);
-                  setSelectedStore(null);
-                }}
-                className="text-white hover:text-gray-200"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-              <div className="lg:col-span-2 h-96 lg:h-full">
-                <InteractiveMap 
-                  customKey={`single-store-map-${selectedStore.id}-${mapKey}`} // Используем customKey вместо key
-                  stores={[selectedStore]} 
-                  selectedStore={selectedStore}
-                />
-              </div>
-              
-              <div className="space-y-6">
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={() => {
-                      // Пример реализации прокладки маршрута через API Яндекс.Карт
-                      if (typeof window !== 'undefined' && selectedStore) {
-                        // Получаем экземпляр карты и вызываем функцию прокладки маршрута
-                        const event = new CustomEvent('buildRoute', { detail: selectedStore });
-                        window.dispatchEvent(event);
-                      }
-                    }}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3.5 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    <Navigation size={18} />
-                    Проложить маршрут
-                  </button>
-                  
-                  <button
-                    className="bg-gray-200 text-gray-800 px-6 py-3.5 rounded-xl font-semibold hover:bg-gray-300 transition-all flex items-center justify-center gap-2"
-                    onClick={() => {
-                      // Центрирование карты на пользователе
-                      const event = new CustomEvent('centerOnUser', { detail: selectedStore });
-                      window.dispatchEvent(event);
-                    }}
-                  >
-                    <MapPin size={18} />
-                    Мое местоположение
-                  </button>
-                </div>
-                
-                {/* Информация о выбранном магазине */}
-                <div className="mt-4 p-4 bg-white rounded-lg shadow-md border border-gray-200">
-                  <h3 className="font-bold text-lg text-indigo-700">{selectedStore.name}</h3>
-                  <p className="text-gray-600 mt-1">{selectedStore.address}</p>
-                  <p className="text-gray-600 mt-1">Телефон: {selectedStore.phone}</p>
-                </div>
-                
-                <div>
-                  <h4 className="font-bold text-lg text-gray-900 mb-3">Информация о магазине</h4>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <MapPin size={20} className="text-indigo-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h5 className="font-semibold text-gray-900">Адрес</h5>
-                        <p className="text-gray-700">{selectedStore.address}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <Clock size={20} className="text-indigo-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h5 className="font-semibold text-gray-900">Часы работы</h5>
-                        <p className="text-gray-700">{selectedStore.hours}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <Phone size={20} className="text-indigo-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h5 className="font-semibold text-gray-900">Телефон</h5>
-                        <p className="text-gray-700">{selectedStore.phone}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <Star size={20} className="text-indigo-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h5 className="font-semibold text-gray-900">Рейтинг</h5>
-                        <p className="text-gray-700">{selectedStore.rating} из 5</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-bold text-lg text-gray-900 mb-3">Услуги</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedStore.services.map((service, idx) => (
-                      <span 
-                        key={idx} 
-                        className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-full text-sm"
-                      >
-                        {service}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto px-4 relative z-10">
+      {/* Кинетический маркизе городов */}
+      <div className="relative mb-16 overflow-hidden py-2 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16 relative"
+          className="flex gap-10 whitespace-nowrap"
+          animate={reduce ? undefined : { x: ['0%', '-50%'] }}
+          transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
         >
-          <div className="flex justify-center mb-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="relative"
+          {[...MARQUEE_CITIES, ...MARQUEE_CITIES].map((city, i) => (
+            <span
+              key={i}
+              className="text-5xl font-bold uppercase tracking-tight text-transparent sm:text-7xl"
+              style={{ WebkitTextStroke: `1px ${ACCENT}55` }}
             >
-              <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur-xl opacity-30"></div>
-              <div className="relative bg-gradient-to-r from-indigo-500 to-purple-500 w-24 h-24 rounded-full flex items-center justify-center">
-                <Store className="text-white" size={48} />
-              </div>
-            </motion.div>
-          </div>
-          <motion.h1 
-            className="text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            Наши магазины
-          </motion.h1>
-          <motion.p 
-            className="text-xl text-gray-700 max-w-3xl mx-auto"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            Посетите наши магазины по всей России и ощутите атмосферу ELEVATE лично
-          </motion.p>
-        </motion.div>
-
-        {/* Store stats with animated counters */}
-        <motion.div 
-          className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          {storeStats.map((stat, index) => (
-            <motion.div 
-              key={index}
-              className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg"
-              whileHover={{ y: -10, scale: 1.05 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 + index * 0.1 }}
-            >
-              <div className="flex justify-center mb-3">
-                <stat.icon className="text-indigo-600" size={28} />
-              </div>
-              <motion.div 
-                className="text-3xl font-bold text-indigo-600 mb-2"
-                initial={{ scale: 0.5 }}
-                animate={{ scale: 1 }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 200, 
-                  damping: 10,
-                  delay: 1 + index * 0.1 
-                }}
-              >
-                {stat.number}
-              </motion.div>
-              <div className="text-gray-700 text-sm">{stat.label}</div>
-            </motion.div>
+              {city}
+              <span className="mx-6 align-middle text-[#8b7cf6]">✦</span>
+            </span>
           ))}
         </motion.div>
+      </div>
 
-        <div className="mb-16">
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            {storeTypes.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => !isSearching && setActiveTab(type.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeTab === type.id && !isSearching
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                    : 'bg-white/80 text-gray-700 hover:bg-indigo-100'
-                } ${isSearching ? 'opacity-50 cursor-not-allowed' : ''}`}
+      <StatGrid stats={storeStats} />
+
+      {/* ─── ATLAS: split-screen локатор ─── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        {/* ЛЕВО: поиск + фильтры + список */}
+        <div className="flex flex-col gap-5 lg:col-span-2">
+          {/* Командная строка поиска */}
+          <div className="fc-glass-card p-5">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold uppercase tracking-tight text-[var(--foreground)]">
+              <Crosshair size={18} className="text-[#8b7cf6]" />
+              Найти ближайший
+            </h2>
+            <div className="relative mb-3">
+              <input
+                type="text"
+                value={userCity}
+                onChange={(e) => setUserCity(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && findNearbyStores()}
+                placeholder="Ваш город"
+                className={`${inputCls} pl-11`}
                 disabled={isSearching}
-              >
-                {type.name} <span className="opacity-80">({type.count})</span>
-              </button>
-            ))}
-            
-            <button
-              onClick={viewAllStoresOnMap}
-              className="px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all flex items-center gap-1"
-            >
-              <Map size={16} />
-              Все магазины на карте
-            </button>
-          </div>
-
-          {/* Поиск ближайших магазинов */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50 mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Найти ближайший магазин</h2>
-            
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ваш город
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={userCity}
-                    onChange={(e) => setUserCity(e.target.value)}
-                    placeholder="Введите город"
-                    className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
-                    disabled={isSearching}
-                  />
-                  <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                </div>
-              </div>
-              
-              <div className="w-full md:w-48">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Радиус поиска (км)
-                </label>
-                <select 
-                  value={searchRadius}
-                  onChange={(e) => setSearchRadius(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white/70 backdrop-blur-sm"
-                  disabled={isSearching}
-                >
-                  <option value="10">10 км</option>
-                  <option value="25">25 км</option>
-                  <option value="50">50 км</option>
-                  <option value="100">100 км</option>
-                </select>
-              </div>
-              
-              <div className="flex items-end">
-                <motion.button
-                  className="w-full md:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                  onClick={findNearbyStores}
-                  disabled={isSearching}
-                  whileHover={{ scale: isSearching ? 1 : 1.02 }}
-                  whileTap={isSearching ? {} : { scale: 0.98 }}
-                >
-                  {isSearching ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Поиск...
-                    </>
-                  ) : (
-                    <>
-                      <Search size={20} />
-                      Найти
-                    </>
-                  )}
-                </motion.button>
-              </div>
+              />
+              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
             </div>
-            
+            <div className="flex gap-3">
+              <select value={searchRadius} onChange={(e) => setSearchRadius(e.target.value)} className={inputCls} disabled={isSearching}>
+                <option value="10">10 км</option>
+                <option value="25">25 км</option>
+                <option value="50">50 км</option>
+                <option value="100">100 км</option>
+              </select>
+              <button
+                onClick={findNearbyStores}
+                disabled={isSearching}
+                className="flex shrink-0 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold uppercase tracking-wide text-white transition-all hover:shadow-lg disabled:opacity-60"
+                style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_TO})` }}
+              >
+                {isSearching ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Search size={16} />}
+                Найти
+              </button>
+            </div>
             {searchError && (
-              <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-center">
+              <div className="mt-3 rounded-xl border border-rose-400/30 bg-rose-500/10 p-2.5 text-center text-xs text-rose-500">
                 {searchError}
               </div>
             )}
-            
             {nearbyStores.length > 0 && (
-              <div className="mt-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Найдено {nearbyStores.length} магазинов
-                  </h3>
-                  <button 
-                    onClick={resetSearch}
-                    className="text-indigo-600 hover:text-indigo-800 font-medium"
-                  >
-                    Сбросить поиск
-                  </button>
-                </div>
-                
-                {/* Карточки найденных магазинов */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-                  {nearbyStores.map((store, index) => (
-                    <motion.div
-                      key={store.id}
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 + index * 0.1 }}
-                      className="bg-white/90 backdrop-blur-sm rounded-2xl p-5 shadow-lg border border-white/50"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-lg font-bold text-gray-900">{store.name}</h3>
-                        <div className="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
-                          <Star size={12} fill="currentColor" />
-                          <span className="text-xs font-semibold">{store.rating}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-start gap-2">
-                          <MapPin size={16} className="text-indigo-600 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">{store.address}</span>
-                        </div>
-                        
-                        {store.distance !== undefined && (
-                          <div className="flex items-center gap-2">
-                            <Navigation size={16} className="text-indigo-600" />
-                            <span className="text-sm text-gray-700">Расстояние: {store.distance} км</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {store.services.slice(0, 2).map((service, idx) => (
-                          <span 
-                            key={idx} 
-                            className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs"
-                          >
-                            {service}
-                          </span>
-                        ))}
-                        {store.services.length > 2 && (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-                            +{store.services.length - 2} еще
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => viewOnMap(store)}
-                          className="flex-1 bg-indigo-100 text-indigo-700 py-2 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors flex items-center justify-center gap-1"
-                        >
-                          <Map size={14} />
-                          На карте
-                        </button>
-                        <button
-                          className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:shadow transition-shadow"
-                        >
-                          <Navigation size={14} />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
+              <button onClick={resetSearch} className="mt-3 text-xs font-medium text-[#8b7cf6] hover:text-[#a78bfa]">
+                ✕ Сбросить поиск ({nearbyStores.length} найдено)
+              </button>
             )}
           </div>
 
-          {/* Отображение результатов поиска или обычных магазинов */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {displayedStores.map((store, index) => (
-              <motion.div
-                key={store.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.2 + index * 0.1 }}
-                whileHover={{ y: -20, scale: 1.03 }}
-                className="bg-white/80 backdrop-blur-sm rounded-3xl overflow-hidden shadow-xl border border-white/50 hover:shadow-2xl transition-all"
-              >
-                <div className="h-48 bg-gradient-to-r from-indigo-500 to-purple-500 relative">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-5xl">🛍️</div>
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">{store.name}</h2>
-                    <div className="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
-                      <Star size={14} fill="currentColor" />
-                      <span className="text-sm font-semibold">{store.rating}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-start gap-3">
-                      <MapPin size={18} className="text-indigo-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{store.address}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Clock size={18} className="text-indigo-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{store.hours}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Phone size={18} className="text-indigo-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{store.phone}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <div 
-                      className="flex justify-between items-center cursor-pointer"
-                      onClick={() => toggleStoreInfo(store.id)}
+          {/* Фильтры */}
+          {nearbyStores.length === 0 && (
+            <div className="flex flex-wrap gap-2">
+              {storeTypes.map((type) => (
+                <Pill key={type.id} active={activeTab === type.id} onClick={() => setActiveTab(type.id)}>
+                  {type.name} ({type.count})
+                </Pill>
+              ))}
+            </div>
+          )}
+
+          {/* Список магазинов */}
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+              {nearbyStores.length > 0 ? 'Ближайшие магазины' : 'Магазины'}
+            </h3>
+            {!loading && (
+              <span className="rounded-full bg-[#8b7cf6]/12 px-2.5 py-0.5 text-xs font-semibold text-[#8b7cf6]">
+                {displayedStores.length}
+              </span>
+            )}
+          </div>
+          <div className="relative">
+            <div className="catalog-scrollbar flex max-h-[440px] flex-col gap-3 overflow-y-auto px-1 pb-4 lg:max-h-[600px]">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-24 shrink-0 animate-pulse rounded-2xl bg-[var(--fc-surface-elevated)]" />
+                ))
+              ) : displayedStores.length === 0 ? (
+                <p className="py-10 text-center text-sm text-[var(--text-secondary)]">Магазины не найдены</p>
+              ) : (
+                displayedStores.map((store, index) => {
+                  const active = selectedStore?.id === store.id;
+                  return (
+                    <motion.button
+                      key={store.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(index * 0.03, 0.25), ease: EASE }}
+                      onClick={() => setSelectedStore(store)}
+                      className={`group relative w-full shrink-0 overflow-hidden rounded-2xl border p-4 text-left transition-all ${
+                        active
+                          ? 'border-[#8b7cf6] bg-[#8b7cf6]/8 shadow-[0_0_0_1px_rgba(139,124,246,0.4),0_8px_30px_rgba(139,124,246,0.18)]'
+                          : 'border-[var(--fc-glass-border)] bg-[var(--fc-surface)] hover:border-[#8b7cf6]/40'
+                      }`}
                     >
-                      <h3 className="font-semibold text-gray-900">Услуги:</h3>
-                      {expandedStore === store.id ? <ChevronUp /> : <ChevronDown />}
-                    </div>
-                    
-                    {expandedStore === store.id && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {store.services.map((service, idx) => (
-                          <span 
-                            key={idx} 
-                            className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm"
-                          >
-                            {service}
-                          </span>
-                        ))}
+                      {/* акцентная полоса слева у активного */}
+                      <span
+                        className={`absolute inset-y-0 left-0 w-1 transition-opacity ${active ? 'opacity-100' : 'opacity-0'}`}
+                        style={{ background: `linear-gradient(to bottom, ${ACCENT}, ${ACCENT_TO})` }}
+                      />
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-bold uppercase tracking-tight text-[var(--foreground)]">{store.name}</h3>
+                        <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#8b7cf6]/12 px-2 py-0.5 text-[#8b7cf6]">
+                          <Star size={11} fill="currentColor" />
+                          <span className="text-xs font-semibold">{store.rating}</span>
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-3 mt-6">
-                    <motion.button
-                      className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2.5 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                      onClick={() => viewOnMap(store)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Map size={18} />
-                      На карте
+                      <p className="mt-1 flex items-start gap-1.5 text-sm text-[var(--text-secondary)]">
+                        <MapPin size={14} className="mt-0.5 shrink-0 text-[#8b7cf6]" />
+                        {store.address}
+                      </p>
+                      {store.distance !== undefined && (
+                        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-[#8b7cf6]">
+                          <Navigation size={12} />
+                          {store.distance} км от вас
+                        </p>
+                      )}
                     </motion.button>
-                    
-                    <motion.button
-                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2.5 px-4 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Navigation size={18} />
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                  );
+                })
+              )}
+            </div>
+            {/* мягкое затухание снизу, чтобы длинный список не обрывался резко */}
+            {!loading && displayedStores.length > 4 && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[var(--background)] to-transparent" />
+            )}
           </div>
         </div>
 
-        {/* Заменяем секцию с достижениями на кнопку "Все магазины на карте" */}
-        <div className="flex justify-center mb-20">
-          <motion.button
-            onClick={viewAllStoresOnMap}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-xl transition-all flex items-center gap-3"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Map size={24} />
-            Посмотреть все магазины на карте
-          </motion.button>
-        </div>
+        {/* ПРАВО: постоянная карта + деталь выбранного */}
+        <div className="lg:col-span-3">
+          <div className="lg:sticky lg:top-24">
+            <div className="fc-glass-card overflow-hidden !p-0">
+              {/* Карта */}
+              <div className="relative h-[380px] w-full sm:h-[440px]">
+                {loading ? (
+                  <div className="flex h-full items-center justify-center bg-[var(--fc-surface-elevated)]">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#8b7cf6] border-t-transparent" />
+                  </div>
+                ) : (
+                  <InteractiveMap
+                    stores={displayedStores}
+                    selectedStore={selectedStore}
+                    showAllStores={!selectedStore}
+                    onStoreSelect={handleStoreSelect}
+                  />
+                )}
+                {/* верхняя плашка-подсказка */}
+                <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 rounded-full border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] backdrop-blur-md">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8b7cf6]" />
+                  {selectedStore ? selectedStore.name : `${displayedStores.length} магазинов на карте`}
+                </div>
+              </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-8 text-white text-center"
-        >
-          <MapPin size={48} className="mx-auto mb-4 text-white/80" />
-          <h2 className="text-2xl font-bold mb-4">Не нашли магазин рядом?</h2>
-          <p className="text-indigo-200 mb-6 max-w-2xl mx-auto">
-            Мы планируем расширение сети по всей России. Подпишитесь на нашу рассылку, чтобы первыми узнавать о новых магазинах
-          </p>
-          <a 
-            href="/support/contact" 
-            className="inline-block bg-white text-indigo-600 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-all transform hover:scale-105"
-          >
-            Связаться с нами
-          </a>
-        </motion.div>
+              {/* Деталь выбранного магазина */}
+              <div className="border-t border-[var(--fc-glass-border)] p-6">
+                {selectedStore ? (
+                  <motion.div
+                    key={selectedStore.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ease: EASE }}
+                  >
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-2xl font-bold uppercase tracking-tight text-[var(--foreground)]">{selectedStore.name}</h3>
+                        <p className="mt-1 text-sm text-[var(--text-secondary)]">{selectedStore.address}</p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#8b7cf6]/12 px-3 py-1 text-[#8b7cf6]">
+                        <Star size={14} fill="currentColor" />
+                        <span className="text-sm font-semibold">{selectedStore.rating}</span>
+                      </span>
+                    </div>
+
+                    <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)]">
+                        <Clock size={16} className="text-[#8b7cf6]" />
+                        {selectedStore.hours}
+                      </div>
+                      <a href={`tel:${selectedStore.phone}`} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:text-[#8b7cf6]">
+                        <Phone size={16} className="text-[#8b7cf6]" />
+                        {selectedStore.phone}
+                      </a>
+                    </div>
+
+                    <div className="mb-5 flex flex-wrap gap-2">
+                      {selectedStore.services.map((service, idx) => (
+                        <span key={idx} className="rounded-full bg-[#8b7cf6]/12 px-3 py-1 text-xs text-[#8b7cf6]">{service}</span>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <button
+                        onClick={() => window.dispatchEvent(new CustomEvent('buildRoute', { detail: selectedStore }))}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold uppercase tracking-wide text-white transition-all hover:shadow-lg"
+                        style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_TO})` }}
+                      >
+                        <Navigation size={16} />
+                        Проложить маршрут
+                      </button>
+                      <button
+                        onClick={() => window.dispatchEvent(new CustomEvent('centerOnUser', { detail: selectedStore }))}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-5 py-3 text-sm font-semibold uppercase tracking-wide text-[var(--foreground)] transition-all hover:border-[#8b7cf6]/40"
+                      >
+                        <Crosshair size={16} />
+                        Где я
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 py-6 text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#8b7cf6]/12 text-[#8b7cf6]">
+                      <ArrowUpRight size={22} />
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Выберите магазин в списке или на карте, чтобы увидеть детали и проложить маршрут
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <CTABand
+        icon={MapPin}
+        title="Не нашли магазин рядом?"
+        description="Мы расширяем сеть по всей России. Подпишитесь на рассылку — и узнайте об открытии первыми."
+      >
+        <MagneticButton href="/support/contact" variant="outline" className="!bg-white !text-gray-900">
+          Связаться с нами
+        </MagneticButton>
+      </CTABand>
+    </PageShell>
   );
 }
 

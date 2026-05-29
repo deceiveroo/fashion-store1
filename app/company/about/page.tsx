@@ -2,9 +2,10 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
-import { Users, Award, Zap, Globe, Star, TrendingUp, Building2, ArrowRight, Shield, Heart } from 'lucide-react';
+import { Users, Zap, Globe, Star, TrendingUp, Building2, ArrowRight, Shield, Heart, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import TeamSection from '@/components/TeamSection';
+import { GlassCard, SectionTitle, IconBadge, CTABand, MagneticButton, EASE } from '@/components/company/PageKit';
 
 function CountUp({ end, duration = 2 }: { end: number; duration?: number }) {
   const [count, setCount] = useState(0);
@@ -34,10 +35,10 @@ const stats = [
 ];
 
 const values = [
-  { icon: Shield, title: 'Экологичность', desc: 'Только переработанные и биоразлагаемые материалы', color: 'from-emerald-400 to-teal-500' },
-  { icon: Zap, title: 'Инновации', desc: 'Передовые технологии в каждом изделии', color: 'from-purple-500 to-violet-600' },
-  { icon: Heart, title: 'Качество', desc: 'Строгий контроль и любовь к деталям', color: 'from-pink-500 to-rose-600' },
-  { icon: Globe, title: 'Сообщество', desc: 'Глобальная сеть единомышленников', color: 'from-blue-500 to-indigo-600' },
+  { icon: Shield, title: 'Экологичность', desc: 'Только переработанные и биоразлагаемые материалы' },
+  { icon: Zap, title: 'Инновации', desc: 'Передовые технологии в каждом изделии' },
+  { icon: Heart, title: 'Качество', desc: 'Строгий контроль и любовь к деталям' },
+  { icon: Globe, title: 'Сообщество', desc: 'Глобальная сеть единомышленников' },
 ];
 
 const timeline = [
@@ -56,66 +57,60 @@ export default function AboutPage() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden bg-[var(--background)]">
 
       {/* HERO — fullscreen с параллаксом */}
-      <section ref={heroRef} className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Animated gradient background */}
-        <motion.div
-          className="absolute inset-0"
-          animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-          style={{
-            background: 'linear-gradient(135deg, #f3e8ff, #fce7f3, #ede9fe, #dbeafe)',
-            backgroundSize: '400% 400%',
-          }}
+      <section ref={heroRef} className="fc-ambient-bg relative flex h-screen items-center justify-center overflow-hidden">
+        {/* noise */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.05] mix-blend-overlay dark:opacity-[0.08]"
+          style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E\")", backgroundSize: '160px 160px' }}
         />
 
         {/* Big decorative letters */}
         <motion.div
           style={{ y: heroY, opacity: heroOpacity }}
-          className="absolute inset-0 flex items-center justify-center select-none pointer-events-none"
+          className="pointer-events-none absolute inset-0 flex select-none items-center justify-center"
         >
-          <span className="text-[30vw] font-black text-purple-100 dark:text-purple-950 leading-none tracking-tighter">
+          <span className="text-[30vw] font-black leading-none tracking-tighter text-[#8b7cf6]/10 dark:text-[#8b7cf6]/[0.07]">
             EL
           </span>
         </motion.div>
 
-        {/* Floating orbs */}
+        {/* Floating orbs (акцентные) */}
         {[
-          { size: 400, x: '10%', y: '20%', color: 'bg-purple-300/30', dur: 8 },
-          { size: 300, x: '70%', y: '60%', color: 'bg-pink-300/30', dur: 12 },
-          { size: 200, x: '50%', y: '10%', color: 'bg-blue-300/30', dur: 10 },
+          { size: 400, x: '10%', y: '20%', dur: 8 },
+          { size: 300, x: '70%', y: '60%', dur: 12 },
+          { size: 200, x: '50%', y: '10%', dur: 10 },
         ].map((orb, i) => (
           <motion.div
             key={i}
-            className={`absolute rounded-full blur-3xl ${orb.color}`}
+            className="absolute rounded-full bg-[#8b7cf6]/20 blur-3xl"
             style={{ width: orb.size, height: orb.size, left: orb.x, top: orb.y }}
             animate={{ scale: [1, 1.3, 1], x: [0, 30, 0], y: [0, -20, 0] }}
             transition={{ duration: orb.dur, repeat: Infinity, ease: 'easeInOut' }}
           />
         ))}
 
-        <motion.div
-          style={{ y: heroY, opacity: heroOpacity }}
-          className="relative z-10 text-center px-4"
-        >
+        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative z-10 px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="inline-block text-xs font-bold tracking-[0.4em] text-purple-600 uppercase mb-6 px-4 py-2 bg-purple-100 rounded-full">
+            <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)] backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#8b7cf6]" />
               О компании ELEVATE
             </span>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-gray-900 leading-[0.9] tracking-tighter mb-8">
+            <h1 className="mb-8 text-6xl font-bold uppercase leading-[0.9] tracking-tight text-[var(--foreground)] md:text-8xl lg:text-9xl">
               Мода{' '}
-              <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#8b7cf6] to-[#c4b5fd] bg-clip-text text-transparent">
                 будущего
               </span>
               <br />сегодня
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            <p className="mx-auto max-w-2xl text-xl leading-relaxed text-[var(--text-secondary)] md:text-2xl">
               Переосмысливаем роскошь через инновации, устойчивость и страсть к совершенству
             </p>
           </motion.div>
@@ -129,50 +124,49 @@ export default function AboutPage() {
             <motion.div
               animate={{ y: [0, 12, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="w-6 h-10 border-2 border-gray-400 rounded-full flex items-start justify-center p-1"
+              className="flex h-10 w-6 items-start justify-center rounded-full border-2 border-[var(--text-secondary)] p-1"
             >
-              <div className="w-1 h-3 bg-gray-400 rounded-full" />
+              <div className="h-3 w-1 rounded-full bg-[var(--text-secondary)]" />
             </motion.div>
           </motion.div>
         </motion.div>
       </section>
 
-      {/* STATS — горизонтальная полоса */}
-      <section className="py-20 bg-gray-950">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.6 }}
-                className="text-center p-8 border-r border-gray-800 last:border-0"
-              >
-                <div className="text-5xl md:text-6xl font-black text-white mb-2">
-                  <CountUp end={stat.number} />{stat.suffix}
-                </div>
-                <div className="text-gray-500 text-sm font-medium tracking-widest uppercase">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
+      {/* STATS — стеклянная полоса */}
+      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {stats.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08, duration: 0.6, ease: EASE }}
+              className="fc-glass-card flex flex-col items-center gap-2 p-6 text-center"
+            >
+              <stat.icon className="text-[#8b7cf6]" size={26} />
+              <div className="text-4xl font-bold tracking-tight text-[var(--foreground)] sm:text-5xl">
+                <CountUp end={stat.number} />{stat.suffix}
+              </div>
+              <div className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">{stat.label}</div>
+            </motion.div>
+          ))}
         </div>
       </section>
 
       {/* MISSION — большой текст */}
-      <section className="py-32 px-4">
-        <div className="max-w-5xl mx-auto">
+      <section className="px-4 py-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: '-100px' }}
             transition={{ duration: 1 }}
           >
-            <p className="text-xs font-bold tracking-[0.4em] text-purple-600 uppercase mb-8">Наша миссия</p>
-            <h2 className="text-4xl md:text-6xl font-black text-gray-900 dark:text-white leading-tight">
+            <p className="mb-6 text-xs font-bold uppercase tracking-[0.3em] text-[#8b7cf6]">Наша миссия</p>
+            <h2 className="text-4xl font-bold uppercase leading-tight tracking-tight text-[var(--foreground)] md:text-6xl">
               Мы верим, что{' '}
-              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#8b7cf6] to-[#c4b5fd] bg-clip-text text-transparent">
                 стиль и ответственность
               </span>{' '}
               не противоречат друг другу — они дополняют.
@@ -181,71 +175,39 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* VALUES — сетка с hover-эффектами */}
-      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-6xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-16 text-center"
-          >
-            Наши ценности
-          </motion.h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {values.map((v, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -8, scale: 1.02 }}
-                className="group relative bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-default"
-              >
-                {/* Gradient background on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${v.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-                
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${v.color} flex items-center justify-center mb-6 shadow-lg`}>
-                  <v.icon className="text-white" size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{v.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{v.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+      {/* VALUES */}
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+        <SectionTitle className="text-center">Наши ценности</SectionTitle>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {values.map((v, i) => (
+            <GlassCard key={v.title} tilt delay={i * 0.08}>
+              <IconBadge icon={v.icon} />
+              <h3 className="mt-5 text-lg font-bold uppercase tracking-tight text-[var(--foreground)]">{v.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{v.desc}</p>
+            </GlassCard>
+          ))}
         </div>
       </section>
 
       {/* TIMELINE — горизонтальный скролл */}
-      <section className="py-20 overflow-hidden">
-        <div className="px-4 mb-12">
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white text-center"
-          >
-            Наша история
-          </motion.h2>
+      <section className="overflow-hidden py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle className="text-center">Наша история</SectionTitle>
         </div>
-
-        <div className="flex gap-6 px-8 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-hide">
+        <div className="scrollbar-hide flex snap-x snap-mandatory gap-6 overflow-x-auto px-8 pb-8">
           {timeline.map((item, i) => (
             <motion.div
-              key={i}
+              key={item.year}
               initial={{ opacity: 0, x: 60 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="flex-shrink-0 w-72 snap-start"
+              transition={{ delay: i * 0.08, ease: EASE }}
+              className="w-72 flex-shrink-0 snap-start"
             >
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl p-8 h-full border border-purple-100 dark:border-gray-700 hover:border-purple-300 transition-colors">
-                <div className="text-6xl font-black text-purple-200 dark:text-purple-900 mb-4 leading-none">
-                  {item.year}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{item.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+              <div className="fc-glass-card h-full p-8">
+                <div className="mb-4 text-6xl font-black leading-none text-[#8b7cf6]/25">{item.year}</div>
+                <h3 className="mb-3 text-xl font-bold uppercase tracking-tight text-[var(--foreground)]">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{item.desc}</p>
               </div>
             </motion.div>
           ))}
@@ -256,60 +218,24 @@ export default function AboutPage() {
       <TeamSection />
 
       {/* CTA */}
-      <section className="py-32 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600" />
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-          className="absolute -right-40 -top-40 w-96 h-96 border border-white/10 rounded-full"
-        />
-        <motion.div
-          animate={{ rotate: -360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute -left-20 -bottom-20 w-64 h-64 border border-white/10 rounded-full"
-        />
-
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-5xl md:text-7xl font-black text-white mb-8 leading-tight"
+      <div className="mx-auto max-w-6xl px-4 pb-24 sm:px-6 lg:px-8">
+        <CTABand
+          title="Готовы стать частью ELEVATE?"
+          description="Присоединяйтесь к сообществу, которое формирует будущее моды."
+        >
+          <MagneticButton href="/products" variant="outline" className="!bg-white !text-gray-900">
+            Смотреть коллекции
+            <ArrowRight size={16} />
+          </MagneticButton>
+          <Link
+            href="/company/stores"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-white/80 px-7 py-3.5 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-white hover:text-gray-900"
           >
-            Готовы стать частью ELEVATE?
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-white/80 text-xl mb-12 max-w-2xl mx-auto"
-          >
-            Присоединяйтесь к сообществу, которое формирует будущее моды
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
-            <Link
-              href="/products"
-              className="group inline-flex items-center gap-2 bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-all shadow-2xl"
-            >
-              Смотреть коллекции
-              <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
-            </Link>
-            <Link
-              href="/company/stores"
-              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all border border-white/20"
-            >
-              Найти магазин
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+            <MapPin size={16} />
+            Найти магазин
+          </Link>
+        </CTABand>
+      </div>
     </div>
   );
 }

@@ -1,254 +1,194 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Users, Target, Globe, Award } from 'lucide-react';
+import { Target, Globe, Users, Award } from 'lucide-react';
 import TeamSection from '@/components/TeamSection';
+import { GlassCard, SectionTitle, IconBadge, EASE } from '@/components/company/PageKit';
 
 const values = [
   {
     icon: Target,
-    title: "Миссия",
-    description: "Переосмысливать моду через инновации, создавая одежду, которая не только выглядит потрясающе, но и функциональна, устойчива и технологически продвинута."
+    title: 'Миссия',
+    description: 'Переосмысливать моду через инновации, создавая одежду, которая не только выглядит потрясающе, но и функциональна, устойчива и технологически продвинута.',
   },
   {
     icon: Globe,
-    title: "Устойчивость",
-    description: "Мы стремимся к нулевому воздействию на окружающую среду, используя переработанные материалы и внедряя устойчивые практики на каждом этапе производства."
+    title: 'Устойчивость',
+    description: 'Мы стремимся к нулевому воздействию на окружающую среду, используя переработанные материалы и внедряя устойчивые практики на каждом этапе производства.',
   },
   {
     icon: Users,
-    title: "Сообщество",
-    description: "Создаем глобальное сообщество новаторов, которые ценят качество, инновации и осознанное потребление."
+    title: 'Сообщество',
+    description: 'Создаём глобальное сообщество новаторов, которые ценят качество, инновации и осознанное потребление.',
   },
   {
     icon: Award,
-    title: "Качество",
-    description: "Каждый предмет одежды проходит строгий контроль качества и создается с вниманием к деталям, чтобы служить вам долгие годы."
-  }
+    title: 'Качество',
+    description: 'Каждый предмет одежды проходит строгий контроль качества и создаётся с вниманием к деталям, чтобы служить вам долгие годы.',
+  },
+];
+
+const storyStats = [
+  { value: '95%', label: 'Клиентов' },
+  { value: '24/7', label: 'Поддержка' },
+  { value: '100%', label: 'Экологично' },
+];
+
+const floatingBadges = [
+  { value: '100+', label: 'Проектов', cls: '-top-10 left-1/2 -translate-x-1/2' },
+  { value: '8+', label: 'Лет опыта', cls: '-bottom-8 -left-6' },
+  { value: '50+', label: 'Сотрудников', cls: '-top-8 -right-6' },
 ];
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <style jsx>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 10s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
-      
-      {/* Hero Section with Video Background */}
-      <section className="relative h-96 flex items-center justify-center overflow-hidden">
-        {/* Background Video */}
+    <div className="min-h-screen bg-[var(--background)]">
+
+      {/* HERO — видео */}
+      <section className="relative flex h-[28rem] items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-cover"
-            aria-hidden="true"
-          >
+          <video autoPlay muted loop playsInline className="h-full w-full object-cover" aria-hidden="true">
             <source src="/videos/hero-bg.mp4" type="video/mp4" />
-            Ваш браузер не поддерживает видео.
           </video>
         </div>
+        {/* затемнение + акцентный оттенок */}
+        <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/40 via-black/30 to-[var(--background)]" />
+        <div className="absolute inset-0 z-10 bg-[#8b7cf6]/10 mix-blend-overlay" />
 
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/30 z-10"></div>
-
-        {/* Hero content */}
-        <div className="relative z-20 text-center text-white max-w-4xl mx-auto px-4">
+        <div className="relative z-20 mx-auto max-w-4xl px-4 text-center text-white">
+          <motion.span
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE }}
+            className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] backdrop-blur-md"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[#c4b5fd]" />
+            О бренде ELEVATE
+          </motion.span>
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-5xl md:text-6xl font-bold mb-6"
+            transition={{ duration: 0.8, ease: EASE }}
+            className="text-5xl font-bold uppercase tracking-tight md:text-7xl"
           >
-            О Нас
+            О нас
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-xl md:text-2xl opacity-90 max-w-2xl mx-auto"
+            transition={{ duration: 0.8, delay: 0.2, ease: EASE }}
+            className="mx-auto mt-4 max-w-2xl text-lg text-white/90 md:text-xl"
           >
             Переосмысливая будущее моды
           </motion.p>
         </div>
       </section>
 
-      {/* Story Section */}
-      <section className="py-20 bg-gradient-to-br from-purple-50 to-pink-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">
-                Наша История
-              </h2>
-              <div className="space-y-6 text-gray-700 text-lg leading-relaxed">
-                <p className="text-lg bg-white/80 p-6 rounded-2xl shadow-lg border-l-4 border-purple-500">
-                  <span className="font-bold text-purple-600">ELEVATE</span> родился из желания изменить индустрию моды. Мы верим, что одежда должна быть не только красивой, 
-                  но и умной, устойчивой и функциональной.
-                </p>
-                <p className="text-lg bg-white/80 p-6 rounded-2xl shadow-lg border-l-4 border-pink-500">
-                  Основанная в 2024 году, наша компания объединила лучших дизайнеров, инженеров и экологов для создания 
-                  одежды будущего. Мы используем передовые технологии, такие как умные ткани, биометрические датчики 
-                  и устойчивые материалы.
-                </p>
-                <p className="text-lg bg-white/80 p-6 rounded-2xl shadow-lg border-l-4 border-blue-500">
-                  Сегодня <span className="font-bold text-purple-600">ELEVATE</span> — это больше чем бренд одежды. Это сообщество новаторов, стремящихся сделать мир 
-                  лучше через осознанную моду.
-                </p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-                  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-4 rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-300">
-                    <div className="text-2xl font-bold">95%</div>
-                    <div className="text-sm">Клиентов</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-pink-500 to-rose-500 text-white p-4 rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-300">
-                    <div className="text-2xl font-bold">24/7</div>
-                    <div className="text-sm">Поддержка</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white p-4 rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-300">
-                    <div className="text-2xl font-bold">100%</div>
-                    <div className="text-sm">Экологично</div>
-                  </div>
+      {/* STORY */}
+      <section className="mx-auto max-w-6xl px-4 py-24 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-2">
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: EASE }}
+          >
+            <SectionTitle>Наша история</SectionTitle>
+            <div className="space-y-4">
+              {[
+                <>
+                  <span className="font-bold text-[#8b7cf6]">ELEVATE</span> родился из желания изменить индустрию моды. Мы верим, что одежда должна быть не только красивой, но и умной, устойчивой и функциональной.
+                </>,
+                <>
+                  Основанная в 2024 году, компания объединила лучших дизайнеров, инженеров и экологов для создания одежды будущего — умные ткани, биометрические датчики и устойчивые материалы.
+                </>,
+                <>
+                  Сегодня <span className="font-bold text-[#8b7cf6]">ELEVATE</span> — это больше чем бренд одежды. Это сообщество новаторов, стремящихся сделать мир лучше через осознанную моду.
+                </>,
+              ].map((content, i) => (
+                <div
+                  key={i}
+                  className="fc-glass-card border-l-2 border-l-[#8b7cf6] p-5 text-[15px] leading-relaxed text-[var(--text-secondary)]"
+                >
+                  {content}
                 </div>
-              </div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="relative"
-            >
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-                <img
-                  src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
-                  alt="Наше производство"
-                  className="w-full h-auto object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent"></div>
-              </div>
-              
-              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-gradient-to-r from-teal-500 to-blue-500 rounded-2xl shadow-xl z-10 flex items-center justify-center hover:rotate-12 transition-all duration-500">
-                <div className="absolute inset-0 bg-white/20 backdrop-blur-sm rounded-2xl"></div>
-                <div className="text-white text-center p-4 relative z-10">
-                  <div className="text-3xl font-bold">100+</div>
-                  <div className="text-sm">Проектов</div>
+              ))}
+            </div>
+
+            <div className="mt-8 grid grid-cols-3 gap-4">
+              {storyStats.map((s) => (
+                <div key={s.label} className="fc-glass-card p-4 text-center">
+                  <div className="text-2xl font-bold text-[var(--foreground)]">{s.value}</div>
+                  <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)]">{s.label}</div>
                 </div>
-                <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-pink-400 rounded-full animate-bounce"></div>
-              </div>
-              
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl z-10 flex items-center justify-center transform rotate-12 hover:rotate-45 transition-all duration-500">
-                <div className="absolute inset-0 bg-white/20 backdrop-blur-sm rounded-2xl"></div>
-                <div className="text-white text-center p-4 relative z-10">
-                  <div className="text-3xl font-bold">8+</div>
-                  <div className="text-sm">Лет опыта</div>
-                </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full animate-ping opacity-75"></div>
-              </div>
-              
-              <div className="absolute -top-6 -right-6 w-32 h-32 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl shadow-xl z-10 flex items-center justify-center transform -rotate-12 hover:-rotate-45 transition-all duration-500">
-                <div className="absolute inset-0 bg-white/20 backdrop-blur-sm rounded-2xl"></div>
-                <div className="text-white text-center p-4 relative z-10">
-                  <div className="text-3xl font-bold">50+</div>
-                  <div className="text-sm">Сотрудников</div>
-                </div>
-                <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-green-400 rounded-full animate-pulse"></div>
-              </div>
-            </motion.div>
-          </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: EASE }}
+            className="relative"
+          >
+            <div className="relative overflow-hidden rounded-[var(--fc-radius-card)] shadow-2xl">
+              <img
+                src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+                alt="Наше производство"
+                className="h-auto w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#8b7cf6]/40 to-transparent" />
+            </div>
+
+            {floatingBadges.map((b) => (
+              <motion.div
+                key={b.label}
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ type: 'spring', stiffness: 200, damping: 16 }}
+                whileHover={{ y: -4 }}
+                className={`fc-holographic-panel absolute z-10 flex h-28 w-28 flex-col items-center justify-center rounded-2xl text-center ${b.cls}`}
+              >
+                <div className="text-2xl font-bold text-[var(--foreground)]">{b.value}</div>
+                <div className="text-xs text-[var(--text-secondary)]">{b.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
-      {/* Values Section */}
-      <section className="py-20 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-          <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-1/4 left-1/2 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-        </div>
-        
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Наши Ценности
-            </h2>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
+      {/* VALUES */}
+      <section className="fc-ambient-bg relative overflow-hidden py-24">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-3xl [background:radial-gradient(circle,rgba(139,124,246,0.18),transparent_70%)]"
+        />
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 text-center">
+            <SectionTitle className="!mb-4">Наши ценности</SectionTitle>
+            <p className="mx-auto max-w-2xl text-[var(--text-secondary)]">
               Принципы, которые направляют каждое наше решение и вдохновляют на инновации
             </p>
-          </motion.div>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {values.map((value, index) => (
-              <motion.div
-                key={value.title}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                whileHover={{ y: -10 }}
-                className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl group hover:shadow-2xl transition-all duration-300 border border-white/50"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-                
-                <div className="relative z-10">
-                  <div className="flex items-start gap-6">
-                    <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:shadow-xl transition-all transform group-hover:scale-105">
-                      <value.icon size={40} className="text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                        {value.title}
-                      </h3>
-                      <p className="text-gray-700 leading-relaxed">
-                        {value.description}
-                      </p>
-                    </div>
-                  </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {values.map((value, i) => (
+              <GlassCard key={value.title} delay={i * 0.08} className="flex items-start gap-5">
+                <IconBadge icon={value.icon} size="lg" />
+                <div>
+                  <h3 className="text-xl font-bold uppercase tracking-tight text-[var(--foreground)]">{value.title}</h3>
+                  <p className="mt-2 leading-relaxed text-[var(--text-secondary)]">{value.description}</p>
                 </div>
-              </motion.div>
+              </GlassCard>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Team Section */}
+      {/* TEAM */}
       <TeamSection />
-
-      {/* CTA Section */}
-      {/* Удалена секция "Присоединяйтесь к революции в моде" по запросу пользователя */}
     </div>
   );
 }
