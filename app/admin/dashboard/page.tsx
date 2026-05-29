@@ -124,12 +124,14 @@ function StatCard({
   trend?: number;
   isMoney?: boolean;
 }) {
+  // Премиальный паттерн как у <AdminStatCard>: градиентная плитка иконки + цветной ореол акцента.
   const accents = {
-    violet: 'from-violet-500/20 to-violet-600/5 text-violet-600 dark:text-violet-400 ring-violet-500/20',
-    blue: 'from-blue-500/20 to-blue-600/5 text-blue-600 dark:text-blue-400 ring-blue-500/20',
-    emerald: 'from-emerald-500/20 to-emerald-600/5 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20',
-    amber: 'from-amber-500/20 to-amber-600/5 text-amber-600 dark:text-amber-400 ring-amber-500/20',
+    violet: { tile: 'from-violet-500 to-indigo-600 shadow-violet-500/30', glow: 'bg-violet-500/30' },
+    blue: { tile: 'from-blue-500 to-cyan-600 shadow-blue-500/30', glow: 'bg-blue-500/30' },
+    emerald: { tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30', glow: 'bg-emerald-500/30' },
+    amber: { tile: 'from-amber-500 to-orange-600 shadow-amber-500/30', glow: 'bg-amber-500/30' },
   };
+  const a = accents[accent];
 
   const display = isMoney
     ? `${Math.round(value).toLocaleString('ru-RU')} ₽`
@@ -138,16 +140,20 @@ function StatCard({
       : value;
 
   const inner = (
-    <AdminCard interactive={!!href} className="group relative overflow-hidden h-full">
+    <AdminCard interactive={!!href} padding="none" className="admin-sheen group relative overflow-hidden h-full p-5">
       <div
-        className={`absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${accents[accent]} opacity-40 blur-2xl transition-opacity group-hover:opacity-70`}
+        className={`pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full ${a.glow} opacity-50 blur-3xl transition-opacity duration-500 group-hover:opacity-90`}
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
+        style={{ backgroundImage: 'var(--admin-accent-gradient)' }}
       />
       <div className="relative flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-faint)]">
             {title}
           </p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-[var(--admin-text)]">{display}</p>
+          <p className="mt-2 text-3xl font-bold tracking-tight tabular-nums text-[var(--admin-text)]">{display}</p>
           <p className="mt-1.5 text-xs text-[var(--admin-text-muted)]">{sub ?? ' '}</p>
           <div className="mt-2 flex items-center gap-2 min-h-[18px]">
             {trend !== undefined ? (
@@ -159,7 +165,7 @@ function StatCard({
           </div>
         </div>
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ${accents[accent]}`}
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg transition-transform duration-300 group-hover:scale-105 ${a.tile}`}
         >
           <Icon className="h-5 w-5" />
         </div>
@@ -243,8 +249,12 @@ export default function DashboardPage() {
     <AdminShell>
       <div className="space-y-8">
         {/* Hero */}
-        <AdminCard padding="lg" className="relative overflow-hidden border-[var(--admin-accent)]/20">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-indigo-600/5" />
+        <AdminCard padding="lg" className="admin-sheen relative overflow-hidden border-[var(--admin-accent)]/20">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.07]"
+            style={{ backgroundImage: 'var(--admin-accent-gradient)' }}
+          />
+          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[var(--admin-glow)] opacity-60 blur-3xl" />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="mb-2 flex items-center gap-2">
@@ -256,7 +266,7 @@ export default function DashboardPage() {
                   Магазин онлайн
                 </span>
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-[var(--admin-text)] md:text-3xl">
+              <h1 className="admin-gradient-text text-2xl font-bold tracking-tight md:text-3xl">
                 {greeting()}, {firstName}
               </h1>
               <p className="mt-2 max-w-lg text-sm text-[var(--admin-text-muted)]">
@@ -277,7 +287,8 @@ export default function DashboardPage() {
                 type="button"
                 onClick={load}
                 disabled={loading}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-500/25 transition hover:shadow-violet-500/40 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-shadow hover:brightness-105 disabled:opacity-50"
+                style={{ backgroundImage: 'var(--admin-accent-gradient)', boxShadow: '0 10px 28px -8px var(--admin-glow)' }}
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Обновить
@@ -292,12 +303,15 @@ export default function DashboardPage() {
             <Link
               key={href}
               href={href}
-              className="admin-card admin-card-interactive flex items-center gap-3 p-4"
+              className="admin-card admin-card-interactive group flex items-center gap-3 p-4"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--admin-accent-soft)] text-[var(--admin-accent)]">
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-md transition-transform duration-300 group-hover:scale-105"
+                style={{ backgroundImage: 'var(--admin-accent-gradient)', boxShadow: '0 8px 20px -8px var(--admin-glow)' }}
+              >
                 <Icon className="h-5 w-5" />
               </div>
-              <span className="text-sm font-medium text-[var(--admin-text)]">{label}</span>
+              <span className="text-sm font-medium text-[var(--admin-text)] transition-colors group-hover:text-[var(--admin-accent)]">{label}</span>
             </Link>
           ))}
         </div>
@@ -354,13 +368,16 @@ export default function DashboardPage() {
               icon: Sparkles,
             },
           ].map(({ label, value, icon: Icon }) => (
-            <AdminCard key={label} className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--admin-bg-muted)] text-[var(--admin-accent)]">
+            <AdminCard key={label} interactive className="group flex items-center gap-4">
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-md transition-transform duration-300 group-hover:scale-105"
+                style={{ backgroundImage: 'var(--admin-accent-gradient)', boxShadow: '0 8px 20px -8px var(--admin-glow)' }}
+              >
                 <Icon className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-xs text-[var(--admin-text-faint)]">{label}</p>
-                <p className="text-lg font-semibold text-[var(--admin-text)]">{value}</p>
+                <p className="text-lg font-semibold tabular-nums text-[var(--admin-text)]">{value}</p>
               </div>
             </AdminCard>
           ))}
@@ -380,7 +397,7 @@ export default function DashboardPage() {
             </div>
             {loading ? (
               <div className="flex h-[300px] items-center justify-center">
-                <RefreshCw className="h-8 w-8 animate-spin text-violet-500" />
+                <RefreshCw className="h-8 w-8 animate-spin text-[var(--admin-accent)]" />
               </div>
             ) : analytics?.revenueByMonth?.length ? (
               <RevenueChart data={analytics.revenueByMonth} />
@@ -393,13 +410,13 @@ export default function DashboardPage() {
 
           <AdminCard padding="md">
             <h2 className="mb-1 flex items-center gap-2 text-base font-semibold text-[var(--admin-text)]">
-              <Activity className="h-5 w-5 text-violet-500" />
+              <Activity className="h-5 w-5 text-[var(--admin-accent)]" />
               Статусы заказов
             </h2>
             <p className="mb-4 text-xs text-[var(--admin-text-faint)]">Распределение</p>
             {loading ? (
               <div className="flex h-[280px] items-center justify-center">
-                <RefreshCw className="h-8 w-8 animate-spin text-violet-500" />
+                <RefreshCw className="h-8 w-8 animate-spin text-[var(--admin-accent)]" />
               </div>
             ) : donutData.length > 0 ? (
               <OrdersDonutChart data={donutData} />
@@ -456,7 +473,7 @@ export default function DashboardPage() {
           <AdminCard padding="md">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-base font-semibold text-[var(--admin-text)]">
-                <Package className="h-5 w-5 text-violet-500" />
+                <Package className="h-5 w-5 text-[var(--admin-accent)]" />
                 Топ товары
               </h2>
               <Link href="/admin/products" className="text-xs font-medium text-[var(--admin-accent)] hover:underline">
