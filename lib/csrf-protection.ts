@@ -26,6 +26,20 @@ const ALLOWED_ORIGINS = [
   ...extraOrigins,
 ].filter(Boolean) as string[];
 
+// An origin is allowed if it's explicitly allowlisted OR it is any Vercel
+// deployment of this app (*.vercel.app — covers the stable production alias
+// like e1evate.vercel.app plus every preview deployment URL, whose hostname
+// is never known ahead of time and so can't be hardcoded).
+function isOriginAllowed(origin: string): boolean {
+  const lower = origin.toLowerCase();
+  if (ALLOWED_ORIGINS.some((allowed) => lower === allowed.toLowerCase())) return true;
+  try {
+    return new URL(origin).hostname.toLowerCase().endsWith('.vercel.app');
+  } catch {
+    return false;
+  }
+}
+
 export function validateCSRF(request: NextRequest): { valid: boolean; error?: string } {
   const method = request.method.toUpperCase();
   
@@ -39,11 +53,7 @@ export function validateCSRF(request: NextRequest): { valid: boolean; error?: st
 
   // Check Origin header first (preferred)
   if (origin) {
-    const isAllowed = ALLOWED_ORIGINS.some(allowed => 
-      origin.toLowerCase() === allowed.toLowerCase()
-    );
-
-    if (!isAllowed) {
+    if (!isOriginAllowed(origin)) {
       console.warn(`[CSRF] Blocked request from origin: ${origin}`);
       return { 
         valid: false, 
@@ -59,12 +69,8 @@ export function validateCSRF(request: NextRequest): { valid: boolean; error?: st
     try {
       const refererUrl = new URL(referer);
       const refererOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
-      
-      const isAllowed = ALLOWED_ORIGINS.some(allowed => 
-        refererOrigin.toLowerCase() === allowed.toLowerCase()
-      );
 
-      if (!isAllowed) {
+      if (!isOriginAllowed(refererOrigin)) {
         console.warn(`[CSRF] Blocked request from referer: ${referer}`);
         return { 
           valid: false, 

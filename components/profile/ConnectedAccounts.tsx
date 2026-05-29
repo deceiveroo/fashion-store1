@@ -75,10 +75,12 @@ export default function ConnectedAccounts() {
   };
 
   const connectTelegram = async () => {
-    const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID;
-    if (!botId) { toast.error('Telegram ещё не настроен'); return; }
     setBusy('telegram');
     try {
+      // bot_id берём из рантайм-конфига (как в TelegramLoginButton) — не зависит от build-time env.
+      const cfg = await fetch('/api/auth/telegram-config').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const botId: string | undefined = cfg?.botId || undefined;
+      if (!cfg?.enabled || !botId) { toast.error('Telegram ещё не настроен'); setBusy(null); return; }
       await loadTgWidget();
       const tg = getTelegramLogin();
       if (!tg) { toast.error('Telegram-виджет недоступен'); setBusy(null); return; }

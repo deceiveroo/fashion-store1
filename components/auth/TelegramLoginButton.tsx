@@ -49,15 +49,31 @@ export default function TelegramLoginButton({
   onSuccess?: () => void;
   disabled?: boolean;
 }) {
-  const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID;
+  const [config, setConfig] = useState<{ enabled: boolean; botId: string | null } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Доступность определяется в РАНТАЙМЕ (как у GoogleLoginButton через getProviders):
+  // сервер сообщает, задан ли TELEGRAM_BOT_TOKEN, и отдаёт bot_id (выведенный из токена).
+  // Так кнопка не зависит от build-time NEXT_PUBLIC_* и не выключается «молча» на Vercel.
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/telegram-config')
+      .then((r) => (r.ok ? r.json() : { enabled: false, botId: null }))
+      .then((c) => active && setConfig(c))
+      .catch(() => active && setConfig({ enabled: false, botId: null }));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const botId = config?.botId || null;
 
   useEffect(() => {
     if (botId) loadTelegramWidget().catch(() => {});
   }, [botId]);
 
   // Бот не сконфигурирован — мягкий фолбэк.
-  if (!botId) {
+  if (config && (!config.enabled || !botId)) {
     return (
       <button
         type="button"
@@ -73,6 +89,7 @@ export default function TelegramLoginButton({
   }
 
   const handleClick = async () => {
+    if (!botId) return;
     setLoading(true);
     try {
       await loadTelegramWidget();
@@ -105,7 +122,7 @@ export default function TelegramLoginButton({
     <button
       type="button"
       onClick={handleClick}
-      disabled={disabled || loading}
+      disabled={disabled || loading || config === null}
       className="flex w-full items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
       style={{ backgroundColor: '#229ED9' }}
     >
