@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Package, ExternalLink, Calendar, CreditCard, Truck } from 'lucide-react';
 import { Order } from '@/app/profile/hooks/useProfileData';
 import ProxyImage from '@/components/ProxyImage';
+import Button from '@/components/ui/Button';
 
 interface OrdersSectionProps {
   orders: Order[];
@@ -14,19 +14,16 @@ export default function OrdersSection({ orders }: OrdersSectionProps) {
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
-        <Package size={64} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        <Package size={64} className="mx-auto text-[#8b7cf6]/60 mb-4" />
+        <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">
           У вас пока нет заказов
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-[var(--text-secondary)] mb-6">
           Оформите первый заказ, чтобы отслеживать его статус здесь
         </p>
-        <Link
-          href="/collections"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-colors shadow-lg hover:shadow-xl"
-        >
+        <Button variant="primary" size="lg" href="/collections">
           Начать покупки
-        </Link>
+        </Button>
       </div>
     );
   }
@@ -58,14 +55,15 @@ export default function OrdersSection({ orders }: OrdersSectionProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
-            className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700"
+            whileHover={{ y: -2 }}
+            className="group fc-glass-card overflow-hidden transition-all duration-300 hover:shadow-xl"
           >
             {/* Order Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-[var(--fc-glass-border)]">
               <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    <h3 className="text-lg font-bold text-[var(--foreground)]">
                       Заказ #{order.id.slice(0, 8).toUpperCase()}
                     </h3>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ${statusInfo.color}`}>
@@ -73,7 +71,7 @@ export default function OrdersSection({ orders }: OrdersSectionProps) {
                       {statusInfo.label}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
                     <div className="flex items-center gap-1.5">
                       <Calendar size={14} />
                       {new Date(order.createdAt).toLocaleDateString('ru-RU', {
@@ -90,10 +88,10 @@ export default function OrdersSection({ orders }: OrdersSectionProps) {
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  <p className="text-2xl font-bold text-[#8b7cf6]">
                     {order.total.toLocaleString('ru-RU')} ₽
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">
                     {order.items?.length || 0} товар(ов)
                   </p>
                 </div>
@@ -102,8 +100,8 @@ export default function OrdersSection({ orders }: OrdersSectionProps) {
 
             {/* Order Items Preview */}
             {order.items && order.items.length > 0 && (
-              <div className="p-6 bg-gray-50 dark:bg-gray-900/50">
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              <div className="p-6 bg-[var(--fc-surface-elevated)]">
+                <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">
                   Товары в заказе:
                 </h4>
                 <div className="space-y-2">
@@ -113,22 +111,22 @@ export default function OrdersSection({ orders }: OrdersSectionProps) {
                         <ProxyImage
                           src={item.image}
                           alt={item.productName || item.name}
-                          className="w-12 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                          className="w-12 h-12 object-cover rounded-lg border border-[var(--fc-glass-border)]"
                           proxyWidth={128}
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        <p className="text-sm font-medium text-[var(--foreground)] truncate">
                           {item.productName || item.name}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-[var(--text-secondary)]">
                           {item.quantity} шт. × {item.price?.toLocaleString('ru-RU')} ₽
                         </p>
                       </div>
                     </div>
                   ))}
                   {order.items.length > 3 && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center pt-2">
+                    <p className="text-xs text-[var(--text-secondary)] text-center pt-2">
                       +{order.items.length - 3} ещё
                     </p>
                   )}
@@ -137,14 +135,15 @@ export default function OrdersSection({ orders }: OrdersSectionProps) {
             )}
 
             {/* Order Actions */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <Link
+            <div className="p-4 border-t border-[var(--fc-glass-border)]">
+              <Button
+                variant="primary"
+                fullWidth
                 href={`/orders?id=${order.id}`}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors group-hover:shadow-md"
+                icon={<ExternalLink size={16} />}
               >
-                <ExternalLink size={16} />
                 Подробнее о заказе
-              </Link>
+              </Button>
             </div>
           </motion.div>
         );

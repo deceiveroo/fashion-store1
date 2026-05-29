@@ -6,6 +6,7 @@ import { Ticket, Clock, Copy, CheckCircle2, XCircle, AlertCircle, TrendingUp, Sh
 import { UserCoupon } from '@/app/profile/hooks/useProfileData';
 import { Loader } from 'lucide-react';
 import { toast } from 'sonner';
+import Button from '@/components/ui/Button';
 
 interface CouponsSectionProps {
   coupons: UserCoupon[];
@@ -90,8 +91,8 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
   if (isLoadingData) {
     return (
       <div className="text-center py-16">
-        <Loader className="animate-spin mx-auto text-purple-600 mb-4" size={48} />
-        <p className="text-gray-600 dark:text-gray-400">Загрузка промокодов...</p>
+        <Loader className="animate-spin mx-auto text-[#8b7cf6] mb-4" size={48} />
+        <p className="text-[var(--text-secondary)]">Загрузка промокодов...</p>
       </div>
     );
   }
@@ -103,12 +104,13 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", duration: 0.5 }}
-          className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center"
+          className="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center"
+          style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
         >
-          <Ticket size={48} className="text-purple-600 dark:text-purple-400" />
+          <Ticket size={48} className="text-white" />
         </motion.div>
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">У вас пока нет промокодов</h3>
-        <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+        <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">У вас пока нет промокодов</h3>
+        <p className="text-[var(--text-secondary)] max-w-md mx-auto">
           Промокоды появятся здесь после использования при оформлении заказа или покупки в магазине геймификации
         </p>
       </div>
@@ -122,15 +124,15 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
+          className="fc-glass-card p-4 transition-all hover:-translate-y-0.5"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-              <TrendingUp size={18} className="text-purple-600 dark:text-purple-400" />
+            <div className="p-2 rounded-lg bg-[#8b7cf6]/15">
+              <TrendingUp size={18} className="text-[#8b7cf6]" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Сэкономлено</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
+              <p className="text-xs text-[var(--text-secondary)]">Сэкономлено</p>
+              <p className="text-xl font-bold text-[var(--foreground)]">
                 {stats.totalSavings.toLocaleString('ru-RU')} ₽
               </p>
             </div>
@@ -141,15 +143,15 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
+          className="fc-glass-card p-4 transition-all hover:-translate-y-0.5"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-              <CheckCircle2 size={18} className="text-green-600 dark:text-green-400" />
+            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+              <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Активных</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
+              <p className="text-xs text-[var(--text-secondary)]">Активных</p>
+              <p className="text-xl font-bold text-[var(--foreground)]">
                 {stats.activeCount}
               </p>
             </div>
@@ -160,15 +162,15 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
+          className="fc-glass-card p-4 transition-all hover:-translate-y-0.5"
         >
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
               <ShoppingBag size={18} className="text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Использовано</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
+              <p className="text-xs text-[var(--text-secondary)]">Использовано</p>
+              <p className="text-xl font-bold text-[var(--foreground)]">
                 {stats.usedCount}
               </p>
             </div>
@@ -179,15 +181,15 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
+          className="fc-glass-card p-4 transition-all hover:-translate-y-0.5"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-              <XCircle size={18} className="text-red-600 dark:text-red-400" />
+            <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/30">
+              <XCircle size={18} className="text-rose-600 dark:text-rose-400" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Истекло</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
+              <p className="text-xs text-[var(--text-secondary)]">Истекло</p>
+              <p className="text-xl font-bold text-[var(--foreground)]">
                 {stats.expiredCount}
               </p>
             </div>
@@ -196,7 +198,7 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
       </div>
 
       {/* Tabs - Clean Design */}
-      <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg w-fit">
+      <div className="flex gap-2 p-1 bg-[var(--fc-surface-elevated)] border border-[var(--fc-glass-border)] rounded-xl w-fit">
         {[
           { id: 'all', label: 'Все', count: coupons.length },
           { id: 'active', label: 'Активные', count: stats.activeCount },
@@ -208,18 +210,18 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
             onClick={() => setActiveTab(tab.id as TabType)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`px-4 py-2 rounded-md font-medium text-sm transition-all ${
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
               activeTab === tab.id
-                ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                ? 'bg-[#8b7cf6] text-white shadow-sm shadow-purple-500/30'
+                : 'text-[var(--text-secondary)] hover:text-[var(--foreground)]'
             }`}
           >
             <span className="flex items-center gap-2">
               {tab.label}
               <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                 activeTab === tab.id
-                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-[var(--fc-glass-border)] text-[var(--text-secondary)]'
               }`}>
                 {tab.count}
               </span>
@@ -240,8 +242,8 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
         >
           {filteredCoupons.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <AlertCircle size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">Нет промокодов в этой категории</p>
+              <AlertCircle size={48} className="mx-auto text-[var(--text-secondary)] mb-4" />
+              <p className="text-[var(--text-secondary)]">Нет промокодов в этой категории</p>
             </div>
           ) : (
             filteredCoupons.map((coupon, index) => {
@@ -256,10 +258,10 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className={`group relative overflow-hidden rounded-xl border p-5 transition-all hover:shadow-md ${
+                  className={`group relative overflow-hidden rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-md ${
                     isActive && fromShop
-                      ? 'bg-gradient-to-br from-amber-50 via-white to-orange-50/50 dark:from-amber-950/30 dark:via-gray-800 dark:to-orange-950/20 border-amber-200 dark:border-amber-800'
-                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                      ? 'bg-gradient-to-br from-amber-50 via-white to-orange-50/50 dark:from-amber-950/30 dark:via-gray-800 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800'
+                      : 'fc-glass-card'
                   }`}
                 >
                   {isActive && fromShop && (
@@ -277,27 +279,27 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
                         isActive && fromShop
                           ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-amber-500/30'
                           : isActive
-                          ? 'bg-purple-100 dark:bg-purple-900/30'
+                          ? 'bg-[#8b7cf6]/15'
                           : isUsed
                           ? 'bg-blue-100 dark:bg-blue-900/30'
-                          : 'bg-red-100 dark:bg-red-900/30'
+                          : 'bg-rose-100 dark:bg-rose-900/30'
                       }`}>
                         <Ticket size={20} className={
                           isActive && fromShop
                             ? 'text-white'
                             : isActive
-                            ? 'text-purple-600 dark:text-purple-400'
+                            ? 'text-[#8b7cf6]'
                             : isUsed
                             ? 'text-blue-600 dark:text-blue-400'
-                            : 'text-red-600 dark:text-red-400'
+                            : 'text-rose-600 dark:text-rose-400'
                         } />
                       </div>
                       <div>
-                        <h4 className="font-mono font-bold text-gray-900 dark:text-white text-lg">
+                        <h4 className="font-mono font-bold text-[var(--foreground)] text-lg">
                           {coupon.code || coupon.couponCode}
                         </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                          Скидка: <span className="font-semibold text-gray-900 dark:text-white">
+                        <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+                          Скидка: <span className="font-semibold text-[var(--foreground)]">
                             {(coupon.type || coupon.couponType) === 'percent'
                               ? `${coupon.discount || coupon.couponDiscount}%`
                               : `${coupon.discount || coupon.couponDiscount} ₽`}
@@ -311,10 +313,10 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
                       isActive && fromShop
                         ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/30'
                         : isActive
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                         : isUsed
                         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
                     }`}>
                       {isActive && fromShop ? 'Из магазина' : isActive ? 'Активен' : isUsed ? 'Использован' : 'Истёк'}
                     </span>
@@ -333,19 +335,19 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
                         </p>
                       </div>
                     ) : (
-                      <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Сэкономлено</p>
-                        <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                      <div className="bg-[var(--fc-surface-elevated)] border border-[var(--fc-glass-border)] rounded-xl p-3">
+                        <p className="text-xs text-[var(--text-secondary)] mb-1">Сэкономлено</p>
+                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                           {coupon.discountAmount ? parseFloat(coupon.discountAmount).toLocaleString('ru-RU') : '0'} ₽
                         </p>
                       </div>
                     )}
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                    <div className="bg-[var(--fc-surface-elevated)] border border-[var(--fc-glass-border)] rounded-xl p-3">
+                      <p className="text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
                         <Clock size={12} />
                         {isUsed ? 'Использован' : 'Действует до'}
                       </p>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      <p className="text-sm font-semibold text-[var(--foreground)]">
                         {(() => {
                           const d = isUsed
                             ? coupon.usedAt
@@ -359,40 +361,40 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
                   {/* Action Buttons */}
                   <div className="flex gap-2">
                     {isActive && (
-                      <motion.button
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        fullWidth
+                        icon={<Copy size={16} />}
                         onClick={() => copyToClipboard(coupon.code || coupon.couponCode || '')}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 text-white transition-colors ${
-                          fromShop
-                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
-                            : 'bg-purple-600 hover:bg-purple-700'
-                        }`}
+                        className={fromShop ? 'shadow-amber-500/30' : ''}
+                        {...(fromShop
+                          ? { style: { backgroundImage: 'linear-gradient(135deg, #f59e0b, #f97316)' } }
+                          : {})}
                       >
-                        <Copy size={16} />
                         Копировать код
-                      </motion.button>
+                      </Button>
                     )}
                     {coupon.orderId && (
-                      <a
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        fullWidth
+                        icon={<ShoppingBag size={16} />}
                         href={`/orders/${coupon.orderId}`}
-                        className="flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 text-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors"
                       >
-                        <ShoppingBag size={16} />
                         К заказу
-                      </a>
+                      </Button>
                     )}
                     {/* Delete button - only for used coupons */}
                     {isUsed && (
-                      <motion.button
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        icon={<Trash2 size={18} />}
                         onClick={() => deleteCoupon(coupon.id, coupon.code || coupon.couponCode || '')}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors"
                         title="Удалить запись об использовании"
-                      >
-                        <Trash2 size={18} />
-                      </motion.button>
+                      />
                     )}
                   </div>
                   </div>

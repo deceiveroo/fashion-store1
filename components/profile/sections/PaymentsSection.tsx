@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus, X, Star } from 'lucide-react';
 import { PaymentMethod } from '@/app/profile/hooks/useProfileData';
+import Button from '@/components/ui/Button';
 
 interface PaymentsSectionProps {
   paymentMethods: PaymentMethod[];
@@ -56,31 +57,31 @@ export default function PaymentsSection({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h4 className="font-semibold text-gray-900 dark:text-white">Сохраненные карты</h4>
-        <button
+        <h4 className="font-semibold text-[var(--foreground)]">Сохраненные карты</h4>
+        <Button
           onClick={() => setShowAddCard(!showAddCard)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          size="sm"
+          icon={<Plus size={16} />}
         >
-          <Plus size={16} />
           Добавить
-        </button>
+        </Button>
       </div>
 
       {showAddCard && (
-        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-3">
+        <div className="p-4 bg-[var(--fc-surface-elevated)] border border-[var(--fc-glass-border)] rounded-xl space-y-3">
           <input
             type="text"
             placeholder="Номер карты"
             value={newCard.number}
             onChange={(e) => setNewCard({ ...newCard, number: e.target.value.replace(/\D/g, '').slice(0, 16) })}
-            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+            className="w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40"
           />
           <input
             type="text"
             placeholder="Имя владельца"
             value={newCard.holderName}
             onChange={(e) => setNewCard({ ...newCard, holderName: e.target.value.toUpperCase() })}
-            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+            className="w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40"
           />
           <div className="grid grid-cols-3 gap-2">
             <input
@@ -88,40 +89,40 @@ export default function PaymentsSection({
               placeholder="ММ"
               value={newCard.expiryMonth}
               onChange={(e) => setNewCard({ ...newCard, expiryMonth: e.target.value.replace(/\D/g, '').slice(0, 2) })}
-              className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+              className="w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40"
             />
             <input
               type="text"
               placeholder="ГГГГ"
               value={newCard.expiryYear}
               onChange={(e) => setNewCard({ ...newCard, expiryYear: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-              className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+              className="w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40"
             />
             <input
               type="password"
               placeholder="CVV"
               value={newCard.cvv}
               onChange={(e) => setNewCard({ ...newCard, cvv: e.target.value.replace(/\D/g, '').slice(0, 3) })}
-              className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+              className="w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40"
             />
           </div>
           <div className="flex gap-2">
-            <button onClick={handleAddCard} className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            <Button onClick={handleAddCard} fullWidth>
               Добавить
-            </button>
-            <button onClick={() => setShowAddCard(false)} className="flex-1 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">
+            </Button>
+            <Button variant="outline" onClick={() => setShowAddCard(false)} fullWidth>
               Отмена
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {paymentMethods.length === 0 ? (
-        <p className="text-center text-gray-600 dark:text-gray-400 py-4">Нет сохраненных способов оплаты</p>
+        <p className="text-center text-[var(--text-secondary)] py-4">Нет сохраненных способов оплаты</p>
       ) : (
         <div className="space-y-3">
           {paymentMethods.map((method) => (
-            <div key={method.id} className={`p-4 rounded-xl bg-gradient-to-br ${getBrandColor(method.brand)} text-white relative`}>
+            <div key={method.id} className={`p-4 rounded-xl bg-gradient-to-br ${getBrandColor(method.brand)} text-white relative shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl`}>
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{getBrandIcon(method.brand)}</span>

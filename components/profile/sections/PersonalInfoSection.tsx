@@ -94,58 +94,58 @@ export default function PersonalInfoSection({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* First Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Имя</label>
+          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Имя</label>
           {isEditing ? (
             <input
               type="text"
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40"
             />
           ) : (
-            <p className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-gray-900 dark:text-white">{formData.firstName || '—'}</p>
+            <p className="px-4 py-3 bg-[var(--fc-surface-elevated)] border border-[var(--fc-glass-border)] rounded-xl text-[var(--foreground)]">{formData.firstName || '—'}</p>
           )}
         </div>
 
         {/* Last Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Фамилия</label>
+          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Фамилия</label>
           {isEditing ? (
             <input
               type="text"
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40"
             />
           ) : (
-            <p className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-gray-900 dark:text-white">{formData.lastName || '—'}</p>
+            <p className="px-4 py-3 bg-[var(--fc-surface-elevated)] border border-[var(--fc-glass-border)] rounded-xl text-[var(--foreground)]">{formData.lastName || '—'}</p>
           )}
         </div>
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
-          <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-            <Mail size={16} className="text-gray-500" />
-            <span className="text-gray-900 dark:text-white">{formData.email}</span>
+          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Email</label>
+          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--fc-surface-elevated)] border border-[var(--fc-glass-border)] rounded-xl">
+            <Mail size={16} className="text-[#8b7cf6]" />
+            <span className="text-[var(--foreground)]">{formData.email}</span>
           </div>
         </div>
 
         {/* Phone */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Телефон</label>
+          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Телефон</label>
           {isEditing ? (
             <input
               type="tel"
               value={formData.phone}
               onChange={handlePhoneChange}
-              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40"
               placeholder="+7 (___) ___-__-__"
             />
           ) : (
-            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-              <Phone size={16} className="text-gray-500" />
-              <span className="text-gray-900 dark:text-white">{formData.phone || 'Не указан'}</span>
+            <div className="flex items-center gap-3 px-4 py-3 bg-[var(--fc-surface-elevated)] border border-[var(--fc-glass-border)] rounded-xl">
+              <Phone size={16} className="text-[#8b7cf6]" />
+              <span className="text-[var(--foreground)]">{formData.phone || 'Не указан'}</span>
             </div>
           )}
         </div>
@@ -153,19 +153,19 @@ export default function PersonalInfoSection({
 
       {/* Address */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Адрес</label>
+        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Адрес</label>
         {isEditing ? (
           <input
             type="text"
             value={formData.address}
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-[#8b7cf6] focus:ring-2 focus:ring-[#8b7cf6]/40"
             placeholder="Город, улица, дом, квартира"
           />
         ) : (
-          <div className="flex items-start gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-            <MapPin size={16} className="text-gray-500 mt-1" />
-            <span className="text-gray-900 dark:text-white">{formData.address || 'Адрес не указан'}</span>
+          <div className="flex items-start gap-3 px-4 py-3 bg-[var(--fc-surface-elevated)] border border-[var(--fc-glass-border)] rounded-xl">
+            <MapPin size={16} className="text-[#8b7cf6] mt-1" />
+            <span className="text-[var(--foreground)]">{formData.address || 'Адрес не указан'}</span>
           </div>
         )}
       </div>
@@ -232,13 +232,14 @@ export default function PersonalInfoSection({
                       <p className="text-xs text-red-600 dark:text-red-400">{rejectionReason}</p>
                     </div>
                   )}
-                  <button
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={() => setShowVerificationModal(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm"
+                    icon={<AlertTriangle className="h-4 w-4" />}
                   >
-                    <AlertTriangle className="h-4 w-4" />
                     Подать заявку снова
-                  </button>
+                  </Button>
                 </>
               ) : requestStatus === 'pending' ? (
                 <>
@@ -261,13 +262,13 @@ export default function PersonalInfoSection({
                     Подтвердите свою личность для получения синей галочки и дополнительных возможностей.
                     Ваши данные защищены и шифруются. Никто не может получить доступ к вашим паспортным данным.
                   </p>
-                  <button
+                  <Button
+                    size="sm"
                     onClick={() => setShowVerificationModal(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm"
+                    icon={<CheckCircle className="h-4 w-4" />}
                   >
-                    <CheckCircle className="h-4 w-4" />
                     Пройти верификацию
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -289,26 +290,27 @@ export default function PersonalInfoSection({
 
       {/* Delete Account Section */}
       {showDeleteConfirm !== undefined && deleteConfirmText !== undefined && setDeleteConfirmText && setShowDeleteConfirm && handleDeleteAccount && (
-        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-              <AlertTriangle size={18} className="text-red-500" />
+        <div className="mt-8 pt-6 border-t border-[var(--fc-glass-border)]">
+          <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-xl border border-rose-200 dark:border-rose-800">
+            <h4 className="font-semibold text-[var(--foreground)] mb-2 flex items-center gap-2">
+              <AlertTriangle size={18} className="text-rose-500" />
               Удаление аккаунта
             </h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            <p className="text-sm text-[var(--text-secondary)] mb-3">
               Это действие необратимо. Все данные будут удалены.
             </p>
             {!showDeleteConfirm ? (
-              <button
+              <Button
+                variant="danger"
+                fullWidth
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+                icon={<Trash2 size={18} />}
               >
-                <Trash2 size={18} />
                 Удалить аккаунт
-              </button>
+              </Button>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-red-700 dark:text-red-400 font-medium">
+                <p className="text-sm text-rose-700 dark:text-rose-400 font-medium">
                   Введите <span className="font-mono font-bold">УДАЛИТЬ</span> для подтверждения
                 </p>
                 <input
@@ -316,22 +318,24 @@ export default function PersonalInfoSection({
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   placeholder="Введите УДАЛИТЬ"
-                  className="w-full px-4 py-2 border-2 border-red-300 dark:border-red-700 rounded-lg text-center font-mono"
+                  className="w-full rounded-xl border-2 border-rose-300 dark:border-rose-700 bg-[var(--fc-surface-elevated)] px-4 py-2 text-center font-mono text-[var(--foreground)] placeholder-[var(--text-secondary)] outline-none transition-all focus:border-rose-500 focus:ring-2 focus:ring-rose-500/40"
                 />
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    variant="danger"
+                    fullWidth
                     disabled={deleteConfirmText !== 'УДАЛИТЬ'}
                     onClick={handleDeleteAccount}
-                    className="flex-1 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-medium"
                   >
                     Подтвердить
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
+                    fullWidth
                     onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
-                    className="flex-1 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium"
                   >
                     Отмена
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -354,30 +358,33 @@ export default function PersonalInfoSection({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden border border-gray-200 dark:border-gray-700"
+              className="fc-glass-card !rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header - Gradient Background like Notifications */}
-              <div className="relative px-6 py-5 bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 border-b border-gray-200 dark:border-gray-700">
+              <div className="relative px-6 py-5 bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 border-b border-[var(--fc-glass-border)]">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30"
+                      style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
+                    >
                       <Shield className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      <h3 className="text-lg font-bold text-[var(--foreground)]">
                         Верификация аккаунта
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
+                      <p className="text-sm text-[var(--text-secondary)] mt-0.5">
                         Подтвердите личность для получения синей галочки
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowVerificationModal(false)}
-                    className="flex-shrink-0 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    className="flex-shrink-0 p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--fc-surface-elevated)] hover:text-[var(--foreground)] transition-colors"
                   >
-                    <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                    <X className="h-5 w-5" />
                   </button>
                 </div>
               </div>
