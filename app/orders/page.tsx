@@ -147,29 +147,32 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 pt-24 flex items-center justify-center">
+      <div className="fc-ambient-bg min-h-screen pt-24 flex items-center justify-center">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full"
+          className="w-16 h-16 border-4 border-[#8b7cf6] border-t-transparent rounded-full"
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 pt-24 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="fc-ambient-bg relative min-h-screen overflow-hidden pt-24 pb-12">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
-            Мои заказы
+          <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tight text-[var(--foreground)] mb-4">
+            Мои{' '}
+            <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(to right, #8b7cf6, #c4b5fd)' }}>
+              заказы
+            </span>
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">Отслеживайте статус ваших заказов</p>
+          <p className="text-[var(--text-secondary)]">Отслеживайте статус ваших заказов</p>
         </motion.div>
 
         {/* Filters */}
@@ -198,13 +201,13 @@ export default function OrdersPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-xl text-center"
+            className="fc-glass-card p-12 text-center"
           >
             <Package size={80} className="mx-auto text-gray-300 dark:text-gray-600 mb-6" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-2xl font-bold text-[var(--foreground)] mb-4">
               {filterStatus === 'all' ? 'У вас пока нет заказов' : 'Нет заказов с таким статусом'}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
+            <p className="text-[var(--text-secondary)] mb-8">
               Начните покупки, чтобы увидеть их здесь
             </p>
             <Link 
@@ -229,14 +232,14 @@ export default function OrdersPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border transition-all scroll-mt-24 ${
+                  className={`fc-glass-card overflow-hidden transition-all scroll-mt-24 ${
                     focusOrderId === order.id
-                      ? 'border-purple-500 dark:border-purple-400 ring-2 ring-purple-500/30'
-                      : 'border-gray-200 dark:border-gray-700'
+                      ? 'ring-2 ring-[#8b7cf6]/40'
+                      : ''
                   }`}
                 >
                   {/* Order Header */}
-                  <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+                  <div className="p-6 bg-[var(--fc-surface-elevated)] border-b border-[var(--fc-glass-border)]">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-white dark:bg-gray-700 rounded-2xl shadow-md">

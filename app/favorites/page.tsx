@@ -150,7 +150,7 @@ export default function FavoritesPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 pt-24">
+      <div className="min-h-screen fc-ambient-bg pt-24">
         <div className="max-w-4xl mx-auto px-4 text-center py-16">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -174,7 +174,7 @@ export default function FavoritesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 pt-24">
+      <div className="min-h-screen fc-ambient-bg pt-24">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -187,7 +187,7 @@ export default function FavoritesPage() {
 
   if (favorites.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 pt-24">
+      <div className="min-h-screen fc-ambient-bg pt-24">
         <div className="max-w-4xl mx-auto px-4 text-center py-16">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -196,8 +196,8 @@ export default function FavoritesPage() {
           >
             <Heart size={80} className="mx-auto text-gray-500 mb-4" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-950 dark:text-white mb-4">Хит недели пуст</h1>
-          <p className="text-gray-700 dark:text-gray-300 mb-8">Добавьте товары в избранное, чтобы они появились здесь.</p>
+          <h1 className="text-3xl font-bold text-[var(--foreground)] mb-4">В избранном пусто</h1>
+          <p className="text-[var(--text-secondary)] mb-8">Добавьте товары в избранное, чтобы они появились здесь.</p>
           <Link
             href="/collections"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-2xl font-semibold hover:shadow-xl transition-all"
@@ -210,17 +210,17 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 pt-24">
+    <div className="min-h-screen fc-ambient-bg pt-24">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-4xl font-bold text-center mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Хит недели
+          <h1 className="text-4xl font-bold text-center mb-4 uppercase tracking-tight text-[var(--foreground)]">
+            Избранное
           </h1>
-          <p className="text-gray-700 dark:text-gray-300 text-center">
+          <p className="text-[var(--text-secondary)] text-center">
             {favorites.length} товар{favorites.length !== 1 ? 'а' : ''} в избранном
           </p>
         </motion.div>
@@ -287,7 +287,7 @@ export default function FavoritesPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl p-4 shadow-2xl border border-white/50 dark:border-gray-700 hover:shadow-3xl transition-all group"
+              className="fc-glass-card p-4 hover:shadow-3xl transition-all group"
             >
               <div className="relative mb-4">
                 <Link href={`/products/${item.id}`}>
@@ -334,17 +334,17 @@ export default function FavoritesPage() {
               <div className="space-y-3">
                 <div>
                   <Link href={`/products/${item.id}`}>
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2 hover:text-purple-600 transition-colors">
+                    <h3 className="font-semibold text-[var(--foreground)] text-sm line-clamp-2 hover:text-[#8b7cf6] transition-colors">
                       {item.name}
                     </h3>
                   </Link>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">
                     {item.description}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  <span className="text-lg font-bold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(to right, #8b7cf6, #c4b5fd)' }}>
                     {item.price.toLocaleString()} ₽
                   </span>
                 </div>
