@@ -72,13 +72,13 @@
   }
 
   .dark {
-    /* Dark theme colors - идеальные тона */
-    --background: #0a0a0f;
+    /* Dark theme colors - lighter bluish charcoal, not near-black */
+    --background: #191926;
     --foreground: #f1f5f9;
-    --surface: #1a1a24;
-    --surface-hover: #252532;
-    --border: #2d2d3d;
-    --text-secondary: #94a3b8;
+    --surface: #22223a;
+    --surface-hover: #2c2c46;
+    --border: #34344a;
+    --text-secondary: #a3a3c2;
     
     /* Primary colors для темной темы */
     --primary: #818cf8;

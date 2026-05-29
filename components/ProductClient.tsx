@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingBag, Play, Star, Sparkles } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Star, Sparkles } from 'lucide-react';
 import AddToCartButton from './AddToCartButton';
 import FavoriteButton from './FavoriteButton';
 import ProductCard from '@/components/product-card';
@@ -14,6 +13,7 @@ import ReviewForm from '@/components/reviews/ReviewForm';
 import StarRating from '@/components/reviews/StarRating';
 import SizeAdvisorModal from '@/components/SizeAdvisorModal';
 import ColorSelector, { type ColorOption } from '@/components/product/ColorSelector';
+import ProductGallery from '@/components/product/ProductGallery';
 
 interface ProductImage {
   id: string;
@@ -224,13 +224,8 @@ export default function ProductClient({ product }: ProductClientProps) {
     void loadRelated();
   }, [loadRelated]);
 
-  const goPrev = () =>
-    setSelectedImage((i) => (i === 0 ? allImages.length - 1 : i - 1));
-  const goNext = () =>
-    setSelectedImage((i) => (i === allImages.length - 1 ? 0 : i + 1));
-
   return (
-    <div className="min-h-screen bg-white dark:bg-neutral-950 pt-20 pb-20 transition-colors">
+    <div className="min-h-screen bg-white dark:bg-[#191926] pt-20 pb-20 transition-colors">
       <motion.div
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
         initial={{ opacity: 0, y: 12 }}
@@ -258,147 +253,26 @@ export default function ProductClient({ product }: ProductClientProps) {
           transition={{ delay: 0.05, duration: 0.5 }}
         >
           {/* Gallery */}
-          <div className="lg:col-span-7 space-y-4">
-            <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 dark:bg-neutral-900 group/gallery">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={allImages[selectedImage]?.id ?? selectedImage}
-                  className="absolute inset-0"
-                  initial={{ opacity: 0, scale: 1.02 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  {allImages[selectedImage]?.mediaType === 'video' ? (
-                    <video
-                      src={allImages[selectedImage]?.url}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Image
-                      src={allImages[selectedImage]?.url || getPlaceholderImage(product.id)}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      priority={selectedImage === 0}
-                      loading={selectedImage === 0 ? 'eager' : 'lazy'}
-                      quality={95}
-                      className="object-cover"
-                    />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-
-              <motion.div
-                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover/gallery:opacity-100 transition-opacity duration-500"
-                aria-hidden
-              />
-
-              {(product.featured || product.isNew) && (
-                <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-                  {product.isNew && (
-                    <span className="bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white">
-                      New
-                    </span>
-                  )}
-                  {product.featured && (
-                    <span className="bg-gray-900 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-white dark:bg-white dark:text-gray-900">
-                      Хит
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {allImages.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={goPrev}
-                    aria-label="Предыдущее фото"
-                    className="absolute left-3 top-1/2 z-10 -translate-y-1/2 p-2 bg-white/90 text-gray-900 opacity-0 group-hover/gallery:opacity-100 transition-all hover:bg-white focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    aria-label="Следующее фото"
-                    className="absolute right-3 top-1/2 z-10 -translate-y-1/2 p-2 bg-white/90 text-gray-900 opacity-0 group-hover/gallery:opacity-100 transition-all hover:bg-white focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                </>
-              )}
-            </div>
-
-            {allImages.length > 1 && (
-              <motion.div
-                className="grid grid-cols-4 sm:grid-cols-5 gap-2 md:gap-3"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-              >
-                {allImages.map((image, index) => (
-                  <button
-                    key={image.id ?? index}
-                    type="button"
-                    onClick={() => setSelectedImage(index)}
-                    aria-label={`Фото ${index + 1}`}
-                    aria-current={selectedImage === index}
-                    className={`relative aspect-[3/4] overflow-hidden bg-neutral-100 dark:bg-neutral-900 transition-all ${
-                      selectedImage === index
-                        ? 'ring-2 ring-purple-600 ring-offset-2 dark:ring-offset-neutral-950'
-                        : 'opacity-70 hover:opacity-100 ring-1 ring-gray-200 dark:ring-neutral-800'
-                    }`}
-                  >
-                    {image.mediaType === 'video' && image.thumbnailUrl ? (
-                      <Image
-                        src={image.thumbnailUrl}
-                        alt=""
-                        fill
-                        sizes="(max-width: 640px) 25vw, 15vw"
-                        loading="lazy"
-                        quality={80}
-                        className="object-cover"
-                      />
-                    ) : (
-                      <Image
-                        src={image.url}
-                        alt=""
-                        fill
-                        sizes="(max-width: 640px) 25vw, 15vw"
-                        loading="lazy"
-                        quality={80}
-                        className="object-cover"
-                      />
-                    )}
-                    {image.mediaType === 'video' && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                        <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-                          <Play className="w-5 h-5 text-gray-900 ml-0.5" fill="currentColor" />
-                        </div>
-                      </div>
-                    )}
-                    {image.duration && (
-                      <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 text-white text-[10px] rounded font-medium">
-                        {Math.floor(image.duration / 60)}:{String(image.duration % 60).padStart(2, '0')}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </div>
+          <ProductGallery
+            images={allImages.map((img) => ({
+              id: img.id,
+              url: img.url || getPlaceholderImage(product.id),
+              mediaType: img.mediaType,
+              thumbnailUrl: img.thumbnailUrl,
+              duration: img.duration,
+            }))}
+            name={product.name}
+            selectedIndex={selectedImage}
+            onSelectIndex={setSelectedImage}
+            isNew={product.isNew}
+            featured={product.featured}
+          />
 
           {/* Info — sticky on desktop */}
           <div className="lg:col-span-5 lg:sticky lg:top-24 lg:self-start">
             <div className="space-y-8">
               {product.categories[0] && (
-                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-purple-600 dark:text-purple-400">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gray-400 dark:text-neutral-500">
                   {product.categories.join(' · ')}
                 </p>
               )}
@@ -407,7 +281,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                 <h1 className="text-3xl md:text-4xl lg:text-[2.75rem] font-light leading-tight tracking-tight text-gray-900 dark:text-white">
                   {product.name}
                 </h1>
-                <div className="mt-4 h-px w-16 bg-gradient-to-r from-purple-600 to-pink-600" />
+                <div className="mt-4 h-px w-16 bg-gradient-to-r from-purple-500/70 to-transparent" />
               </div>
 
               <p className="text-2xl md:text-3xl font-light text-gray-900 dark:text-white tabular-nums">
@@ -525,12 +399,12 @@ export default function ProductClient({ product }: ProductClientProps) {
                           aria-selected={selectedSize === sizeLabel}
                           disabled={!isInStock}
                           onClick={() => isInStock && setSelectedSize(sizeLabel)}
-                          className={`min-w-[3rem] px-4 py-2.5 text-sm font-light border transition-all ${
+                          className={`min-w-[3rem] rounded-xl px-4 py-2.5 text-sm font-light border transition-all ${
                             !isInStock
                               ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-600'
                               : selectedSize === sizeLabel
-                                ? 'border-purple-600 bg-purple-600 text-white dark:border-purple-500 dark:bg-purple-500'
-                                : 'border-gray-300 text-gray-800 hover:border-purple-400 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-purple-500'
+                                ? 'border-gray-900 bg-gray-900 text-white shadow-sm dark:border-white dark:bg-white dark:text-gray-900'
+                                : 'border-gray-300 text-gray-800 hover:border-gray-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-white'
                           }`}
                         >
                           {sizeLabel}
@@ -577,7 +451,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                     Нет в наличии
                   </button>
                 )}
-                <div className="flex items-center justify-center border border-gray-200 dark:border-neutral-800 px-4">
+                <div className="flex items-center justify-center rounded-xl border border-gray-200 dark:border-neutral-800 px-4">
                   <FavoriteButton productId={product.id} size={22} />
                 </div>
               </div>
@@ -601,17 +475,17 @@ export default function ProductClient({ product }: ProductClientProps) {
         >
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-purple-600 dark:text-purple-400 mb-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gray-400 dark:text-neutral-500 mb-2">
                 Отзывы покупателей
               </p>
               <h2 className="text-2xl md:text-3xl font-light text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
                 Мнения клиентов
-                <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+                <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
               </h2>
             </div>
             <button
               onClick={() => setShowReviewForm(!showReviewForm)}
-              className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-medium rounded-lg hover:from-violet-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+              className="rounded-xl border border-gray-900 px-6 py-3 text-sm font-medium text-gray-900 transition-all hover:bg-gray-900 hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-gray-900"
             >
               {showReviewForm ? 'Закрыть форму' : 'Написать отзыв'}
             </button>
@@ -650,7 +524,7 @@ export default function ProductClient({ product }: ProductClientProps) {
           >
             <motion.div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-purple-600 dark:text-purple-400 mb-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gray-400 dark:text-neutral-500 mb-2">
                   Стилист ELEVATE
                 </p>
                 <h2 className="text-2xl md:text-3xl font-light text-gray-900 dark:text-white tracking-tight">

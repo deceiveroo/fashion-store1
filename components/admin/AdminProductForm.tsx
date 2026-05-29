@@ -364,6 +364,45 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
   const updateMediaColor = (index: number, color: string) => {
     setMedia((prev) => prev.map((m, i) => (i === index ? { ...m, color } : m)));
   };
+
+  // Удаление фото/видео. Для уже сохранённых (с id или загруженных в Storage)
+  // дёргаем DELETE — иначе запись остаётся в БД, а файл висит в Storage сиротой.
+  const removeMedia = async (index: number) => {
+    const item = media[index];
+    // Оптимистично убираем из UI.
+    setMedia((p) => p.filter((_, idx) => idx !== index));
+
+    // Локально добавленный URL (ещё не в Storage/БД) — на сервере удалять нечего.
+    const isSupabaseFile = item?.url?.includes('supabase.co') || Boolean(item?.id);
+    if (!productId || !isSupabaseFile) return;
+
+    const restore = () =>
+      setMedia((p) => {
+        const next = [...p];
+        next.splice(Math.min(index, next.length), 0, item);
+        return next;
+      });
+
+    try {
+      const params = new URLSearchParams();
+      if (item.id) params.set('imageId', item.id);
+      else params.set('url', item.url);
+
+      const res = await fetch(
+        `/api/admin/products/${productId}/media?${params.toString()}`,
+        { method: 'DELETE', credentials: 'include' }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Не удалось удалить фото с сервера');
+        restore();
+      }
+    } catch {
+      toast.error('Ошибка сети при удалении фото');
+      restore();
+    }
+  };
+
   const usedColors = Array.from(
     new Set(media.map((m) => m.color?.trim()).filter((c): c is string => Boolean(c)))
   );
@@ -721,7 +760,7 @@ export default function AdminProductForm({ mode, productId }: AdminProductFormPr
                       )}
                       <button
                         type="button"
-                        onClick={() => setMedia((p) => p.filter((_, idx) => idx !== i))}
+                        onClick={() => void removeMedia(i)}
                         className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <X className="h-3.5 w-3.5" />

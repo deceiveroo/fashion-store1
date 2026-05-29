@@ -113,13 +113,13 @@ export default function FavoriteButton({ productId, size = 20, onToggle }: Favor
       whileTap={{ scale: 0.9 }}
       onClick={toggleFavorite}
       disabled={isLoading}
-      className="p-2 bg-white/95 dark:bg-black/90 backdrop-blur-sm transition-all duration-200 hover:bg-white dark:hover:bg-black disabled:opacity-50"
+      className="grid place-items-center rounded-full p-2 bg-white/90 dark:bg-neutral-900/80 backdrop-blur-md shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.08] transition-all duration-200 hover:bg-white dark:hover:bg-neutral-900 disabled:opacity-50"
     >
-      <Heart 
-        size={size} 
+      <Heart
+        size={size}
         fill={isFavorite ? 'currentColor' : 'none'}
         className={`transition-colors duration-200 ${
-          isFavorite ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-neutral-400'
+          isFavorite ? 'text-rose-500 dark:text-rose-400' : 'text-gray-600 dark:text-neutral-300'
         }`}
       />
     </motion.button>

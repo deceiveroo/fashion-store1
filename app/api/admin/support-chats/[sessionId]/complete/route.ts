@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { supportChatSessions, chatSatisfactionRatings } from '@/lib/schema';
+import { supportChatSessions, supportChatMessages, chatSatisfactionRatings } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { isStaff } from '@/lib/server-auth';
+import { isRedisAvailable, redis } from '@/lib/redis';
 
 /**
  * Завершение чата с сохранением истории
@@ -62,6 +63,27 @@ export async function POST(
       .update(supportChatSessions)
       .set(updateData)
       .where(eq(supportChatSessions.sessionId, sessionId));
+
+    // Вставляем системное сообщение о завершении диалога. Оно приходит
+    // пользователю через realtime (support_chat_messages INSERT) и служит
+    // якорем, после которого виджет показывает запрос оценки оператора.
+    const operatorHandled = session.aiDisabled || Boolean(session.takenOverBy);
+    try {
+      await db.insert(supportChatMessages).values({
+        id: crypto.randomUUID(),
+        sessionId,
+        message: operatorHandled
+          ? 'Диалог завершён оператором. Спасибо за обращение! Пожалуйста, оцените работу оператора ниже 👇'
+          : 'Диалог завершён. Спасибо за обращение!',
+        sender: 'ai',
+        createdAt: new Date(),
+      });
+      if (isRedisAvailable() && redis) {
+        await redis.set(`chat:update:${sessionId}`, Date.now().toString());
+      }
+    } catch (err) {
+      console.warn('[ADMIN] Failed to insert completion message:', err);
+    }
 
     // Если есть отзыв от пользователя, сохраняем его отдельно
     if (feedback && session.userId) {

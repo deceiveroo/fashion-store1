@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
+import { Star, ArrowUpRight, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import FavoriteButton from '@/components/FavoriteButton';
+import { BLUR_DATA_URL } from '@/lib/blur-placeholder';
 import type { ProductCardProps } from './types';
 
 const getPlaceholderImage = (productId: string): string => {
@@ -62,12 +63,7 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
     };
   }, [product.id]);
 
-  const cartPayload = {
-    id: product.id,
-    name: product.name,
-    price: currentPrice,
-    image: primaryImage,
-  };
+  const hasRating = Boolean(product.reviewCount);
 
   return (
     <article
@@ -77,13 +73,14 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
     >
       <Link
         href={`/products/${product.id}`}
-        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
+        className="block focus-visible:outline-none"
         aria-label={`${product.name}, ${currentPrice.toLocaleString('ru-RU')} ₽`}
       >
+        {/* Image frame */}
         <motion.div
-          className="relative aspect-[3/4] overflow-hidden bg-neutral-100 dark:bg-neutral-900"
-          whileHover={{ y: -2 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+          className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-neutral-100 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.05] transition-shadow duration-500 group-hover/card:shadow-[0_20px_45px_-15px_rgba(157,78,221,0.35)] dark:bg-neutral-900 dark:ring-white/[0.07] group-focus-visible/card:ring-2 group-focus-visible/card:ring-purple-500"
+          whileHover={{ y: -5 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
         >
           {/* Primary */}
           <Image
@@ -94,11 +91,15 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
             priority={false}
             loading="lazy"
             quality={90}
+            placeholder="blur"
+            blurDataURL={BLUR_DATA_URL}
             onLoadingComplete={() => setImageLoaded(true)}
             onError={() => setImageLoaded(true)}
-            className={`object-cover transition-all duration-700 ease-out ${
+            className={`object-cover transition-all duration-[850ms] ease-out ${
               imageLoaded ? 'opacity-100' : 'opacity-0'
-            } ${hovered && showHoverImage ? 'scale-105 opacity-0' : 'scale-100 opacity-100'}`}
+            } ${hovered && showHoverImage ? 'scale-[1.04] opacity-0' : 'scale-100'} ${
+              hovered && !showHoverImage ? 'scale-[1.06]' : ''
+            }`}
           />
 
           {/* Hover image */}
@@ -111,53 +112,47 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               loading="lazy"
               quality={90}
-              className={`object-cover transition-all duration-700 ease-out ${
-                hovered ? 'scale-105 opacity-100' : 'scale-100 opacity-0'
+              className={`object-cover transition-all duration-[850ms] ease-out ${
+                hovered ? 'scale-[1.04] opacity-100' : 'scale-100 opacity-0'
               }`}
             />
           )}
 
+          {/* Loading shimmer */}
           {!imageLoaded && (
             <motion.div
-              className="absolute inset-0 bg-neutral-200 dark:bg-neutral-800"
-              animate={{ opacity: [0.4, 0.7, 0.4] }}
+              className="absolute inset-0 bg-gradient-to-br from-neutral-200 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900"
+              animate={{ opacity: [0.5, 0.8, 0.5] }}
               transition={{ duration: 1.4, repeat: Infinity }}
             />
           )}
 
-          {/* Soft vignette on hover */}
-          <motion.div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"
-            initial={false}
-            animate={{ opacity: hovered ? 1 : 0 }}
-            transition={{ duration: 0.35 }}
-          />
-
           {/* Badges */}
-          <motion.div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+          <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
             {showNew && (
-              <span className="bg-gradient-to-r from-purple-600 to-pink-600 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-900 shadow-sm ring-1 ring-black/[0.04] backdrop-blur-md dark:bg-black/40 dark:text-white dark:ring-white/10">
+                <Sparkles className="h-2.5 w-2.5 text-purple-500" />
                 New
               </span>
             )}
             {product.featured && !showNew && (
-              <span className="bg-gray-900 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white dark:bg-white dark:text-gray-900">
+              <span className="rounded-full bg-gray-900/85 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur-md dark:bg-white/90 dark:text-gray-900">
                 Хит
               </span>
             )}
             {!currentStock && (
-              <span className="bg-white/95 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-gray-900 backdrop-blur-sm">
-                Sold out
+              <span className="rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-gray-700 shadow-sm backdrop-blur-md dark:bg-neutral-800/90 dark:text-neutral-300">
+                Нет в наличии
               </span>
             )}
-          </motion.div>
+          </div>
 
           {/* Favorite */}
           <motion.div
             className="absolute top-3 right-3 z-10"
             initial={false}
-            animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : -4 }}
-            transition={{ duration: 0.25 }}
+            animate={{ opacity: hovered ? 1 : 0, scale: hovered ? 1 : 0.85 }}
+            transition={{ duration: 0.22 }}
             onClick={(e) => e.preventDefault()}
           >
             <FavoriteButton productId={product.id} />
@@ -165,43 +160,44 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
 
         </motion.div>
 
-        <div className="mt-4 space-y-1.5">
+        {/* Meta */}
+        <div className="mt-3.5 space-y-1.5">
           {variant === 'collections' && product.categories?.[0] && (
-            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-purple-600 dark:text-purple-400">
+            <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-gray-400 dark:text-neutral-500">
               {product.categories[0]}
             </p>
           )}
-          <h3 className="text-sm font-light tracking-wide text-gray-900 transition-colors group-hover/card:text-purple-700 dark:text-white dark:group-hover/card:text-purple-300 line-clamp-1">
-            {product.name}
-          </h3>
-          {product.reviewCount ? (
-            <div className="flex items-center gap-1.5" aria-label={`Рейтинг ${product.rating?.toFixed(1)} из 5`}>
-              <div className="flex gap-px">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star
-                    key={i}
-                    className={`w-3 h-3 ${
-                      i <= Math.round(product.rating ?? 0)
-                        ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-gray-300 dark:text-neutral-600'
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-[11px] text-gray-400 dark:text-neutral-500">
-                {(product.rating ?? 0).toFixed(1)} ({product.reviewCount})
-              </span>
-            </div>
-          ) : null}
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {currentPrice.toLocaleString('ru-RU')}&nbsp;₽
-            </p>
-            {variant === 'men' || variant === 'women' ? (
-              <span className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-neutral-500">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-[13px] font-normal leading-snug tracking-wide text-gray-900 transition-colors group-hover/card:text-purple-700 dark:text-neutral-100 dark:group-hover/card:text-purple-300 line-clamp-2">
+              {product.name}
+            </h3>
+            {(variant === 'men' || variant === 'women') && (
+              <span className="mt-0.5 shrink-0 text-[10px] uppercase tracking-widest text-gray-400 dark:text-neutral-500">
                 {variant === 'men' ? 'Men' : 'Women'}
               </span>
-            ) : null}
+            )}
+          </div>
+
+          {hasRating && (
+            <div
+              className="flex items-center gap-1.5"
+              aria-label={`Рейтинг ${product.rating?.toFixed(1)} из 5`}
+            >
+              <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+              <span className="text-[11px] font-medium text-gray-700 dark:text-neutral-300">
+                {(product.rating ?? 0).toFixed(1)}
+              </span>
+              <span className="text-[11px] text-gray-400 dark:text-neutral-500">
+                · {product.reviewCount} {product.reviewCount === 1 ? 'отзыв' : (product.reviewCount ?? 0) < 5 ? 'отзыва' : 'отзывов'}
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-0.5">
+            <p className="text-[15px] font-semibold tracking-tight text-gray-900 dark:text-white tabular-nums">
+              {currentPrice.toLocaleString('ru-RU')}&nbsp;₽
+            </p>
+            <ArrowUpRight className="h-4 w-4 text-gray-300 transition-all duration-300 group-hover/card:translate-x-0.5 group-hover/card:-translate-y-0.5 group-hover/card:text-purple-500 dark:text-neutral-600" />
           </div>
         </div>
       </Link>

@@ -66,84 +66,90 @@ export default function CatalogBrowser({ products, variant }: CatalogBrowserProp
 
   return (
     <div className="space-y-8">
-      {/* Панель фильтров и сортировки */}
-      <div className="flex flex-col gap-4 border-b border-gray-200 pb-6 dark:border-neutral-800 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-neutral-400">
-          <SlidersHorizontal className="h-4 w-4" />
-          <span>
-            {filtered.length}{' '}
-            {filtered.length === 1 ? 'товар' : filtered.length < 5 ? 'товара' : 'товаров'}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 md:gap-5">
-          {/* В наличии */}
-          <button
-            type="button"
-            onClick={() => setInStockOnly((v) => !v)}
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium tracking-wide transition-colors ${
-              inStockOnly
-                ? 'border-purple-500 bg-purple-50 text-purple-700 dark:border-purple-500/60 dark:bg-purple-500/10 dark:text-purple-300'
-                : 'border-gray-200 text-gray-600 hover:border-gray-300 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600'
-            }`}
-            aria-pressed={inStockOnly}
-          >
-            <span
-              className={`flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border ${
-                inStockOnly ? 'border-purple-500 bg-purple-500' : 'border-gray-300 dark:border-neutral-600'
-              }`}
-            >
-              {inStockOnly && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+      {/* Sticky frosted toolbar */}
+      <div className="sticky top-16 z-30 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="flex flex-col gap-4 rounded-2xl border border-gray-200/70 bg-white/80 p-4 shadow-sm backdrop-blur-xl dark:border-neutral-800/70 dark:bg-neutral-900/70 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2.5 text-sm font-medium text-gray-700 dark:text-neutral-300">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-purple-500/15 to-pink-500/15 text-purple-600 dark:text-purple-300">
+              <SlidersHorizontal className="h-4 w-4" />
             </span>
-            Только в наличии
-          </button>
-
-          {/* Цена */}
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500 dark:text-neutral-400 whitespace-nowrap">
-              до{' '}
-              <span className={priceFilterActive ? 'font-semibold text-purple-600 dark:text-purple-400' : ''}>
-                {priceCap.toLocaleString('ru-RU')}&nbsp;₽
+            <span className="tabular-nums">
+              {filtered.length}{' '}
+              <span className="text-gray-400 dark:text-neutral-500">
+                {filtered.length === 1 ? 'товар' : filtered.length < 5 ? 'товара' : 'товаров'}
               </span>
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={maxPrice}
-              step={100}
-              value={priceCap}
-              onChange={(e) => setPriceCap(Number(e.target.value))}
-              className="h-1 w-28 cursor-pointer accent-purple-600 md:w-36"
-              aria-label="Максимальная цена"
-            />
+            </span>
           </div>
 
-          {/* Сортировка */}
-          <div className="relative">
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
-              className="appearance-none rounded-full border border-gray-200 bg-white px-4 py-2 pr-9 text-xs font-medium text-gray-700 transition-colors hover:border-gray-300 focus:border-purple-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-600"
-              aria-label="Сортировка"
+          <div className="flex flex-wrap items-center gap-2.5 md:gap-4">
+            {/* В наличии */}
+            <button
+              type="button"
+              onClick={() => setInStockOnly((v) => !v)}
+              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium tracking-wide transition-all ${
+                inStockOnly
+                  ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-sm dark:border-purple-500/60 dark:bg-purple-500/15 dark:text-purple-200'
+                  : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/50'
+              }`}
+              aria-pressed={inStockOnly}
             >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <svg
-              className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                clipRule="evenodd"
+              <span
+                className={`flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border transition-colors ${
+                  inStockOnly ? 'border-purple-500 bg-purple-500' : 'border-gray-300 dark:border-neutral-600'
+                }`}
+              >
+                {inStockOnly && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+              </span>
+              Только в наличии
+            </button>
+
+            {/* Цена */}
+            <div className="flex items-center gap-2.5 rounded-full border border-gray-200 px-4 py-2 dark:border-neutral-700">
+              <label className="whitespace-nowrap text-xs text-gray-500 dark:text-neutral-400">
+                до{' '}
+                <span className={priceFilterActive ? 'font-semibold text-purple-600 dark:text-purple-400' : 'font-medium text-gray-700 dark:text-neutral-300'}>
+                  {priceCap.toLocaleString('ru-RU')}&nbsp;₽
+                </span>
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={maxPrice}
+                step={100}
+                value={priceCap}
+                onChange={(e) => setPriceCap(Number(e.target.value))}
+                className="h-1 w-24 cursor-pointer accent-purple-600 md:w-32"
+                aria-label="Максимальная цена"
               />
-            </svg>
+            </div>
+
+            {/* Сортировка */}
+            <div className="relative">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                className="appearance-none rounded-full border border-gray-200 bg-white px-4 py-2 pr-9 text-xs font-medium text-gray-700 transition-colors hover:border-gray-300 focus:border-purple-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600"
+                aria-label="Сортировка"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
           </div>
         </div>
       </div>

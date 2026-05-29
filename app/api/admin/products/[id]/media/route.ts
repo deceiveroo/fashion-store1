@@ -4,9 +4,13 @@ import { getSession } from '@/lib/server-auth';
 import { db } from '@/lib/db';
 import { productImages } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
+import { processProductImage } from '@/lib/image-processing';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+// sharp требует Node.js runtime (не работает на Edge).
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,18 +70,34 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Для фото: нормализуем через sharp (resize до 2000px + WebP q90 + EXIF-поворот).
+    // Видео заливаем как есть. При сбое sharp на редком формате — откат на оригинал.
+    let uploadBody: Buffer | File = file;
+    let uploadContentType = file.type;
+    let fileExt = file.name.split('.').pop();
+
+    if (mediaType === 'image') {
+      try {
+        const processed = await processProductImage(await file.arrayBuffer(), file.type);
+        uploadBody = processed.buffer;
+        uploadContentType = processed.contentType;
+        fileExt = 'webp';
+      } catch (e) {
+        console.error('Image processing failed, uploading original:', e);
+      }
+    }
+
     // Generate unique filename
-    const fileExt = file.name.split('.').pop();
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `products/${productId}/${fileName}`;
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('uploads')
-      .upload(filePath, file, {
+      .upload(filePath, uploadBody, {
         cacheControl: '3600',
         upsert: false,
-        contentType: file.type,
+        contentType: uploadContentType,
       });
 
     if (uploadError) {
@@ -157,5 +177,74 @@ export async function POST(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     );
+  }
+}
+
+// Извлекает путь внутри бакета `uploads` из публичного URL Supabase.
+// Формат: https://xxx.supabase.co/storage/v1/object/public/uploads/products/<id>/<file>
+function extractStoragePath(url: string): string | null {
+  const match = url.match(/\/storage\/v1\/object\/public\/uploads\/(.+)$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Удаление одного фото/видео товара.
+ * Принимает ?imageId=... (или ?url=...). Удаляет запись из productImages
+ * И физический файл из Supabase Storage (+ thumbnail для видео).
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userRole = (session.user as any).role;
+    if (userRole !== 'admin' && userRole !== 'manager') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const imageId = searchParams.get('imageId');
+    const urlParam = searchParams.get('url');
+
+    if (!imageId && !urlParam) {
+      return NextResponse.json({ error: 'imageId or url is required' }, { status: 400 });
+    }
+
+    // Находим запись, чтобы узнать url/thumbnail для очистки Storage.
+    const rows = imageId
+      ? await db.select().from(productImages).where(eq(productImages.id, imageId)).limit(1)
+      : await db.select().from(productImages).where(eq(productImages.url, urlParam!)).limit(1);
+
+    const row = rows[0];
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Чистим Storage по тем URL, что знаем (из БД или из параметра).
+    const urlsToRemove = [row?.url, row?.thumbnailUrl, urlParam].filter(
+      (u): u is string => Boolean(u)
+    );
+    const paths = Array.from(
+      new Set(urlsToRemove.map(extractStoragePath).filter((p): p is string => Boolean(p)))
+    );
+    if (paths.length > 0) {
+      const { error: removeError } = await supabase.storage.from('uploads').remove(paths);
+      if (removeError) {
+        // Не валим запрос — запись из БД всё равно удалим, файл можно дочистить позже.
+        console.error('Storage remove error:', removeError.message);
+      }
+    }
+
+    // Удаляем запись из БД (по id, если он есть, иначе по url).
+    if (row?.id) {
+      await db.delete(productImages).where(eq(productImages.id, row.id));
+    } else if (urlParam) {
+      await db.delete(productImages).where(eq(productImages.url, urlParam));
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting media:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

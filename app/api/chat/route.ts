@@ -197,6 +197,11 @@ export async function GET(req: NextRequest) {
       sessionId,
       messages,
       adminInfo,
+      // Состояние сессии нужно виджету, чтобы показать запрос оценки оператора
+      // после того, как админ завершил диалог.
+      status: sessionRow?.status ?? 'active',
+      takenOver: sessionRow?.aiDisabled ?? false,
+      operatorRating: sessionRow?.operatorRating ?? null,
       hasMore: messages.length === limit,
       total: messages.length,
     });

@@ -75,7 +75,7 @@ export default function RootLayout({
           <AuthProvider>
             <CartProvider>
               <MaintenanceCheck>
-                <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 transition-colors duration-300">
+                <div className="flex min-h-screen flex-col bg-white dark:bg-[#191926] transition-colors duration-300">
                   <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
                   <SupportChatMinimalist />
                   <QuickViewProvider />

@@ -5,6 +5,10 @@ import { jwtVerify } from 'jose';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import { getJwtSecret } from '@/lib/jwt-secret';
+import { processProductImage } from '@/lib/image-processing';
+
+// sharp требует Node.js runtime (не работает на Edge).
+export const runtime = 'nodejs';
 
 const secret = getJwtSecret();
 
@@ -81,16 +85,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const ext = path.extname(file.name) || '.jpg';
-    const fileName = `products/${uuidv4()}${ext}`;
-
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    let buffer: Buffer = Buffer.from(bytes);
+    let contentType = file.type;
+    let ext = path.extname(file.name) || '.jpg';
+
+    // Нормализуем фото через sharp: resize до 2000px + WebP q90 + EXIF-поворот.
+    // При сбое на редком формате — откат на оригинальный буфер.
+    try {
+      const processed = await processProductImage(buffer, file.type);
+      buffer = processed.buffer;
+      contentType = processed.contentType;
+      ext = processed.ext;
+    } catch (e) {
+      console.error('[UPLOAD] Image processing failed, using original:', e);
+    }
+
+    const fileName = `products/${uuidv4()}${ext}`;
 
     const { error } = await supabase.storage
       .from('uploads')
       .upload(fileName, buffer, {
-        contentType: file.type,
+        contentType,
         upsert: false,
       });
 

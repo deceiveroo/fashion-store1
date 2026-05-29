@@ -427,22 +427,142 @@ export const AUTO_RESPONSES: AutoResponse[] = [
 // Helper function to find matching auto-response
 export function findAutoResponse(message: string): string | null {
   const lowerMessage = message.toLowerCase();
-  
+
   // Find best match based on keyword count
   let bestMatch: AutoResponse | null = null;
   let maxKeywords = 0;
-  
+
   for (const response of AUTO_RESPONSES) {
-    const matchedKeywords = response.keywords.filter(keyword => 
+    const matchedKeywords = response.keywords.filter(keyword =>
       lowerMessage.includes(keyword.toLowerCase())
     ).length;
-    
+
     if (matchedKeywords > maxKeywords) {
       maxKeywords = matchedKeywords;
       bestMatch = response;
     }
   }
-  
+
   // Return response if at least one keyword matched
   return maxKeywords > 0 ? bestMatch!.response : null;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Умный поиск по базе ответов (для окна "Помощь").
+ *
+ * Раньше поиск фильтровал только 3 захардкоженные категории по точному
+ * вхождению подстроки — слова вроде «баг» ничего не находили. Теперь ищем по
+ * ВСЕЙ базе AUTO_RESPONSES с устойчивостью к опечаткам и ранжированием.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export interface FaqEntry {
+  id: number;
+  title: string;
+  response: string;
+  category: AutoResponse['category'];
+  keywords: string[];
+}
+
+// Достаём короткий заголовок из ответа: первый **жирный** заголовок без эмодзи/двоеточий.
+function deriveTitle(response: string): string {
+  const bold = response.match(/\*\*(.+?)\*\*/);
+  const raw = bold ? bold[1] : response.split('\n')[0];
+  return raw
+    .replace(/[:•*]/g, '')
+    .replace(/^[^\p{L}\p{N}]+/u, '') // ведущие эмодзи/пробелы
+    .trim();
+}
+
+export const FAQ_ENTRIES: FaqEntry[] = AUTO_RESPONSES.map((r, i) => ({
+  id: i,
+  title: deriveTitle(r.response),
+  response: r.response,
+  category: r.category,
+  keywords: r.keywords,
+}));
+
+// Расстояние Левенштейна (для устойчивости к опечаткам).
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 0; i < a.length; i++) {
+    const curr = [i + 1];
+    for (let j = 0; j < b.length; j++) {
+      const cost = a[i] === b[j] ? 0 : 1;
+      curr[j + 1] = Math.min(curr[j] + 1, prev[j + 1] + 1, prev[j] + cost);
+    }
+    prev = curr;
+  }
+  return prev[b.length];
+}
+
+const STOP_WORDS = new Set(['как', 'что', 'где', 'мой', 'моя', 'мне', 'для', 'это', 'или', 'the', 'how', 'and']);
+
+// Насколько токен запроса похож на токен из базы (0..1), с учётом опечаток.
+function tokenScore(q: string, target: string): number {
+  if (q === target) return 1;
+  if (target.length >= 4 && (target.includes(q) || q.includes(target))) return 0.9;
+  const maxLen = Math.max(q.length, target.length);
+  if (maxLen < 4) return 0; // слишком коротко для fuzzy
+  const dist = levenshtein(q, target);
+  // Допуск опечаток зависит от длины слова; оценка градуируется по схожести,
+  // чтобы случайные совпадения не перебивали точные.
+  const threshold = maxLen <= 4 ? 1 : maxLen <= 7 ? 2 : 3;
+  if (dist > threshold) return 0;
+  return 0.85 * (1 - dist / (maxLen + 1));
+}
+
+/**
+ * Поиск по FAQ. Возвращает записи, отсортированные по релевантности.
+ * Устойчив к опечаткам и ищет по ключевым словам, заголовку и тексту ответа.
+ */
+export function searchFaq(query: string, limit = 6): FaqEntry[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  const qTokens = q
+    .split(/[\s,.!?]+/)
+    .filter((t) => t.length >= 2 && !STOP_WORDS.has(t));
+  if (qTokens.length === 0) return [];
+
+  const scored = FAQ_ENTRIES.map((entry) => {
+    const titleLower = entry.title.toLowerCase();
+    const responseLower = entry.response.toLowerCase();
+    const titleTokens = titleLower.split(/\s+/);
+    const kwLower = entry.keywords.map((k) => k.toLowerCase());
+
+    let score = 0;
+    for (const qTok of qTokens) {
+      let best = 0;
+      // 1) Прямое вхождение в ключевые слова (ловит стеммы вроде «доставк»).
+      for (const kw of kwLower) {
+        if (kw.includes(qTok)) { best = Math.max(best, 1.3); break; }
+      }
+      // 2) Fuzzy против каждого слова ключевых фраз (ловит опечатки: дотавка→доставк).
+      if (best < 1) {
+        for (const kw of kwLower) {
+          for (const kwTok of kw.split(/\s+/)) {
+            best = Math.max(best, tokenScore(qTok, kwTok) * 1.1);
+          }
+          if (best >= 1.05) break;
+        }
+      }
+      // 3) Заголовок (вхождение + слабый fuzzy).
+      if (titleLower.includes(qTok)) best = Math.max(best, 1.2);
+      else for (const tt of titleTokens) best = Math.max(best, tokenScore(qTok, tt) * 0.7);
+      // 4) Текст ответа — низкий вес, только если иначе не нашли.
+      if (best === 0 && responseLower.includes(qTok)) best = 0.4;
+      score += best;
+    }
+
+    return { entry, score };
+  });
+
+  return scored
+    .filter((s) => s.score > 0.35)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((s) => s.entry);
 }
