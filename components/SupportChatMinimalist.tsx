@@ -281,7 +281,17 @@ export default function SupportChatMinimalist() {
         const row = payload.new as any;
         if (row.status) setSessionStatus(row.status);
         if (typeof row.operator_rating === 'number') setOperatorRating(row.operator_rating);
-        if (row.ai_disabled) setTakenOver(true);
+        if (row.ai_disabled) {
+          // Оператор перехватил чат — показываем, КТО ведёт диалог.
+          setTakenOver(true);
+          if (row.admin_name || row.admin_avatar) {
+            setAdminInfo({ name: row.admin_name ?? null, avatar: row.admin_avatar ?? null, email: row.admin_email ?? null });
+          }
+        } else {
+          // Оператор открепился — возвращаемся к ассистенту, убираем оператора.
+          setTakenOver(false);
+          setAdminInfo(null);
+        }
       }
     );
 

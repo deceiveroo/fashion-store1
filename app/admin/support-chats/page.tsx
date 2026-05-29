@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3, Star, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3, Star, Check, CheckCheck, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
@@ -266,6 +266,14 @@ function SupportChatsPage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }),
     });
     if (r.ok) { toast.success('Чат перехвачен!'); setSel(p => p ? { ...p, aiDisabled: true } : p); }
+    else toast.error('Ошибка');
+  };
+
+  const release = async (sid: string) => {
+    const r = await fetch('/api/admin/support-chats/release', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }),
+    });
+    if (r.ok) { toast.success('Вы открепились от чата'); setSel(p => p ? { ...p, aiDisabled: false } : p); }
     else toast.error('Ошибка');
   };
 
@@ -659,9 +667,19 @@ function SupportChatsPage() {
                         </button>
                       )
                       : (
-                        <span className="px-4 py-2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-medium border border-emerald-300 dark:border-emerald-500/30">
-                          Вы ведёте чат
-                        </span>
+                        <>
+                          <span className="px-4 py-2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-medium border border-emerald-300 dark:border-emerald-500/30">
+                            Вы ведёте чат
+                          </span>
+                          <button
+                            onClick={()=>release(sel.sessionId)}
+                            className="px-4 py-2 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-500/30 transition-all border border-amber-300 dark:border-amber-500/30 flex items-center gap-2"
+                            title="Передать чат обратно ассистенту — у пользователя оператор пропадёт"
+                          >
+                            <ArrowLeft className="h-4 w-4"/>
+                            Открепиться
+                          </button>
+                        </>
                       )
                     }
                     {sel.status==='active' && taken && (
