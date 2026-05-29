@@ -17,7 +17,7 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!message.trim()) {
       toast.error('Введите сообщение');
       return;
@@ -45,13 +45,13 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
       const data = await res.json();
 
       toast.success('✅ Запрос отправлен! Админ ответит в ближайшее время.');
-      
+
       // Закрываем модалку и открываем чат
       onClose();
-      
+
       // Можно добавить редирект на страницу чата или открыть виджет чата
       // window.dispatchEvent(new CustomEvent('open-chat', { detail: { sessionId: data.sessionId } }));
-      
+
     } catch (error) {
       console.error('Error creating support chat:', error);
       const errorMessage = error instanceof Error ? error.message : 'Не удалось отправить запрос. Попробуйте позже.';
@@ -67,22 +67,25 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          initial={{ scale: 0.92, opacity: 0, y: 24 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="bg-white dark:bg-gray-800 rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden"
+          exit={{ scale: 0.92, opacity: 0, y: 24 }}
+          transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+          className="fc-glass-card relative max-w-lg w-full !rounded-3xl border border-[var(--fc-glass-border)] shadow-[var(--fc-shadow-lifted)] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6">
+          <div
+            className="p-6"
+            style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-xl">
+                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
                   <MessageCircle className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -104,12 +107,12 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
           {/* Body */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {/* Info Banner */}
-            <div className="flex gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-              <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-800 dark:text-blue-200">
+            <div className="flex gap-3 p-4 rounded-xl border border-[rgba(var(--fc-accent-rgb)/0.25)] bg-[rgba(var(--fc-accent-rgb)/0.08)]">
+              <AlertCircle className="w-5 h-5 text-[var(--fc-accent)] flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-[var(--foreground)]">
                 <p className="font-semibold mb-1">Админ получит уведомление</p>
-                <p className="text-xs opacity-80">
-                  Ваш запрос будет отправлен в Telegram администратору. 
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Ваш запрос будет отправлен в Telegram администратору.
                   Ответ придёт в чат поддержки.
                 </p>
               </div>
@@ -117,7 +120,7 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
 
             {/* Message Input */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
                 Опишите вашу проблему
               </label>
               <textarea
@@ -125,14 +128,14 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Например: Когда будет доставлен заказ? / Хочу изменить адрес доставки..."
                 rows={5}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--fc-glass-border)] rounded-xl text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--fc-accent)] focus:border-transparent resize-none transition-shadow"
                 disabled={isSending}
               />
             </div>
 
             {/* Quick Templates */}
             <div>
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+              <p className="text-xs font-medium text-[var(--text-secondary)] mb-2">
                 Быстрые шаблоны:
               </p>
               <div className="flex flex-wrap gap-2">
@@ -147,7 +150,7 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
                     type="button"
                     onClick={() => setMessage(template)}
                     disabled={isSending}
-                    className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs bg-[var(--fc-surface)] border border-[var(--fc-glass-border)] text-[var(--text-secondary)] rounded-lg hover:bg-[rgba(var(--fc-accent-rgb)/0.12)] hover:text-[var(--fc-accent)] hover:border-[rgba(var(--fc-accent-rgb)/0.3)] transition-colors disabled:opacity-50"
                   >
                     {template}
                   </button>
@@ -159,7 +162,8 @@ export default function OrderSupportModal({ orderId, orderNumber, onClose }: Ord
             <button
               type="submit"
               disabled={isSending || !message.trim()}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 active:scale-[0.98]"
             >
               {isSending ? (
                 <>

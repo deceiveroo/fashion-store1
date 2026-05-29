@@ -441,40 +441,38 @@ export default function OrdersPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
             onClick={() => setShowReceiptModal(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              initial={{ scale: 0.92, opacity: 0, y: 24 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 24 }}
+              transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+              className="fc-glass-card relative max-w-2xl w-full max-h-[90vh] overflow-y-auto !rounded-3xl border border-[var(--fc-glass-border)] shadow-[var(--fc-shadow-lifted)]"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Чек заказа #{showReceiptModal.slice(0, 8).toUpperCase()}</h3>
+              <div className="sticky top-0 z-10 bg-[var(--fc-surface-elevated)] backdrop-blur-xl border-b border-[var(--fc-glass-border)] p-6 flex items-center justify-between">
+                <h3 className="text-xl font-bold text-[var(--foreground)]">Чек заказа #{showReceiptModal.slice(0, 8).toUpperCase()}</h3>
                 <button
                   onClick={() => setShowReceiptModal(null)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  className="p-2 rounded-full text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors"
                 >
-                  <XCircle size={24} className="text-gray-600 dark:text-gray-400" />
+                  <XCircle size={24} />
                 </button>
               </div>
-              
+
               <div className="p-6">
                 <OrderReceipt order={orders.find(o => o.id === showReceiptModal)!} />
               </div>
-              
-              <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-6 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowReceiptModal(null)}
-                  className="px-6 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
+
+              <div className="sticky bottom-0 z-10 bg-[var(--fc-surface-elevated)] backdrop-blur-xl border-t border-[var(--fc-glass-border)] p-6 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setShowReceiptModal(null)}>
                   Закрыть
-                </button>
-                <OrderDownloadButton 
-                  orderId={showReceiptModal} 
-                  orderNumber={showReceiptModal.slice(0, 8).toUpperCase()} 
+                </Button>
+                <OrderDownloadButton
+                  orderId={showReceiptModal}
+                  orderNumber={showReceiptModal.slice(0, 8).toUpperCase()}
                 />
               </div>
             </motion.div>
