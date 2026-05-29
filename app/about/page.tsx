@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Users, Target, Globe, Award } from 'lucide-react';
+import TeamSection from '@/components/TeamSection';
 
 const values = [
   {
@@ -23,27 +24,6 @@ const values = [
     icon: Award,
     title: "Качество",
     description: "Каждый предмет одежды проходит строгий контроль качества и создается с вниманием к деталям, чтобы служить вам долгие годы."
-  }
-];
-
-const team = [
-  {
-    name: "Анна Иванова",
-    role: "Главный дизайнер",
-    image: "/images/team/anna.jpg",
-    description: "Ведущий эксперт в области устойчивой моды с более чем 10 лет опыта в индустрии"
-  },
-  {
-    name: "Максим Петров",
-    role: "Технический директор",
-    image: "/images/team/maxim.jpg",
-    description: "Инженер с глубокими знаниями в области умных материалов и IoT-технологий"
-  },
-  {
-    name: "Елена Смирнова",
-    role: "Менеджер по устойчивому развитию",
-    image: "/images/team/elena.jpg",
-    description: "Эксперт в области экологических стандартов и устойчивого производства"
   }
 ];
 
@@ -265,71 +245,7 @@ export default function AboutPage() {
       </section>
 
       {/* Team Section */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Наша Команда
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-              Талантливые профессионалы, объединенные страстью к инновациям и устойчивой моде
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {team.map((member, index) => (
-              <motion.div
-                key={member.name}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                whileHover={{ y: -10 }}
-                className="bg-white rounded-3xl overflow-hidden shadow-xl text-center hover:shadow-2xl transition-all duration-300"
-              >
-                <div className="relative">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-full h-80 object-cover"
-                    onError={(e) => {
-                      // Fallback to gradient background if image fails to load
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/images/team/default.jpg';
-                      target.onerror = null;
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                  <div className="absolute bottom-4 left-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                        <Users size={16} className="text-white" />
-                      </div>
-                      <span className="text-white text-sm font-medium">Эксперт</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {member.name}
-                  </h3>
-                  <p className="text-purple-600 font-semibold mb-3">
-                    {member.role}
-                  </p>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {member.description}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <TeamSection />
 
       {/* CTA Section */}
       {/* Удалена секция "Присоединяйтесь к революции в моде" по запросу пользователя */}

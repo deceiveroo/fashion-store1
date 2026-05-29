@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { Users, Award, Zap, Globe, Star, TrendingUp, Building2, ArrowRight, Shield, Heart } from 'lucide-react';
 import Link from 'next/link';
+import TeamSection from '@/components/TeamSection';
 
 function CountUp({ end, duration = 2 }: { end: number; duration?: number }) {
   const [count, setCount] = useState(0);
@@ -46,12 +47,6 @@ const timeline = [
   { year: '2022', title: 'AI-прорыв', desc: 'Внедрение искусственного интеллекта в производство' },
   { year: '2023', title: 'Экспансия', desc: '25 магазинов в 10 странах мира' },
   { year: '2024', title: 'Будущее', desc: 'Новая эра устойчивой роскоши' },
-];
-
-const team = [
-  { name: 'Афанасьев Кирилл', role: 'Главный дизайнер', initials: 'АИ', color: 'from-purple-500 to-pink-500' },
-  { name: 'Ахтеркин Никита', role: 'Технический директор', initials: 'МП', color: 'from-blue-500 to-purple-500' },
-  { name: 'Петров Вадим', role: 'Директор по развитию', initials: 'ЕС', color: 'from-pink-500 to-rose-500' },
 ];
 
 export default function AboutPage() {
@@ -258,37 +253,7 @@ export default function AboutPage() {
       </section>
 
       {/* TEAM */}
-      <section className="py-20 px-4 bg-gray-950">
-        <div className="max-w-6xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-black text-white mb-16 text-center"
-          >
-            Команда
-          </motion.h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {team.map((member, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                whileHover={{ y: -6 }}
-                className="group bg-gray-900 rounded-3xl p-8 border border-gray-800 hover:border-purple-500/50 transition-all duration-300"
-              >
-                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${member.color} flex items-center justify-center text-white text-2xl font-black mb-6 shadow-lg`}>
-                  {member.initials}
-                </div>
-                <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
-                <p className="text-purple-400 text-sm font-medium">{member.role}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <TeamSection />
 
       {/* CTA */}
       <section className="py-32 px-4 relative overflow-hidden">
