@@ -127,14 +127,55 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     async signIn({ user, account }) {
-      // Обновляем last_sign_in при каждом входе
+      // Google OAuth: при JWT-стратегии без адаптера NextAuth НЕ создаёт строку в БД.
+      // Апсертим пользователя сами и подменяем user.id на наш внутренний id,
+      // чтобы сессия и /api/profile работали. Делаем это ДО gamification ниже.
+      if (account?.provider === 'google' && user.email) {
+        try {
+          const em = user.email.toLowerCase();
+          const [u] = await db
+            .select()
+            .from(users)
+            .where(sql`lower(${users.email}) = ${em}`)
+            .limit(1);
+
+          if (!u) {
+            const id = crypto.randomUUID();
+            await db.insert(users).values({
+              id,
+              email: user.email,
+              name: user.name ?? em.split('@')[0],
+              image: user.image ?? null,
+              password: crypto.randomUUID(), // вход только через Google
+              role: 'customer',
+              status: 'active',
+              emailVerified: new Date(),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+            user.id = id;
+            (user as { role?: string }).role = 'customer';
+          } else {
+            user.id = u.id;
+            (user as { role?: string }).role = String(u.role ?? 'customer').toLowerCase();
+            if (user.image && u.image !== user.image) {
+              await db.update(users).set({ image: user.image, updatedAt: new Date() }).where(eq(users.id, u.id));
+            }
+          }
+        } catch (error) {
+          console.error('[AUTH] Google upsert failed:', error);
+          return false;
+        }
+      }
+
+      // Обновляем last_sign_in + геймификация (user.id здесь — наш внутренний id)
       if (user.id) {
         try {
           await db
             .update(users)
             .set({ lastSignIn: new Date() })
             .where(eq(users.id, user.id));
-          
+
           // Gamification: Award XP for daily login and check achievements
           await awardXP(user.id, 5, 'Daily login');
           await checkAchievements(user.id, 'login');
@@ -144,18 +185,6 @@ export const authConfig: NextAuthConfig = {
         }
       }
 
-      if (account?.provider === 'google' && user.email) {
-        const em = user.email.toLowerCase();
-        const [u] = await db
-          .select()
-          .from(users)
-          .where(sql`lower(${users.email}) = ${em}`)
-          .limit(1);
-        // Если пользователь не найден, создаем его с ролью customer
-        if (!u) {
-          return true; // Позволяем создать нового пользователя
-        }
-      }
       return true;
     },
     async jwt({ token, user, trigger }) {

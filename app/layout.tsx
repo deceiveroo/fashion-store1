@@ -31,9 +31,6 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: 'ELEVATE',
-  icons: {
-    icon: '/favicon.svg',
-  },
   openGraph: {
     type: 'website',
     siteName: 'ELEVATE',

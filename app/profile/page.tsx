@@ -96,14 +96,17 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 pt-20 pb-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+    <div className="fc-ambient-bg relative min-h-screen overflow-hidden pt-24 pb-16">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-            Мой Профиль
+          <h1 className="text-4xl font-bold uppercase tracking-tight text-[var(--foreground)] mb-2">
+            Мой{' '}
+            <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(to right, #8b7cf6, #c4b5fd)' }}>
+              профиль
+            </span>
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">Управляйте вашими данными и настройками</p>
+          <p className="text-[var(--text-secondary)]">Управляйте вашими данными и настройками</p>
         </div>
 
         {/* Gamification Widget */}
@@ -112,7 +115,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5 mb-6 border border-gray-200 dark:border-gray-800">
+        <div className="fc-glass-card p-5 mb-6">
           <div className="flex items-center gap-6 flex-wrap">
             {/* Avatar */}
             <div
@@ -141,10 +144,10 @@ export default function ProfilePage() {
 
             {/* User Info */}
             <div className="flex-1 min-w-[200px]">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+              <h2 className="text-2xl font-bold text-[var(--foreground)] mb-1">
                 {profileData.formData.firstName} {profileData.formData.lastName}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-2">{profileData.formData.email}</p>
+              <p className="text-[var(--text-secondary)] mb-2">{profileData.formData.email}</p>
               <div className="flex gap-2 flex-wrap">
                 <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm">Активен</span>
                 {profileData.orders.length > 0 && (
@@ -175,22 +178,22 @@ export default function ProfilePage() {
               return (
                 <div key={section.id}>
                   {/* Section Header */}
-                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-purple-100 dark:border-purple-900/50 overflow-hidden mb-6">
+                  <div className="fc-glass-card overflow-hidden mb-6">
                     <div className="w-full p-6 flex items-center gap-4">
-                      <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl">
+                      <div className="p-3 rounded-xl" style={{ background: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}>
                         <Icon className="text-white" size={24} />
                       </div>
                       <div className="text-left">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{section.title}</h3>
+                        <h3 className="text-lg font-bold text-[var(--foreground)]">{section.title}</h3>
                         {section.count !== null && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{section.count} элементов</p>
+                          <p className="text-sm text-[var(--text-secondary)]">{section.count} элементов</p>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Section Content */}
-                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-purple-100 dark:border-purple-900/50 overflow-hidden p-6">
+                  <div className="fc-glass-card overflow-hidden p-6">
                     {section.id === 'personal' && (
                       <PersonalInfoSection
                         formData={profileData.formData}

@@ -130,14 +130,10 @@ export default function SearchNew() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(true)}
+        aria-label="Поиск"
         className="relative p-2.5 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20"
       >
         <SearchIcon size={22} />
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full"
-        />
       </motion.button>
 
       <AnimatePresence>

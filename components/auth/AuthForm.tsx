@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import type { AuthMode } from '@/context/AuthModalContext';
 import TelegramLoginButton from './TelegramLoginButton';
+import GoogleLoginButton from './GoogleLoginButton';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -329,7 +330,10 @@ export default function AuthForm({ mode, onModeChange, context = 'page', onSucce
             </button>
 
             <OrDivider />
-            <TelegramLoginButton onSuccess={finishSuccess} disabled={isLoading} />
+            <div className="space-y-2.5">
+              <GoogleLoginButton disabled={isLoading} />
+              <TelegramLoginButton onSuccess={finishSuccess} disabled={isLoading} />
+            </div>
 
             <p className="pt-1 text-center text-sm text-[var(--text-secondary)]">
               Нет аккаунта?{' '}
@@ -402,7 +406,10 @@ export default function AuthForm({ mode, onModeChange, context = 'page', onSucce
             </button>
 
             <OrDivider />
-            <TelegramLoginButton onSuccess={finishSuccess} disabled={isLoading} />
+            <div className="space-y-2.5">
+              <GoogleLoginButton disabled={isLoading} />
+              <TelegramLoginButton onSuccess={finishSuccess} disabled={isLoading} />
+            </div>
 
             <p className="pt-1 text-center text-sm text-[var(--text-secondary)]">
               Уже есть аккаунт?{' '}

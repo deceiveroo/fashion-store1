@@ -132,28 +132,28 @@ export default function Cart({ isOpen, onClose }: CartProps) {
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 220 }}
             data-cart-panel
-            className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-white/90 dark:bg-gray-900/95 backdrop-blur-2xl z-50 shadow-[0_0_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_60px_rgba(0,0,0,0.6)] border-l border-gray-100 dark:border-gray-800/80 flex flex-col"
+            className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-[var(--fc-surface)] backdrop-blur-2xl z-50 shadow-[0_0_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_60px_rgba(0,0,0,0.6)] border-l border-[var(--fc-glass-border)] flex flex-col"
           >
             {/* Header */}
-            <div className="relative p-6 border-b border-gray-100 dark:border-gray-800/80 bg-gradient-to-r from-purple-600/5 to-pink-600/5">
+            <div className="relative p-6 border-b border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl text-white shadow-md shadow-purple-500/20">
+                  <div className="p-2.5 rounded-xl text-white shadow-md shadow-purple-500/20" style={{ background: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}>
                     <ShoppingBag size={20} className="animate-pulse" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Корзина</h2>
-                    <p className="text-gray-500 dark:text-gray-400 text-xs font-medium mt-0.5">
+                    <h2 className="text-xl font-bold text-[var(--foreground)]">Корзина</h2>
+                    <p className="text-[var(--text-secondary)] text-xs font-medium mt-0.5">
                       {itemCount} {itemCount === 1 ? 'товар' : itemCount > 1 && itemCount < 5 ? 'товара' : 'товаров'}
                     </p>
                   </div>
                 </div>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.08, rotate: 90 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={onClose}
-                  className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+                  className="p-2 text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--fc-surface)] rounded-xl transition-all"
                 >
                   <X size={20} />
                 </motion.button>
@@ -165,7 +165,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                   animate={{ scale: [1, 1.2, 1], rotate: [0, 15, -15, 0] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
-                  <Sparkles size={14} className="text-purple-500" />
+                  <Sparkles size={14} className="text-[#8b7cf6]" />
                 </motion.div>
               </div>
             </div>
@@ -206,7 +206,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
                       transition={{ duration: 0.25, delay: index * 0.05 }}
-                      className="group relative bg-white dark:bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800/60 hover:border-purple-500/30 dark:hover:border-purple-500/30 transition-all duration-300 overflow-hidden"
+                      className="group relative bg-[var(--fc-surface-elevated)] backdrop-blur-md rounded-2xl p-4 shadow-sm border border-[var(--fc-glass-border)] hover:border-[#8b7cf6]/40 transition-all duration-300 overflow-hidden"
                     >
                       {/* Subtly colored decorative corner */}
                       <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-bl-full pointer-events-none" />
@@ -363,7 +363,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                 )}
 
                 {/* Pricing Footer */}
-                <div className="p-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800/80 space-y-4">
+                <div className="p-6 bg-[var(--fc-surface-elevated)] border-t border-[var(--fc-glass-border)] space-y-4">
                   {/* Discount Badge */}
                   {getDiscount() > 0 && (
                     <motion.div
@@ -376,10 +376,10 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                     </motion.div>
                   )}
 
-                  <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-400">
+                  <div className="space-y-2.5 text-xs text-[var(--text-secondary)]">
                     <div className="flex justify-between items-center">
                       <span>Товары ({itemCount} шт.)</span>
-                      <span className="font-bold text-gray-900 dark:text-white">{Math.round(total).toLocaleString('ru-RU')} ₽</span>
+                      <span className="font-bold text-[var(--foreground)]">{Math.round(total).toLocaleString('ru-RU')} ₽</span>
                     </div>
 
                     {getDiscount() > 0 && (
@@ -397,17 +397,18 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                           Бесплатно
                         </span>
                       ) : (
-                        <span className="font-bold text-gray-900 dark:text-white">300 ₽</span>
+                        <span className="font-bold text-[var(--foreground)]">300 ₽</span>
                       )}
                     </div>
 
-                    <div className="border-t border-gray-100 dark:border-gray-800/60 pt-3 mt-3 flex justify-between items-center text-sm">
-                      <span className="font-bold text-gray-900 dark:text-white">Итого к оплате:</span>
+                    <div className="border-t border-[var(--fc-glass-border)] pt-3 mt-3 flex justify-between items-center text-sm">
+                      <span className="font-bold text-[var(--foreground)]">Итого к оплате:</span>
                       <motion.span
                         key={finalTotal}
                         animate={{ scale: [1, 1.05, 1] }}
                         transition={{ duration: 0.3 }}
-                        className="text-lg font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
+                        className="text-lg font-black bg-clip-text text-transparent"
+                        style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
                       >
                         {Math.round(finalTotal).toLocaleString('ru-RU')} ₽
                       </motion.span>
@@ -416,13 +417,14 @@ export default function Cart({ isOpen, onClose }: CartProps) {
 
                   {/* Checkout Button */}
                   <motion.button
-                    whileHover={{ 
+                    whileHover={{
                       scale: 1.02,
-                      boxShadow: "0 10px 25px -5px rgba(168, 85, 247, 0.4)"
+                      boxShadow: "0 10px 25px -5px rgba(139, 124, 246, 0.45)"
                     }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCheckout}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3.5 px-6 rounded-xl font-bold text-sm relative overflow-hidden group shadow-md transition-all flex items-center justify-center gap-2"
+                    className="w-full text-white py-3.5 px-6 rounded-xl font-bold text-sm relative overflow-hidden group shadow-md transition-all flex items-center justify-center gap-2"
+                    style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
                   >
                     {/* Shiny hover effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
