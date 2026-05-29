@@ -18,6 +18,7 @@ import OrderTrackingModal from '@/components/orders/OrderTrackingModal';
 import OrderSupportModal from '@/components/orders/OrderSupportModal';
 import { receiptService, Receipt } from '@/lib/receipt-client';
 import ProxyImage from '@/components/ProxyImage';
+import Button from '@/components/ui/Button';
 
 export interface OrderItem {
   id: string;
@@ -210,13 +211,9 @@ export default function OrdersPage() {
             <p className="text-[var(--text-secondary)] mb-8">
               Начните покупки, чтобы увидеть их здесь
             </p>
-            <Link 
-              href="/collections" 
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-2xl font-semibold hover:shadow-xl transition-all"
-            >
-              <ShoppingBag size={20} />
+            <Button href="/collections" size="lg" icon={<ShoppingBag size={20} />}>
               Начать покупки
-            </Link>
+            </Button>
           </motion.div>
         ) : (
           <div className="space-y-6">
@@ -389,32 +386,19 @@ export default function OrdersPage() {
 
                           {/* Actions */}
                           <div className="flex flex-wrap gap-3">
-                            <button 
-                              onClick={() => setShowTrackingModal(order.id)}
-                              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
-                            >
-                              <Truck size={18} />
+                            <Button onClick={() => setShowTrackingModal(order.id)} icon={<Truck size={18} />}>
                               Отслеживать
-                            </button>
-                            <button 
-                              onClick={() => setShowReceiptModal(order.id)}
-                              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
-                            >
-                              <Download size={18} />
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowReceiptModal(order.id)} icon={<Download size={18} />}>
                               Скачать чек
-                            </button>
-                            <button 
-                              onClick={() => setShowSupportModal(order.id)}
-                              className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-xl font-semibold hover:shadow-md transition-all"
-                            >
-                              <MessageCircle size={18} />
+                            </Button>
+                            <Button variant="ghost" onClick={() => setShowSupportModal(order.id)} icon={<MessageCircle size={18} />}>
                               Поддержка
-                            </button>
+                            </Button>
                             {order.status === 'delivered' && (
-                              <button className="flex items-center gap-2 px-6 py-3 bg-yellow-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all">
-                                <Star size={18} />
+                              <Button variant="success" icon={<Star size={18} />}>
                                 Оставить отзыв
-                              </button>
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -431,21 +415,13 @@ export default function OrdersPage() {
                         <span>{order.deliveryMethod === 'pickup' ? 'Самовывоз' : 'Доставка'}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setShowTrackingModal(order.id)}
-                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg text-sm font-semibold hover:shadow-md transition-all flex items-center gap-2"
-                        >
-                          <Truck size={16} />
+                        <Button size="sm" onClick={() => setShowTrackingModal(order.id)} icon={<Truck size={16} />}>
                           Отслеживать
-                        </button>
-                        <button
-                          onClick={() => setShowReceiptModal(order.id)}
-                          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-semibold hover:shadow-md transition-all flex items-center gap-2"
-                        >
-                          <Download size={16} />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setShowReceiptModal(order.id)} icon={<Download size={16} />}>
                           Чек
-                        </button>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                        </Button>
+                        <div className="text-2xl font-bold text-[var(--foreground)]">
                           {order.total.toLocaleString('ru-RU')} ₽
                         </div>
                       </div>

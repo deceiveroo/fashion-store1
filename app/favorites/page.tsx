@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import Button from '@/components/ui/Button';
 
 interface FavoriteItem {
   id: string;
@@ -159,14 +160,9 @@ export default function FavoritesPage() {
           >
             <Heart size={80} className="mx-auto text-gray-400 mb-4" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-950 dark:text-white mb-4">Необходима авторизация</h1>
-          <p className="text-gray-700 dark:text-gray-300 mb-8">Пожалуйста, войдите в систему чтобы просмотреть избранное.</p>
-          <Link
-            href="/auth/signin"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-2xl font-semibold hover:shadow-xl transition-all"
-          >
-            Войти в аккаунт
-          </Link>
+          <h1 className="text-3xl font-bold text-[var(--foreground)] mb-4">Необходима авторизация</h1>
+          <p className="text-[var(--text-secondary)] mb-8">Пожалуйста, войдите в систему чтобы просмотреть избранное.</p>
+          <Button href="/auth/signin" size="lg">Войти в аккаунт</Button>
         </div>
       </div>
     );
@@ -198,12 +194,7 @@ export default function FavoritesPage() {
           </motion.div>
           <h1 className="text-3xl font-bold text-[var(--foreground)] mb-4">В избранном пусто</h1>
           <p className="text-[var(--text-secondary)] mb-8">Добавьте товары в избранное, чтобы они появились здесь.</p>
-          <Link
-            href="/collections"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-2xl font-semibold hover:shadow-xl transition-all"
-          >
-            Начать покупки
-          </Link>
+          <Button href="/collections" size="lg" icon={<ShoppingCart size={18} />}>Начать покупки</Button>
         </div>
       </div>
     );
@@ -261,23 +252,13 @@ export default function FavoritesPage() {
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-3 mb-6">
-          <button
-            onClick={addAllToCart}
-            disabled={favorites.length === 0}
-            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-          >
-            <ShoppingCart size={20} />
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <Button onClick={addAllToCart} disabled={favorites.length === 0} fullWidth icon={<ShoppingCart size={18} />} className="sm:flex-1">
             Добавить все в корзину
-          </button>
-          
-          <button
-            onClick={shareWishlist}
-            className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-all border border-gray-200 shadow-md hover:shadow-lg"
-          >
-            <Share2 size={20} />
+          </Button>
+          <Button variant="outline" onClick={shareWishlist} icon={<Share2 size={18} />}>
             Поделиться
-          </button>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -349,20 +330,22 @@ export default function FavoritesPage() {
                   </span>
                 </div>
 
-                <div className="flex gap-2">
-                  <Link
-                    href={`/products/${item.id}`}
-                    className="flex-1 flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
-                  >
-                    <Eye size={16} />
+                <div className="flex flex-col gap-2">
+                  <Button href={`/products/${item.id}`} variant="outline" size="sm" fullWidth icon={<Eye size={16} />}>
                     Посмотреть
-                  </Link>
+                  </Button>
 
                   {item.inStock && (
-                    <button className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-3 py-2 rounded-xl text-sm font-medium transition-all">
-                      <ShoppingCart size={16} />
+                    <Button
+                      size="sm"
+                      fullWidth
+                      icon={<ShoppingCart size={16} />}
+                      onClick={() =>
+                        addItem({ id: item.id, name: item.name, price: item.price, image: item.image })
+                      }
+                    >
                       В корзину
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

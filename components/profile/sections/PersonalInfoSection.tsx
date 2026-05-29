@@ -6,6 +6,7 @@ import { Edit3, Mail, Phone, MapPin, Loader, Trash2, AlertTriangle, Shield, Chec
 import { ProfileFormData } from '@/app/profile/hooks/useProfileData';
 import { handlePhoneChangeWithCursor } from '@/app/profile/utils/formatPhone';
 import VerificationForm from '@/components/profile/VerificationForm';
+import Button from '@/components/ui/Button';
 
 interface PersonalInfoSectionProps {
   formData: ProfileFormData;
@@ -84,13 +85,9 @@ export default function PersonalInfoSection({
     <div className="space-y-4">
       <div className="flex justify-end mb-4">
         {!isEditing ? (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
-          >
-            <Edit3 size={16} />
+          <Button onClick={() => setIsEditing(true)} icon={<Edit3 size={16} />}>
             Редактировать
-          </button>
+          </Button>
         ) : null}
       </div>
 
@@ -281,26 +278,12 @@ export default function PersonalInfoSection({
       {/* Save/Cancel Buttons */}
       {isEditing && (
         <div className="flex gap-3 pt-4">
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isSaving ? (
-              <>
-                <Loader className="animate-spin" size={18} />
-                Сохранение...
-              </>
-            ) : (
-              'Сохранить'
-            )}
-          </button>
-          <button
-            onClick={() => { setIsEditing(false); loadProfile(); }}
-            className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
-          >
+          <Button onClick={handleSave} loading={isSaving} fullWidth size="lg">
+            {isSaving ? 'Сохранение...' : 'Сохранить'}
+          </Button>
+          <Button variant="outline" fullWidth size="lg" onClick={() => { setIsEditing(false); loadProfile(); }}>
             Отмена
-          </button>
+          </Button>
         </div>
       )}
 
