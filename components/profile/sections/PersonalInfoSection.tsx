@@ -7,6 +7,7 @@ import { ProfileFormData } from '@/app/profile/hooks/useProfileData';
 import { handlePhoneChangeWithCursor } from '@/app/profile/utils/formatPhone';
 import VerificationForm from '@/components/profile/VerificationForm';
 import Button from '@/components/ui/Button';
+import ConnectedAccounts from '@/components/profile/ConnectedAccounts';
 
 interface PersonalInfoSectionProps {
   formData: ProfileFormData;
@@ -287,6 +288,11 @@ export default function PersonalInfoSection({
           </Button>
         </div>
       )}
+
+      {/* Подключённые аккаунты (Google / Telegram) */}
+      <div className="mt-8 pt-6 border-t border-[var(--fc-glass-border)]">
+        <ConnectedAccounts />
+      </div>
 
       {/* Delete Account Section */}
       {showDeleteConfirm !== undefined && deleteConfirmText !== undefined && setDeleteConfirmText && setShowDeleteConfirm && handleDeleteAccount && (
