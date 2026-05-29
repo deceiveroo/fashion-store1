@@ -11,6 +11,7 @@ import Cart from './Cart';
 import ThemeToggle from './ThemeToggle';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import { useAuthModal } from '@/context/AuthModalContext';
 
 const navigation = [
   { name: 'Новинки', href: '/new' },
@@ -32,6 +33,7 @@ export default function Header() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const { user, isLoading } = useAuth();
   const { state: cart } = useCart();
+  const { open: openAuth } = useAuthModal();
 
   // Подсчет общего количества товаров в корзине
   const itemCount = cart.items.reduce((total, item) => total + item.quantity, 0);
@@ -425,30 +427,24 @@ export default function Header() {
               ) : (
                 <div className="hidden md:flex items-center space-x-3"> {/* Показываем только на десктопе */}
                   {/* Register Button */}
-                  <motion.div
+                  <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={() => openAuth('signup')}
+                    className="px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg text-sm font-medium hover:shadow-lg transition-shadow"
                   >
-                    <Link
-                      href="/auth/signup"
-                      className="px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg text-sm font-medium hover:shadow-lg transition-shadow"
-                    >
-                      Регистрация
-                    </Link>
-                  </motion.div>
-                  
+                    Регистрация
+                  </motion.button>
+
                   {/* Login Button */}
-                  <motion.div
+                  <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={() => openAuth('signin')}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:shadow-lg transition-shadow"
                   >
-                    <Link
-                      href="/auth/signin"
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:shadow-lg transition-shadow"
-                    >
-                      Войти
-                    </Link>
-                  </motion.div>
+                    Войти
+                  </motion.button>
                 </div>
               )}
             </div>
@@ -552,20 +548,18 @@ export default function Header() {
                   ) : (
                     <>
                       <div className="border-t border-gray-200 pt-3 mt-2">
-                        <Link
-                          href="/auth/signup"
-                          className="block py-2 text-gray-700 hover:text-purple-600 font-medium"
-                          onClick={closeMobileMenu}
+                        <button
+                          onClick={() => { openAuth('signup'); closeMobileMenu(); }}
+                          className="block w-full text-left py-2 text-gray-700 hover:text-purple-600 font-medium"
                         >
                           Регистрация
-                        </Link>
-                        <Link
-                          href="/auth/signin"
-                          className="block py-2 text-purple-600 hover:text-purple-700 font-medium"
-                          onClick={closeMobileMenu}
+                        </button>
+                        <button
+                          onClick={() => { openAuth('signin'); closeMobileMenu(); }}
+                          className="block w-full text-left py-2 text-purple-600 hover:text-purple-700 font-medium"
                         >
                           Войти
-                        </Link>
+                        </button>
                       </div>
                     </>
                   )}

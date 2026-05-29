@@ -10,6 +10,12 @@ import { jwtVerify } from 'jose';
 import { checkAchievements, awardXP } from './gamification';
 import { verifyTotp } from './totp';
 import { isCurrentSessionActive } from './track-session';
+import {
+  verifyTelegramAuth,
+  isTelegramAuthFresh,
+  upsertTelegramUser,
+  pickTelegramFields,
+} from './telegram-auth';
 
 // NextAuth v5 конфигурация
 export const authConfig: NextAuthConfig = {
@@ -95,6 +101,29 @@ export const authConfig: NextAuthConfig = {
           }),
         ]
       : []),
+    // Telegram Login Widget → реальная NextAuth-сессия (мост вместо отдельного JWT).
+    // Принимает подписанный payload виджета, проверяет HMAC и апсертит пользователя.
+    Credentials({
+      id: 'telegram',
+      name: 'Telegram',
+      credentials: {
+        id: {}, first_name: {}, last_name: {}, username: {}, photo_url: {}, auth_date: {}, hash: {},
+      },
+      async authorize(credentials) {
+        try {
+          if (!process.env.TELEGRAM_BOT_TOKEN) return null;
+          const data = pickTelegramFields((credentials ?? {}) as Record<string, unknown>);
+          if (!data.id || !data.hash) return null;
+          if (!verifyTelegramAuth(data)) return null;
+          if (!isTelegramAuthFresh(data.auth_date)) return null;
+          const user = await upsertTelegramUser(data);
+          return { id: user.id, email: user.email, name: user.name, role: user.role, image: user.image };
+        } catch (error) {
+          console.error('[AUTH] Telegram authorize error:', error);
+          return null;
+        }
+      },
+    }),
   ],
   callbacks: {
     async signIn({ user, account }) {

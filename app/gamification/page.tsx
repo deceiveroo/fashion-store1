@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import GamificationDashboard from '@/components/gamification/GamificationDashboard';
 
 export default function GamificationPage() {

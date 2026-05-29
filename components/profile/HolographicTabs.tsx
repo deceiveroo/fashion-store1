@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Package, Heart, Ticket, CreditCard, Bell, Shield, User, FileText 
-} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface HolographicTab {
   id: string;
   label: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   color: string;
   colorRGB: string;
 }

@@ -4,8 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { Lock, ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Lock, ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';import { motion } from 'framer-motion';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -81,11 +80,11 @@ function ResetPasswordForm() {
 
   if (!hasToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 px-4">
+      <div className="min-h-screen flex items-center justify-center fc-ambient-bg overflow-hidden px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700"
+          className="w-full max-w-md fc-glass-card p-8"
         >
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
@@ -121,20 +120,20 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 px-4">
+    <div className="min-h-screen flex items-center justify-center fc-ambient-bg overflow-hidden px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="w-full max-w-md"
       >
-        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700">
+        <div className="fc-glass-card p-8">
           <div className="text-center mb-8">
             <motion.h1
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2"
+              className="text-3xl font-bold uppercase tracking-tight text-[var(--foreground)] mb-2"
             >
               Новый пароль
             </motion.h1>
@@ -232,7 +231,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center fc-ambient-bg overflow-hidden">
         <div className="text-gray-600 dark:text-gray-300">Загрузка...</div>
       </div>
     }>

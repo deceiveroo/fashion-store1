@@ -27,7 +27,7 @@ export async function GET() {
     const profile = await db
       .select()
       .from(userProfiles)
-      .where(eq(userProfiles.id, user[0].id));
+      .where(eq(userProfiles.userId, user[0].id));
 
     const userOrders = await db
       .select()

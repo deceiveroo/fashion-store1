@@ -1,95 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { users } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
-import { createHash, createHmac } from 'crypto';
 import jwt from 'jsonwebtoken';
+import {
+  verifyTelegramAuth,
+  isTelegramAuthFresh,
+  upsertTelegramUser,
+  pickTelegramFields,
+} from '@/lib/telegram-auth';
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'secret';
 
-// Verify Telegram data hash
-function verifyTelegramData(data: Record<string, string>): boolean {
-  if (!BOT_TOKEN) return false;
-  const { hash, ...rest } = data;
-  const checkString = Object.keys(rest)
-    .sort()
-    .map(k => `${k}=${rest[k]}`)
-    .join('\n');
-  const secretKey = createHash('sha256').update(BOT_TOKEN).digest();
-  const hmac = createHmac('sha256', secretKey).update(checkString).digest('hex');
-  return hmac === hash;
-}
-
+// Legacy/standalone endpoint: возвращает собственный JWT (для не-NextAuth клиентов).
+// Основной путь входа через Telegram теперь — NextAuth-провайдер 'telegram' (см. lib/auth.ts),
+// который создаёт полноценную сессию. Этот роут оставлен для обратной совместимости.
 export async function POST(request: NextRequest) {
   try {
-    if (!BOT_TOKEN) {
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
       return NextResponse.json({ error: 'Telegram bot not configured' }, { status: 500 });
     }
 
-    const telegramData = await request.json();
+    const raw = await request.json();
+    const data = pickTelegramFields(raw);
 
-    // Verify authenticity
-    if (!verifyTelegramData(telegramData)) {
+    if (!verifyTelegramAuth(data)) {
       return NextResponse.json({ error: 'Invalid Telegram data' }, { status: 401 });
     }
 
-    // Check data is not too old (5 min)
-    const authDate = parseInt(telegramData.auth_date);
-    if (Date.now() / 1000 - authDate > 300) {
+    if (!isTelegramAuthFresh(data.auth_date)) {
       return NextResponse.json({ error: 'Telegram data expired' }, { status: 401 });
     }
 
-    const telegramId = telegramData.id;
-    const firstName = telegramData.first_name || '';
-    const lastName = telegramData.last_name || '';
-    const username = telegramData.username || '';
-    const photoUrl = telegramData.photo_url || '';
+    const user = await upsertTelegramUser(data);
 
-    // Find existing user by telegram_id or create new
-    // First check if user with this telegram_id exists (stored in image field as tg:id)
-    const telegramEmail = `tg_${telegramId}@telegram.user`;
-
-    let existingUser = await db.select()
-      .from(users)
-      .where(eq(users.email, telegramEmail))
-      .limit(1);
-
-    let userId: string;
-
-    if (existingUser.length === 0) {
-      // Create new user
-      userId = crypto.randomUUID();
-      const name = [firstName, lastName].filter(Boolean).join(' ') || username || `User${telegramId}`;
-      
-      await db.insert(users).values({
-        id: userId,
-        email: telegramEmail,
-        name,
-        image: photoUrl || null,
-        password: crypto.randomUUID(), // Random password - login only via Telegram
-        role: 'customer',
-        status: 'active',
-        emailVerified: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    } else {
-      userId = existingUser[0].id;
-      // Update photo if changed
-      if (photoUrl && existingUser[0].image !== photoUrl) {
-        await db.update(users).set({ image: photoUrl, updatedAt: new Date() }).where(eq(users.id, userId));
-      }
-    }
-
-    // Create JWT token
     const token = jwt.sign(
-      { userId, email: telegramEmail, telegramId },
+      { userId: user.id, email: user.email, telegramId: data.id },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
 
-    return NextResponse.json({ success: true, token, userId });
+    return NextResponse.json({ success: true, token, userId: user.id });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('[TELEGRAM AUTH] Error:', errorMessage);

@@ -1233,7 +1233,7 @@ export default function CheckoutPage() {
                   >
                     <div className="relative flex-shrink-0">
                       <img
-                        src={item.image || '/placeholder-image.jpg'}
+                        src={item.image?.trim() || '/placeholder-image.jpg'}
                         alt={item.name}
                         className="w-16 h-16 rounded-lg object-cover"
                         onError={(e) => {

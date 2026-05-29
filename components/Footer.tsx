@@ -243,6 +243,7 @@ export default function Footer() {
                     <li><Link href="/company/sustainability" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Устойчивость</Link></li>
                     <li><Link href="/company/careers" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Карьера</Link></li>
                     <li><Link href="/company/press" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Пресса</Link></li>
+                    <li><Link href="/company/stores" className="text-[9px] text-gray-600 dark:text-gray-400 hover:text-purple-600 block">Магазины</Link></li>
                   </ul>
                 </div>
               </div>
@@ -262,7 +263,7 @@ export default function Footer() {
               >
                 <h4 className="font-bold text-sm mb-4 text-gray-800 dark:text-white">{section.title}</h4>
                 <ul className="space-y-2">
-                  {section.links.slice(0, 4).map((link) => (
+                  {section.links.map((link) => (
                     <motion.li
                       key={link.name}
                       whileHover={{ x: 3 }}

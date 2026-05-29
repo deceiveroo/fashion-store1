@@ -3,12 +3,14 @@ import { db } from '@/lib/db';
 import { bundleDeals } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { safeQuery } from '@/lib/db';
+import { isStaff } from '@/lib/server-auth';
 
 // PUT /api/admin/bundles/[id] - Update bundle
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const { id } = await params;
     const body = await request.json();
@@ -72,6 +74,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const { id } = await params;
 

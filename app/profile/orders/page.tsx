@@ -67,8 +67,8 @@ export default function OrdersPage() {
           </motion.div>
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Необходима авторизация</h1>
           <p className="text-gray-600 mb-8">Пожалуйста, войдите в систему чтобы просмотреть свои заказы.</p>
-          <Link 
-            href="/auth/login" 
+          <Link
+            href="/auth/signin"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-2xl font-semibold hover:shadow-xl transition-all"
           >
             Войти в аккаунт

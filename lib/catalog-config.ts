@@ -1,6 +1,6 @@
 import type { CatalogOptions } from './catalog-products';
 
-export type CatalogTabId = 'new' | 'collections' | 'men' | 'women';
+export type CatalogTabId = 'all' | 'new' | 'collections' | 'men' | 'women';
 
 export type CatalogPageConfig = {
   id: CatalogTabId;
@@ -13,6 +13,18 @@ export type CatalogPageConfig = {
 };
 
 export const CATALOG_TABS: CatalogPageConfig[] = [
+  {
+    id: 'all',
+    path: '/products',
+    label: 'ВСЕ ТОВАРЫ',
+    title: 'Весь Каталог',
+    subtitle: 'Полный ассортимент магазина в одном месте',
+    badge: 'ALL PRODUCTS',
+    query: {
+      limit: 96,
+      fallbackToAll: true,
+    },
+  },
   {
     id: 'new',
     path: '/new',

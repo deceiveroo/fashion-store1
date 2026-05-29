@@ -5,6 +5,7 @@ import CatalogShell from '@/components/catalog/CatalogShell';
 import ProductGrid from '@/components/catalog/ProductGrid';
 import CatalogBrowser from '@/components/catalog/CatalogBrowser';
 import ProductGridSkeleton from '@/components/ProductGridSkeleton';
+import type { ProductCardVariant } from '@/components/product-card/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -16,12 +17,12 @@ async function loadProducts(tabId: CatalogTabId): Promise<CatalogProduct[]> {
 
 function ProductSection({
   products,
-  tab,
+  variant,
   emptyTitle,
   emptyMessage,
 }: {
   products: CatalogProduct[];
-  tab: CatalogTabId;
+  variant: ProductCardVariant;
   emptyTitle: string;
   emptyMessage?: {
     title: string;
@@ -31,7 +32,7 @@ function ProductSection({
   return (
     <ProductGrid
       products={products}
-      variant={tab}
+      variant={variant}
       emptyTitle={emptyTitle}
       emptyDescription="Проверьте подключение к базе или выполните migrations/supabase-reset-catalog.sql в Supabase"
       emptyMessage={emptyMessage}
@@ -47,8 +48,16 @@ export default async function CatalogPage({ tab }: CatalogPageProps) {
   const config = getCatalogConfig(tab);
   const products = await loadProducts(tab);
 
+  // Карточки типизированы более узким ProductCardVariant (без 'all') —
+  // для общего каталога используем нейтральный 'default'.
+  const cardVariant: ProductCardVariant = tab === 'all' ? 'default' : tab;
+
   // Создаем сообщение для пустого состояния на основе таба
   const emptyMessages: Record<CatalogTabId, { title: string; subtitle: string }> = {
+    all: {
+      title: 'Каталог пока пуст',
+      subtitle: 'Мы наполняем витрину товарами. Загляните чуть позже.',
+    },
     new: {
       title: 'Новинки скоро появятся',
       subtitle: 'Мы тщательно отбираем каждую вещь. Следите за обновлениями.',
@@ -73,12 +82,12 @@ export default async function CatalogPage({ tab }: CatalogPageProps) {
         {products.length === 0 ? (
           <ProductSection
             products={products}
-            tab={tab}
+            variant={cardVariant}
             emptyTitle={`${config.title} — пока пусто`}
             emptyMessage={emptyMessages[tab]}
           />
         ) : (
-          <CatalogBrowser products={products} variant={tab} />
+          <CatalogBrowser products={products} variant={cardVariant} />
         )}
       </Suspense>
     </CatalogShell>

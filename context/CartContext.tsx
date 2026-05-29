@@ -25,10 +25,10 @@ interface CartState {
   itemCount: number;
 }
 
-type CartAction = 
+type CartAction =
   | { type: 'ADD_ITEM'; payload: Omit<CartItem, 'quantity'> }
-  | { type: 'REMOVE_ITEM'; payload: string }
-  | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
+  | { type: 'REMOVE_ITEM'; payload: { id: string; size?: string; color?: string } }
+  | { type: 'UPDATE_QUANTITY'; payload: { id: string; size?: string; color?: string; quantity: number } }
   | { type: 'CLEAR_CART' }
   | { type: 'INIT_FROM_STORAGE'; payload: CartItem[] };
 
@@ -36,6 +36,14 @@ type CartAction =
 const roundToInteger = (num: number): number => {
   return Math.round(num);
 };
+
+// Совпадение варианта по товару + размеру + цвету (а не только по id),
+// чтобы операции над одним вариантом не затрагивали остальные размеры/цвета.
+const sameVariant = (
+  a: { id: string; size?: string; color?: string },
+  b: { id: string; size?: string; color?: string }
+): boolean =>
+  a.id === b.id && (a.size ?? '') === (b.size ?? '') && (a.color ?? '') === (b.color ?? '');
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   // console.log('🛒 Cart Action:', action.type, 'payload' in action ? action.payload : 'no payload');
@@ -80,10 +88,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       };
 
     case 'REMOVE_ITEM':
-      const filteredItems = state.items.filter(item => item.id !== action.payload);
+      const filteredItems = state.items.filter(item => !sameVariant(item, action.payload));
       const filteredTotal = filteredItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const filteredCount = filteredItems.reduce((sum, item) => sum + item.quantity, 0);
-      
+
       return {
         items: filteredItems,
         total: roundToInteger(filteredTotal), // ✅ Округление
@@ -92,7 +100,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
     case 'UPDATE_QUANTITY':
       if (action.payload.quantity <= 0) {
-        const filteredItems = state.items.filter(item => item.id !== action.payload.id);
+        const filteredItems = state.items.filter(item => !sameVariant(item, action.payload));
         const filteredTotal = filteredItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const filteredCount = filteredItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -104,7 +112,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       }
 
       const quantityUpdatedItems = state.items.map(item =>
-        item.id === action.payload.id
+        sameVariant(item, action.payload)
           ? { ...item, quantity: action.payload.quantity }
           : item
       );
@@ -139,8 +147,8 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 const CartContext = createContext<{
   state: CartState;
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  removeItem: (id: string, size?: string, color?: string) => void;
+  updateQuantity: (id: string, quantity: number, size?: string, color?: string) => void;
   clearCart: () => void;
 } | undefined>(undefined);
 
@@ -207,12 +215,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'ADD_ITEM', payload: item });
   };
 
-  const removeItem = (id: string) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: id });
+  const removeItem = (id: string, size?: string, color?: string) => {
+    dispatch({ type: 'REMOVE_ITEM', payload: { id, size, color } });
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
-    dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
+  const updateQuantity = (id: string, quantity: number, size?: string, color?: string) => {
+    dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity, size, color } });
   };
 
   const clearCart = () => {

@@ -27,7 +27,7 @@ export default function VerificationPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth/login?redirect=/profile/verification');
+      router.push('/auth/signin?redirect=/profile/verification');
       return;
     }
 

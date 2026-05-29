@@ -3,12 +3,14 @@ import { db } from '@/lib/db';
 import { collectionItems } from '@/lib/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { safeQuery } from '@/lib/db';
+import { isStaff } from '@/lib/server-auth';
 
 // GET /api/admin/collections/[id]/products - Get products in collection
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const { id } = await params;
 
@@ -38,6 +40,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const { id } = await params;
     const body = await request.json();

@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { AuthModalProvider } from '@/context/AuthModalContext';
+import AuthModal from '@/components/auth/AuthModal';
 import ClientLayoutWrapper from '@/components/ClientLayoutWrapper';
 import { Providers } from '@/components/providers/Providers';
 import SupportChatMinimalist from '@/components/SupportChatMinimalist';
@@ -73,16 +75,19 @@ export default function RootLayout({
         />
         <Providers>
           <AuthProvider>
-            <CartProvider>
-              <MaintenanceCheck>
-                <div className="flex min-h-screen flex-col bg-white dark:bg-[#191926] transition-colors duration-300">
-                  <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
-                  <SupportChatMinimalist />
-                  <QuickViewProvider />
-                  <AchievementNotification />
-                </div>
-              </MaintenanceCheck>
-            </CartProvider>
+            <AuthModalProvider>
+              <CartProvider>
+                <MaintenanceCheck>
+                  <div className="flex min-h-screen flex-col bg-white dark:bg-[#191926] transition-colors duration-300">
+                    <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+                    <SupportChatMinimalist />
+                    <QuickViewProvider />
+                    <AchievementNotification />
+                  </div>
+                  <AuthModal />
+                </MaintenanceCheck>
+              </CartProvider>
+            </AuthModalProvider>
           </AuthProvider>
         </Providers>
         {enableVercelInsights ? <Analytics /> : null}

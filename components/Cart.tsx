@@ -45,7 +45,6 @@ export default function Cart({ isOpen, onClose }: CartProps) {
       };
     }
     acc[item.id].variants.push({
-      variantId: item.id, // ID в корзине
       size: item.size,
       color: item.color,
       quantity: item.quantity
@@ -56,22 +55,31 @@ export default function Cart({ isOpen, onClose }: CartProps) {
     name: string;
     price: number;
     image: string;
-    variants: Array<{ variantId: string; size?: string; color?: string; quantity: number }>;
+    variants: Array<{ size?: string; color?: string; quantity: number }>;
   }>);
 
   const groupedItemsList = Object.values(groupedItems);
 
-  const handleUpdateQuantity = (variantId: string, quantity: number) => {
+  const handleUpdateQuantity = (
+    id: string,
+    size: string | undefined,
+    color: string | undefined,
+    quantity: number
+  ) => {
     if (quantity < 1) {
-      removeItem(variantId);
+      removeItem(id, size, color);
       toast.success('Товар удален из корзины ✨');
       return;
     }
-    updateQuantity(variantId, quantity);
+    updateQuantity(id, quantity, size, color);
   };
 
-  const handleRemoveItem = (variantId: string) => {
-    removeItem(variantId);
+  const handleRemoveItem = (
+    id: string,
+    size: string | undefined,
+    color: string | undefined
+  ) => {
+    removeItem(id, size, color);
     toast.success('Товар удален из корзины ✨');
   };
 
@@ -248,7 +256,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                                 {/* Controls */}
                                 <div className="flex items-center gap-2">
                                   <button
-                                    onClick={() => handleUpdateQuantity(v.variantId, v.quantity - 1)}
+                                    onClick={() => handleUpdateQuantity(group.id, v.size, v.color, v.quantity - 1)}
                                     className="w-5.5 h-5.5 flex items-center justify-center bg-white dark:bg-gray-800 text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm hover:shadow transition-all"
                                   >
                                     <Minus size={10} />
@@ -257,14 +265,14 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                                     {v.quantity}
                                   </span>
                                   <button
-                                    onClick={() => handleUpdateQuantity(v.variantId, v.quantity + 1)}
+                                    onClick={() => handleUpdateQuantity(group.id, v.size, v.color, v.quantity + 1)}
                                     className="w-5.5 h-5.5 flex items-center justify-center bg-white dark:bg-gray-800 text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm hover:shadow transition-all"
                                   >
                                     <Plus size={10} />
                                   </button>
-                                  
+
                                   <button
-                                    onClick={() => handleRemoveItem(v.variantId)}
+                                    onClick={() => handleRemoveItem(group.id, v.size, v.color)}
                                     className="ml-1 p-1 text-gray-400 hover:text-red-500 rounded-md transition-colors"
                                     title="Удалить этот вариант"
                                   >
