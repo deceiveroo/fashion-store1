@@ -43,7 +43,9 @@ export default function GamificationHeaderBadge() {
       <motion.div
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}
-        className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full cursor-pointer shadow-lg hover:shadow-xl transition-shadow"
+        transition={{ ease: [0.34, 1.56, 0.64, 1] }}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer shadow-[0_8px_20px_-6px_rgba(var(--fc-accent-rgb)/0.5)] hover:shadow-[0_10px_24px_-6px_rgba(var(--fc-accent-rgb)/0.7)] transition-shadow"
+        style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
       >
         {/* Level Badge */}
         <div className="flex items-center gap-1.5">

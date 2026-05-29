@@ -43,7 +43,9 @@ export default function GamificationWidget() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ scale: 1.02, y: -2 }}
-        className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-2xl p-4 shadow-xl cursor-pointer relative overflow-hidden"
+        transition={{ ease: [0.34, 1.56, 0.64, 1] }}
+        className="rounded-2xl p-4 shadow-[0_12px_32px_-8px_rgba(var(--fc-accent-rgb)/0.4)] cursor-pointer relative overflow-hidden"
+        style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #a78bfa, #c4b5fd)' }}
       >
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">

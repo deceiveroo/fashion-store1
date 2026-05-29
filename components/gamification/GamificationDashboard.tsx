@@ -71,19 +71,19 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case 'legendary': return 'from-amber-400 via-yellow-500 to-amber-600';
-      case 'epic': return 'from-violet-500 via-purple-600 to-violet-700';
-      case 'rare': return 'from-sky-400 via-blue-500 to-sky-600';
-      default: return 'from-slate-400 via-gray-500 to-slate-600';
+      case 'legendary': return 'from-amber-400/90 via-amber-500/90 to-amber-600/90';
+      case 'epic': return 'from-violet-500/85 via-purple-600/85 to-violet-700/85';
+      case 'rare': return 'from-sky-400/85 via-blue-500/85 to-sky-600/85';
+      default: return 'from-slate-400/85 via-slate-500/85 to-slate-600/85';
     }
   };
 
   const getRarityGlow = (rarity: string) => {
     switch (rarity) {
-      case 'legendary': return 'shadow-[0_0_40px_-10px_rgba(245,158,11,0.55)] hover:shadow-[0_0_60px_-10px_rgba(245,158,11,0.8)] border-amber-300/60 dark:border-amber-500/40';
-      case 'epic': return 'shadow-[0_0_40px_-10px_rgba(139,92,246,0.5)] hover:shadow-[0_0_60px_-10px_rgba(139,92,246,0.75)] border-violet-300/60 dark:border-violet-500/40';
-      case 'rare': return 'shadow-[0_0_30px_-12px_rgba(59,130,246,0.45)] hover:shadow-[0_0_50px_-10px_rgba(59,130,246,0.65)] border-sky-300/60 dark:border-sky-500/40';
-      default: return 'shadow-md hover:shadow-lg border-gray-200 dark:border-gray-700';
+      case 'legendary': return 'shadow-[0_0_36px_-12px_rgba(245,158,11,0.45)] hover:shadow-[0_0_52px_-12px_rgba(245,158,11,0.65)] border-amber-300/50 dark:border-amber-500/35';
+      case 'epic': return 'shadow-[0_0_36px_-12px_rgba(139,124,246,0.45)] hover:shadow-[0_0_52px_-12px_rgba(139,124,246,0.65)] border-violet-300/50 dark:border-violet-500/35';
+      case 'rare': return 'shadow-[0_0_28px_-12px_rgba(59,130,246,0.4)] hover:shadow-[0_0_46px_-12px_rgba(59,130,246,0.55)] border-sky-300/50 dark:border-sky-500/35';
+      default: return 'shadow-[var(--fc-shadow-soft)] hover:shadow-[var(--fc-shadow-lifted)] border-[var(--fc-glass-border)]';
     }
   };
 
@@ -215,63 +215,58 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
 
   return (
     <div className="space-y-8">
-      {/* Luxury Level Card - Dark Gold Theme */}
+      {/* Luxury Level Card - Glass + Gold Accent */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-slate-900 to-black rounded-3xl p-8 text-white shadow-2xl border border-yellow-600/30"
+        transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+        className="fc-glass-card relative overflow-hidden p-8 text-[var(--foreground)]"
       >
-        {/* Subtle Gold Pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,215,0,.1) 35px, rgba(255,215,0,.1) 70px)',
-          }} />
-        </div>
-        
-        {/* Gold Glow Effect */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl" />
+        {/* Subtle accent glow */}
+        <div
+          className="pointer-events-none absolute top-0 right-0 w-96 h-96 rounded-full opacity-70"
+          style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.12), transparent 70%)' }}
+        />
 
         <div className="relative z-10">
           {userLevel ? (
             <>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-4 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-2xl shadow-lg shadow-yellow-500/30">
+                  <div className="p-4 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl shadow-[0_8px_24px_-6px_rgba(245,158,11,0.45)]">
                     <Crown className="w-10 h-10 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-4xl font-black mb-1 bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                    <h2 className="text-4xl font-black mb-1 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 bg-clip-text text-transparent">
                       Уровень {userLevel.level}
                     </h2>
-                    <p className="text-lg text-gray-300 font-medium">{userLevel.title}</p>
+                    <p className="text-lg text-[var(--text-secondary)] font-medium">{userLevel.title}</p>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 backdrop-blur-md px-6 py-3 rounded-2xl border border-yellow-500/30">
-                  <Sparkles className="w-6 h-6 text-yellow-400" />
-                  <span className="font-bold text-xl text-yellow-200">{userLevel.coins.toLocaleString('ru-RU')} монет</span>
+
+                <div className="flex items-center gap-3 bg-amber-500/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-amber-400/30">
+                  <Sparkles className="w-6 h-6 text-amber-500" />
+                  <span className="font-bold text-xl text-amber-600 dark:text-amber-300">{userLevel.coins.toLocaleString('ru-RU')} монет</span>
                 </div>
               </div>
 
-              {/* XP Progress Bar - Gold Style */}
+              {/* XP Progress Bar - Gold → Accent */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm font-medium">
-                  <span className="text-gray-300">Опыт</span>
-                  <span className="text-yellow-200 font-bold">{userLevel.xp.toLocaleString('ru-RU')} / {userLevel.xp_to_next_level.toLocaleString('ru-RU')} XP</span>
+                  <span className="text-[var(--text-secondary)]">Опыт</span>
+                  <span className="text-amber-600 dark:text-amber-300 font-bold">{userLevel.xp.toLocaleString('ru-RU')} / {userLevel.xp_to_next_level.toLocaleString('ru-RU')} XP</span>
                 </div>
-                <div className="relative h-5 bg-gray-800/80 rounded-full overflow-hidden border border-yellow-600/30">
+                <div className="fc-neomorph-inset relative h-5 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${xpProgress}%` }}
-                    transition={{ duration: 1.2, ease: 'easeOut' }}
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 rounded-full shadow-lg shadow-yellow-500/50"
+                    transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }}
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-amber-500 to-[var(--fc-accent)] rounded-full shadow-[0_0_18px_-4px_rgba(245,158,11,0.6)]"
                   />
                   {/* Shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-pulse" />
                 </div>
-                <p className="text-xs text-gray-400 text-right">
+                <p className="text-xs text-[var(--text-secondary)] text-right">
                   До следующего уровня: {(userLevel.xp_to_next_level - userLevel.xp).toLocaleString('ru-RU')} XP
                 </p>
               </div>
@@ -281,22 +276,22 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gray-800/80 rounded-2xl animate-pulse" />
+                  <div className="w-16 h-16 bg-[var(--surface-hover)] rounded-2xl animate-pulse" />
                   <div className="space-y-2">
-                    <div className="h-10 w-48 bg-gray-800/80 rounded-lg animate-pulse" />
-                    <div className="h-6 w-32 bg-gray-800/80 rounded-lg animate-pulse" />
+                    <div className="h-10 w-48 bg-[var(--surface-hover)] rounded-lg animate-pulse" />
+                    <div className="h-6 w-32 bg-[var(--surface-hover)] rounded-lg animate-pulse" />
                   </div>
                 </div>
-                <div className="h-14 w-48 bg-gray-800/80 rounded-2xl animate-pulse" />
+                <div className="h-14 w-48 bg-[var(--surface-hover)] rounded-2xl animate-pulse" />
               </div>
-              
+
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <div className="h-5 w-16 bg-gray-800/80 rounded animate-pulse" />
-                  <div className="h-5 w-40 bg-gray-800/80 rounded animate-pulse" />
+                  <div className="h-5 w-16 bg-[var(--surface-hover)] rounded animate-pulse" />
+                  <div className="h-5 w-40 bg-[var(--surface-hover)] rounded animate-pulse" />
                 </div>
-                <div className="h-5 bg-gray-800/80 rounded-full animate-pulse" />
-                <div className="h-4 w-48 ml-auto bg-gray-800/80 rounded animate-pulse" />
+                <div className="h-5 bg-[var(--surface-hover)] rounded-full animate-pulse" />
+                <div className="h-4 w-48 ml-auto bg-[var(--surface-hover)] rounded animate-pulse" />
               </div>
             </div>
           )}
@@ -305,22 +300,22 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
 
       {/* Segmented tabs + balance */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex p-1 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <div className="inline-flex p-1 rounded-full bg-[var(--surface-hover)] border border-[var(--fc-glass-border)] backdrop-blur-[20px]">
           <button
             type="button"
             onClick={() => setActiveTab('achievements')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
               activeTab === 'achievements'
-                ? 'bg-white dark:bg-gray-900 text-amber-600 dark:text-amber-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                ? 'bg-[var(--fc-surface-elevated)] text-[var(--fc-accent)] shadow-[var(--fc-shadow-soft)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--foreground)]'
             }`}
           >
             <Trophy className="w-4 h-4" />
             Достижения
             <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
               activeTab === 'achievements'
-                ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                ? 'bg-[rgb(var(--fc-accent-rgb)/0.15)] text-[var(--fc-accent)]'
+                : 'bg-[var(--surface)] text-[var(--text-secondary)]'
             }`}>
               {unlockedCount}/{totalCount}
             </span>
@@ -330,8 +325,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
             onClick={() => setActiveTab('shop')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
               activeTab === 'shop'
-                ? 'bg-white dark:bg-gray-900 text-amber-600 dark:text-amber-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                ? 'bg-[var(--fc-surface-elevated)] text-[var(--fc-accent)] shadow-[var(--fc-shadow-soft)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--foreground)]'
             }`}
           >
             <Gift className="w-4 h-4" />
@@ -340,12 +335,12 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
         </div>
 
         {/* Coins balance */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800">
-          <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          <span className="text-sm font-bold text-amber-700 dark:text-amber-300">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-400/30">
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <span className="text-sm font-bold text-amber-600 dark:text-amber-300">
             {(userLevel?.coins ?? 0).toLocaleString('ru-RU')}
           </span>
-          <span className="text-xs text-amber-600/70 dark:text-amber-400/70">монет</span>
+          <span className="text-xs text-amber-600/70 dark:text-amber-300/70">монет</span>
         </div>
       </div>
 
@@ -353,18 +348,18 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
         <>
           {/* Filters — compact */}
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500 dark:text-gray-400">Показать:</span>
+            <span className="text-[var(--text-secondary)]">Показать:</span>
             <div className="relative">
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as any)}
-                className="appearance-none pl-3 pr-9 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white font-medium hover:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
+                className="appearance-none pl-3 pr-9 py-1.5 rounded-lg bg-[var(--fc-surface)] backdrop-blur-[20px] border border-[var(--fc-glass-border)] text-[var(--foreground)] font-medium hover:border-[var(--fc-accent)] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--fc-accent-rgb)/0.4)] cursor-pointer"
               >
                 <option value="all">Все</option>
                 <option value="unlocked">Открытые</option>
                 <option value="locked">Закрытые</option>
               </select>
-              <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rotate-90 pointer-events-none" />
+              <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] rotate-90 pointer-events-none" />
             </div>
 
             {categories.length > 0 && (
@@ -372,7 +367,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="appearance-none pl-3 pr-9 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white font-medium hover:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
+                  className="appearance-none pl-3 pr-9 py-1.5 rounded-lg bg-[var(--fc-surface)] backdrop-blur-[20px] border border-[var(--fc-glass-border)] text-[var(--foreground)] font-medium hover:border-[var(--fc-accent)] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--fc-accent-rgb)/0.4)] cursor-pointer"
                 >
                   <option value="all">Все категории</option>
                   {categories.map((cat) => (
@@ -381,7 +376,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                     </option>
                   ))}
                 </select>
-                <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rotate-90 pointer-events-none" />
+                <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] rotate-90 pointer-events-none" />
               </div>
             )}
 
@@ -392,13 +387,13 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                   setFilter('all');
                   setCategoryFilter('all');
                 }}
-                className="ml-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="ml-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]"
               >
                 Сбросить
               </button>
             )}
 
-            <span className="ml-auto text-gray-500 dark:text-gray-400 text-xs">
+            <span className="ml-auto text-[var(--text-secondary)] text-xs">
               {sortedAchievements.length}{' '}
               {sortedAchievements.length === 1
                 ? 'достижение'
@@ -418,31 +413,31 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700"
+                  className="fc-glass-card relative rounded-2xl overflow-hidden"
                 >
                   {/* Gradient bar placeholder */}
-                  <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                  
+                  <div className="h-1.5 w-full bg-[var(--surface-hover)] animate-pulse" />
+
                   <div className="p-6 space-y-4">
                     {/* Header with icon and title */}
                     <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                      <div className="w-16 h-16 rounded-xl bg-[var(--surface-hover)] animate-pulse" />
                       <div className="flex-1 space-y-2">
-                        <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                        <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        <div className="h-5 w-3/4 bg-[var(--surface-hover)] rounded animate-pulse" />
+                        <div className="h-4 w-full bg-[var(--surface-hover)] rounded animate-pulse" />
                       </div>
                     </div>
-                    
+
                     {/* Rewards placeholders */}
-                    <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
-                      <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
-                      <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                    <div className="flex items-center gap-3 pb-4 border-b border-[var(--fc-glass-border)]">
+                      <div className="h-8 w-24 bg-[var(--surface-hover)] rounded-lg animate-pulse" />
+                      <div className="h-8 w-24 bg-[var(--surface-hover)] rounded-lg animate-pulse" />
                     </div>
-                    
+
                     {/* Status placeholder */}
                     <div className="flex justify-between">
-                      <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                      <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse" />
+                      <div className="h-5 w-32 bg-[var(--surface-hover)] rounded animate-pulse" />
+                      <div className="h-6 w-20 bg-[var(--surface-hover)] rounded-md animate-pulse" />
                     </div>
                   </div>
                 </motion.div>
@@ -459,22 +454,18 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                   key={achievement.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.04 }}
+                  transition={{ delay: index * 0.04, ease: [0.34, 1.56, 0.64, 1] }}
                   whileHover={{ y: -6 }}
-                  className={`group relative overflow-hidden rounded-3xl bg-white dark:bg-gray-900 border transition-all duration-500 flex flex-col min-h-[340px] ${
+                  className={`group relative overflow-hidden rounded-3xl bg-[var(--fc-surface)] backdrop-blur-[20px] border transition-all duration-500 flex flex-col min-h-[340px] ${
                     achievement.unlocked
-                      ? `${getRarityGlow(achievement.rarity)} shadow-md`
-                      : 'border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md'
+                      ? `${getRarityGlow(achievement.rarity)} shadow-[var(--fc-shadow-soft)]`
+                      : 'border-[var(--fc-glass-border)] shadow-[var(--fc-shadow-soft)] hover:shadow-[var(--fc-shadow-lifted)]'
                   }`}
                 >
-                  {/* Hero band — gradient by rarity */}
-                  <div className={`relative h-44 overflow-hidden bg-gradient-to-br ${rarityGradient} ${achievement.unlocked ? '' : 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-90 transition-all'}`}>
-                    {/* Decorative blobs */}
-                    <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/25 blur-3xl" />
-                    <div className="pointer-events-none absolute -bottom-12 -left-10 w-40 h-40 rounded-full bg-black/10 blur-3xl" />
-
+                  {/* Hero band — softened gradient by rarity */}
+                  <div className={`relative h-44 overflow-hidden bg-gradient-to-br ${rarityGradient} ${achievement.unlocked ? 'opacity-90' : 'grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-80 transition-all'}`}>
                     {/* Diagonal shine on hover */}
-                    <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12" />
+                    <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/25 to-transparent skew-x-12" />
 
                     {/* Rarity label top-right */}
                     <span className="absolute top-3 right-3 z-10 text-[10px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-md text-white border border-white/20">
@@ -510,41 +501,42 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                   {/* Body */}
                   <div className="relative px-6 pt-6 pb-5 flex-1 flex flex-col">
                     <div className="text-center mb-4">
-                      <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight mb-1.5">
+                      <h3 className="font-bold text-lg text-[var(--foreground)] leading-tight mb-1.5">
                         {achievement.name}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
+                      <p className="text-sm text-[var(--text-secondary)] leading-relaxed line-clamp-2">
                         {achievement.description}
                       </p>
                     </div>
 
                     {/* Rewards row */}
                     <div className="flex items-center justify-center gap-2 mb-4">
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/30 dark:to-blue-900/30 border border-cyan-200/70 dark:border-cyan-800/50">
-                        <Zap className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                        <span className="text-sm font-bold text-cyan-700 dark:text-cyan-300">+{achievement.xp_reward} XP</span>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--fc-accent-rgb)/0.1)] border border-[rgb(var(--fc-accent-rgb)/0.25)]">
+                        <Zap className="w-4 h-4 text-[var(--fc-accent)]" />
+                        <span className="text-sm font-bold text-[var(--fc-accent)]">+{achievement.xp_reward} XP</span>
                       </div>
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border border-amber-200/70 dark:border-amber-800/50">
-                        <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                        <span className="text-sm font-bold text-amber-700 dark:text-amber-300">+{achievement.coins_reward}</span>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-400/30">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <span className="text-sm font-bold text-amber-600 dark:text-amber-300">+{achievement.coins_reward}</span>
                       </div>
                     </div>
 
                     {/* Footer — date or admin button */}
-                    <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <div className="mt-auto pt-3 border-t border-[var(--fc-glass-border)]">
                       {achievement.unlocked ? (
-                        <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-center text-[var(--text-secondary)]">
                           Получено {new Date(achievement.unlocked_at!).toLocaleDateString('ru-RU')}
                         </p>
                       ) : isAdmin ? (
                         <button
                           onClick={() => handleForceUnlock(achievement.code)}
-                          className="w-full text-xs font-medium px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 transition-all shadow-sm"
+                          className="w-full text-xs font-medium px-3 py-1.5 rounded-lg text-white transition-all shadow-[0_4px_14px_-4px_rgba(var(--fc-accent-rgb)/0.5)] hover:shadow-[0_6px_18px_-4px_rgba(var(--fc-accent-rgb)/0.7)]"
+                          style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
                         >
                           Разблокировать
                         </button>
                       ) : (
-                        <p className="text-xs text-center text-gray-400 dark:text-gray-500">
+                        <p className="text-xs text-center text-[var(--text-secondary)]">
                           Выполните условие, чтобы открыть
                         </p>
                       )}
@@ -563,8 +555,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
 
           {!loading && sortedAchievements.length === 0 && (
             <div className="text-center py-12">
-              <Trophy className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 text-lg">Достижения не найдены</p>
+              <Trophy className="w-16 h-16 mx-auto text-[var(--text-secondary)] opacity-50 mb-4" />
+              <p className="text-[var(--text-secondary)] text-lg">Достижения не найдены</p>
             </div>
           )}
         </>
@@ -591,52 +583,54 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                 key={coupon.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
+                transition={{ delay: idx * 0.05, ease: [0.34, 1.56, 0.64, 1] }}
                 whileHover={{ y: -6 }}
-                className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-amber-50/40 to-orange-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-amber-950/30 border border-amber-200/50 dark:border-amber-900/50 shadow-md hover:shadow-[0_25px_60px_-15px_rgba(245,158,11,0.4)] transition-all duration-500 flex flex-col min-h-[340px]"
+                className="group relative overflow-hidden rounded-3xl bg-[var(--fc-surface)] backdrop-blur-[20px] border border-[var(--fc-glass-border)] shadow-[var(--fc-shadow-soft)] hover:shadow-[var(--fc-shadow-lifted)] transition-all duration-500 flex flex-col min-h-[340px]"
               >
-                {/* Decorative gold blobs */}
-                <div className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full bg-amber-400/20 blur-3xl group-hover:bg-amber-400/30 transition-colors" />
-                <div className="pointer-events-none absolute -bottom-20 -left-20 w-56 h-56 rounded-full bg-orange-400/10 blur-3xl" />
+                {/* Subtle accent glow */}
+                <div
+                  className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full opacity-60 group-hover:opacity-80 transition-opacity"
+                  style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.16), transparent 70%)' }}
+                />
 
                 {/* Diagonal shine on hover */}
-                <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/30 dark:via-white/10 to-transparent skew-x-12" />
+                <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/15 to-transparent skew-x-12" />
 
                 {/* Big discount label */}
                 <div className="relative z-10 px-7 pt-7 pb-2 flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] text-amber-700/80 dark:text-amber-300/80 font-semibold mb-2">
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-amber-600/80 dark:text-amber-300/80 font-semibold mb-2">
                       Скидка
                     </p>
-                    <p className="text-6xl font-black leading-none bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent drop-shadow-sm">
+                    <p className="text-6xl font-black leading-none bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 bg-clip-text text-transparent drop-shadow-sm">
                       {discountDisplay}
                     </p>
                   </div>
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/40 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-[0_8px_24px_-6px_rgba(245,158,11,0.45)] group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
                     <Gift className="w-7 h-7 text-white" />
                   </div>
                 </div>
 
                 {/* Name + description */}
                 <div className="relative z-10 px-7 pt-3 pb-2 flex-1">
-                  <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-2 leading-snug line-clamp-2">
+                  <h3 className="font-bold text-xl text-[var(--foreground)] mb-2 leading-snug line-clamp-2">
                     {coupon.name}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-3">
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed line-clamp-3">
                     {coupon.description}
                   </p>
                 </div>
 
                 {/* Footer: price + button */}
                 <div className="relative z-10 px-7 pb-6 pt-4 mt-auto">
-                  <div className="border-t border-dashed border-amber-300/50 dark:border-amber-800/40 pt-4 flex items-end justify-between gap-3">
+                  <div className="border-t border-dashed border-[var(--fc-glass-border)] pt-4 flex items-end justify-between gap-3">
                     <div>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                      <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider mb-1">
                         Цена
                       </p>
                       <div className="flex items-center gap-1.5">
                         <Sparkles className="w-4 h-4 text-amber-500" />
-                        <span className="text-2xl font-black text-gray-900 dark:text-white tabular-nums">
+                        <span className="text-2xl font-black text-[var(--foreground)] tabular-nums">
                           {price.toLocaleString('ru-RU')}
                         </span>
                       </div>
@@ -649,10 +643,11 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                     <button
                       onClick={() => handlePurchase(coupon.id)}
                       disabled={purchasing === coupon.id || !canAfford}
+                      style={canAfford ? { backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' } : undefined}
                       className={`px-5 py-3 rounded-2xl font-semibold text-sm whitespace-nowrap transition-all ${
                         canAfford
-                          ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-lg shadow-amber-500/40 hover:shadow-xl hover:shadow-amber-500/60 hover:scale-105 active:scale-95'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                          ? 'text-white shadow-[0_8px_24px_-6px_rgba(var(--fc-accent-rgb)/0.5)] hover:shadow-[0_12px_28px_-6px_rgba(var(--fc-accent-rgb)/0.7)] hover:scale-105 active:scale-95'
+                          : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] cursor-not-allowed'
                       } disabled:opacity-70`}
                     >
                       {purchasing === coupon.id ? (
@@ -678,48 +673,50 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
 
           {shopCoupons.length === 0 && (
             <div className="col-span-full text-center py-16">
-              <Gift className="w-20 h-20 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">Магазин временно пуст</p>
-              <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Скоро здесь появятся новые промокоды</p>
+              <Gift className="w-20 h-20 mx-auto text-[var(--text-secondary)] opacity-50 mb-4" />
+              <p className="text-[var(--text-secondary)] text-lg font-medium">Магазин временно пуст</p>
+              <p className="text-[var(--text-secondary)] opacity-70 text-sm mt-1">Скоро здесь появятся новые промокоды</p>
             </div>
           )}
         </div>
       )}
 
-      {/* Force Unlock Modal - Luxury Style */}
+      {/* Force Unlock Modal - Glass Style */}
       <AnimatePresence>
         {showForceUnlockModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
             onClick={() => setShowForceUnlockModal(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ ease: [0.34, 1.56, 0.64, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full border-2 border-yellow-600/50 shadow-2xl shadow-yellow-500/20"
+              className="fc-glass-card p-6 max-w-md w-full border border-[var(--fc-glass-border)]"
             >
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-yellow-500" />
+              <h3 className="text-xl font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-[var(--fc-accent)]" />
                 Принудительно разблокировать?
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-[var(--text-secondary)] mb-6">
                 Это действие разблокирует достижение без выполнения условий. Использовать только для тестирования.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowForceUnlockModal(null)}
-                  className="flex-1 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  className="flex-1 px-4 py-2 rounded-xl bg-[var(--surface-hover)] text-[var(--foreground)] font-medium hover:bg-[var(--surface)] border border-[var(--fc-glass-border)] transition-colors"
                 >
                   Отмена
                 </button>
                 <button
                   onClick={executeForceUnlock}
-                  className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-medium hover:shadow-lg transition-all"
+                  className="flex-1 px-4 py-2 rounded-xl text-white font-medium transition-all shadow-[0_8px_24px_-6px_rgba(var(--fc-accent-rgb)/0.5)] hover:shadow-[0_12px_28px_-6px_rgba(var(--fc-accent-rgb)/0.7)]"
+                  style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
                 >
                   Разблокировать
                 </button>
@@ -731,12 +728,3 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
     </div>
   );
 }
-
-const getRarityBorder = (rarity: string) => {
-  switch (rarity) {
-    case 'legendary': return 'yellow-500';
-    case 'epic': return 'purple-500';
-    case 'rare': return 'blue-500';
-    default: return 'gray-400';
-  }
-};
