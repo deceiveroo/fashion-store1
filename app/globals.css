@@ -257,6 +257,9 @@
   --admin-accent-soft: rgba(124, 58, 237, 0.1);
   --admin-shadow: 0 1px 3px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.04);
   --admin-glow: rgba(124, 58, 237, 0.15);
+  --admin-accent-2: #6366f1;
+  --admin-accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  --admin-card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .dark [data-admin-theme] {
@@ -276,26 +279,62 @@
   --admin-accent-soft: rgba(167, 139, 250, 0.12);
   --admin-shadow: 0 4px 24px rgb(0 0 0 / 0.35);
   --admin-glow: rgba(139, 92, 246, 0.25);
+  --admin-accent-2: #818cf8;
+  --admin-accent-gradient: linear-gradient(135deg, #a78bfa 0%, #818cf8 100%);
+  --admin-card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 @layer components {
   .admin-card {
-    border-radius: 1rem;
+    border-radius: 1.25rem;
     border: 1px solid var(--admin-border);
     background: var(--admin-card);
-    box-shadow: var(--admin-shadow);
-    backdrop-filter: blur(12px);
+    box-shadow: var(--admin-shadow), var(--admin-card-highlight);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
   }
 
   .admin-card-interactive {
-    transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+    transition: border-color 0.25s, background 0.25s, transform 0.25s, box-shadow 0.25s;
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .admin-card-interactive:hover {
     background: var(--admin-card-hover);
-    border-color: color-mix(in srgb, var(--admin-accent) 35%, var(--admin-border));
-    transform: translateY(-1px);
-    box-shadow: var(--admin-shadow), 0 0 0 1px var(--admin-glow);
+    border-color: color-mix(in srgb, var(--admin-accent) 40%, var(--admin-border));
+    transform: translateY(-2px);
+    box-shadow: var(--admin-shadow), 0 0 0 1px var(--admin-glow), 0 18px 40px -12px var(--admin-glow);
+  }
+
+  /* Accent-gradient text for admin headings/highlights */
+  .admin-gradient-text {
+    background-image: var(--admin-accent-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Spring easing helper to match the site's --fc-spring motion language */
+  .admin-spring {
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Soft sheen sweep used on hero/stat surfaces */
+  @keyframes admin-sheen {
+    0% { transform: translateX(-120%) skewX(-12deg); }
+    60%, 100% { transform: translateX(220%) skewX(-12deg); }
+  }
+  .admin-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.18) 50%, transparent 70%);
+    transform: translateX(-120%) skewX(-12deg);
+    pointer-events: none;
+  }
+  .admin-sheen:hover::after {
+    animation: admin-sheen 1.1s ease-out;
   }
 }
 

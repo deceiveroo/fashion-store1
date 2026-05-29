@@ -138,15 +138,16 @@ function Sidebar() {
                         <Link
                           href={href}
                           onClick={() => mobile && toggle()}
-                          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                          style={active ? { backgroundImage: 'var(--admin-accent-gradient)', boxShadow: '0 8px 20px -6px var(--admin-glow)' } : undefined}
+                          className={`group/nav relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all admin-spring ${
                             active
-                              ? 'bg-violet-500/15 text-violet-300 shadow-sm'
+                              ? 'text-white'
                               : 'text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)]'
                           }`}
                         >
-                          <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-violet-400' : ''}`} />
+                          <Icon className={`h-4 w-4 shrink-0 transition-colors ${active ? 'text-white' : 'group-hover/nav:text-[var(--admin-accent)]'}`} />
                           {label}
-                          {active && <ChevronRight className="ml-auto h-3 w-3 text-violet-400/60" />}
+                          {active && <ChevronRight className="ml-auto h-3.5 w-3.5 text-white/70" />}
                         </Link>
                       </li>
                     );

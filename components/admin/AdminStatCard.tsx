@@ -5,13 +5,13 @@ import clsx from 'clsx';
 
 type Accent = 'violet' | 'blue' | 'emerald' | 'amber' | 'rose' | 'cyan';
 
-const accents: Record<Accent, string> = {
-  violet: 'from-violet-500/25 to-violet-600/5 text-violet-600 dark:text-violet-400 ring-violet-500/20',
-  blue: 'from-blue-500/25 to-blue-600/5 text-blue-600 dark:text-blue-400 ring-blue-500/20',
-  emerald: 'from-emerald-500/25 to-emerald-600/5 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20',
-  amber: 'from-amber-500/25 to-amber-600/5 text-amber-600 dark:text-amber-400 ring-amber-500/20',
-  rose: 'from-rose-500/25 to-rose-600/5 text-rose-600 dark:text-rose-400 ring-rose-500/20',
-  cyan: 'from-cyan-500/25 to-cyan-600/5 text-cyan-600 dark:text-cyan-400 ring-cyan-500/20',
+const accents: Record<Accent, { tile: string; glow: string }> = {
+  violet:  { tile: 'from-violet-500 to-indigo-600 shadow-violet-500/30',  glow: 'bg-violet-500/30' },
+  blue:    { tile: 'from-blue-500 to-cyan-600 shadow-blue-500/30',        glow: 'bg-blue-500/30' },
+  emerald: { tile: 'from-emerald-500 to-teal-600 shadow-emerald-500/30',  glow: 'bg-emerald-500/30' },
+  amber:   { tile: 'from-amber-500 to-orange-600 shadow-amber-500/30',    glow: 'bg-amber-500/30' },
+  rose:    { tile: 'from-rose-500 to-pink-600 shadow-rose-500/30',        glow: 'bg-rose-500/30' },
+  cyan:    { tile: 'from-cyan-500 to-sky-600 shadow-cyan-500/30',         glow: 'bg-cyan-500/30' },
 };
 
 interface AdminStatCardProps {
@@ -20,6 +20,8 @@ interface AdminStatCardProps {
   sub?: string;
   icon: LucideIcon;
   accent?: Accent;
+  /** Опциональный тренд в %, знак задаёт цвет (рост — emerald, падение — rose). */
+  trend?: number;
   className?: string;
 }
 
@@ -29,28 +31,48 @@ export default function AdminStatCard({
   sub,
   icon: Icon,
   accent = 'violet',
+  trend,
   className,
 }: AdminStatCardProps) {
+  const a = accents[accent];
+  const up = (trend ?? 0) >= 0;
+
   return (
-    <div className={clsx('admin-card group relative overflow-hidden p-6 h-full', className)}>
+    <div className={clsx('admin-card admin-card-interactive admin-sheen group relative overflow-hidden p-5 h-full', className)}>
+      {/* Цветной ореол акцента */}
       <div
         className={clsx(
-          'absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br opacity-40 blur-2xl transition-opacity group-hover:opacity-70',
-          accents[accent],
+          'pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full opacity-50 blur-3xl transition-opacity duration-500 group-hover:opacity-90',
+          a.glow,
         )}
+      />
+      {/* Верхняя акцентная линия */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
+        style={{ backgroundImage: 'var(--admin-accent-gradient)' }}
       />
       <div className="relative flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-faint)]">
-            {title}
-          </p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-[var(--admin-text)]">{value}</p>
-          <p className="mt-1.5 text-xs text-[var(--admin-text-muted)]">{sub ?? ' '}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-faint)]">{title}</p>
+          <p className="mt-2 text-3xl font-bold tracking-tight tabular-nums text-[var(--admin-text)]">{value}</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            {typeof trend === 'number' && (
+              <span
+                className={clsx(
+                  'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold',
+                  up ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500',
+                )}
+              >
+                {up ? '↑' : '↓'} {Math.abs(trend)}%
+              </span>
+            )}
+            <span className="truncate text-xs text-[var(--admin-text-muted)]">{sub ?? ' '}</span>
+          </div>
         </div>
         <div
           className={clsx(
-            'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1',
-            accents[accent],
+            'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg transition-transform duration-300 group-hover:scale-105',
+            a.tile,
           )}
         >
           <Icon className="h-5 w-5" />
