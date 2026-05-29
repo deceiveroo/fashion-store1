@@ -7,7 +7,7 @@ import {
   coupons, userCouponUsage, userSessions
 } from '@/lib/schema';
 import { userPurchasedCoupons } from '@/lib/db/gamification-schema';
-import { eq, desc, and, isNull, gt } from 'drizzle-orm';
+import { eq, desc, and, isNull, gt, inArray } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 import { parseUserAgent } from '@/lib/user-agent';
@@ -165,6 +165,48 @@ export async function GET(request: NextRequest) {
   const nameParts = user?.name?.split(' ') || ['', ''];
   const avatarUrl = user?.avatar || user?.image;
 
+  // Attach items to each order — иначе секция «Заказы» показывает «0 товаров»
+  // и не рендерит превью товаров (раньше /api/profile/full отдавал заказы без items).
+  const orderIdList = (userOrders || []).map((o: any) => o.id);
+  let itemsByOrder: Record<string, any[]> = {};
+  if (orderIdList.length > 0) {
+    const items = await safeQuery(() =>
+      db.select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        productId: orderItems.productId,
+        name: orderItems.name,
+        price: orderItems.price,
+        quantity: orderItems.quantity,
+        image: orderItems.image,
+        size: orderItems.size,
+        color: orderItems.color,
+      })
+      .from(orderItems)
+      .where(inArray(orderItems.orderId, orderIdList))
+    ).catch(() => []);
+    itemsByOrder = (items || []).reduce((acc: Record<string, any[]>, it: any) => {
+      (acc[it.orderId] ||= []).push({
+        id: it.id,
+        productId: it.productId,
+        name: it.name || 'Товар',
+        price: Number(it.price),
+        quantity: it.quantity,
+        image: it.image || '',
+        size: it.size || '',
+        color: it.color || '',
+      });
+      return acc;
+    }, {});
+  }
+  const ordersWithItems = (userOrders || []).map((o: any) => ({
+    ...o,
+    total: Number(o.total),
+    discount: Number(o.discount || 0),
+    deliveryPrice: Number(o.deliveryPrice || 0),
+    items: itemsByOrder[o.id] || [],
+  }));
+
   // Format wishlist items
   const wishlistItems = (wishlist || []).map((item: any) => ({
     id: item.id,
@@ -240,7 +282,7 @@ export async function GET(request: NextRequest) {
       avatar: avatarUrl,
       image: avatarUrl,
     } : null,
-    orders: userOrders || [],
+    orders: ordersWithItems,
     wishlist: wishlistItems,
     paymentMethods: (payments || []).map((p: any) => ({
       id: p.id,

@@ -20,7 +20,11 @@ import {
 // NextAuth v5 конфигурация
 export const authConfig: NextAuthConfig = {
   secret: process.env.NEXTAUTH_SECRET,
-  session: { 
+  // Доверяем хосту входящего запроса (нужно для кастомного домена e1evate.vercel.app
+  // и любых превью-доменов Vercel). Без этого при несовпадении NEXTAUTH_URL и реального
+  // домена Auth.js падает (redirect/JSON.parse ошибки на странице входа).
+  trustHost: true,
+  session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 дней
   },

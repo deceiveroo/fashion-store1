@@ -98,19 +98,40 @@ export default function NotificationsPanel({ notifications, setNotifications }: 
   ];
 
   const channels = [
-    { key: 'Email', icon: Mail },
-    { key: 'Push', icon: Bell },
-    { key: 'SMS', icon: Phone },
+    { key: 'Email', icon: Mail, hint: 'на почту' },
+    { key: 'Push', icon: Bell, hint: 'в браузере' },
+    { key: 'SMS', icon: Phone, hint: 'на телефон' },
   ];
+
+  const enabledCount = Object.values(notifications).filter(Boolean).length;
 
   return (
     <div className="space-y-4">
+      {/* Пояснение: что это и как работает */}
+      <div className="rounded-2xl border border-[#8b7cf6]/30 bg-[#8b7cf6]/[0.07] p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}>
+            <Bell size={18} className="text-white" />
+          </div>
+          <div className="text-sm">
+            <p className="font-semibold text-[var(--foreground)]">Как это работает</p>
+            <p className="mt-0.5 text-[var(--text-secondary)]">
+              Слева — <b>о чём</b> уведомлять (заказы, акции, избранное), справа — <b>каким способом</b>:
+              {' '}<b className="text-[#8b7cf6]">Email</b> (на почту), <b className="text-[#8b7cf6]">Push</b> (в браузере),
+              {' '}<b className="text-[#8b7cf6]">SMS</b> (на телефон). Включайте только нужное.
+            </p>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">Активно сейчас: {enabledCount} из 9.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Main Panel */}
       <div className="fc-glass-card overflow-hidden">
-
         {/* Categories */}
         <div className="divide-y divide-[var(--fc-glass-border)]">
-          {categories.map((category) => (
+          {categories.map((category) => {
+            const activeInCat = category.keys.filter((k) => (notifications as any)[k]).length;
+            return (
             <div key={category.title} className="p-5 transition-colors hover:bg-[var(--fc-surface-elevated)]">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -122,35 +143,47 @@ export default function NotificationsPanel({ notifications, setNotifications }: 
                     <p className="text-xs text-[var(--text-secondary)]">{category.description}</p>
                   </div>
                 </div>
+                <span className="rounded-full bg-[var(--fc-surface-elevated)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-secondary)]">
+                  {activeInCat}/3
+                </span>
               </div>
-              <div className="grid grid-cols-3 gap-3 pl-14">
+              <div className="grid grid-cols-3 gap-3 sm:pl-14">
                 {category.keys.map((key, idx) => {
                   const channel = channels[idx];
                   const Icon = channel.icon;
+                  const checked = (notifications as any)[key] || false;
                   return (
                     <label
                       key={key}
-                      className="group flex cursor-pointer items-center justify-between rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] p-3 transition-all hover:border-[#8b7cf6] hover:-translate-y-0.5 hover:shadow-md"
+                      className={`group flex cursor-pointer flex-col gap-2 rounded-xl border p-3 transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                        checked
+                          ? 'border-[#8b7cf6] bg-[#8b7cf6]/[0.08]'
+                          : 'border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] hover:border-[#8b7cf6]'
+                      }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <Icon size={14} className="text-[var(--text-secondary)] transition-colors group-hover:text-[#8b7cf6]" />
-                        <span className="text-xs font-medium text-[var(--foreground)]">{channel.key}</span>
+                      <div className="flex items-center justify-between">
+                        <Icon size={15} className={`transition-colors ${checked ? 'text-[#8b7cf6]' : 'text-[var(--text-secondary)] group-hover:text-[#8b7cf6]'}`} />
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => updateNotification(key, e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7cf6]"></div>
+                        </div>
                       </div>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={(notifications as any)[key] || false}
-                          onChange={(e) => updateNotification(key, e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7cf6]"></div>
+                      <div className="leading-tight">
+                        <span className="block text-xs font-semibold text-[var(--foreground)]">{channel.key}</span>
+                        <span className="block text-[10px] text-[var(--text-secondary)]">{channel.hint}</span>
                       </div>
                     </label>
                   );
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

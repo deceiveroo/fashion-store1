@@ -437,9 +437,9 @@ export default function SupportChatMinimalist() {
       >
         {/* Pulsing halo */}
         {!isOpen && (
-          <span className="absolute inset-0 rounded-full bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] opacity-60 blur-md animate-pulse" />
+          <span className="absolute inset-0 rounded-full bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd] opacity-60 blur-md animate-pulse" />
         )}
-        <span className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] shadow-[0_8px_30px_rgba(157,78,221,0.45)] ring-1 ring-white/20">
+        <span className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd] shadow-[0_8px_30px_rgba(139,124,246,0.45)] ring-1 ring-white/20">
           <AnimatePresence mode="wait" initial={false}>
             {isOpen ? (
               <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
@@ -467,11 +467,11 @@ export default function SupportChatMinimalist() {
           >
             {/* Header */}
             <div className="relative shrink-0 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D]" />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }} />
               <div className="absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
               <div className="absolute -left-6 bottom-0 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
-              <div className="relative flex items-center justify-between p-3.5 text-white">
-                <div className="flex items-center gap-2.5">
+              <div className="relative flex items-center justify-between p-4 text-white">
+                <div className="flex items-center gap-3">
                   {view === 'chat' && (
                     <button
                       onClick={() => setView('search')}
@@ -482,24 +482,26 @@ export default function SupportChatMinimalist() {
                     </button>
                   )}
                   <div className="relative">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm ring-1 ring-white/30">
+                    <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white/20 text-base font-bold backdrop-blur-sm ring-1 ring-white/40">
                       {takenOver && adminInfo?.avatar ? (
-                        <img src={adminInfo.avatar} alt="" className="h-full w-full rounded-xl object-cover" />
+                        <img src={adminInfo.avatar} alt="" className="h-full w-full object-cover" />
+                      ) : takenOver ? (
+                        <span>{(adminInfo?.name || 'О').charAt(0).toUpperCase()}</span>
                       ) : (
                         <Sparkles className="h-5 w-5 text-white" />
                       )}
                     </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-400 ring-2 ring-[#b052cc]">
+                    <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-400 ring-2 ring-[#9d86f0]">
                       <span className="h-1.5 w-1.5 rounded-full bg-white" />
                     </span>
                   </div>
                   <div className="leading-tight">
                     <h3 className="text-sm font-semibold tracking-tight">
-                      {takenOver ? adminInfo?.name || 'Оператор' : 'ELEVATE Help'}
+                      {takenOver ? adminInfo?.name || 'Оператор поддержки' : 'Поддержка ELEVATE'}
                     </h3>
-                    <p className="flex items-center gap-1.5 text-[11px] text-white/75">
+                    <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/80">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                      {takenOver ? 'Оператор на связи' : 'Обычно отвечаем сразу'}
+                      {takenOver ? 'Оператор на связи' : 'Онлайн · отвечаем сразу'}
                     </p>
                   </div>
                 </div>
@@ -518,7 +520,7 @@ export default function SupportChatMinimalist() {
               {view === 'search' ? (
                 <div className="space-y-5 p-4">
                   {/* Greeting */}
-                  <div className="rounded-2xl bg-gradient-to-br from-[#9D4EDD]/[0.08] to-[#FF6B9D]/[0.08] p-4 dark:from-[#9D4EDD]/[0.12] dark:to-[#FF6B9D]/[0.12]">
+                  <div className="rounded-2xl bg-gradient-to-br from-[#8b7cf6]/[0.08] to-[#c4b5fd]/[0.08] p-4 dark:from-[#8b7cf6]/[0.12] dark:to-[#c4b5fd]/[0.12]">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       Привет{user?.name ? `, ${user.name}` : ''} 👋
                     </p>
@@ -535,7 +537,7 @@ export default function SupportChatMinimalist() {
                       value={searchQuery}
                       onChange={(e) => { setSearchQuery(e.target.value); setOpenFaqId(null); }}
                       placeholder="Опишите вопрос: доставка, возврат, баг…"
-                      className="w-full rounded-2xl border border-gray-200 bg-white py-3.5 pl-12 pr-10 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#9D4EDD]/50 focus:outline-none focus:ring-2 focus:ring-[#9D4EDD]/30 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder-white/40"
+                      className="w-full rounded-2xl border border-gray-200 bg-white py-3.5 pl-12 pr-10 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#8b7cf6]/50 focus:outline-none focus:ring-2 focus:ring-[#8b7cf6]/30 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder-white/40"
                     />
                     {searchQuery && (
                       <button
@@ -571,7 +573,7 @@ export default function SupportChatMinimalist() {
                                   className="flex w-full items-center justify-between gap-3 p-3.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-white/5"
                                 >
                                   <span className="flex items-center gap-2.5 text-sm font-medium text-gray-900 dark:text-white">
-                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#9D4EDD]/10 text-[#9D4EDD] dark:bg-[#9D4EDD]/20 dark:text-violet-300">
+                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#8b7cf6]/10 text-[#8b7cf6] dark:bg-[#8b7cf6]/20 dark:text-violet-300">
                                       <HelpCircle className="h-4 w-4" />
                                     </span>
                                     {faq.title}
@@ -595,7 +597,7 @@ export default function SupportChatMinimalist() {
                                         </p>
                                         <button
                                           onClick={() => handleQuestionClick(faq.title)}
-                                          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#9D4EDD]/30 py-2 text-xs font-medium text-[#9D4EDD] transition-colors hover:bg-[#9D4EDD]/10 dark:text-violet-300"
+                                          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#8b7cf6]/30 py-2 text-xs font-medium text-[#8b7cf6] transition-colors hover:bg-[#8b7cf6]/10 dark:text-violet-300"
                                         >
                                           <MessageCircle className="h-3.5 w-3.5" />
                                           Задать оператору
@@ -610,7 +612,7 @@ export default function SupportChatMinimalist() {
                           {/* Если ничего не подошло — отправить вопрос оператору */}
                           <button
                             onClick={() => handleQuestionClick(searchQuery)}
-                            className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#9D4EDD] to-[#FF6B9D] py-3 text-sm font-semibold text-white shadow-lg shadow-[#9D4EDD]/25 transition-all hover:shadow-xl"
+                            className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#8b7cf6] to-[#c4b5fd] py-3 text-sm font-semibold text-white shadow-lg shadow-[#8b7cf6]/25 transition-all hover:shadow-xl"
                           >
                             <Send className="h-4 w-4" />
                             Спросить «{searchQuery.length > 22 ? searchQuery.slice(0, 22) + '…' : searchQuery}»
@@ -619,7 +621,7 @@ export default function SupportChatMinimalist() {
                       ) : (
                         // Ничего не найдено — сразу предлагаем оператора
                         <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-5 text-center dark:border-white/15 dark:bg-white/[0.03]">
-                          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D]">
+                          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd]">
                             <Sparkles className="h-6 w-6 text-white" />
                           </div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">Ничего не нашли по запросу</p>
@@ -628,7 +630,7 @@ export default function SupportChatMinimalist() {
                           </p>
                           <button
                             onClick={() => handleQuestionClick(searchQuery)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#9D4EDD] to-[#FF6B9D] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#9D4EDD]/25 transition-all hover:shadow-xl"
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#8b7cf6] to-[#c4b5fd] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#8b7cf6]/25 transition-all hover:shadow-xl"
                           >
                             <MessageCircle className="h-4 w-4" />
                             Написать оператору
@@ -684,9 +686,9 @@ export default function SupportChatMinimalist() {
                                       animate={{ opacity: 1, x: 0 }}
                                       transition={{ delay: idx * 0.05 }}
                                       onClick={() => handleQuestionClick(question)}
-                                      className="group flex w-full items-center gap-2.5 rounded-xl bg-gray-50 px-3.5 py-2.5 text-left text-sm text-gray-700 transition-all hover:bg-[#9D4EDD]/[0.08] hover:text-gray-900 dark:bg-white/[0.04] dark:text-white/80 dark:hover:bg-white/[0.08] dark:hover:text-white"
+                                      className="group flex w-full items-center gap-2.5 rounded-xl bg-gray-50 px-3.5 py-2.5 text-left text-sm text-gray-700 transition-all hover:bg-[#8b7cf6]/[0.08] hover:text-gray-900 dark:bg-white/[0.04] dark:text-white/80 dark:hover:bg-white/[0.08] dark:hover:text-white"
                                     >
-                                      <span className="h-1.5 w-1.5 rounded-full bg-[#9D4EDD] transition-transform group-hover:scale-150" />
+                                      <span className="h-1.5 w-1.5 rounded-full bg-[#8b7cf6] transition-transform group-hover:scale-150" />
                                       {question}
                                     </motion.button>
                                   ))}
@@ -706,7 +708,7 @@ export default function SupportChatMinimalist() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setView('chat')}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#9D4EDD] to-[#FF6B9D] py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#9D4EDD]/25 transition-all hover:shadow-xl hover:shadow-[#9D4EDD]/35"
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#8b7cf6] to-[#c4b5fd] py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#8b7cf6]/25 transition-all hover:shadow-xl hover:shadow-[#8b7cf6]/35"
                     >
                       <MessageCircle className="h-4 w-4" />
                       Начать чат с оператором
@@ -718,7 +720,7 @@ export default function SupportChatMinimalist() {
                 <div className="space-y-4 p-4">
                   {messages.length === 0 && (
                     <div className="py-10 text-center">
-                      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] shadow-lg shadow-[#9D4EDD]/30">
+                      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd] shadow-lg shadow-[#8b7cf6]/30">
                         <Sparkles className="h-8 w-8 text-white" />
                       </div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">Начните диалог</p>
@@ -752,7 +754,7 @@ export default function SupportChatMinimalist() {
                                 <User className="h-4 w-4 text-white" />
                               </div>
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D]">
+                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd]">
                                 <Sparkles className="h-4 w-4 text-white" />
                               </div>
                             )}
@@ -762,12 +764,12 @@ export default function SupportChatMinimalist() {
                         <div
                           className={`max-w-[78%] px-4 py-2.5 text-sm leading-relaxed ${
                             isUser
-                              ? 'rounded-[1.25rem] rounded-br-md bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] text-white shadow-md shadow-[#9D4EDD]/20'
+                              ? 'rounded-[1.25rem] rounded-br-md bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd] text-white shadow-md shadow-[#8b7cf6]/20'
                               : 'rounded-[1.25rem] rounded-bl-md border border-gray-200 bg-white text-gray-900 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/90'
                           }`}
                         >
                           {!isUser && (
-                            <p className={`mb-0.5 text-[11px] font-semibold ${isAdmin ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#9D4EDD] dark:text-violet-400'}`}>
+                            <p className={`mb-0.5 text-[11px] font-semibold ${isAdmin ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#8b7cf6] dark:text-violet-400'}`}>
                               {isAdmin ? adminDisplayName : 'ELEVATE AI'}
                             </p>
                           )}
@@ -790,7 +792,7 @@ export default function SupportChatMinimalist() {
                             {userAvatar ? (
                               <img src={userAvatar} alt="" className="h-full w-full object-cover" />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D]">
+                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd]">
                                 <User className="h-4 w-4 text-white" />
                               </div>
                             )}
@@ -802,7 +804,7 @@ export default function SupportChatMinimalist() {
 
                   {typing && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-end gap-2">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D]">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd]">
                         <Sparkles className="h-4 w-4 text-white" />
                       </div>
                       <div className="rounded-[1.25rem] rounded-bl-md border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/[0.06]">
@@ -812,7 +814,7 @@ export default function SupportChatMinimalist() {
                               key={i}
                               animate={{ y: [0, -6, 0] }}
                               transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.2 }}
-                              className="h-2 w-2 rounded-full bg-[#9D4EDD]"
+                              className="h-2 w-2 rounded-full bg-[#8b7cf6]"
                             />
                           ))}
                         </div>
@@ -825,11 +827,11 @@ export default function SupportChatMinimalist() {
                     <motion.div
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="rounded-2xl border border-[#9D4EDD]/20 bg-gradient-to-br from-[#9D4EDD]/[0.06] to-[#FF6B9D]/[0.06] p-4 text-center dark:border-white/10 dark:from-[#9D4EDD]/[0.12] dark:to-[#FF6B9D]/[0.12]"
+                      className="rounded-2xl border border-[#8b7cf6]/20 bg-gradient-to-br from-[#8b7cf6]/[0.06] to-[#c4b5fd]/[0.06] p-4 text-center dark:border-white/10 dark:from-[#8b7cf6]/[0.12] dark:to-[#c4b5fd]/[0.12]"
                     >
                       {operatorRating ? (
                         <>
-                          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D]">
+                          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd]">
                             <Check className="h-5 w-5 text-white" />
                           </div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">Спасибо за оценку!</p>
@@ -882,7 +884,7 @@ export default function SupportChatMinimalist() {
             {/* Input Area (only in chat view) */}
             {view === 'chat' && (
               <div className="shrink-0 border-t border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-[#1e1e2e]">
-                <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 p-1.5 pl-4 transition-colors focus-within:border-[#9D4EDD]/50 focus-within:ring-2 focus-within:ring-[#9D4EDD]/20 dark:border-white/10 dark:bg-white/5">
+                <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 p-1.5 pl-4 transition-colors focus-within:border-[#8b7cf6]/50 focus-within:ring-2 focus-within:ring-[#8b7cf6]/20 dark:border-white/10 dark:bg-white/5">
                   <input
                     ref={inputRef}
                     type="text"
@@ -904,7 +906,7 @@ export default function SupportChatMinimalist() {
                     onClick={() => send(input)}
                     disabled={!input.trim() || loading}
                     aria-label="Отправить"
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#9D4EDD] to-[#FF6B9D] text-white shadow-md shadow-[#9D4EDD]/25 transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#8b7cf6] to-[#c4b5fd] text-white shadow-md shadow-[#8b7cf6]/25 transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
                   >
                     {loading ? <Loader className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                   </motion.button>
