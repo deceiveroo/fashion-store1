@@ -213,7 +213,7 @@ export default function CuratedCollectionsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-[var(--admin-accent)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -223,14 +223,14 @@ export default function CuratedCollectionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Кураторские подборки</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <h1 className="text-3xl font-bold text-[var(--admin-text)]">Кураторские подборки</h1>
+          <p className="text-[var(--admin-text-muted)] mt-1">
             Создавайте ручные подборки товаров для рекомендаций
           </p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
+          className="flex items-center gap-2 bg-[var(--admin-accent)] text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-all"
         >
           <Plus className="w-5 h-5" />
           Создать подборку
@@ -247,64 +247,64 @@ export default function CuratedCollectionsPage() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl"
+            className="bg-[var(--admin-bg-elevated)] border border-[var(--admin-border)] rounded-2xl p-6 w-full max-w-lg shadow-2xl"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Новая подборка</h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-gray-700">
+              <h2 className="text-2xl font-bold text-[var(--admin-text)]">Новая подборка</h2>
+              <button onClick={() => setShowForm(false)} className="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]">
                 <X className="w-6 h-6" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                   Название *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] rounded-lg outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                   placeholder="Например: Выбор редакции"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                   Slug *
                 </label>
                 <input
                   type="text"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] rounded-lg outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                   placeholder="editors-choice"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                   Описание
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] rounded-lg outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                   rows={3}
                   placeholder="Описание подборки..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                   URL обложки
                 </label>
                 <input
                   type="url"
                   value={formData.coverImage}
                   onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] rounded-lg outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                   placeholder="https://..."
                 />
               </div>
@@ -315,9 +315,9 @@ export default function CuratedCollectionsPage() {
                   id="isActive"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                  className="w-4 h-4 accent-[var(--admin-accent)] rounded focus:ring-[var(--admin-accent)]"
                 />
-                <label htmlFor="isActive" className="text-sm text-gray-700 dark:text-gray-300">
+                <label htmlFor="isActive" className="text-sm text-[var(--admin-text-muted)]">
                   Активна
                 </label>
               </div>
@@ -326,13 +326,13 @@ export default function CuratedCollectionsPage() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleCreate}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+                className="flex-1 bg-[var(--admin-accent)] text-white py-2 rounded-lg font-medium hover:opacity-90 transition-all"
               >
                 Создать
               </button>
               <button
                 onClick={() => setShowForm(false)}
-                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                className="flex-1 border border-[var(--admin-border)] bg-[var(--admin-card)] text-[var(--admin-text)] py-2 rounded-lg font-medium hover:bg-[var(--admin-card-hover)] transition-all"
               >
                 Отмена
               </button>
@@ -348,49 +348,49 @@ export default function CuratedCollectionsPage() {
             key={collection.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`bg-white dark:bg-gray-800 rounded-2xl p-6 border-2 transition-all ${
+            className={`bg-[var(--admin-card)] rounded-2xl p-6 border-2 transition-all ${
               selectedCollection === collection.id
-                ? 'border-purple-500 shadow-lg shadow-purple-500/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                ? 'border-[var(--admin-accent)] shadow-lg shadow-[var(--admin-accent)]/20'
+                : 'border-[var(--admin-border)] hover:border-[var(--admin-accent)]/50'
             }`}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  <h3 className="text-xl font-bold text-[var(--admin-text)]">
                     {collection.name}
                   </h3>
                   {collection.isActive ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <CheckCircle className="w-5 h-5 text-emerald-500" />
                   ) : (
-                    <AlertCircle className="w-5 h-5 text-gray-400" />
+                    <AlertCircle className="w-5 h-5 text-[var(--admin-text-faint)]" />
                   )}
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Slug: <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{collection.slug}</code>
+                <p className="text-sm text-[var(--admin-text-muted)] mb-2">
+                  Slug: <code className="bg-[var(--admin-bg-muted)] px-2 py-1 rounded">{collection.slug}</code>
                 </p>
                 {collection.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{collection.description}</p>
+                  <p className="text-sm text-[var(--admin-text-muted)]">{collection.description}</p>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleSelectCollection(collection.id)}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-bg-muted)] text-[var(--admin-accent)] rounded-lg hover:bg-[var(--admin-card-hover)] transition-colors"
                 >
                   <Package className="w-4 h-4" />
                   Товары
                 </button>
                 <button
                   onClick={() => setEditingCollection(collection)}
-                  className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                  className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
                 >
                   <Edit3 className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => handleDelete(collection.id)}
-                  className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
@@ -400,12 +400,12 @@ export default function CuratedCollectionsPage() {
         ))}
 
         {collections.length === 0 && (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700">
-            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">Нет созданных подборок</p>
+          <div className="text-center py-12 bg-[var(--admin-card)] rounded-2xl border-2 border-dashed border-[var(--admin-border)]">
+            <Package className="w-12 h-12 text-[var(--admin-text-faint)] mx-auto mb-4" />
+            <p className="text-[var(--admin-text-muted)]">Нет созданных подборок</p>
             <button
               onClick={() => setShowForm(true)}
-              className="mt-4 text-purple-600 hover:text-purple-700 font-medium"
+              className="mt-4 text-[var(--admin-accent)] hover:opacity-90 font-medium"
             >
               Создать первую подборку
             </button>
@@ -418,18 +418,18 @@ export default function CuratedCollectionsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl p-6 border-2 border-purple-500 shadow-lg"
+          className="bg-[var(--admin-card)] rounded-2xl p-6 border-2 border-[var(--admin-accent)] shadow-lg"
         >
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Управление товарами</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h3 className="text-xl font-bold text-[var(--admin-text)]">Управление товарами</h3>
+              <p className="text-sm text-[var(--admin-text-muted)]">
                 Выберите товары для этой подборки ({collectionProducts.length} выбрано)
               </p>
             </div>
             <button
               onClick={saveCollectionProducts}
-              className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
+              className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-all"
             >
               <Save className="w-5 h-5" />
               Сохранить
@@ -445,12 +445,12 @@ export default function CuratedCollectionsPage() {
                   onClick={() => toggleProduct(product.id)}
                   className={`relative cursor-pointer rounded-xl border-2 transition-all p-3 ${
                     isSelected
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                      ? 'border-[var(--admin-accent)] bg-[var(--admin-accent)]/10'
+                      : 'border-[var(--admin-border)] hover:border-[var(--admin-accent)]/50'
                   }`}
                 >
                   {isSelected && (
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                    <div className="absolute top-2 right-2 w-6 h-6 bg-[var(--admin-accent)] rounded-full flex items-center justify-center">
                       <CheckCircle className="w-4 h-4 text-white" />
                     </div>
                   )}
@@ -463,10 +463,10 @@ export default function CuratedCollectionsPage() {
                     />
                   )}
                   
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+                  <h4 className="text-sm font-medium text-[var(--admin-text)] line-clamp-2">
                     {product.name}
                   </h4>
-                  <p className="text-sm font-bold text-purple-600 mt-1">
+                  <p className="text-sm font-bold text-[var(--admin-accent)] mt-1">
                     {product.price.toLocaleString('ru-RU')} ₽
                   </p>
                 </div>

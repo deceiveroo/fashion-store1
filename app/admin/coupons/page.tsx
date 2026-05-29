@@ -279,28 +279,28 @@ export default function AdminCouponsPage() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--admin-text-faint)]" />
           <input
             type="text"
             placeholder="Поиск по email, имени или коду промокода..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
           />
         </div>
 
         {/* Users List */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <RefreshCw className="w-8 h-8 animate-spin text-purple-600" />
+            <RefreshCw className="w-8 h-8 animate-spin text-[var(--admin-accent)]" />
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="text-center py-20">
-            <Ticket className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <Ticket className="w-16 h-16 mx-auto text-[var(--admin-text-faint)] mb-4" />
+            <h3 className="text-lg font-semibold text-[var(--admin-text)] mb-2">
               Нет пользователей с промокодами
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-[var(--admin-text-muted)]">
               {search ? 'Попробуйте изменить поисковый запрос' : 'Промокоды появятся здесь после использования'}
             </p>
           </div>
@@ -313,12 +313,12 @@ export default function AdminCouponsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                className="bg-[var(--admin-card)] rounded-2xl border border-[var(--admin-border)] overflow-hidden"
               >
                 {/* User Header */}
                 <button
                   onClick={() => setExpandedUserId(expandedUserId === user.id ? null : user.id)}
-                  className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  className="w-full px-6 py-4 flex items-center gap-4 hover:bg-[var(--admin-card-hover)] transition-colors"
                 >
                   {/* Avatar */}
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
@@ -331,26 +331,26 @@ export default function AdminCouponsPage() {
 
                   {/* User Info */}
                   <div className="flex-1 text-left">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                    <h3 className="font-semibold text-[var(--admin-text)]">
                       {user.firstName && user.lastName
                         ? `${user.firstName} ${user.lastName}`
                         : user.email}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                    <p className="text-sm text-[var(--admin-text-muted)]">{user.email}</p>
                   </div>
 
                   {/* Stats */}
                   <div className="hidden md:flex items-center gap-6 text-sm">
                     <div className="text-center">
-                      <p className="text-gray-500 dark:text-gray-400">Всего</p>
-                      <p className="font-bold text-gray-900 dark:text-white">{user.totalCoupons}</p>
+                      <p className="text-[var(--admin-text-muted)]">Всего</p>
+                      <p className="font-bold text-[var(--admin-text)]">{user.totalCoupons}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-gray-500 dark:text-gray-400">Активных</p>
+                      <p className="text-[var(--admin-text-muted)]">Активных</p>
                       <p className="font-bold text-green-600 dark:text-green-400">{user.activeCount}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-gray-500 dark:text-gray-400">Сэкономлено</p>
+                      <p className="text-[var(--admin-text-muted)]">Сэкономлено</p>
                       <p className="font-bold text-emerald-600 dark:text-emerald-400">
                         {user.totalSavings.toLocaleString('ru-RU')} ₽
                       </p>
@@ -364,7 +364,7 @@ export default function AdminCouponsPage() {
                       e.stopPropagation();
                       openGrantModal(user);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-sm hover:shadow-md transition-all"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--admin-accent)] text-white hover:opacity-90 shadow-sm hover:shadow-md transition-all"
                   >
                     <Gift size={14} />
                     <span className="hidden sm:inline">Выдать</span>
@@ -375,7 +375,7 @@ export default function AdminCouponsPage() {
                     animate={{ rotate: expandedUserId === user.id ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                    <ChevronDown className="w-5 h-5 text-[var(--admin-text-faint)]" />
                   </motion.div>
                 </button>
 
@@ -387,7 +387,7 @@ export default function AdminCouponsPage() {
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="border-t border-gray-200 dark:border-gray-700"
+                      className="border-t border-[var(--admin-border)]"
                     >
                       <div className="p-6 space-y-3">
                         {user.coupons.map((coupon) => {
@@ -403,7 +403,7 @@ export default function AdminCouponsPage() {
                                   ? 'border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50/60 to-pink-50/40 dark:from-purple-950/30 dark:to-pink-950/20'
                                   : isActive && coupon.source === 'shop'
                                   ? 'border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-950/30 dark:to-orange-950/20'
-                                  : 'border-gray-200 dark:border-gray-700'
+                                  : 'border-[var(--admin-border)] bg-[var(--admin-bg-muted)]'
                               }`}
                             >
                               <div className="flex items-start justify-between gap-4">
@@ -425,12 +425,12 @@ export default function AdminCouponsPage() {
                                     </div>
 
                                     <div>
-                                      <h4 className="font-mono font-bold text-gray-900 dark:text-white">
+                                      <h4 className="font-mono font-bold text-[var(--admin-text)]">
                                         {coupon.code}
                                       </h4>
-                                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                                      <p className="text-sm text-[var(--admin-text-muted)]">
                                         Скидка:{' '}
-                                        <span className="font-semibold text-gray-900 dark:text-white">
+                                        <span className="font-semibold text-[var(--admin-text)]">
                                           {coupon.type === 'percent' ? `${coupon.discount}%` : `${coupon.discount} ₽`}
                                         </span>
                                       </p>
@@ -462,7 +462,7 @@ export default function AdminCouponsPage() {
                                     </span>
 
                                     {coupon.discountAmount && (
-                                      <span className="text-gray-500 dark:text-gray-400">
+                                      <span className="text-[var(--admin-text-muted)]">
                                         Сэкономлено:{' '}
                                         <span className="font-semibold text-green-600 dark:text-green-400">
                                           {parseFloat(coupon.discountAmount).toLocaleString('ru-RU')} ₽
@@ -476,7 +476,7 @@ export default function AdminCouponsPage() {
                                       </span>
                                     )}
 
-                                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                    <span className="text-[var(--admin-text-muted)] flex items-center gap-1">
                                       <Clock size={12} />
                                       {isUsed
                                         ? new Date(coupon.usedAt || '').toLocaleDateString('ru-RU')
@@ -491,10 +491,10 @@ export default function AdminCouponsPage() {
                                     onClick={() => copyToClipboard(coupon.code)}
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
-                                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    className="p-2 rounded-lg hover:bg-[var(--admin-card-hover)] transition-colors"
                                     title="Копировать код"
                                   >
-                                    <Copy className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                    <Copy className="w-4 h-4 text-[var(--admin-text-muted)]" />
                                   </motion.button>
 
                                   {coupon.orderId && (
@@ -558,7 +558,7 @@ export default function AdminCouponsPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.96, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+              className="w-full max-w-md bg-[var(--admin-bg-elevated)] rounded-2xl shadow-2xl border border-[var(--admin-border)] overflow-hidden"
             >
               <div className="relative px-6 py-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
                 <button
@@ -584,17 +584,17 @@ export default function AdminCouponsPage() {
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                    <label className="block text-xs font-medium text-[var(--admin-text-muted)] mb-1.5">
                       Тип
                     </label>
-                    <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                    <div className="flex rounded-lg border border-[var(--admin-border)] overflow-hidden">
                       <button
                         type="button"
                         onClick={() => setGrantForm({ ...grantForm, type: 'percent' })}
                         className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
                           grantForm.type === 'percent'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                            ? 'bg-[var(--admin-accent)] text-white'
+                            : 'bg-[var(--admin-bg-muted)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)]'
                         }`}
                       >
                         %
@@ -604,8 +604,8 @@ export default function AdminCouponsPage() {
                         onClick={() => setGrantForm({ ...grantForm, type: 'fixed' })}
                         className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
                           grantForm.type === 'fixed'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                            ? 'bg-[var(--admin-accent)] text-white'
+                            : 'bg-[var(--admin-bg-muted)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)]'
                         }`}
                       >
                         ₽
@@ -613,7 +613,7 @@ export default function AdminCouponsPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                    <label className="block text-xs font-medium text-[var(--admin-text-muted)] mb-1.5">
                       Скидка
                     </label>
                     <input
@@ -624,14 +624,14 @@ export default function AdminCouponsPage() {
                       onChange={(e) =>
                         setGrantForm({ ...grantForm, discount: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                    <label className="block text-xs font-medium text-[var(--admin-text-muted)] mb-1.5">
                       Срок (дней)
                     </label>
                     <input
@@ -641,11 +641,11 @@ export default function AdminCouponsPage() {
                       onChange={(e) =>
                         setGrantForm({ ...grantForm, expiresDays: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                    <label className="block text-xs font-medium text-[var(--admin-text-muted)] mb-1.5">
                       Мин. сумма заказа
                     </label>
                     <input
@@ -656,13 +656,13 @@ export default function AdminCouponsPage() {
                       onChange={(e) =>
                         setGrantForm({ ...grantForm, minOrder: e.target.value })
                       }
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-[var(--admin-text-muted)] mb-1.5">
                     Код (необязательно)
                   </label>
                   <input
@@ -672,7 +672,7 @@ export default function AdminCouponsPage() {
                     onChange={(e) =>
                       setGrantForm({ ...grantForm, code: e.target.value.toUpperCase() })
                     }
-                    className="w-full px-3 py-2 font-mono rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 font-mono rounded-lg border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                   />
                 </div>
 
@@ -681,7 +681,7 @@ export default function AdminCouponsPage() {
                     type="button"
                     onClick={() => setGrantOpen(false)}
                     disabled={granting}
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
+                    className="flex-1 px-4 py-2.5 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] text-[var(--admin-text)] font-medium hover:bg-[var(--admin-card-hover)] disabled:opacity-50"
                   >
                     Отмена
                   </button>
@@ -689,7 +689,7 @@ export default function AdminCouponsPage() {
                     type="button"
                     onClick={submitGrant}
                     disabled={granting}
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-[var(--admin-accent)] text-white font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center justify-center gap-2"
                   >
                     {granting ? (
                       <RefreshCw size={16} className="animate-spin" />

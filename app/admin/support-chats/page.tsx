@@ -416,20 +416,20 @@ function SupportChatsPage() {
         {/* Enhanced Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <MessageCircle className="h-7 w-7 text-violet-600 dark:text-violet-400" />
+            <h1 className="text-2xl font-bold text-[var(--admin-text)] flex items-center gap-2">
+              <MessageCircle className="h-7 w-7 text-[var(--admin-accent)]" />
               Чаты поддержки
             </h1>
-            <p className="text-sm text-gray-500 dark:text-white/40 mt-1">
+            <p className="text-sm text-[var(--admin-text-muted)] mt-1">
               Всего чатов: {sessions.length} • Активных: {sessions.filter(s => s.status === 'active').length}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2">
+            <div className="flex items-center gap-2 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] px-4 py-2">
               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs text-gray-600 dark:text-white/60">Live режим</span>
+              <span className="text-xs text-[var(--admin-text-muted)]">Live режим</span>
             </div>
-            <button onClick={() => loadSessions()} className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2 text-sm text-gray-700 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
+            <button onClick={() => loadSessions()} className="flex items-center gap-2 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card)] px-4 py-2 text-sm text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] transition-all">
               <RefreshCw className="h-4 w-4" />
               Обновить
             </button>
@@ -444,11 +444,11 @@ function SupportChatsPage() {
             { label: 'Решенные', value: sessions.filter(s => s.status === 'resolved').length, icon: CheckCircle, color: 'bg-gradient-to-br from-blue-500 to-cyan-600 dark:from-blue-500/20 dark:to-cyan-600/20 text-white dark:text-blue-400' },
             { label: 'Перехвачено', value: sessions.filter(s => s.aiDisabled).length, icon: Shield, color: 'bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-500/20 dark:to-orange-600/20 text-white dark:text-amber-400' },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-gray-50 to-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] p-5 hover:from-gray-100 hover:to-gray-50 dark:hover:from-[#12121f] dark:hover:to-[#1a1a2e] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
+            <div key={label} className="group relative overflow-hidden rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-5 hover:bg-[var(--admin-card-hover)] transition-all backdrop-blur-sm shadow-sm hover:shadow-md">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">{label}</p>
-                  <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+                  <p className="text-xs font-medium text-[var(--admin-text-muted)] uppercase tracking-wider">{label}</p>
+                  <p className="mt-2 text-2xl font-bold text-[var(--admin-text)]">{value}</p>
                 </div>
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} backdrop-blur-sm shadow-lg`}>
                   <Icon className="h-6 w-6" />
@@ -459,13 +459,13 @@ function SupportChatsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-gray-200 dark:border-white/10">
+        <div className="flex gap-2 border-b border-[var(--admin-border)]">
           <button
             onClick={() => setActiveTab('chats')}
             className={`px-6 py-3 text-sm font-medium transition-colors relative ${
               activeTab === 'chats'
-                ? 'text-violet-600 dark:text-violet-400'
-                : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white'
+                ? 'text-[var(--admin-accent)]'
+                : 'text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -473,15 +473,15 @@ function SupportChatsPage() {
               Чаты
             </div>
             {activeTab === 'chats' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-400" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--admin-accent)]" />
             )}
           </button>
           <button
             onClick={() => setActiveTab('analytics')}
             className={`px-6 py-3 text-sm font-medium transition-colors relative ${
               activeTab === 'analytics'
-                ? 'text-violet-600 dark:text-violet-400'
-                : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white'
+                ? 'text-[var(--admin-accent)]'
+                : 'text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -489,7 +489,7 @@ function SupportChatsPage() {
               Аналитика SLA
             </div>
             {activeTab === 'analytics' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-400" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--admin-accent)]" />
             )}
           </button>
         </div>
@@ -501,17 +501,17 @@ function SupportChatsPage() {
           // Main Content - Two Column Layout
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-320px)] min-h-[600px]">
           {/* Left Column - Chat List */}
-          <div className="lg:col-span-1 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#1a1a2e] backdrop-blur-sm flex flex-col overflow-hidden shadow-sm">
+          <div className="lg:col-span-1 rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] backdrop-blur-sm flex flex-col overflow-hidden shadow-sm">
             {/* Filter Tabs */}
-            <div className="p-4 border-b border-gray-200 dark:border-white/10 flex gap-2">
+            <div className="p-4 border-b border-[var(--admin-border)] flex gap-2">
               {(['all','active','resolved'] as const).map(f => (
-                <button 
-                  key={f} 
-                  onClick={() => setFilter(f)} 
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
                   className={`px-4 py-2 rounded-xl text-xs font-medium transition-all ${
-                    filter===f 
-                      ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20' 
-                      : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-white/60 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
+                    filter===f
+                      ? 'bg-[var(--admin-accent)] text-white shadow-lg shadow-violet-500/20'
+                      : 'bg-[var(--admin-bg-muted)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)] hover:text-[var(--admin-text)]'
                   }`}
                 >
                   {f==='all'?'Все':f==='active'?'Активные':'Решенные'}
@@ -524,14 +524,14 @@ function SupportChatsPage() {
               {loading ? (
                 <div className="flex justify-center p-8">
                   <div className="relative">
-                    <div className="h-12 w-12 animate-spin rounded-full border-3 border-violet-500/30 border-t-violet-500" />
+                    <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-[var(--admin-accent)]/30 border-t-[var(--admin-accent)]" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Zap className="h-5 w-5 text-violet-400" />
+                      <Zap className="h-5 w-5 text-[var(--admin-accent)]" />
                     </div>
                   </div>
                 </div>
               ) : filtered.length===0 ? (
-                <div className="p-8 text-center text-gray-400 dark:text-white/30 text-sm flex flex-col items-center gap-3">
+                <div className="p-8 text-center text-[var(--admin-text-faint)] text-sm flex flex-col items-center gap-3">
                   <MessageCircle className="h-12 w-12 opacity-20" />
                   <p>Нет чатов</p>
                 </div>
@@ -540,35 +540,35 @@ function SupportChatsPage() {
                   const displayName = getUserName(s);
                   const avatarUrl = getUserAvatar(s.userEmail, s.userName, s.userAvatar, s.userImage);
                   return (
-                  <div 
-                    key={s.id} 
+                  <div
+                    key={s.id}
                     onClick={() => setSel(s)}
-                    className={`border-b border-gray-200 dark:border-white/5 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-all ${
-                      sel?.id===s.id ? 'bg-violet-100 dark:bg-violet-500/10 border-l-2 border-l-violet-500' : ''
+                    className={`border-b border-[var(--admin-border-subtle)] p-4 cursor-pointer hover:bg-[var(--admin-card-hover)] transition-all ${
+                      sel?.id===s.id ? 'bg-[var(--admin-accent-soft)] border-l-2 border-l-[var(--admin-accent)]' : ''
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       {/* Avatar */}
                       {avatarUrl ? (
-                        <img 
-                          src={avatarUrl} 
+                        <img
+                          src={avatarUrl}
                           alt={displayName}
-                          className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-gray-200 dark:border-white/10"
+                          className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-[var(--admin-border)]"
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                           <User className="h-5 w-5 text-white" />
                         </div>
                       )}
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium truncate text-gray-900 dark:text-white">{displayName}</span>
+                          <span className="text-sm font-medium truncate text-[var(--admin-text)]">{displayName}</span>
                           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                             {s.aiDisabled && <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400"/>}
-                            <button 
-                              onClick={(e)=>del(s.sessionId,e)} 
-                              className="p-1 text-gray-400 dark:text-white/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            <button
+                              onClick={(e)=>del(s.sessionId,e)}
+                              className="p-1 text-[var(--admin-text-faint)] hover:text-red-600 dark:hover:text-red-400 transition-colors"
                             >
                               <Trash2 className="h-4 w-4"/>
                             </button>
@@ -576,11 +576,11 @@ function SupportChatsPage() {
                         </div>
                         {/* Email пользователя если есть */}
                         {s.userEmail && (
-                          <p className="text-xs text-gray-500 dark:text-white/40 truncate mt-0.5">{s.userEmail}</p>
+                          <p className="text-xs text-[var(--admin-text-muted)] truncate mt-0.5">{s.userEmail}</p>
                         )}
-                        <p className="text-xs text-gray-500 dark:text-white/40 truncate mt-1">{s.firstMessage||''}</p>
+                        <p className="text-xs text-[var(--admin-text-muted)] truncate mt-1">{s.firstMessage||''}</p>
                         <div className="flex justify-between items-center mt-2">
-                          <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
+                          <span className="text-xs text-[var(--admin-text-faint)] flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             {s.messageCount||0}
                           </span>
@@ -608,7 +608,7 @@ function SupportChatsPage() {
                               </span>
                             )}
                             {s.lastMessageAt && (
-                              <span className="text-xs text-gray-500 dark:text-white/30 flex items-center gap-1">
+                              <span className="text-xs text-[var(--admin-text-faint)] flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 {new Date(s.lastMessageAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
                               </span>

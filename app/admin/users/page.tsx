@@ -134,29 +134,29 @@ export default function UsersPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Команда</h1>
-            <p className="text-sm text-gray-500 dark:text-white/40">{users.length} сотрудников</p>
+            <h1 className="text-xl font-bold text-[var(--admin-text)]">Команда</h1>
+            <p className="text-sm text-[var(--admin-text-muted)]">{users.length} сотрудников</p>
           </div>
-          <button onClick={load} className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-sm text-gray-700 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
+          <button onClick={load} className="flex items-center gap-2 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card)] px-3 py-2 text-sm text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] transition-all">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-white/20" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--admin-text-faint)]" />
           <input type="text" placeholder="Поиск по имени или email..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 pl-9 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:border-violet-500/50 focus:outline-none" />
+            className="w-full rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] py-2.5 pl-9 pr-4 text-sm text-[var(--admin-text)] placeholder-[var(--admin-text-faint)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40" />
         </div>
 
         {/* Table */}
-        <div className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.03] overflow-hidden shadow-sm">
+        <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] overflow-hidden shadow-sm">
           {loading ? (
             <div className="flex items-center justify-center h-48">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--admin-accent)] border-t-transparent" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-gray-400 dark:text-white/20">
+            <div className="flex flex-col items-center justify-center h-48 text-[var(--admin-text-faint)]">
               <Shield className="h-10 w-10 mb-2 opacity-40" />
               <p className="text-sm">Сотрудников не найдено</p>
             </div>
@@ -164,52 +164,52 @@ export default function UsersPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-white/5">
+                  <tr className="border-b border-[var(--admin-border)]">
                     {['Сотрудник','Email','Роль','Последний вход','Дата регистрации',''].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-gray-400 dark:text-white/30 uppercase tracking-wider last:text-right">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-[var(--admin-text-faint)] uppercase tracking-wider last:text-right">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(u => (
-                    <tr key={u.id} className="border-b border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
+                    <tr key={u.id} className="border-b border-[var(--admin-border)] hover:bg-[var(--admin-card-hover)] transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {av(u) ? (
-                            <img src={av(u)} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-gray-200 dark:ring-white/10" />
+                            <img src={av(u)} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-[var(--admin-border)]" />
                           ) : (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/10 text-xs font-bold text-violet-600 dark:text-violet-400">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--admin-accent)]/10 text-xs font-bold text-[var(--admin-accent)]">
                               {(u.firstName||u.email||'?')[0].toUpperCase()}
                             </div>
                           )}
                           <div>
-                            <p className="text-xs font-medium text-gray-900 dark:text-white">{name(u)}</p>
-                            {session?.user?.id === u.id && <p className="text-[10px] text-violet-600 dark:text-violet-400">Это вы</p>}
+                            <p className="text-xs font-medium text-[var(--admin-text)]">{name(u)}</p>
+                            {session?.user?.id === u.id && <p className="text-[10px] text-[var(--admin-accent)]">Это вы</p>}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-600 dark:text-white/60">{u.email}</td>
+                      <td className="px-4 py-3 text-xs text-[var(--admin-text-muted)]">{u.email}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${ROLE_STYLE[u.role] || 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-white/40 border-gray-200 dark:border-white/10'}`}>
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${ROLE_STYLE[u.role] || 'bg-[var(--admin-bg-muted)] text-[var(--admin-text-muted)] border-[var(--admin-border)]'}`}>
                           {u.role}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-xs text-gray-600 dark:text-white/60 whitespace-nowrap">
+                        <p className="text-xs text-[var(--admin-text-muted)] whitespace-nowrap">
                           {formatLastSignIn(u.lastSignIn)}
                         </p>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-400 dark:text-white/30 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-[var(--admin-text-faint)] whitespace-nowrap">
                         {new Date(u.createdAt).toLocaleDateString('ru-RU')}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => setEditing({ ...u })}
-                            className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-500/10 transition-all">
+                            className="rounded-lg p-1.5 text-[var(--admin-text-faint)] hover:text-[var(--admin-accent)] hover:bg-[var(--admin-accent)]/10 transition-all">
                             <Edit3 className="h-3.5 w-3.5" />
                           </button>
                           <button onClick={() => deleteUser(u.id)} disabled={session?.user?.id === u.id}
-                            className="rounded-lg p-1.5 text-gray-400 dark:text-white/30 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed">
+                            className="rounded-lg p-1.5 text-[var(--admin-text-faint)] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -226,64 +226,64 @@ export default function UsersPage() {
       {/* Edit Modal */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-[#0f0f1a] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-lg shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/5">
-              <h2 className="text-sm font-bold text-gray-900 dark:text-white">Редактировать сотрудника</h2>
-              <button onClick={() => setEditing(null)} className="text-gray-400 dark:text-white/30 hover:text-gray-600 dark:hover:text-white transition-colors"><X className="h-5 w-5" /></button>
+          <div className="bg-[var(--admin-bg-elevated)] border border-[var(--admin-border)] rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-[var(--admin-border)]">
+              <h2 className="text-sm font-bold text-[var(--admin-text)]">Редактировать сотрудника</h2>
+              <button onClick={() => setEditing(null)} className="text-[var(--admin-text-faint)] hover:text-[var(--admin-text)] transition-colors"><X className="h-5 w-5" /></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="relative">
                   {av(editing) ? (
-                    <img src={av(editing)} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-violet-500/30" />
+                    <img src={av(editing)} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-[var(--admin-accent)]/30" />
                   ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-500/10 text-lg font-bold text-violet-400">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--admin-accent)]/10 text-lg font-bold text-[var(--admin-accent)]">
                       {(editing.firstName||editing.email||'?')[0].toUpperCase()}
                     </div>
                   )}
                   <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                    className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white hover:bg-violet-500 transition-colors disabled:opacity-50">
+                    className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--admin-accent)] text-white hover:opacity-90 transition-colors disabled:opacity-50">
                     <Camera className="h-3 w-3" />
                   </button>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{name(editing)}</p>
-                  <p className="text-xs text-gray-500 dark:text-white/30">{editing.email}</p>
+                  <p className="text-sm font-medium text-[var(--admin-text)]">{name(editing)}</p>
+                  <p className="text-xs text-[var(--admin-text-muted)]">{editing.email}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 {[['Имя','firstName'],['Фамилия','lastName'],['Телефон','phone']].map(([label, field]) => (
                   <div key={field} className={field === 'phone' ? 'col-span-2' : ''}>
-                    <label className="block text-[10px] font-semibold text-gray-500 dark:text-white/30 uppercase mb-1.5">{label}</label>
+                    <label className="block text-[10px] font-semibold text-[var(--admin-text-muted)] uppercase mb-1.5">{label}</label>
                     <input type="text" value={(editing[field as keyof typeof editing] as string) || ''}
                       onChange={e => setEditing(prev => prev ? { ...prev, [field]: e.target.value } : prev)}
-                      className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
+                      className="w-full rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] px-3 py-2.5 text-sm text-[var(--admin-text)] placeholder-[var(--admin-text-faint)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40" />
                   </div>
                 ))}
                 <div>
-                  <label className="block text-[10px] font-semibold text-gray-500 dark:text-white/30 uppercase mb-1.5">Роль</label>
+                  <label className="block text-[10px] font-semibold text-[var(--admin-text-muted)] uppercase mb-1.5">Роль</label>
                   <select value={editing.role} onChange={e => setEditing(prev => prev ? { ...prev, role: e.target.value } : prev)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-violet-500/50">
-                    {['admin','manager','support'].map(r => <option key={r} value={r} className="bg-white dark:bg-[#0f0f1a] text-gray-900 dark:text-white">{r}</option>)}
+                    className="w-full rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] px-3 py-2.5 text-sm text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40">
+                    {['admin','manager','support'].map(r => <option key={r} value={r} className="bg-[var(--admin-bg-elevated)] text-[var(--admin-text)]">{r}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-gray-500 dark:text-white/30 uppercase mb-1.5">Новый пароль</label>
+                  <label className="block text-[10px] font-semibold text-[var(--admin-text-muted)] uppercase mb-1.5">Новый пароль</label>
                   <input type="password" placeholder="Оставьте пустым" value={editing.password || ''}
                     onChange={e => setEditing(prev => prev ? { ...prev, password: e.target.value } : prev)}
-                    className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-violet-500/50" />
+                    className="w-full rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] px-3 py-2.5 text-sm text-[var(--admin-text)] placeholder-[var(--admin-text-faint)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40" />
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 p-5 border-t border-gray-200 dark:border-white/5">
+            <div className="flex gap-3 p-5 border-t border-[var(--admin-border)]">
               <button onClick={save} disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50 transition-colors">
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[var(--admin-accent)] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors">
                 <Save className="h-4 w-4" />
                 {saving ? 'Сохранение...' : 'Сохранить'}
               </button>
               <button onClick={() => deleteUser(editing.id)} disabled={session?.user?.id === editing.id}
-                className="flex items-center gap-2 rounded-xl bg-red-100 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-500/20 disabled:opacity-30 transition-colors">
+                className="flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 disabled:opacity-30 transition-colors">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>

@@ -300,13 +300,13 @@ export default function AdminVerificationRequestsPage() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--admin-text-faint)]" />
           <input
             type="text"
             placeholder={activeTab === 'requests' ? "Поиск по email или имени..." : "Поиск пользователей..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2.5 bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] rounded-lg outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
           />
         </div>
 
@@ -319,8 +319,8 @@ export default function AdminVerificationRequestsPage() {
                 onClick={() => setFilter(f)}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   filter === f
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    ? 'bg-[var(--admin-accent)] text-white'
+                    : 'bg-[var(--admin-card)] text-[var(--admin-text)] border border-[var(--admin-border)] hover:bg-[var(--admin-card-hover)]'
                 }`}
               >
                 {f === 'all' && 'Все'}
@@ -344,8 +344,8 @@ export default function AdminVerificationRequestsPage() {
                   onClick={() => setUserStatusFilter(x.key)}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     userStatusFilter === x.key
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      ? 'bg-[var(--admin-accent)] text-white'
+                      : 'bg-[var(--admin-card)] text-[var(--admin-text)] border border-[var(--admin-border)] hover:bg-[var(--admin-card-hover)]'
                   }`}
                 >
                   {x.label}
@@ -353,11 +353,11 @@ export default function AdminVerificationRequestsPage() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Роль</span>
+              <span className="text-sm text-[var(--admin-text-muted)]">Роль</span>
               <select
                 value={userRoleFilter}
                 onChange={(e) => setUserRoleFilter(e.target.value as typeof userRoleFilter)}
-                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-3 py-2 bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] rounded-lg text-sm outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
               >
                 <option value="all">Все</option>
                 <option value="customer">customer</option>
@@ -372,46 +372,46 @@ export default function AdminVerificationRequestsPage() {
         {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--admin-accent)]"></div>
           </div>
         ) : activeTab === 'requests' ? (
           /* Requests List */
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-[var(--admin-card)] rounded-xl border border-[var(--admin-border)] overflow-hidden">
             {filteredRequests.length === 0 ? (
               <div className="py-16 text-center">
-                <Shield className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 text-lg">Нет заявок</p>
+                <Shield className="h-16 w-16 mx-auto text-[var(--admin-text-faint)] mb-4" />
+                <p className="text-[var(--admin-text-muted)] text-lg">Нет заявок</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="divide-y divide-[var(--admin-border)]">
                 {filteredRequests.map((request) => (
                   <motion.div
                     key={request.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    className="p-6 hover:bg-[var(--admin-card-hover)] transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                          <h3 className="font-semibold text-[var(--admin-text)]">
                             {request.lastName} {request.firstName} {request.middleName}
                           </h3>
                           <StatusBadge status={request.status} />
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        <p className="text-sm text-[var(--admin-text-muted)] mb-2">
                           Email: {request.userInfo.email}
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-[var(--admin-text-muted)]">
                           Паспорт: {request.passportSeries} {request.passportNumber}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                        <p className="text-xs text-[var(--admin-text-faint)] mt-2">
                           Подано: {new Date(request.createdAt).toLocaleDateString('ru-RU')}
                         </p>
                       </div>
                       <button
                         onClick={() => setSelectedRequest(request)}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                        className="px-4 py-2 bg-[var(--admin-accent)] hover:opacity-90 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
                       >
                         <Eye className="h-4 w-4" />
                         Просмотреть
@@ -424,20 +424,20 @@ export default function AdminVerificationRequestsPage() {
           </div>
         ) : (
           /* Users List */
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-[var(--admin-card)] rounded-xl border border-[var(--admin-border)] overflow-hidden">
             {filteredUsers.length === 0 ? (
               <div className="py-16 text-center">
-                <Users className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 text-lg">Пользователи не найдены</p>
+                <Users className="h-16 w-16 mx-auto text-[var(--admin-text-faint)] mb-4" />
+                <p className="text-[var(--admin-text-muted)] text-lg">Пользователи не найдены</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="divide-y divide-[var(--admin-border)]">
                 {filteredUsers.map((user) => (
                   <motion.div
                     key={user.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    className="p-6 hover:bg-[var(--admin-card-hover)] transition-colors"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
@@ -445,10 +445,10 @@ export default function AdminVerificationRequestsPage() {
                           {user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                          <h3 className="font-semibold text-[var(--admin-text)]">
                             {user.name || 'Без имени'}
                           </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                          <p className="text-sm text-[var(--admin-text-muted)]">{user.email}</p>
                           <div className="flex items-center gap-2 mt-1">
                             {user.isVerified ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs">
@@ -456,7 +456,7 @@ export default function AdminVerificationRequestsPage() {
                                 Верифицирован
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full text-xs">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--admin-bg-muted)] text-[var(--admin-text-muted)] rounded-full text-xs">
                                 <XCircle className="h-3 w-3" />
                                 Не верифицирован
                               </span>
@@ -498,15 +498,15 @@ export default function AdminVerificationRequestsPage() {
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-[var(--admin-bg-elevated)] rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             >
-              <div className="sticky top-0 bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-orange-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <div className="sticky top-0 bg-[var(--admin-bg-elevated)] px-6 py-4 border-b border-[var(--admin-border)] flex items-center justify-between">
+                <h2 className="text-xl font-bold text-[var(--admin-text)]">
                   Заявка на верификацию
                 </h2>
                 <button
                   onClick={() => setSelectedRequest(null)}
-                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg"
+                  className="p-2 hover:bg-[var(--admin-card-hover)] rounded-lg text-[var(--admin-text-muted)]"
                 >
                   <XCircle className="h-5 w-5" />
                 </button>
@@ -515,46 +515,46 @@ export default function AdminVerificationRequestsPage() {
               <div className="p-6 space-y-6">
                 {/* User Info */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Личные данные</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-[var(--admin-text)]">Личные данные</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">ФИО</p>
-                      <p className="font-medium">{selectedRequest.lastName} {selectedRequest.firstName} {selectedRequest.middleName}</p>
+                      <p className="text-sm text-[var(--admin-text-muted)]">ФИО</p>
+                      <p className="font-medium text-[var(--admin-text)]">{selectedRequest.lastName} {selectedRequest.firstName} {selectedRequest.middleName}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Дата рождения</p>
-                      <p className="font-medium">{new Date(selectedRequest.dateOfBirth).toLocaleDateString('ru-RU')}</p>
+                      <p className="text-sm text-[var(--admin-text-muted)]">Дата рождения</p>
+                      <p className="font-medium text-[var(--admin-text)]">{new Date(selectedRequest.dateOfBirth).toLocaleDateString('ru-RU')}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Телефон</p>
-                      <p className="font-medium">{selectedRequest.phoneNumber}</p>
+                      <p className="text-sm text-[var(--admin-text-muted)]">Телефон</p>
+                      <p className="font-medium text-[var(--admin-text)]">{selectedRequest.phoneNumber}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
-                      <p className="font-medium">{selectedRequest.userInfo.email}</p>
+                      <p className="text-sm text-[var(--admin-text-muted)]">Email</p>
+                      <p className="font-medium text-[var(--admin-text)]">{selectedRequest.userInfo.email}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Passport Info */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Паспортные данные</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-[var(--admin-text)]">Паспортные данные</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Серия и номер</p>
-                      <p className="font-medium">{selectedRequest.passportSeries} {selectedRequest.passportNumber}</p>
+                      <p className="text-sm text-[var(--admin-text-muted)]">Серия и номер</p>
+                      <p className="font-medium text-[var(--admin-text)]">{selectedRequest.passportSeries} {selectedRequest.passportNumber}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Код подразделения</p>
-                      <p className="font-medium">{selectedRequest.departmentCode || '-'}</p>
+                      <p className="text-sm text-[var(--admin-text-muted)]">Код подразделения</p>
+                      <p className="font-medium text-[var(--admin-text)]">{selectedRequest.departmentCode || '-'}</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Кем выдан</p>
-                      <p className="font-medium">{selectedRequest.issuedBy}</p>
+                      <p className="text-sm text-[var(--admin-text-muted)]">Кем выдан</p>
+                      <p className="font-medium text-[var(--admin-text)]">{selectedRequest.issuedBy}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Дата выдачи</p>
-                      <p className="font-medium">{new Date(selectedRequest.issueDate).toLocaleDateString('ru-RU')}</p>
+                      <p className="text-sm text-[var(--admin-text-muted)]">Дата выдачи</p>
+                      <p className="font-medium text-[var(--admin-text)]">{new Date(selectedRequest.issueDate).toLocaleDateString('ru-RU')}</p>
                     </div>
                   </div>
                 </div>

@@ -424,18 +424,18 @@ export default function AdminNotificationsPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Bell className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+            <h1 className="text-2xl font-bold text-[var(--admin-text)] flex items-center gap-2">
+              <Bell className="h-7 w-7 text-[var(--admin-accent)]" />
               Уведомления
             </h1>
-            <p className="text-sm text-gray-500 dark:text-white/40 mt-1">
+            <p className="text-sm text-[var(--admin-text-muted)] mt-1">
               Управление персональными и системными уведомлениями
             </p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={loadData}
-              className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2.5 text-sm text-gray-700 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-all"
+              className="flex items-center gap-2 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card)] px-4 py-2.5 text-sm text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)] hover:text-[var(--admin-text)] transition-all"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Обновить
@@ -444,7 +444,7 @@ export default function AdminNotificationsPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all"
+              className="flex items-center gap-2 px-6 py-2.5 bg-[var(--admin-accent)] text-white rounded-xl font-medium hover:opacity-90 transition-all"
             >
               <Plus className="h-5 w-5" />
               Создать
@@ -454,29 +454,29 @@ export default function AdminNotificationsPage() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-white/20" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--admin-text-faint)]" />
           <input
             type="text"
             placeholder="Поиск по имени или email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 py-2.5 pl-9 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+            className="w-full rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] py-2.5 pl-9 pr-4 text-sm text-[var(--admin-text)] placeholder-[var(--admin-text-faint)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
           />
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/10 dark:to-white/[0.02] p-5">
-            <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">Пользователей</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{users.length}</p>
+          <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-5">
+            <p className="text-xs font-medium text-[var(--admin-text-muted)] uppercase tracking-wider mb-2">Пользователей</p>
+            <p className="text-2xl font-bold text-[var(--admin-text)]">{users.length}</p>
           </div>
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/10 dark:to-white/[0.02] p-5">
-            <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">Системных</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{systemNotifications.length}</p>
+          <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-5">
+            <p className="text-xs font-medium text-[var(--admin-text-muted)] uppercase tracking-wider mb-2">Системных</p>
+            <p className="text-2xl font-bold text-[var(--admin-text)]">{systemNotifications.length}</p>
           </div>
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/10 dark:to-white/[0.02] p-5">
-            <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">Всего персональных</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-5">
+            <p className="text-xs font-medium text-[var(--admin-text-muted)] uppercase tracking-wider mb-2">Всего персональных</p>
+            <p className="text-2xl font-bold text-[var(--admin-text)]">
               {users.reduce((sum, u) => sum + u.totalNotifications, 0)}
             </p>
           </div>
@@ -486,21 +486,21 @@ export default function AdminNotificationsPage() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />
+              <div key={i} className="h-24 animate-pulse rounded-2xl bg-[var(--admin-bg-muted)]" />
             ))}
           </div>
         ) : filteredUsers.length === 0 && systemNotifications.length === 0 ? (
           <div className="text-center py-16">
-            <Bell className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-lg">Нет уведомлений</p>
+            <Bell className="h-16 w-16 mx-auto text-[var(--admin-text-faint)] mb-4" />
+            <p className="text-[var(--admin-text-muted)] text-lg">Нет уведомлений</p>
           </div>
         ) : (
           <div className="space-y-6">
             {/* Users with Personal Notifications */}
             {filteredUsers.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <h2 className="text-lg font-semibold text-[var(--admin-text)] mb-4 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-[var(--admin-accent)]" />
                   Персональные уведомления ({filteredUsers.length})
                 </h2>
                 <div className="space-y-3">
@@ -512,43 +512,43 @@ export default function AdminNotificationsPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -100 }}
-                        className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.03] overflow-hidden"
+                        className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] overflow-hidden"
                       >
                         {/* User Header */}
                         <button
                           onClick={() => toggleUserExpand(user.id)}
-                          className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
+                          className="w-full px-6 py-4 flex items-center gap-4 hover:bg-[var(--admin-card-hover)] transition-colors"
                         >
                           {user.avatar ? (
-                            <img src={user.avatar} alt="" className="h-12 w-12 rounded-xl object-cover ring-2 ring-purple-200 dark:ring-purple-900/30" />
+                            <img src={user.avatar} alt="" className="h-12 w-12 rounded-xl object-cover ring-2 ring-[var(--admin-accent)]/30" />
                           ) : (
                             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
                               {(user.firstName || user.email)[0].toUpperCase()}
                             </div>
                           )}
-                          
+
                           <div className="flex-1 text-left">
-                            <p className="font-semibold text-gray-900 dark:text-white">
+                            <p className="font-semibold text-[var(--admin-text)]">
                               {displayName(user)}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                            <p className="text-sm text-[var(--admin-text-muted)]">{user.email}</p>
                           </div>
 
                           <div className="flex items-center gap-4">
                             <div className="text-right">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              <p className="text-sm font-medium text-[var(--admin-text)]">
                                 {user.totalNotifications} уведомл.
                               </p>
                               {user.unreadCount > 0 && (
-                                <p className="text-xs text-purple-600 dark:text-purple-400">
+                                <p className="text-xs text-[var(--admin-accent)]">
                                   {user.unreadCount} непрочитано
                                 </p>
                               )}
                             </div>
                             {expandedUserId === user.id ? (
-                              <ChevronDown className="h-5 w-5 text-gray-400" />
+                              <ChevronDown className="h-5 w-5 text-[var(--admin-text-faint)]" />
                             ) : (
-                              <ChevronRight className="h-5 w-5 text-gray-400" />
+                              <ChevronRight className="h-5 w-5 text-[var(--admin-text-faint)]" />
                             )}
                           </div>
                         </button>
@@ -560,24 +560,24 @@ export default function AdminNotificationsPage() {
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              className="border-t border-gray-200 dark:border-white/10"
+                              className="border-t border-[var(--admin-border)]"
                             >
                               <div className="p-6 space-y-3">
                                 {user.notifications.length === 0 ? (
-                                  <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+                                  <p className="text-center text-[var(--admin-text-muted)] py-4">
                                     Нет уведомлений
                                   </p>
                                 ) : (
                                   user.notifications.map((notification) => {
                                     const TypeIcon = TYPE_CONFIG[notification.type].icon;
                                     const isRead = (notification as any).isRead || false;
-                                    
+
                                     return (
                                       <div
                                         key={notification.id}
                                         className={`group rounded-xl border ${TYPE_CONFIG[notification.type].border} p-4 transition-all ${
                                           isRead
-                                            ? 'bg-gray-50 dark:bg-gray-800/30 opacity-60'
+                                            ? 'bg-[var(--admin-bg-muted)] opacity-60'
                                             : TYPE_CONFIG[notification.type].bg
                                         }`}
                                       >
@@ -593,14 +593,14 @@ export default function AdminNotificationsPage() {
                                             <div className="flex items-start justify-between gap-2">
                                               <h4 className={`font-semibold ${
                                                 isRead
-                                                  ? 'text-gray-500 dark:text-gray-400'
-                                                  : 'text-gray-900 dark:text-white'
+                                                  ? 'text-[var(--admin-text-muted)]'
+                                                  : 'text-[var(--admin-text)]'
                                               }`}>
                                                 {notification.title}
                                               </h4>
                                               <div className="flex items-center gap-2">
                                                 {isRead && (
-                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-[var(--admin-bg-muted)] text-[var(--admin-text-muted)]">
                                                     <Eye className="h-3 w-3" />
                                                     Прочитано
                                                   </span>
@@ -626,12 +626,12 @@ export default function AdminNotificationsPage() {
                                             </div>
                                             <p className={`mt-1 text-sm ${
                                               isRead
-                                                ? 'text-gray-400 dark:text-gray-500'
-                                                : 'text-gray-600 dark:text-gray-300'
+                                                ? 'text-[var(--admin-text-faint)]'
+                                                : 'text-[var(--admin-text-muted)]'
                                             }`}>
                                               {notification.message}
                                             </p>
-                                            <div className="mt-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                            <div className="mt-2 flex items-center gap-3 text-xs text-[var(--admin-text-muted)]">
                                               <span>{new Date(notification.createdAt).toLocaleDateString('ru-RU')}</span>
                                               {notification.readCount !== undefined && notification.readCount > 0 && (
                                                 <>
@@ -663,7 +663,7 @@ export default function AdminNotificationsPage() {
             {/* System Notifications */}
             {systemNotifications.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-[var(--admin-text)] mb-4 flex items-center gap-2">
                   <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   Системные уведомления ({systemNotifications.length})
                 </h2>
@@ -682,13 +682,13 @@ export default function AdminNotificationsPage() {
                           <div className="flex-1">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                                <h3 className="font-semibold text-[var(--admin-text)] text-lg">
                                   {notification.title}
                                 </h3>
-                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                                <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
                                   {notification.message}
                                 </p>
-                                <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                                <div className="mt-3 flex items-center gap-4 text-xs text-[var(--admin-text-muted)]">
                                   <span>{new Date(notification.createdAt).toLocaleDateString('ru-RU')}</span>
                                   {notification.readCount !== undefined && notification.readCount > 0 && (
                                     <>
@@ -749,15 +749,15 @@ export default function AdminNotificationsPage() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl z-50"
             >
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] overflow-y-auto">
+              <div className="bg-[var(--admin-bg-elevated)] rounded-2xl shadow-2xl border border-[var(--admin-border)] overflow-hidden max-h-[90vh] overflow-y-auto">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 sticky top-0">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                <div className="px-6 py-4 border-b border-[var(--admin-border)] flex items-center justify-between bg-[var(--admin-bg-muted)] sticky top-0">
+                  <h2 className="text-xl font-bold text-[var(--admin-text)]">
                     Создать уведомление
                   </h2>
                   <button
                     onClick={() => setShowCreateModal(false)}
-                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    className="p-2 rounded-lg text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)] hover:text-[var(--admin-text)] transition-colors"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -766,39 +766,39 @@ export default function AdminNotificationsPage() {
                 {/* Form */}
                 <div className="p-6 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                       Заголовок
                     </label>
                     <input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                       placeholder="Введите заголовок..."
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                       Сообщение
                     </label>
                     <textarea
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       rows={4}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 resize-none"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40 resize-none"
                       placeholder="Введите текст уведомления..."
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                       Тип
                     </label>
                     <select
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                     >
                       <option value="info">Инфо</option>
                       <option value="success">Успех</option>
@@ -809,7 +809,7 @@ export default function AdminNotificationsPage() {
 
                   {/* Audience Type Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                       Тип аудитории
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -817,8 +817,8 @@ export default function AdminNotificationsPage() {
                         onClick={() => setFormData({ ...formData, targetAudience: 'all', targetUserIds: [] })}
                         className={`px-4 py-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${
                           formData.targetAudience === 'all'
-                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
+                            ? 'border-[var(--admin-accent)] bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]'
+                            : 'border-[var(--admin-border)] text-[var(--admin-text-muted)] hover:border-[var(--admin-accent)]/50'
                         }`}
                       >
                         <Bell className="h-4 w-4" />
@@ -828,8 +828,8 @@ export default function AdminNotificationsPage() {
                         onClick={() => setFormData({ ...formData, targetAudience: 'specific', targetUserIds: [] })}
                         className={`px-4 py-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${
                           formData.targetAudience === 'specific'
-                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
+                            ? 'border-[var(--admin-accent)] bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]'
+                            : 'border-[var(--admin-border)] text-[var(--admin-text-muted)] hover:border-[var(--admin-accent)]/50'
                         }`}
                       >
                         <Users className="h-4 w-4" />
@@ -841,7 +841,7 @@ export default function AdminNotificationsPage() {
                   {/* User Search for Personal Notifications */}
                   {formData.targetAudience === 'specific' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                         Поиск пользователей
                       </label>
                       <input
@@ -849,31 +849,31 @@ export default function AdminNotificationsPage() {
                         value={userSearch}
                         onChange={(e) => setUserSearch(e.target.value)}
                         placeholder="Введите имя или email..."
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-4 py-2.5 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                       />
-                      
+
                       {/* Search Results */}
                       {searchResults.length > 0 && (
-                        <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card)]">
                           {searchResults.map((user) => (
                             <button
                               key={user.id}
                               onClick={() => addUserToNotification(user.id)}
                               disabled={formData.targetUserIds.includes(user.id)}
-                              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-[var(--admin-card-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {user.avatar ? (
                                 <img src={user.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
                               ) : (
-                                <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-sm font-bold text-purple-600 dark:text-purple-400">
+                                <div className="h-8 w-8 rounded-full bg-[var(--admin-accent)]/15 flex items-center justify-center text-sm font-bold text-[var(--admin-accent)]">
                                   {(user.firstName || user.email)[0].toUpperCase()}
                                 </div>
                               )}
                               <div className="flex-1 text-left">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                <p className="text-sm font-medium text-[var(--admin-text)]">
                                   {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                                <p className="text-xs text-[var(--admin-text-muted)]">{user.email}</p>
                               </div>
                               {formData.targetUserIds.includes(user.id) && (
                                 <CheckCircle className="h-5 w-5 text-emerald-500" />
@@ -882,18 +882,18 @@ export default function AdminNotificationsPage() {
                           ))}
                         </div>
                       )}
-                      
+
                       {searchingUsers && (
                         <div className="mt-2 flex items-center justify-center py-4">
-                          <RefreshCw className="h-5 w-5 animate-spin text-gray-400" />
-                          <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                          <RefreshCw className="h-5 w-5 animate-spin text-[var(--admin-text-faint)]" />
+                          <span className="ml-2 text-sm text-[var(--admin-text-muted)]">
                             {userSearch ? 'Поиск...' : 'Загрузка пользователей...'}
                           </span>
                         </div>
                       )}
-                      
+
                       {!searchingUsers && searchResults.length === 0 && formData.targetAudience === 'specific' && (
-                        <div className="mt-2 text-center py-4 text-sm text-gray-500 dark:text-gray-400">
+                        <div className="mt-2 text-center py-4 text-sm text-[var(--admin-text-muted)]">
                           Нет найденных пользователей
                         </div>
                       )}
@@ -901,7 +901,7 @@ export default function AdminNotificationsPage() {
                       {/* Selected Users */}
                       {formData.targetUserIds.length > 0 && (
                         <div className="mt-3 space-y-2">
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          <label className="block text-xs font-medium text-[var(--admin-text-muted)]">
                             Выбранные пользователи ({formData.targetUserIds.length})
                           </label>
                           <div className="flex flex-wrap gap-2">
@@ -910,14 +910,14 @@ export default function AdminNotificationsPage() {
                               return (
                                 <span
                                   key={userId}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--admin-accent)]/15 text-[var(--admin-accent)] text-sm"
                                 >
                                   {user?.firstName && user?.lastName
                                     ? `${user.firstName} ${user.lastName}`
                                     : user?.email || userId}
                                   <button
                                     onClick={() => removeUserFromNotification(userId)}
-                                    className="ml-1 hover:text-purple-900 dark:hover:text-purple-200"
+                                    className="ml-1 hover:opacity-70"
                                   >
                                     <X className="h-3.5 w-3.5" />
                                   </button>

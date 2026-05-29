@@ -176,7 +176,7 @@ export default function AdminReviewsPage() {
           <Star
             key={star}
             className={`h-4 w-4 ${
-              star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+              star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-[var(--admin-text-faint)]'
             }`}
           />
         ))}
@@ -238,15 +238,15 @@ export default function AdminReviewsPage() {
               placeholder="Поиск по отзывам..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full px-4 py-2 rounded-lg bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] text-sm outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40 transition-colors"
             />
           </div>
-          
+
           {/* Sort */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="px-4 py-2 rounded-lg bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] text-sm outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40 transition-colors"
           >
             <option value="newest">Сначала новые</option>
             <option value="oldest">Сначала старые</option>
@@ -262,8 +262,8 @@ export default function AdminReviewsPage() {
             onClick={() => setFilter('all')}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               filter === 'all'
-                ? 'bg-violet-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                ? 'bg-[var(--admin-accent)] text-white'
+                : 'border border-[var(--admin-border)] bg-[var(--admin-card)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)]'
             }`}
           >
             Все
@@ -272,8 +272,8 @@ export default function AdminReviewsPage() {
             onClick={() => setFilter('pending')}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               filter === 'pending'
-                ? 'bg-orange-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                ? 'bg-amber-600 text-white'
+                : 'border border-[var(--admin-border)] bg-[var(--admin-card)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)]'
             }`}
           >
             Ожидают модерации
@@ -282,8 +282,8 @@ export default function AdminReviewsPage() {
             onClick={() => setFilter('approved')}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               filter === 'approved'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                ? 'bg-emerald-600 text-white'
+                : 'border border-[var(--admin-border)] bg-[var(--admin-card)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)]'
             }`}
           >
             Одобрены
@@ -293,12 +293,12 @@ export default function AdminReviewsPage() {
         {/* Reviews List */}
         {loading ? (
           <div className="flex h-64 items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--admin-accent)] border-t-transparent" />
           </div>
         ) : filteredReviews.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 p-12 text-center dark:border-gray-700">
-            <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-4 text-sm text-gray-500">Нет отзывов для отображения</p>
+          <div className="rounded-lg border border-dashed border-[var(--admin-border)] p-12 text-center">
+            <MessageSquare className="mx-auto h-12 w-12 text-[var(--admin-text-faint)]" />
+            <p className="mt-4 text-sm text-[var(--admin-text-muted)]">Нет отзывов для отображения</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -309,50 +309,50 @@ export default function AdminReviewsPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+                  className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] p-6"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         {renderStars(review.rating)}
                         {review.isVerifiedPurchase ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                             <CheckCircle className="h-3 w-3" />
                             Подтвержденная покупка
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-200">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-2 py-0.5 text-xs font-medium text-rose-600 dark:text-rose-400">
                             <AlertTriangle className="h-3 w-3" />
                             Нет подтверждения покупки
                           </span>
                         )}
                         {!review.isApproved && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
                             Ожидает модерации
                           </span>
                         )}
                       </div>
                       {review.title && (
-                        <h3 className="mt-2 font-semibold text-gray-900 dark:text-white">{review.title}</h3>
+                        <h3 className="mt-2 font-semibold text-[var(--admin-text)]">{review.title}</h3>
                       )}
-                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{review.comment}</p>
+                      <p className="mt-1 text-sm text-[var(--admin-text-muted)]">{review.comment}</p>
                       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
                         {/* User */}
-                        <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1.5 text-[var(--admin-text-muted)]">
                           <User className="h-3 w-3" />
                           {review.userName || 'Аноним'}
                         </span>
-                        <span className="text-gray-300 dark:text-gray-600">•</span>
-                        
+                        <span className="text-[var(--admin-text-faint)]">•</span>
+
                         {/* Date */}
-                        <span className="text-gray-500 dark:text-gray-400">
+                        <span className="text-[var(--admin-text-muted)]">
                           {new Date(review.createdAt).toLocaleDateString('ru-RU')}
                         </span>
-                        
+
                         {/* Order ID - показываем только если есть верификация */}
                         {review.isVerifiedPurchase && review.orderId && (
                           <>
-                            <span className="text-gray-300 dark:text-gray-600">•</span>
+                            <span className="text-[var(--admin-text-faint)]">•</span>
                             <a
                               href={`/admin/orders?search=${review.orderId}`}
                               target="_blank"
@@ -365,16 +365,16 @@ export default function AdminReviewsPage() {
                             </a>
                           </>
                         )}
-                        
+
                         {/* Product Link */}
                         {review.productName && review.productId && (
                           <>
-                            <span className="text-gray-300 dark:text-gray-600">•</span>
+                            <span className="text-[var(--admin-text-faint)]">•</span>
                             <a
                               href={`/products/${review.productId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium transition-colors"
+                              className="inline-flex items-center gap-1.5 text-[var(--admin-accent)] hover:opacity-80 font-medium transition-opacity"
                             >
                               <Package className="h-3 w-3" />
                               {review.productName}
@@ -382,12 +382,12 @@ export default function AdminReviewsPage() {
                             </a>
                           </>
                         )}
-                        
+
                         {/* Helpful Count */}
                         {review.helpfulCount > 0 && (
                           <>
-                            <span className="text-gray-300 dark:text-gray-600">•</span>
-                            <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                            <span className="text-[var(--admin-text-faint)]">•</span>
+                            <span className="flex items-center gap-1 text-[var(--admin-text-muted)]">
                               <ThumbsUp className="h-3 w-3" />
                               {review.helpfulCount}
                             </span>
@@ -402,24 +402,24 @@ export default function AdminReviewsPage() {
                           href={`/products/${review.productId}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-200 dark:bg-violet-900 dark:text-violet-300 dark:hover:bg-violet-800 transition-colors flex items-center gap-1.5"
+                          className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] px-3 py-1.5 text-xs font-medium text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] transition-colors flex items-center gap-1.5"
                         >
                           <Eye className="h-3.5 w-3.5" />
                           Товар
                         </a>
                       )}
-                      
+
                       {!review.isApproved && (
                         <>
                           <button
                             onClick={() => handleApprove(review.id)}
-                            className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 transition-colors"
                           >
                             Одобрить
                           </button>
                           <button
                             onClick={() => handleReject(review.id)}
-                            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+                            className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700 transition-colors"
                           >
                             Отклонить
                           </button>
@@ -427,13 +427,13 @@ export default function AdminReviewsPage() {
                       )}
                       <button
                         onClick={() => setSelectedReview(review)}
-                        className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                        className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] px-3 py-1.5 text-xs font-medium text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] transition-colors"
                       >
                         Ответить
                       </button>
                       <button
                         onClick={() => handleDelete(review.id)}
-                        className="rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
+                        className="rounded-lg bg-rose-500/15 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-500/25 dark:text-rose-400 transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -441,17 +441,17 @@ export default function AdminReviewsPage() {
                   </div>
 
                   {review.adminResponse && (
-                    <div className="mt-4 rounded-lg bg-violet-50 p-4 dark:bg-violet-900/20">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-violet-700 dark:text-violet-300">
+                    <div className="mt-4 rounded-lg border border-[var(--admin-border-subtle)] bg-[var(--admin-bg-muted)] p-4">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-[var(--admin-accent)]">
                         <MessageSquare className="h-3 w-3" />
                         Ответ администрации
                         {review.adminRespondedAt && (
-                          <span className="text-violet-500">
+                          <span className="text-[var(--admin-text-faint)]">
                             • {new Date(review.adminRespondedAt).toLocaleDateString('ru-RU')}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-violet-900 dark:text-violet-200">{review.adminResponse}</p>
+                      <p className="text-sm text-[var(--admin-text)]">{review.adminResponse}</p>
                     </div>
                   )}
                 </motion.div>
@@ -466,17 +466,17 @@ export default function AdminReviewsPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
+              className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] px-4 py-2 text-sm font-medium text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] transition-colors disabled:opacity-50"
             >
               Назад
             </button>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-sm text-[var(--admin-text-muted)]">
               Страница {page} из {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
+              className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] px-4 py-2 text-sm font-medium text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] transition-colors disabled:opacity-50"
             >
               Вперед
             </button>
@@ -505,31 +505,31 @@ export default function AdminReviewsPage() {
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-[90] px-4"
             >
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="bg-[var(--admin-bg-elevated)] rounded-2xl shadow-2xl border border-[var(--admin-border)] overflow-hidden">
                 {/* Icon Header */}
                 <div className="px-6 pt-8 pb-4 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/20 dark:to-orange-900/20 flex items-center justify-center">
-                    <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-rose-500/15 to-amber-500/15 flex items-center justify-center">
+                    <AlertTriangle className="w-8 h-8 text-rose-600 dark:text-rose-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-xl font-bold text-[var(--admin-text)] mb-2">
                     Удалить этот отзыв навсегда?
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-[var(--admin-text-muted)]">
                     Это действие нельзя отменить. Отзыв будет полностью удален из базы данных.
                   </p>
                 </div>
 
                 {/* Actions */}
-                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex gap-3">
+                <div className="px-6 py-4 bg-[var(--admin-bg-muted)] border-t border-[var(--admin-border)] flex gap-3">
                   <button
                     onClick={() => setDeleteConfirmId(null)}
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card)] text-[var(--admin-text)] font-medium hover:bg-[var(--admin-card-hover)] transition-colors"
                   >
                     Отмена
                   </button>
                   <button
                     onClick={confirmDelete}
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-medium hover:from-red-700 hover:to-orange-700 transition-all shadow-lg shadow-red-500/30 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 text-white font-medium hover:from-rose-700 hover:to-amber-700 transition-all shadow-lg shadow-rose-500/30 flex items-center justify-center gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
                     Да, удалить

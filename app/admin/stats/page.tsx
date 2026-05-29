@@ -50,21 +50,21 @@ export default function StatsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Статистика операторов</h1>
-            <p className="text-sm text-white/40">Аналитика поддержки клиентов</p>
+            <h1 className="text-xl font-bold text-[var(--admin-text)]">Статистика операторов</h1>
+            <p className="text-sm text-[var(--admin-text-faint)]">Аналитика поддержки клиентов</p>
           </div>
           <div className="flex gap-2">
             <select value={range} onChange={e => setRange(e.target.value as any)}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none">
-              <option value="today" className="bg-[#0f0f1a]">Сегодня</option>
-              <option value="week" className="bg-[#0f0f1a]">Неделя</option>
-              <option value="month" className="bg-[#0f0f1a]">Месяц</option>
+              className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] px-3 py-2 text-sm text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40">
+              <option value="today" className="bg-[var(--admin-bg-elevated)]">Сегодня</option>
+              <option value="week" className="bg-[var(--admin-bg-elevated)]">Неделя</option>
+              <option value="month" className="bg-[var(--admin-bg-elevated)]">Месяц</option>
             </select>
-            <button onClick={load} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+            <button onClick={load} className="flex items-center gap-2 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card)] px-3 py-2 text-sm text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] transition-all">
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button onClick={exportCSV} disabled={!stats.length}
-              className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-40 transition-colors">
+              className="flex items-center gap-2 rounded-xl bg-[var(--admin-accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40 transition-colors">
               <Download className="h-4 w-4" />
               CSV
             </button>
@@ -74,33 +74,33 @@ export default function StatsPage() {
         {/* KPIs */}
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { label: 'Всего чатов', value: loading ? '—' : totalChats, icon: MessageSquare, color: 'text-violet-400 bg-violet-500/10' },
+            { label: 'Всего чатов', value: loading ? '—' : totalChats, icon: MessageSquare, color: 'text-[var(--admin-accent)] bg-[var(--admin-accent-soft)]' },
             { label: 'Средний рейтинг', value: loading ? '—' : avgRating, icon: Star, color: 'text-amber-400 bg-amber-500/10' },
             { label: 'Активных операторов', value: loading ? '—' : stats.length, icon: Users, color: 'text-blue-400 bg-blue-500/10' },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+            <div key={label} className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
               </div>
-              <p className="text-xs text-white/30 uppercase tracking-wider">{label}</p>
-              <p className="mt-1 text-2xl font-bold text-white">{value}</p>
+              <p className="text-xs text-[var(--admin-text-faint)] uppercase tracking-wider">{label}</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--admin-text)]">{value}</p>
             </div>
           ))}
         </div>
 
         {/* Operators table */}
-        <div className="rounded-2xl border border-white/5 bg-white/[0.03] overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/5">
-            <h3 className="text-sm font-semibold text-white">Операторы</h3>
+        <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-[var(--admin-border)]">
+            <h3 className="text-sm font-semibold text-[var(--admin-text)]">Операторы</h3>
           </div>
           {loading ? (
             <div className="flex items-center justify-center h-32">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--admin-accent)] border-t-transparent" />
             </div>
           ) : stats.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 text-white/20">
+            <div className="flex flex-col items-center justify-center h-32 text-[var(--admin-text-faint)]">
               <MessageSquare className="h-8 w-8 mb-2 opacity-40" />
               <p className="text-sm">Нет данных за выбранный период</p>
             </div>
@@ -108,36 +108,36 @@ export default function StatsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/5">
+                  <tr className="border-b border-[var(--admin-border)]">
                     {['Оператор','Чатов','Средняя оценка','Всего оценок'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-[var(--admin-text-faint)] uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {stats.map(s => (
-                    <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                    <tr key={s.id} className="border-b border-[var(--admin-border)] hover:bg-[var(--admin-card-hover)] transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/10 text-xs font-bold text-violet-400">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--admin-accent-soft)] text-xs font-bold text-[var(--admin-accent)]">
                             {(s.name||s.email)[0].toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-white">{s.name || '—'}</p>
-                            <p className="text-[10px] text-white/30">{s.email}</p>
+                            <p className="text-xs font-medium text-[var(--admin-text)]">{s.name || '—'}</p>
+                            <p className="text-[10px] text-[var(--admin-text-faint)]">{s.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-white/60">{s.completedChats}</td>
+                      <td className="px-4 py-3 text-xs text-[var(--admin-text-muted)]">{s.completedChats}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 rounded-full bg-white/5 max-w-[80px]">
+                          <div className="flex-1 h-1.5 rounded-full bg-[var(--admin-bg-muted)] max-w-[80px]">
                             <div className="h-1.5 rounded-full bg-amber-400" style={{ width: `${(s.avgRating / 10) * 100}%` }} />
                           </div>
                           <span className="text-xs text-amber-400 font-medium">{s.avgRating.toFixed(1)}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-white/60">{s.totalRatings}</td>
+                      <td className="px-4 py-3 text-xs text-[var(--admin-text-muted)]">{s.totalRatings}</td>
                     </tr>
                   ))}
                 </tbody>

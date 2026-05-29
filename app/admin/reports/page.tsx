@@ -49,19 +49,19 @@ export default function AdminReportsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Отчёты</h1>
-            <p className="text-sm text-white/40">Экспорт данных и аналитика</p>
+            <h1 className="text-xl font-bold text-[var(--admin-text)]">Отчёты</h1>
+            <p className="text-sm text-[var(--admin-text-muted)]">Экспорт данных и аналитика</p>
           </div>
           <div className="flex gap-2">
             <select value={range} onChange={e => setRange(e.target.value)}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none">
+              className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)] px-3 py-2 text-sm text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40">
               {['week','month','quarter','year'].map(r => (
-                <option key={r} value={r} className="bg-[#0f0f1a]">
+                <option key={r} value={r} className="bg-[var(--admin-bg-elevated)] text-[var(--admin-text)]">
                   {r === 'week' ? 'Неделя' : r === 'month' ? 'Месяц' : r === 'quarter' ? 'Квартал' : 'Год'}
                 </option>
               ))}
             </select>
-            <button onClick={load} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
+            <button onClick={load} className="flex items-center gap-2 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card)] px-3 py-2 text-sm text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] transition-all">
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
@@ -70,16 +70,16 @@ export default function AdminReportsPage() {
         {/* KPIs */}
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { label: 'Выручка', value: `${totalRevenue.toLocaleString('ru-RU')} ₽`, icon: DollarSign, color: 'text-emerald-400 bg-emerald-500/10' },
-            { label: 'Заказов', value: totalOrders, icon: Package, color: 'text-blue-400 bg-blue-500/10' },
-            { label: 'Продано', value: totalSales, icon: TrendingUp, color: 'text-violet-400 bg-violet-500/10' },
+            { label: 'Выручка', value: `${totalRevenue.toLocaleString('ru-RU')} ₽`, icon: DollarSign, color: 'text-emerald-500 bg-emerald-500/10' },
+            { label: 'Заказов', value: totalOrders, icon: Package, color: 'text-blue-500 bg-blue-500/10' },
+            { label: 'Продано', value: totalSales, icon: TrendingUp, color: 'text-[var(--admin-accent)] bg-[var(--admin-accent-soft)]' },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+            <div key={label} className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-5">
               <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color} mb-3`}>
                 <Icon className="h-5 w-5" />
               </div>
-              <p className="text-xs text-white/30 uppercase tracking-wider">{label}</p>
-              <p className="mt-1 text-2xl font-bold text-white">{value}</p>
+              <p className="text-xs text-[var(--admin-text-faint)] uppercase tracking-wider">{label}</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--admin-text)]">{value}</p>
             </div>
           ))}
         </div>
@@ -106,14 +106,14 @@ export default function AdminReportsPage() {
               disabled: !salesData.length,
             },
           ].map(({ title, desc, icon: Icon, color, onClick, disabled }) => (
-            <div key={title} className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+            <div key={title} className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-5">
               <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${color} mb-4`}>
                 <Icon className="h-5 w-5 text-white" />
               </div>
-              <h3 className="text-sm font-semibold text-white">{title}</h3>
-              <p className="mt-1 text-xs text-white/30">{desc}</p>
+              <h3 className="text-sm font-semibold text-[var(--admin-text)]">{title}</h3>
+              <p className="mt-1 text-xs text-[var(--admin-text-muted)]">{desc}</p>
               <button onClick={onClick} disabled={disabled || loading}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-all">
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--admin-card)] border border-[var(--admin-border)] px-4 py-2 text-xs font-medium text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] disabled:opacity-30 transition-all">
                 <Download className="h-3.5 w-3.5" />
                 Экспорт CSV
               </button>

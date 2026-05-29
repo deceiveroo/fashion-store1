@@ -143,19 +143,19 @@ export default function MarketingPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Маркетинг</h1>
-          <p className="text-gray-400 mt-1">Управление купонами, брошенными корзинами и email рассылками</p>
+          <h1 className="text-3xl font-bold text-[var(--admin-text)]">Маркетинг</h1>
+          <p className="text-[var(--admin-text-muted)] mt-1">Управление купонами, брошенными корзинами и email рассылками</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-4 border-b border-gray-700">
+      <div className="flex space-x-4 border-b border-[var(--admin-border)]">
         <button
           onClick={() => setActiveTab('coupons')}
           className={`px-6 py-3 font-medium transition-colors ${
             activeTab === 'coupons'
-              ? 'text-blue-400 border-b-2 border-blue-400'
-              : 'text-gray-400 hover:text-white'
+              ? 'text-[var(--admin-accent)] border-b-2 border-[var(--admin-accent)]'
+              : 'text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -167,8 +167,8 @@ export default function MarketingPage() {
           onClick={() => setActiveTab('abandoned')}
           className={`px-6 py-3 font-medium transition-colors ${
             activeTab === 'abandoned'
-              ? 'text-blue-400 border-b-2 border-blue-400'
-              : 'text-gray-400 hover:text-white'
+              ? 'text-[var(--admin-accent)] border-b-2 border-[var(--admin-accent)]'
+              : 'text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -180,8 +180,8 @@ export default function MarketingPage() {
           onClick={() => setActiveTab('email')}
           className={`px-6 py-3 font-medium transition-colors ${
             activeTab === 'email'
-              ? 'text-blue-400 border-b-2 border-blue-400'
-              : 'text-gray-400 hover:text-white'
+              ? 'text-[var(--admin-accent)] border-b-2 border-[var(--admin-accent)]'
+              : 'text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -195,13 +195,13 @@ export default function MarketingPage() {
       {activeTab === 'coupons' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-white">Активные купоны</h2>
+            <h2 className="text-xl font-semibold text-[var(--admin-text)]">Активные купоны</h2>
             <button
               onClick={() => {
                 setEditingCoupon(null);
                 setShowCouponModal(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-accent)] hover:opacity-90 text-white font-medium rounded-lg transition-colors"
             >
               <Plus className="w-5 h-5" />
               Создать купон
@@ -214,16 +214,16 @@ export default function MarketingPage() {
                 key={coupon.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6"
+                className="bg-[var(--admin-card)] backdrop-blur-sm border border-[var(--admin-border)] rounded-xl p-6"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <div className="w-12 h-12 bg-[var(--admin-accent)] rounded-lg flex items-center justify-center">
                       <Tag className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white font-mono">{coupon.code}</h3>
-                      <p className="text-sm text-gray-400">
+                      <h3 className="text-lg font-bold text-[var(--admin-text)] font-mono">{coupon.code}</h3>
+                      <p className="text-sm text-[var(--admin-text-muted)]">
                         {coupon.type === 'percent' ? `${coupon.discount}% скидка` : `${coupon.discount}₽ скидка`}
                       </p>
                     </div>
@@ -231,46 +231,46 @@ export default function MarketingPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => copyToClipboard(coupon.code)}
-                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      className="p-2 hover:bg-[var(--admin-card-hover)] rounded-lg transition-colors"
                       title="Копировать код"
                     >
-                      <Copy className="w-4 h-4 text-gray-400" />
+                      <Copy className="w-4 h-4 text-[var(--admin-text-muted)]" />
                     </button>
                     <button
                       onClick={() => {
                         setEditingCoupon(coupon);
                         setShowCouponModal(true);
                       }}
-                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      className="p-2 hover:bg-[var(--admin-card-hover)] rounded-lg transition-colors"
                       title="Редактировать"
                     >
-                      <Edit className="w-4 h-4 text-blue-400" />
+                      <Edit className="w-4 h-4 text-[var(--admin-accent)]" />
                     </button>
                     <button
                       onClick={() => handleDeleteCoupon(coupon.id)}
-                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      className="p-2 hover:bg-[var(--admin-card-hover)] rounded-lg transition-colors"
                       title="Удалить"
                     >
-                      <Trash2 className="w-4 h-4 text-red-400" />
+                      <Trash2 className="w-4 h-4 text-rose-400" />
                     </button>
                   </div>
                 </div>
 
                 <div className="space-y-2 text-sm">
                   {coupon.minOrder && (
-                    <div className="flex items-center gap-2 text-gray-400">
+                    <div className="flex items-center gap-2 text-[var(--admin-text-muted)]">
                       <DollarSign className="w-4 h-4" />
                       Мин. заказ: {coupon.minOrder}₽
                     </div>
                   )}
                   {coupon.maxUses && (
-                    <div className="flex items-center gap-2 text-gray-400">
+                    <div className="flex items-center gap-2 text-[var(--admin-text-muted)]">
                       <Users className="w-4 h-4" />
                       Использовано: {coupon.usedCount}/{coupon.maxUses}
                     </div>
                   )}
                   {coupon.expiresAt && (
-                    <div className="flex items-center gap-2 text-gray-400">
+                    <div className="flex items-center gap-2 text-[var(--admin-text-muted)]">
                       <Clock className="w-4 h-4" />
                       Истекает: {new Date(coupon.expiresAt).toLocaleDateString('ru-RU')}
                     </div>
@@ -278,13 +278,13 @@ export default function MarketingPage() {
                   <div className="flex items-center gap-2">
                     {coupon.active ? (
                       <>
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                        <span className="text-green-400">Активен</span>
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                        <span className="text-emerald-400">Активен</span>
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-500">Неактивен</span>
+                        <CheckCircle className="w-4 h-4 text-[var(--admin-text-faint)]" />
+                        <span className="text-[var(--admin-text-faint)]">Неактивен</span>
                       </>
                     )}
                   </div>
@@ -295,11 +295,11 @@ export default function MarketingPage() {
 
           {coupons.length === 0 && (
             <div className="text-center py-12">
-              <Tag className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">Нет активных купонов</p>
+              <Tag className="w-16 h-16 text-[var(--admin-text-faint)] mx-auto mb-4" />
+              <p className="text-[var(--admin-text-muted)]">Нет активных купонов</p>
               <button
                 onClick={() => setShowCouponModal(true)}
-                className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="mt-4 px-6 py-2 bg-[var(--admin-accent)] hover:opacity-90 text-white font-medium rounded-lg transition-colors"
               >
                 Создать первый купон
               </button>
@@ -310,36 +310,36 @@ export default function MarketingPage() {
 
       {activeTab === 'abandoned' && (
         <div>
-          <h2 className="text-xl font-semibold text-white mb-6">Брошенные корзины</h2>
-          
+          <h2 className="text-xl font-semibold text-[var(--admin-text)] mb-6">Брошенные корзины</h2>
+
           {abandonedCarts.length > 0 ? (
-            <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
+            <div className="bg-[var(--admin-card)] backdrop-blur-sm border border-[var(--admin-border)] rounded-xl overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-900/50">
+                <thead className="bg-[var(--admin-bg-muted)]">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Клиент</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Товары</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Сумма</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Время</th>
-                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">Действия</th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-[var(--admin-text-muted)]">Клиент</th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-[var(--admin-text-muted)]">Товары</th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-[var(--admin-text-muted)]">Сумма</th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-[var(--admin-text-muted)]">Время</th>
+                    <th className="px-6 py-4 text-right text-sm font-medium text-[var(--admin-text-muted)]">Действия</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700">
+                <tbody className="divide-y divide-[var(--admin-border)]">
                   {abandonedCarts.map((cart) => (
-                    <tr key={cart.id} className="hover:bg-gray-700/30 transition-colors">
+                    <tr key={cart.id} className="hover:bg-[var(--admin-card-hover)] transition-colors">
                       <td className="px-6 py-4">
                         <div>
-                          <p className="text-white font-medium">{cart.userName || 'Гость'}</p>
-                          <p className="text-sm text-gray-400">{cart.userEmail}</p>
+                          <p className="text-[var(--admin-text)] font-medium">{cart.userName || 'Гость'}</p>
+                          <p className="text-sm text-[var(--admin-text-muted)]">{cart.userEmail}</p>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-white">{cart.itemCount} товаров</td>
-                      <td className="px-6 py-4 text-white font-semibold">{cart.totalAmount}₽</td>
-                      <td className="px-6 py-4 text-gray-400">
+                      <td className="px-6 py-4 text-[var(--admin-text)]">{cart.itemCount} товаров</td>
+                      <td className="px-6 py-4 text-[var(--admin-text)] font-semibold">{cart.totalAmount}₽</td>
+                      <td className="px-6 py-4 text-[var(--admin-text-muted)]">
                         {new Date(cart.createdAt).toLocaleString('ru-RU')}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="text-blue-400 hover:text-blue-300 text-sm">
+                        <button className="text-[var(--admin-accent)] hover:opacity-80 text-sm">
                           Отправить напоминание
                         </button>
                       </td>
@@ -350,8 +350,8 @@ export default function MarketingPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <ShoppingCart className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">Нет брошенных корзин</p>
+              <ShoppingCart className="w-16 h-16 text-[var(--admin-text-faint)] mx-auto mb-4" />
+              <p className="text-[var(--admin-text-muted)]">Нет брошенных корзин</p>
             </div>
           )}
         </div>
@@ -359,36 +359,36 @@ export default function MarketingPage() {
 
       {activeTab === 'email' && (
         <div>
-          <h2 className="text-xl font-semibold text-white mb-6">Email шаблоны</h2>
-          
+          <h2 className="text-xl font-semibold text-[var(--admin-text)] mb-6">Email шаблоны</h2>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {emailTemplates.map((template) => (
               <motion.div
                 key={template.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6"
+                className="bg-[var(--admin-card)] backdrop-blur-sm border border-[var(--admin-border)] rounded-xl p-6"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-white">{template.name}</h3>
-                    <p className="text-sm text-gray-400 mt-1">{template.subject}</p>
+                    <h3 className="text-lg font-semibold text-[var(--admin-text)]">{template.name}</h3>
+                    <p className="text-sm text-[var(--admin-text-muted)] mt-1">{template.subject}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     template.category === 'marketing' ? 'bg-purple-500/20 text-purple-400' :
                     template.category === 'transactional' ? 'bg-blue-500/20 text-blue-400' :
-                    'bg-green-500/20 text-green-400'
+                    'bg-emerald-500/20 text-emerald-400'
                   }`}>
                     {template.category}
                   </span>
                 </div>
-                
+
                 {template.variables && template.variables.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-xs text-gray-500 mb-2">Переменные:</p>
+                    <p className="text-xs text-[var(--admin-text-faint)] mb-2">Переменные:</p>
                     <div className="flex flex-wrap gap-2">
                       {template.variables.map((variable) => (
-                        <span key={variable} className="px-2 py-1 bg-gray-700 rounded text-xs text-gray-300 font-mono">
+                        <span key={variable} className="px-2 py-1 bg-[var(--admin-bg-muted)] rounded text-xs text-[var(--admin-text-muted)] font-mono">
                           {`{{${variable}}}`}
                         </span>
                       ))}
@@ -397,10 +397,10 @@ export default function MarketingPage() {
                 )}
 
                 <div className="flex gap-2">
-                  <button className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm">
+                  <button className="flex-1 px-4 py-2 bg-[var(--admin-accent)] hover:opacity-90 text-white font-medium rounded-lg transition-colors text-sm">
                     Редактировать
                   </button>
-                  <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm">
+                  <button className="px-4 py-2 border border-[var(--admin-border)] bg-[var(--admin-card)] hover:bg-[var(--admin-card-hover)] text-[var(--admin-text)] rounded-lg transition-colors text-sm">
                     Предпросмотр
                   </button>
                 </div>
@@ -410,8 +410,8 @@ export default function MarketingPage() {
 
           {emailTemplates.length === 0 && (
             <div className="text-center py-12">
-              <Mail className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">Нет email шаблонов</p>
+              <Mail className="w-16 h-16 text-[var(--admin-text-faint)] mx-auto mb-4" />
+              <p className="text-[var(--admin-text-muted)]">Нет email шаблонов</p>
             </div>
           )}
         </div>

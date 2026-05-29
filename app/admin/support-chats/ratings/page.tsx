@@ -64,7 +64,7 @@ export default function RatingsHistoryPage() {
           <Star
             key={star}
             className={`h-4 w-4 ${
-              star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'
+              star <= rating ? 'fill-amber-400 text-amber-400' : 'text-[var(--admin-text-faint)]'
             }`}
           />
         ))}
@@ -78,22 +78,22 @@ export default function RatingsHistoryPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Star className="h-7 w-7 text-yellow-500" />
+            <h1 className="text-2xl font-bold text-[var(--admin-text)] flex items-center gap-2">
+              <Star className="h-7 w-7 text-amber-500" />
               История оценок качества
             </h1>
-            <p className="text-sm text-gray-500 dark:text-white/40 mt-1">
+            <p className="text-sm text-[var(--admin-text-muted)] mt-1">
               Анализ удовлетворенности клиентов работой операторов
             </p>
           </div>
-          
+
           <select
             value={selectedDays}
             onChange={(e) => {
               setSelectedDays(Number(e.target.value));
               setPagination((prev) => ({ ...prev, page: 1 }));
             }}
-            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="px-4 py-2 bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] rounded-xl text-sm outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
           >
             <option value={7}>7 дней</option>
             <option value={30}>30 дней</option>
@@ -103,32 +103,32 @@ export default function RatingsHistoryPage() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-500/10 dark:to-orange-500/10 p-6">
+          <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">
+                <p className="text-xs font-medium text-[var(--admin-text-muted)] uppercase tracking-wider">
                   Средняя оценка
                 </p>
                 <div className="mt-2 flex items-baseline gap-2">
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-3xl font-bold text-[var(--admin-text)]">
                     {summary.averageRating.toFixed(1)}
                   </p>
-                  <span className="text-sm text-gray-500 dark:text-white/40">/ 5</span>
+                  <span className="text-sm text-[var(--admin-text-muted)]">/ 5</span>
                 </div>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 text-white shadow-lg">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg">
                 <Star className="h-6 w-6" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-500/10 dark:to-cyan-500/10 p-6">
+          <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">
+                <p className="text-xs font-medium text-[var(--admin-text-muted)] uppercase tracking-wider">
                   Всего оценок
                 </p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                <p className="mt-2 text-3xl font-bold text-[var(--admin-text)]">
                   {summary.totalRatings}
                 </p>
               </div>
@@ -138,17 +138,17 @@ export default function RatingsHistoryPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-500/10 dark:to-pink-500/10 p-6">
+          <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-white/50 uppercase tracking-wider">
+                <p className="text-xs font-medium text-[var(--admin-text-muted)] uppercase tracking-wider">
                   Активных операторов
                 </p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                <p className="mt-2 text-3xl font-bold text-[var(--admin-text)]">
                   {operatorStats.length}
                 </p>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 text-white shadow-lg">
                 <Users className="h-6 w-6" />
               </div>
             </div>
@@ -157,53 +157,53 @@ export default function RatingsHistoryPage() {
 
         {/* Operator Performance */}
         {operatorStats.length > 0 && (
-          <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-white/10">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-violet-500" />
+          <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] overflow-hidden">
+            <div className="px-6 py-4 border-b border-[var(--admin-border)]">
+              <h2 className="text-lg font-semibold text-[var(--admin-text)] flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-[var(--admin-accent)]" />
                 Производительность операторов
               </h2>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider">
+                  <tr className="border-b border-[var(--admin-border)] bg-[var(--admin-bg-muted)]">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text-muted)] uppercase tracking-wider">
                       Оператор
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text-muted)] uppercase tracking-wider">
                       Чатов
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text-muted)] uppercase tracking-wider">
                       Средняя оценка
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-white/5">
+                <tbody className="divide-y divide-[var(--admin-border)]">
                   {operatorStats.map((stat) => (
-                    <tr key={stat.operatorId || stat.operatorEmail} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <tr key={stat.operatorId || stat.operatorEmail} className="hover:bg-[var(--admin-card-hover)] transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white font-bold">
                             {stat.operatorName.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-medium text-gray-900 dark:text-white">
+                            <div className="font-medium text-[var(--admin-text)]">
                               {stat.operatorName}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-white/40">
+                            <div className="text-xs text-[var(--admin-text-muted)]">
                               {stat.operatorEmail}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 text-[var(--admin-text)]">
                         {stat.totalChats}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-900 dark:text-white">
+                          <span className="font-semibold text-[var(--admin-text)]">
                             {stat.avgRating}
                           </span>
                           {renderStars(parseFloat(stat.avgRating))}
@@ -218,43 +218,43 @@ export default function RatingsHistoryPage() {
         )}
 
         {/* Recent Ratings */}
-        <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-white/10">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-violet-500" />
+        <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] overflow-hidden">
+          <div className="px-6 py-4 border-b border-[var(--admin-border)]">
+            <h2 className="text-lg font-semibold text-[var(--admin-text)] flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-[var(--admin-accent)]" />
               Последние оценки
             </h2>
           </div>
 
           {loading ? (
             <div className="flex justify-center p-12">
-              <div className="h-12 w-12 animate-spin rounded-full border-3 border-violet-500/30 border-t-violet-500" />
+              <div className="h-12 w-12 animate-spin rounded-full border-3 border-[var(--admin-accent)]/30 border-t-[var(--admin-accent)]" />
             </div>
           ) : ratings.length === 0 ? (
-            <div className="p-12 text-center text-gray-500 dark:text-white/40">
+            <div className="p-12 text-center text-[var(--admin-text-muted)]">
               <Star className="h-12 w-12 mx-auto mb-4 opacity-20" />
               <p>Нет оценок за выбранный период</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200 dark:divide-white/5">
+            <div className="divide-y divide-[var(--admin-border)]">
               {ratings.map((rating) => (
-                <div key={rating.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                <div key={rating.id} className="px-6 py-4 hover:bg-[var(--admin-card-hover)] transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         {renderStars(rating.rating)}
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        <span className="text-sm font-medium text-[var(--admin-text)]">
                           {rating.rating}/5
                         </span>
                       </div>
-                      
+
                       {rating.feedback && (
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        <p className="text-sm text-[var(--admin-text-muted)] mb-2">
                           {rating.feedback}
                         </p>
                       )}
-                      
-                      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-white/40">
+
+                      <div className="flex items-center gap-4 text-xs text-[var(--admin-text-muted)]">
                         <span className="flex items-center gap-1">
                           <Users className="h-3 w-3" />
                           {rating.operatorDisplayName}
@@ -279,23 +279,23 @@ export default function RatingsHistoryPage() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-white/10 flex items-center justify-between">
+            <div className="px-6 py-4 border-t border-[var(--admin-border)] flex items-center justify-between">
               <button
                 onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
                 disabled={pagination.page === 1}
-                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
+                className="px-4 py-2 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] text-[var(--admin-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--admin-card-hover)] transition-colors text-sm"
               >
                 Назад
               </button>
 
-              <span className="text-sm text-gray-700 dark:text-gray-300">
+              <span className="text-sm text-[var(--admin-text-muted)]">
                 Страница {pagination.page} из {pagination.totalPages}
               </span>
 
               <button
                 onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
                 disabled={pagination.page === pagination.totalPages}
-                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
+                className="px-4 py-2 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] text-[var(--admin-text)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--admin-card-hover)] transition-colors text-sm"
               >
                 Вперед
               </button>

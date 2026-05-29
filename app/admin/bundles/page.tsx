@@ -130,7 +130,7 @@ export default function AdminBundlesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-[var(--admin-accent)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -139,17 +139,17 @@ export default function AdminBundlesPage() {
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold text-[var(--admin-text)]">
             Комплектные предложения
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-[var(--admin-text-muted)] mt-1">
             Создавайте наборы товаров со скидкой
           </p>
         </div>
 
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+          className="flex items-center gap-2 bg-[var(--admin-accent)] text-white px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90 shadow-lg hover:shadow-xl"
         >
           <Plus size={20} />
           Создать набор
@@ -159,12 +159,12 @@ export default function AdminBundlesPage() {
       {/* Bundles List */}
       <div className="grid gap-4">
         {bundles.length === 0 ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-12 text-center">
-            <Package className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <div className="bg-[var(--admin-card)] border border-[var(--admin-border)] rounded-2xl p-12 text-center">
+            <Package className="w-16 h-16 mx-auto text-[var(--admin-text-faint)] mb-4" />
+            <h3 className="text-xl font-semibold text-[var(--admin-text)] mb-2">
               Нет комплектных предложений
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-[var(--admin-text-muted)]">
               Создайте первый набор товаров со скидкой
             </p>
           </div>
@@ -174,28 +174,28 @@ export default function AdminBundlesPage() {
               key={bundle.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-800"
+              className="bg-[var(--admin-card)] border border-[var(--admin-border)] rounded-2xl p-6 shadow-lg"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    <h3 className="text-xl font-bold text-[var(--admin-text)]">
                       {bundle.name}
                     </h3>
-                    <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-semibold">
+                    <span className="px-3 py-1 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full text-sm font-semibold">
                       -{bundle.discountPercent}%
                     </span>
                     {!bundle.isActive && (
-                      <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-sm">
+                      <span className="px-3 py-1 bg-[var(--admin-bg-muted)] text-[var(--admin-text-muted)] rounded-full text-sm">
                         Неактивен
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-[var(--admin-text-muted)]">
                     /bundles/{bundle.slug}
                   </p>
                   {bundle.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    <p className="text-sm text-[var(--admin-text-muted)] mt-2">
                       {bundle.description}
                     </p>
                   )}
@@ -204,15 +204,15 @@ export default function AdminBundlesPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => startEdit(bundle)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    className="p-2 hover:bg-[var(--admin-card-hover)] rounded-lg transition-colors"
                   >
-                    <Edit size={20} className="text-gray-600 dark:text-gray-400" />
+                    <Edit size={20} className="text-[var(--admin-text-muted)]" />
                   </button>
                   <button
                     onClick={() => handleDelete(bundle.id)}
-                    className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    className="p-2 hover:bg-rose-500/10 rounded-lg transition-colors"
                   >
-                    <Trash2 size={20} className="text-red-600" />
+                    <Trash2 size={20} className="text-rose-600 dark:text-rose-400" />
                   </button>
                 </div>
               </div>
@@ -227,10 +227,10 @@ export default function AdminBundlesPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-gray-900 rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-[var(--admin-bg-elevated)] border border-[var(--admin-border)] rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-2xl font-bold text-[var(--admin-text)]">
                 {editingBundle ? 'Редактировать набор' : 'Создать набор'}
               </h2>
               <button
@@ -238,7 +238,7 @@ export default function AdminBundlesPage() {
                   setShowForm(false);
                   setEditingBundle(null);
                 }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-[var(--admin-card-hover)] rounded-lg transition-colors text-[var(--admin-text-muted)]"
               >
                 <X size={24} />
               </button>
@@ -246,48 +246,48 @@ export default function AdminBundlesPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                   Название *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                   placeholder="Например: Летний образ"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                   Slug *
                 </label>
                 <input
                   type="text"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                   placeholder="summer-look"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                   Описание
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 resize-none"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40 resize-none"
                   placeholder="Описание набора..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--admin-text-muted)] mb-2">
                   Скидка (%)
                 </label>
                 <input
@@ -296,7 +296,7 @@ export default function AdminBundlesPage() {
                   onChange={(e) => setFormData({ ...formData, discountPercent: Number(e.target.value) })}
                   min="0"
                   max="100"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--admin-bg-muted)] border border-[var(--admin-border)] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[var(--admin-accent)]/40"
                 />
               </div>
 
@@ -306,9 +306,9 @@ export default function AdminBundlesPage() {
                   id="isActive"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  className="w-5 h-5 rounded border-[var(--admin-border)] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
                 />
-                <label htmlFor="isActive" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label htmlFor="isActive" className="text-sm font-medium text-[var(--admin-text-muted)]">
                   Активен
                 </label>
               </div>
@@ -320,13 +320,13 @@ export default function AdminBundlesPage() {
                     setShowForm(false);
                     setEditingBundle(null);
                   }}
-                  className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex-1 px-6 py-3 border border-[var(--admin-border)] bg-[var(--admin-card)] rounded-xl font-semibold text-[var(--admin-text)] hover:bg-[var(--admin-card-hover)] transition-colors"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[var(--admin-accent)] text-white px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90 shadow-lg"
                 >
                   <Save size={20} />
                   Сохранить
