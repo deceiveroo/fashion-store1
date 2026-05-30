@@ -116,13 +116,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    await db.insert(supportChatMessages).values({
+    // Пишем идентичность отправителя per-message (точная история даже после передачи чата).
+    // Если миграция с колонками sender_* ещё не применена — отправка не должна падать.
+    const baseValues = {
       id: crypto.randomUUID(),
       sessionId,
       message: message.trim(),
-      sender: 'admin',
+      sender: 'admin' as const,
       createdAt: new Date(),
-    });
+    };
+    try {
+      await db.insert(supportChatMessages).values({
+        ...baseValues,
+        senderId: admin.id,
+        senderName: adminName,
+        senderAvatar: adminAvatar,
+      });
+    } catch (insertErr) {
+      console.warn('[ADMIN] sender_* columns missing — inserting without per-message identity:', insertErr);
+      await db.insert(supportChatMessages).values(baseValues);
+    }
 
     await db
       .update(supportChatSessions)

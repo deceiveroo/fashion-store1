@@ -765,6 +765,11 @@ export const supportChatMessages = pgTable('support_chat_messages', {
   isRead: boolean('is_read').default(false),
   readByAdmin: boolean('read_by_admin').default(false),
   readByUser: boolean('read_by_user').default(false), // Прочитано пользователем
+  // Per-message идентичность отправителя-оператора — точная история атрибуции
+  // даже когда чат передаётся между операторами (см. миграцию ниже).
+  senderId: text('sender_id'),
+  senderName: text('sender_name'),
+  senderAvatar: text('sender_avatar'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => {
   return {

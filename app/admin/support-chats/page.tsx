@@ -191,6 +191,8 @@ function SupportChatsPage() {
           sessionId: incomingSid || subscribedSessionId,
           message: String(raw.message ?? ''),
           sender: (raw.sender as Msg['sender']) ?? 'user',
+          senderName: (raw.sender_name ?? raw.senderName) as string | null | undefined,
+          senderAvatar: (raw.sender_avatar ?? raw.senderAvatar) as string | null | undefined,
           createdAt: String(raw.created_at ?? raw.createdAt ?? new Date().toISOString()),
           isRead: Boolean(raw.is_read ?? raw.isRead ?? false),
           readByAdmin: Boolean(raw.read_by_admin ?? raw.readByAdmin ?? false),
