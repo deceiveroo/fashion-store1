@@ -2,9 +2,9 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import { compare } from 'bcryptjs';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from './db';
-import { users } from './schema';
+import { users, accounts } from './schema';
 import type { NextAuthConfig } from 'next-auth';
 import { jwtVerify } from 'jose';
 import { checkAchievements, awardXP } from './gamification';
@@ -147,6 +147,27 @@ export const authConfig: NextAuthConfig = {
       // чтобы сессия и /api/profile работали. Делаем это ДО gamification ниже.
       if (account?.provider === 'google' && user.email) {
         try {
+          // Если этот Google уже привязан к аккаунту (в профиле) — входим именно в него,
+          // а не создаём/находим по email (иначе вход плодил бы второй аккаунт).
+          const sub = account.providerAccountId;
+          let linkedId: string | null = null;
+          if (sub) {
+            const [link] = await db
+              .select({ userId: accounts.userId })
+              .from(accounts)
+              .where(and(eq(accounts.provider, 'google'), eq(accounts.providerAccountId, sub)))
+              .limit(1);
+            if (link) {
+              const [lu] = await db.select().from(users).where(eq(users.id, link.userId)).limit(1);
+              if (lu) {
+                linkedId = lu.id;
+                user.id = lu.id;
+                (user as { role?: string }).role = String(lu.role ?? 'customer').toLowerCase();
+              }
+            }
+          }
+
+          if (!linkedId) {
           const em = user.email.toLowerCase();
           const [u] = await db
             .select()
@@ -176,6 +197,7 @@ export const authConfig: NextAuthConfig = {
             if (user.image && u.image !== user.image) {
               await db.update(users).set({ image: user.image, updatedAt: new Date() }).where(eq(users.id, u.id));
             }
+          }
           }
         } catch (error) {
           console.error('[AUTH] Google upsert failed:', error);

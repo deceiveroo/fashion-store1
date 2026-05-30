@@ -3,10 +3,10 @@
 // Используется и REST-эндпоинтом /api/auth/telegram, и NextAuth-провайдером 'telegram'
 // (мост Telegram → реальная сессия). См. https://core.telegram.org/widgets/login#checking-authorization
 import { createHash, createHmac, timingSafeEqual } from 'crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { db } from './db';
-import { users } from './schema';
+import { users, accounts } from './schema';
 
 export type TelegramAuthData = {
   id: string;
@@ -67,9 +67,35 @@ export type TelegramUser = {
   role: string;
 };
 
+/**
+ * Если этот Telegram уже привязан к существующему аккаунту (строка в accounts,
+ * созданная при привязке в профиле) — вернуть ИМЕННО того пользователя, а не
+ * плодить нового. Чинит баг: «привязал ТГ в профиле → вход создавал новый аккаунт».
+ */
+async function findUserByTelegramLink(telegramId: string): Promise<TelegramUser | null> {
+  if (!telegramId) return null;
+  const [link] = await db
+    .select({ userId: accounts.userId })
+    .from(accounts)
+    .where(and(eq(accounts.provider, 'telegram'), eq(accounts.providerAccountId, telegramId)))
+    .limit(1);
+  if (!link) return null;
+  const [u] = await db.select().from(users).where(eq(users.id, link.userId)).limit(1);
+  if (!u) return null;
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name ?? '',
+    image: u.image ?? undefined,
+    role: String(u.role ?? 'customer').toLowerCase(),
+  };
+}
+
 /** Найти/создать пользователя по telegram id. Стабильный email вида tg_{id}@telegram.user. */
 export async function upsertTelegramUser(data: Record<string, string>): Promise<TelegramUser> {
   const telegramId = data.id;
+  const linked = await findUserByTelegramLink(telegramId);
+  if (linked) return linked;
   const firstName = data.first_name || '';
   const lastName = data.last_name || '';
   const username = data.username || '';
@@ -168,6 +194,8 @@ export function telegramLabelFromClaims(claims: TelegramIdClaims): string {
 /** Найти/создать пользователя по claims нового id_token. */
 export async function upsertTelegramUserFromClaims(claims: TelegramIdClaims): Promise<TelegramUser> {
   const telegramId = telegramIdFromClaims(claims);
+  const linked = await findUserByTelegramLink(telegramId);
+  if (linked) return linked;
   const name = claims.name || claims.preferred_username || `User${telegramId}`;
   const photoUrl = claims.picture || '';
   const telegramEmail = `tg_${telegramId}@telegram.user`;
