@@ -194,7 +194,9 @@ export const authConfig: NextAuthConfig = {
           } else {
             user.id = u.id;
             (user as { role?: string }).role = String(u.role ?? 'customer').toLowerCase();
-            if (user.image && u.image !== user.image) {
+            // Первый соц-аватар «прилипает»: не перезатираем уже существующий
+            // users.image (особенно загруженный пользователем). Ставим только если пусто.
+            if (user.image && !u.image) {
               await db.update(users).set({ image: user.image, updatedAt: new Date() }).where(eq(users.id, u.id));
             }
           }

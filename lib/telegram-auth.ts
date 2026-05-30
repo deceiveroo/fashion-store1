@@ -123,7 +123,8 @@ export async function upsertTelegramUser(data: Record<string, string>): Promise<
   }
 
   const u = existing[0];
-  if (photoUrl && u.image !== photoUrl) {
+  // Не перезатираем уже существующий аватар (загруженный или первый соц): ставим только если пусто.
+  if (photoUrl && !u.image) {
     await db.update(users).set({ image: photoUrl, updatedAt: new Date() }).where(eq(users.id, u.id));
   }
   return {
@@ -219,7 +220,8 @@ export async function upsertTelegramUserFromClaims(claims: TelegramIdClaims): Pr
   }
 
   const u = existing[0];
-  if (photoUrl && u.image !== photoUrl) {
+  // Не перезатираем уже существующий аватар (загруженный или первый соц): ставим только если пусто.
+  if (photoUrl && !u.image) {
     await db.update(users).set({ image: photoUrl, updatedAt: new Date() }).where(eq(users.id, u.id));
   }
   return {
