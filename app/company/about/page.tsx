@@ -49,75 +49,83 @@ const timeline = [
   { year: '2026', q: 'Сейчас', title: 'Новая эра', desc: 'Сообщество, которое формирует будущее моды. И это только начало.', icon: Heart },
 ];
 
-// Вертикальная «дорожка истории»: светящийся спайн, заполняющийся по мере скролла,
-// пульсирующие ноды и чередующиеся стеклянные карточки (слева/справа на десктопе).
-function Timeline() {
+// Одна «глава» истории: гигантский год-watermark с параллаксом + стеклянная карточка,
+// попеременно слева/справа. Год уезжает медленнее контента — эффект глубины.
+function Chapter({
+  item,
+  index,
+  total,
+  flip,
+}: {
+  item: (typeof timeline)[number];
+  index: number;
+  total: number;
+  flip: boolean;
+}) {
   const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 75%', 'end 55%'] });
-  const fillHeight = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const yYear = useTransform(scrollYProgress, [0, 1], [90, -90]);
+  const opacity = useTransform(scrollYProgress, [0, 0.22, 0.78, 1], [0.25, 1, 1, 0.25]);
+  const Icon = item.icon;
+  const num = String(index + 1).padStart(2, '0');
 
   return (
-    <div ref={ref} className="relative mt-16">
-      {/* Спайн: тусклая направляющая + яркая заливка по прогрессу скролла */}
-      <div className="absolute left-[19px] top-2 bottom-2 w-px bg-[var(--fc-glass-border)] md:left-1/2 md:-translate-x-1/2">
-        <motion.div
-          style={{ height: fillHeight }}
-          className="w-full bg-gradient-to-b from-[#8b7cf6] via-[#a78bfa] to-[#c4b5fd] shadow-[0_0_16px_rgba(139,124,246,0.7)]"
-        />
+    <motion.div
+      ref={ref}
+      style={{ opacity }}
+      className="relative grid items-center gap-2 py-10 md:min-h-[62vh] md:grid-cols-2 md:gap-14 md:py-0"
+    >
+      {/* Гигантский год + индекс главы */}
+      <motion.div style={{ y: yYear }} className={`relative select-none ${flip ? 'md:order-2' : 'md:order-1'}`}>
+        <span className="pointer-events-none block bg-gradient-to-br from-[#8b7cf6] via-[#a78bfa] to-[#c4b5fd] bg-clip-text text-[26vw] font-black leading-[0.78] tracking-tighter text-transparent md:text-[12.5rem]">
+          {item.year}
+        </span>
+        <span className="absolute right-1 top-0 text-xs font-bold tracking-[0.4em] text-[var(--text-secondary)] md:text-sm">
+          {num} / {String(total).padStart(2, '0')}
+        </span>
+      </motion.div>
+
+      {/* Контент-карточка */}
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-100px' }}
+        transition={{ duration: 0.6, ease: EASE }}
+        className={`relative ${flip ? 'md:order-1' : 'md:order-2'}`}
+      >
+        <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8b7cf6] backdrop-blur-md">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#8b7cf6]" />
+          {item.q} · {item.year}
+        </span>
+        <motion.div whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }} className="fc-glass-card p-7 md:p-9">
+          <span
+            className="mb-5 grid h-14 w-14 place-items-center rounded-2xl text-white"
+            style={{ backgroundImage: 'linear-gradient(135deg,#8b7cf6,#c4b5fd)', boxShadow: '0 14px 32px -10px rgba(139,124,246,0.7)' }}
+          >
+            <Icon size={26} />
+          </span>
+          <h3 className="text-2xl font-bold uppercase tracking-tight text-[var(--foreground)] md:text-3xl">{item.title}</h3>
+          <p className="mt-3 text-base leading-relaxed text-[var(--text-secondary)]">{item.desc}</p>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// «Наша история» — редакционная лента глав с гигантскими годами и параллаксом.
+function Timeline() {
+  return (
+    <div className="relative mt-16">
+      {/* Амбиентные акцентные орбы */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-[8%] top-[6%] h-72 w-72 rounded-full bg-[#8b7cf6]/10 blur-3xl" />
+        <div className="absolute bottom-[12%] right-[4%] h-80 w-80 rounded-full bg-[#c4b5fd]/10 blur-3xl" />
       </div>
 
-      <div className="space-y-8 md:space-y-0">
-        {timeline.map((item, i) => {
-          const Icon = item.icon;
-          const flip = i % 2 === 1;
-          return (
-            <motion.div
-              key={item.year + item.title}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.6, ease: EASE }}
-              className={`relative flex items-center pl-12 md:pl-0 ${flip ? 'md:flex-row-reverse' : 'md:flex-row'}`}
-            >
-              {/* Нода на спайне */}
-              <span className="absolute left-3 top-7 z-10 md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2">
-                <span className="relative grid h-4 w-4 place-items-center">
-                  <span className="absolute h-full w-full animate-ping rounded-full bg-[#8b7cf6]/30" />
-                  <span className="relative h-4 w-4 rounded-full border-2 border-[var(--background)] bg-[#8b7cf6] shadow-[0_0_12px_rgba(139,124,246,0.9)]" />
-                </span>
-              </span>
-
-              {/* Карточка (половина строки на десктопе) */}
-              <div className="w-full py-2 md:w-1/2 md:px-10 md:py-8">
-                <motion.div
-                  whileHover={{ y: -4 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-                  className="fc-glass-card p-6"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[#8b7cf6]"
-                      style={{ background: 'rgba(139,124,246,0.14)' }}
-                    >
-                      <Icon size={20} />
-                    </span>
-                    <div className="leading-none">
-                      <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-secondary)]">{item.q}</span>
-                      <span className="bg-gradient-to-r from-[#8b7cf6] to-[#c4b5fd] bg-clip-text text-3xl font-black tracking-tight text-transparent">
-                        {item.year}
-                      </span>
-                    </div>
-                  </div>
-                  <h3 className="mt-4 text-lg font-bold uppercase tracking-tight text-[var(--foreground)]">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{item.desc}</p>
-                </motion.div>
-              </div>
-
-              {/* Пустая половина для чередования на десктопе */}
-              <div className="hidden md:block md:w-1/2" />
-            </motion.div>
-          );
-        })}
+      <div className="flex flex-col">
+        {timeline.map((item, i) => (
+          <Chapter key={item.year + item.title} item={item} index={i} total={timeline.length} flip={i % 2 === 1} />
+        ))}
       </div>
     </div>
   );
@@ -262,9 +270,9 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* TIMELINE — вертикальная светящаяся дорожка истории */}
+      {/* TIMELINE — редакционные «главы» истории с гигантскими годами */}
       <section className="relative overflow-hidden py-24">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <SectionTitle className="text-center">Наша история</SectionTitle>
           <p className="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-[var(--text-secondary)]">
             От смелой идеи 2024-го — к новой эре устойчивой роскоши 2026-го. Молодой бренд, который растёт быстро.
