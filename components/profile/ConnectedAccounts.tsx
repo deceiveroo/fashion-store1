@@ -4,30 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Check, Send } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import TelegramWidget from '@/components/auth/TelegramWidget';
 
 type ConnState = { connected: boolean; label?: string };
 type Status = { google: ConnState; telegram: ConnState };
-
-type TelegramLogin = { auth: (o: { bot_id: string; request_access?: string }, cb: (u: Record<string, unknown> | false) => void) => void };
-function getTelegramLogin(): TelegramLogin | undefined {
-  return (window as unknown as { Telegram?: { Login?: TelegramLogin } }).Telegram?.Login;
-}
-
-let tgScript: Promise<void> | null = null;
-function loadTgWidget(): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve();
-  if (getTelegramLogin()) return Promise.resolve();
-  if (tgScript) return tgScript;
-  tgScript = new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'https://telegram.org/js/telegram-widget.js?22';
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('tg widget failed'));
-    document.head.appendChild(s);
-  });
-  return tgScript;
-}
 
 function GoogleGlyph() {
   return (
@@ -43,24 +23,27 @@ function GoogleGlyph() {
 export default function ConnectedAccounts() {
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [tg, setTg] = useState<{ enabled: boolean; botId: string | null } | null>(null);
+  const [tg, setTg] = useState<{ enabled: boolean; botUsername: string | null } | null>(null);
 
   const load = useCallback(async () => {
     try {
       const r = await fetch('/api/profile/connections', { credentials: 'include' });
       if (r.ok) setStatus(await r.json());
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  // Telegram-конфиг + предзагрузка виджета на монтировании, чтобы попап открывался
-  // прямо по клику (без сетевого await, который ломает user-gesture и блокирует попап).
+  // Telegram-конфиг (username бота для официального виджета).
   useEffect(() => {
     fetch('/api/auth/telegram-config')
-      .then((r) => (r.ok ? r.json() : { enabled: false, botId: null }))
-      .then((c) => { setTg(c); if (c?.botId) loadTgWidget().catch(() => {}); })
-      .catch(() => setTg({ enabled: false, botId: null }));
+      .then((r) => (r.ok ? r.json() : { enabled: false, botUsername: null }))
+      .then((c) => setTg(c))
+      .catch(() => setTg({ enabled: false, botUsername: null }));
   }, []);
 
   // Результат привязки Google приходит редиректом ?link=...
@@ -84,52 +67,79 @@ export default function ConnectedAccounts() {
     window.location.href = '/api/profile/connections/google/start';
   };
 
-  const connectTelegram = async () => {
-    const botId = tg?.botId || undefined;
-    if (!tg?.enabled || !botId) { toast.error('Telegram ещё не настроен'); return; }
-    setBusy('telegram');
-    try {
-      await loadTgWidget();
-      const tgLogin = getTelegramLogin();
-      if (!tgLogin) { toast.error('Telegram-виджет недоступен'); setBusy(null); return; }
-      tgLogin.auth({ bot_id: botId, request_access: 'write' }, async (u) => {
-        if (!u) { setBusy(null); return; }
+  // Привязка Telegram: payload приходит из официального виджета (data-onauth).
+  const linkTelegram = useCallback(
+    async (user: Record<string, unknown>) => {
+      setBusy('telegram');
+      try {
         const r = await fetch('/api/profile/connections/telegram', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(u),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(user),
         });
         const d = await r.json().catch(() => ({}));
-        if (r.ok) { toast.success('Telegram привязан'); load(); } else toast.error(d.error || 'Ошибка привязки');
-        setBusy(null);
-      });
-    } catch { toast.error('Ошибка Telegram'); setBusy(null); }
-  };
+        if (r.ok) {
+          toast.success('Telegram привязан');
+          load();
+        } else {
+          toast.error(d.error || 'Ошибка привязки');
+        }
+      } catch {
+        toast.error('Ошибка Telegram');
+      }
+      setBusy(null);
+    },
+    [load],
+  );
 
   const disconnect = async (provider: 'google' | 'telegram') => {
     setBusy(provider);
     try {
       const r = await fetch(`/api/profile/connections/${provider}`, { method: 'DELETE', credentials: 'include' });
       const d = await r.json().catch(() => ({}));
-      if (r.ok) { toast.success('Аккаунт отвязан'); load(); } else toast.error(d.error || 'Не удалось отвязать');
-    } catch { toast.error('Ошибка'); }
+      if (r.ok) {
+        toast.success('Аккаунт отвязан');
+        load();
+      } else {
+        toast.error(d.error || 'Не удалось отвязать');
+      }
+    } catch {
+      toast.error('Ошибка');
+    }
     setBusy(null);
   };
 
-  const rows = [
-    {
-      key: 'google' as const,
-      name: 'Google',
-      glyph: <GoogleGlyph />,
-      conn: status?.google,
-      connect: connectGoogle,
-    },
-    {
-      key: 'telegram' as const,
-      name: 'Telegram',
-      glyph: <Send size={20} className="text-[#229ED9]" />,
-      conn: status?.telegram,
-      connect: connectTelegram,
-    },
-  ];
+  const Row = ({
+    name,
+    glyph,
+    conn,
+    action,
+  }: {
+    name: string;
+    glyph: React.ReactNode;
+    conn?: ConnState;
+    action: React.ReactNode;
+  }) => (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] p-3.5">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--fc-surface)]">{glyph}</span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[var(--foreground)]">{name}</p>
+          {conn?.connected ? (
+            <p className="flex items-center gap-1 truncate text-xs text-emerald-500">
+              <Check size={12} /> {conn?.label || 'Подключён'}
+            </p>
+          ) : (
+            <p className="text-xs text-[var(--text-secondary)]">Не подключён</p>
+          )}
+        </div>
+      </div>
+      <div className="shrink-0">{action}</div>
+    </div>
+  );
+
+  const telegramConnected = status?.telegram?.connected;
 
   return (
     <div className="mt-2">
@@ -138,40 +148,41 @@ export default function ConnectedAccounts() {
         Привяжите Google или Telegram для быстрого входа. Привязка не меняет ваш аватар и данные профиля.
       </p>
       <div className="space-y-3">
-        {rows.map((row) => {
-          const connected = row.conn?.connected;
-          return (
-            <div
-              key={row.key}
-              className="flex items-center justify-between gap-3 rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] p-3.5"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--fc-surface)]">
-                  {row.glyph}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[var(--foreground)]">{row.name}</p>
-                  {connected ? (
-                    <p className="flex items-center gap-1 truncate text-xs text-emerald-500">
-                      <Check size={12} /> {row.conn?.label || 'Подключён'}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-[var(--text-secondary)]">Не подключён</p>
-                  )}
-                </div>
-              </div>
-              {connected ? (
-                <Button variant="outline" size="sm" loading={busy === row.key} onClick={() => disconnect(row.key)}>
-                  Отвязать
-                </Button>
-              ) : (
-                <Button variant="primary" size="sm" loading={busy === row.key} onClick={row.connect}>
-                  Привязать
-                </Button>
-              )}
-            </div>
-          );
-        })}
+        <Row
+          name="Google"
+          glyph={<GoogleGlyph />}
+          conn={status?.google}
+          action={
+            status?.google?.connected ? (
+              <Button variant="outline" size="sm" loading={busy === 'google'} onClick={() => disconnect('google')}>
+                Отвязать
+              </Button>
+            ) : (
+              <Button variant="primary" size="sm" loading={busy === 'google'} onClick={connectGoogle}>
+                Привязать
+              </Button>
+            )
+          }
+        />
+
+        <Row
+          name="Telegram"
+          glyph={<Send size={20} className="text-[#229ED9]" />}
+          conn={status?.telegram}
+          action={
+            telegramConnected ? (
+              <Button variant="outline" size="sm" loading={busy === 'telegram'} onClick={() => disconnect('telegram')}>
+                Отвязать
+              </Button>
+            ) : tg?.enabled && tg.botUsername ? (
+              <TelegramWidget botUsername={tg.botUsername} onAuth={linkTelegram} size="medium" />
+            ) : (
+              <Button variant="primary" size="sm" disabled>
+                {tg === null ? '…' : 'Скоро'}
+              </Button>
+            )
+          }
+        />
       </div>
     </div>
   );

@@ -18,9 +18,14 @@ export async function GET() {
   // bot_id — числовой префикс токена бота. Допускаем явный override через env.
   const derivedBotId = token && token.includes(':') ? token.split(':')[0] : null;
   const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || process.env.TELEGRAM_BOT_ID || derivedBotId || null;
+  // Username нельзя вывести из токена — берём из env. Официальный встраиваемый виджет
+  // Telegram (data-telegram-login) работает по username (старый popup по bot_id —
+  // oauth.telegram.org/auth — Telegram пометил как deprecated).
+  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || process.env.TELEGRAM_BOT_USERNAME || null;
 
   return NextResponse.json({
-    enabled: Boolean(token && botId),
+    enabled: Boolean(token && botUsername),
     botId,
+    botUsername,
   });
 }

@@ -1,133 +1,67 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Send } from 'lucide-react';
+import TelegramWidget from './TelegramWidget';
 
 /**
- * Кнопка «Войти через Telegram». Вместо встраиваемого iframe-виджета (который не
- * рендерится на неавторизованных доменах и «пропадает» на localhost) используем
- * наш собственный брендовый button + Telegram.Login.auth() — попап авторизации.
- * Работает на домене, привязанном к боту через @BotFather /setdomain
- * (для нас — e1evate.vercel.app). На localhost попап покажет «Bot domain invalid»,
- * но кнопка всегда видна и единообразна.
+ * Вход через Telegram официальным встраиваемым виджетом (data-telegram-login).
+ * Старый Telegram.Login.auth({bot_id}) popup (oauth.telegram.org/auth) Telegram
+ * пометил как DEPRECATED — поэтому используем виджет по username бота.
+ *
+ * Доступность определяется в РАНТАЙМЕ через /api/auth/telegram-config (читает
+ * серверные env), поэтому не зависит от build-time NEXT_PUBLIC_*.
+ * ВАЖНО: домен страницы входа должен быть привязан к боту в @BotFather (/setdomain),
+ * иначе виджет покажет «Bot domain invalid».
  */
-declare global {
-  interface Window {
-    Telegram?: {
-      Login?: {
-        auth: (
-          opts: { bot_id: string; request_access?: boolean | string; lang?: string },
-          cb: (user: Record<string, unknown> | false) => void
-        ) => void;
-      };
-    };
-  }
-}
+export default function TelegramLoginButton({ onSuccess }: { onSuccess?: () => void; disabled?: boolean }) {
+  const [config, setConfig] = useState<{ enabled: boolean; botUsername: string | null } | null>(null);
 
-let widgetScriptPromise: Promise<void> | null = null;
-function loadTelegramWidget(): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve();
-  if (window.Telegram?.Login) return Promise.resolve();
-  if (widgetScriptPromise) return widgetScriptPromise;
-  widgetScriptPromise = new Promise<void>((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'https://telegram.org/js/telegram-widget.js?22';
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('telegram-widget failed'));
-    document.head.appendChild(s);
-  });
-  return widgetScriptPromise;
-}
-
-export default function TelegramLoginButton({
-  onSuccess,
-  disabled,
-}: {
-  onSuccess?: () => void;
-  disabled?: boolean;
-}) {
-  const [config, setConfig] = useState<{ enabled: boolean; botId: string | null } | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // Доступность определяется в РАНТАЙМЕ (как у GoogleLoginButton через getProviders):
-  // сервер сообщает, задан ли TELEGRAM_BOT_TOKEN, и отдаёт bot_id (выведенный из токена).
-  // Так кнопка не зависит от build-time NEXT_PUBLIC_* и не выключается «молча» на Vercel.
   useEffect(() => {
     let active = true;
     fetch('/api/auth/telegram-config')
-      .then((r) => (r.ok ? r.json() : { enabled: false, botId: null }))
+      .then((r) => (r.ok ? r.json() : { enabled: false, botUsername: null }))
       .then((c) => active && setConfig(c))
-      .catch(() => active && setConfig({ enabled: false, botId: null }));
+      .catch(() => active && setConfig({ enabled: false, botUsername: null }));
     return () => {
       active = false;
     };
   }, []);
 
-  const botId = config?.botId || null;
+  const handleAuth = useCallback(
+    async (user: Record<string, unknown>) => {
+      const res = await signIn('telegram', { ...user, redirect: false });
+      if (res?.error) {
+        toast.error('Не удалось войти через Telegram');
+      } else {
+        toast.success('Вход через Telegram выполнен');
+        onSuccess?.();
+      }
+    },
+    [onSuccess],
+  );
 
-  useEffect(() => {
-    if (botId) loadTelegramWidget().catch(() => {});
-  }, [botId]);
-
-  // Бот не сконфигурирован — мягкий фолбэк.
-  if (config && (!config.enabled || !botId)) {
+  // Загрузка / бот не сконфигурирован — мягкий фолбэк.
+  if (config === null || !config.enabled || !config.botUsername) {
     return (
       <button
         type="button"
         disabled
-        title="Telegram-вход активируется после настройки бота"
+        title={config === null ? 'Загрузка…' : 'Telegram-вход активируется после настройки бота'}
         className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] py-3 text-sm font-medium text-[var(--text-secondary)] opacity-70"
       >
         <Send size={16} className="text-[#229ED9]" />
         Войти через Telegram
-        <span className="text-[11px] opacity-70">— после настройки</span>
+        {config !== null && <span className="text-[11px] opacity-70">— после настройки</span>}
       </button>
     );
   }
 
-  const handleClick = async () => {
-    if (!botId) return;
-    setLoading(true);
-    try {
-      await loadTelegramWidget();
-      if (!window.Telegram?.Login) {
-        toast.error('Telegram-виджет недоступен');
-        setLoading(false);
-        return;
-      }
-      window.Telegram.Login.auth({ bot_id: botId, request_access: 'write' }, async (user) => {
-        if (!user) {
-          setLoading(false);
-          return;
-        }
-        const res = await signIn('telegram', { ...user, redirect: false });
-        if (res?.error) {
-          toast.error('Не удалось войти через Telegram');
-        } else {
-          toast.success('Вход через Telegram выполнен');
-          onSuccess?.();
-        }
-        setLoading(false);
-      });
-    } catch {
-      toast.error('Ошибка загрузки Telegram');
-      setLoading(false);
-    }
-  };
-
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={disabled || loading || config === null}
-      className="flex w-full items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
-      style={{ backgroundColor: '#229ED9' }}
-    >
-      <Send size={17} />
-      {loading ? 'Открываем Telegram…' : 'Войти через Telegram'}
-    </button>
+    <div className="flex w-full justify-center">
+      <TelegramWidget botUsername={config.botUsername} onAuth={handleAuth} />
+    </div>
   );
 }
