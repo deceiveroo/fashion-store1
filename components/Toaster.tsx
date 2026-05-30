@@ -2,74 +2,51 @@
 'use client';
 
 import { Toaster as SonnerToaster } from 'sonner';
-import { Check, X, AlertTriangle, Info, Loader } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { CheckCircle2, XCircle, AlertTriangle, Info, Loader2 } from 'lucide-react';
 
-const GlassIcons = {
-  success: <Check className="w-5 h-5 text-emerald-600" />,
-  error: <X className="w-5 h-5 text-rose-600" />,
-  warning: <AlertTriangle className="w-5 h-5 text-amber-600" />,
-  info: <Info className="w-5 h-5 text-blue-600" />,
-  loading: <Loader className="w-5 h-5 text-purple-600 animate-spin" />,
+const icons = {
+  success: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
+  error: <XCircle className="h-5 w-5 text-rose-500" />,
+  warning: <AlertTriangle className="h-5 w-5 text-amber-500" />,
+  info: <Info className="h-5 w-5 text-[#8b7cf6]" />,
+  loading: <Loader2 className="h-5 w-5 animate-spin text-[#8b7cf6]" />,
 };
 
+/**
+ * Стеклянные тосты в стиле сайта (fc-glass), адаптивные к теме. Раньше были захардкожены
+ * под светлую тему (text-gray-900 / bg-white) — в тёмной теме нечитаемо.
+ */
 export function Toaster() {
+  const { resolvedTheme } = useTheme();
+
   return (
     <SonnerToaster
       position="bottom-right"
-      expand={false}
+      theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
       closeButton
-      theme="light"
       duration={4000}
       offset={20}
-      visibleToasts={3}
-      gap={8}
+      visibleToasts={4}
+      gap={10}
+      icons={icons}
       toastOptions={{
         classNames: {
-          // Чистый стеклянный эффект
-          toast: `
-            group
-            rounded-xl
-            shadow-lg
-            border
-            border-white/30
-            p-4
-            min-w-[320px]
-            backdrop-blur-md
-            bg-white/90
-            transition-all
-            duration-300
-          `,
-          title: "font-semibold text-gray-900 flex items-center gap-3 text-sm",
-          description: "text-gray-600 text-sm mt-1 ml-8",
-          actionButton: `
-            bg-black/5
-            text-gray-900
-            px-3
-            py-2
-            rounded-lg
-            font-medium
-            text-xs
-            mt-2
-            hover:bg-black/10
-            transition-colors
-            duration-200
-          `,
-          cancelButton: `
-            bg-transparent
-            text-gray-500
-            px-3
-            py-2
-            rounded-lg
-            font-medium
-            text-xs
-            mt-2
-            hover:bg-black/5
-            transition-colors
-            duration-200
-          `,
+          toast:
+            'group !rounded-2xl !border !border-[var(--fc-glass-border)] !bg-[var(--fc-surface-elevated)] !text-[var(--foreground)] !shadow-[var(--fc-shadow-lifted)] !backdrop-blur-2xl !p-4 !min-w-[320px] !gap-3',
+          title: '!text-[var(--foreground)] !font-semibold !text-sm',
+          description: '!text-[var(--text-secondary)] !text-sm !mt-1',
+          icon: '!m-0 flex items-center',
+          closeButton:
+            '!bg-[var(--fc-surface)] !border !border-[var(--fc-glass-border)] !text-[var(--text-secondary)] hover:!text-[var(--foreground)] hover:!bg-[var(--surface-hover)]',
+          actionButton: '!rounded-lg !bg-[#8b7cf6] !text-white !text-xs !font-semibold',
+          cancelButton: '!rounded-lg !bg-transparent !text-[var(--text-secondary)] !text-xs',
+          success: '!border-emerald-500/35',
+          error: '!border-rose-500/35',
+          warning: '!border-amber-500/35',
+          info: '!border-[rgba(139,124,246,0.35)]',
         },
       }}
-      icons={GlassIcons}
     />
   );
 }
