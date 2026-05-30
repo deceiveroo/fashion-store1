@@ -1,8 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Shield, Lock, Eye, Database, Mail, Phone, Users, Globe, FileText, AlertTriangle, CheckCircle } from 'lucide-react';
-import Link from 'next/link';
+import { Shield, Lock, Eye, Database, Mail, Phone, Users, Globe, Cookie, Share2 } from 'lucide-react';
+import { LegalShell, LegalHero, LegalLayout, LegalSection, LegalList } from '@/components/legal/LegalKit';
 
 export default function PrivacyPage() {
   const sections = [
@@ -310,157 +309,96 @@ export default function PrivacyPage() {
     },
   ];
 
+  const toc = [
+    ...sections.map((section, index) => ({ id: `sec-${index + 1}`, title: section.title })),
+    { id: 'sec-cookies', title: 'Cookies и технологии отслеживания' },
+    { id: 'sec-third-parties', title: 'Передача данных третьим лицам' },
+    { id: 'sec-contact', title: 'Свяжитесь с нами' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-gray-900 pt-24 pb-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl mb-6">
-            <Shield className="text-white" size={40} />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-4">
-            Политика конфиденциальности
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Последнее обновление: {new Date().toLocaleDateString('ru-RU')}
-          </p>
-        </motion.div>
+    <LegalShell>
+      <LegalHero
+        icon={Shield}
+        title="Политика конфиденциальности"
+        updated={new Date().toLocaleDateString('ru-RU')}
+        intro="Мы в ELEVATE серьезно относимся к защите вашей конфиденциальности. Эта политика объясняет, какие данные мы собираем, как их используем и какие права у вас есть в отношении ваших данных."
+      />
 
-        {/* Introduction */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl mb-8"
-        >
-          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-            Мы в ELEVATE серьезно относимся к защите вашей конфиденциальности. Эта политика объясняет, 
-            какие данные мы собираем, как их используем и какие права у вас есть в отношении ваших данных.
-          </p>
-        </motion.div>
-
-        {/* Sections */}
-        {sections.map((section, index) => {
-          const Icon = section.icon;
-          return (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + index * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl mb-6"
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl">
-                  <Icon className="text-white" size={24} />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {section.title}
-                </h2>
+      <LegalLayout toc={toc}>
+        {sections.map((section, index) => (
+          <LegalSection key={index} id={`sec-${index + 1}`} icon={section.icon} title={section.title}>
+            {section.subsections.map((subsection, subIdx) => (
+              <div key={subIdx}>
+                <h3
+                  className={`${subIdx === 0 ? '' : 'mt-5'} mb-2 text-base font-semibold text-[var(--foreground)]`}
+                >
+                  {subsection.subtitle}
+                </h3>
+                <LegalList items={subsection.items} />
               </div>
-              
-              {/* Render subsections */}
-              {section.subsections.map((subsection, subIdx) => (
-                <div key={subIdx} className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{subsection.subtitle}</h3>
-                  <ul className="space-y-2 pl-2 ml-2 border-l-2 border-blue-100 dark:border-blue-900/50">
-                    {subsection.items.map((item, itemIdx) => (
-                      <li key={itemIdx} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                        <span className="text-sm">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </motion.div>
-          );
-        })}
+            ))}
+          </LegalSection>
+        ))}
 
         {/* Cookies */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-3xl p-8 shadow-xl mb-6"
-        >
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Cookies и технологии отслеживания
-          </h2>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
+        <LegalSection id="sec-cookies" icon={Cookie} title="Cookies и технологии отслеживания">
+          <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
             Мы используем cookies для улучшения вашего опыта на сайте. Подробнее о cookies читайте в нашей{' '}
-            <a href="/cookies" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
+            <a href="/cookies" className="font-semibold text-[#8b7cf6] hover:underline">
               Политике использования cookies
             </a>.
           </p>
-        </motion.div>
+        </LegalSection>
 
         {/* Third Parties */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl mb-6"
-        >
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Передача данных третьим лицам
-          </h2>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
+        <LegalSection id="sec-third-parties" icon={Share2} title="Передача данных третьим лицам">
+          <p className="mb-4 text-sm leading-relaxed text-[var(--text-secondary)]">
             Мы можем передавать ваши данные следующим категориям третьих лиц:
           </p>
-          <ul className="space-y-3">
-            <li className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-              <span className="text-gray-700 dark:text-gray-300">
-                <strong>Платежные системы</strong> - для обработки платежей (Stripe, ЮMoney)
+          <ul className="space-y-2.5">
+            <li className="flex items-start gap-3 text-sm leading-relaxed text-[var(--text-secondary)]">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8b7cf6]" />
+              <span>
+                <strong className="text-[var(--foreground)]">Платежные системы</strong> - для обработки платежей (Stripe, ЮMoney)
               </span>
             </li>
-            <li className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-              <span className="text-gray-700 dark:text-gray-300">
-                <strong>Службы доставки</strong> - для доставки заказов
+            <li className="flex items-start gap-3 text-sm leading-relaxed text-[var(--text-secondary)]">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8b7cf6]" />
+              <span>
+                <strong className="text-[var(--foreground)]">Службы доставки</strong> - для доставки заказов
               </span>
             </li>
-            <li className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-              <span className="text-gray-700 dark:text-gray-300">
-                <strong>Аналитические сервисы</strong> - для улучшения сайта (Google Analytics, Yandex Metrika)
+            <li className="flex items-start gap-3 text-sm leading-relaxed text-[var(--text-secondary)]">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8b7cf6]" />
+              <span>
+                <strong className="text-[var(--foreground)]">Аналитические сервисы</strong> - для улучшения сайта (Google Analytics, Yandex Metrika)
               </span>
             </li>
           </ul>
-        </motion.div>
+        </LegalSection>
 
         {/* Contact */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 shadow-xl text-white"
-        >
-          <h2 className="text-2xl font-bold mb-4">Свяжитесь с нами</h2>
-          <p className="mb-6">
+        <LegalSection id="sec-contact" icon={Mail} title="Свяжитесь с нами">
+          <p className="mb-6 text-sm leading-relaxed text-[var(--text-secondary)]">
             Если у вас есть вопросы о нашей политике конфиденциальности или вы хотите воспользоваться своими правами:
           </p>
           <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Mail size={20} />
-              <a href="mailto:privacy@elevate.com" className="hover:underline">
+            <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+              <Mail size={20} className="text-[#8b7cf6]" />
+              <a href="mailto:privacy@elevate.com" className="hover:underline hover:text-[var(--foreground)]">
                 privacy@elevate.com
               </a>
             </div>
-            <div className="flex items-center gap-3">
-              <Phone size={20} />
-              <a href="tel:+78001234567" className="hover:underline">
+            <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+              <Phone size={20} className="text-[#8b7cf6]" />
+              <a href="tel:+78001234567" className="hover:underline hover:text-[var(--foreground)]">
                 +7 (800) 123-45-67
               </a>
             </div>
           </div>
-        </motion.div>
-      </div>
-    </div>
+        </LegalSection>
+      </LegalLayout>
+    </LegalShell>
   );
 }
