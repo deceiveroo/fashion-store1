@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { supportChatSessions, chatSatisfactionRatings, users } from '@/lib/schema';
-import { eq, desc, avg, count } from 'drizzle-orm';
+import { eq, desc, avg, count, gte } from 'drizzle-orm';
 import { isAdmin } from '@/lib/server-auth';
 
 /**
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       .from(chatSatisfactionRatings)
       .leftJoin(supportChatSessions, eq(chatSatisfactionRatings.sessionId, supportChatSessions.sessionId))
       .leftJoin(users, eq(supportChatSessions.takenOverBy, users.id))
-      .where(eq(chatSatisfactionRatings.createdAt, startDate))
+      .where(gte(chatSatisfactionRatings.createdAt, startDate))
       .orderBy(desc(chatSatisfactionRatings.createdAt))
       .limit(limit)
       .offset(offset);
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     const totalCountResult = await db
       .select({ count: count() })
       .from(chatSatisfactionRatings)
-      .where(eq(chatSatisfactionRatings.createdAt, startDate));
+      .where(gte(chatSatisfactionRatings.createdAt, startDate));
 
     const totalCount = totalCountResult[0]?.count || 0;
 
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     const avgRatingResult = await db
       .select({ avg: avg(chatSatisfactionRatings.rating) })
       .from(chatSatisfactionRatings)
-      .where(eq(chatSatisfactionRatings.createdAt, startDate));
+      .where(gte(chatSatisfactionRatings.createdAt, startDate));
 
     const averageRating = avgRatingResult[0]?.avg ? parseFloat(avgRatingResult[0].avg).toFixed(1) : '0';
 
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       .from(supportChatSessions)
       .leftJoin(users, eq(supportChatSessions.takenOverBy, users.id))
       .leftJoin(chatSatisfactionRatings, eq(supportChatSessions.sessionId, chatSatisfactionRatings.sessionId))
-      .where(eq(supportChatSessions.takenOverAt, startDate))
+      .where(gte(supportChatSessions.takenOverAt, startDate))
       .groupBy(supportChatSessions.takenOverBy, users.name, users.email)
       .orderBy(desc(count(supportChatSessions.id)));
 
