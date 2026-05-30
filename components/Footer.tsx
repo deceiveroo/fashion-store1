@@ -326,7 +326,7 @@ export default function Footer() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-500 mb-0.5">Адрес</p>
-                <p className="text-sm">Москва, ул. Модная, 123</p>
+                <p className="text-sm">Москва, Россия</p>
               </div>
             </motion.div>
           </div>

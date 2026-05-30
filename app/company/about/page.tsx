@@ -29,7 +29,7 @@ function CountUp({ end, duration = 2 }: { end: number; duration?: number }) {
 
 const stats = [
   { number: 100, suffix: 'K+', label: 'Клиентов', icon: Users },
-  { number: 7, suffix: '+', label: 'Лет опыта', icon: TrendingUp },
+  { number: 2, suffix: '+', label: 'Лет опыта', icon: TrendingUp },
   { number: 98, suffix: '%', label: 'Довольных', icon: Star },
   { number: 500, suffix: '+', label: 'Партнёров', icon: Building2 },
 ];

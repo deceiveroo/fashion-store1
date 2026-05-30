@@ -10,35 +10,30 @@ export default function AuthError() {
   const getErrorMessage = (error: string | null) => {
     switch (error) {
       case 'Configuration':
-        return 'There is a problem with the server configuration.';
+        return 'Проблема с конфигурацией сервера.';
       case 'AccessDenied':
-        return 'Access denied.';
+        return 'Доступ запрещён.';
       case 'Verification':
-        return 'The verification token has expired or has already been used.';
+        return 'Ссылка подтверждения истекла или уже была использована.';
       default:
-        return 'An error occurred during authentication.';
+        return 'При входе произошла ошибка.';
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--background)] px-4">
+      <div className="w-full max-w-md space-y-8 text-center">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Authentication Error
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-700">
-            {getErrorMessage(error)}
-          </p>
+          <h2 className="text-3xl font-extrabold text-[var(--foreground)]">Ошибка входа</h2>
+          <p className="mt-3 text-sm text-[var(--text-secondary)]">{getErrorMessage(error)}</p>
         </div>
-        <div className="text-center">
-          <a
-            href="/auth/signin"
-            className="font-medium text-indigo-600 hover:text-indigo-500"
-          >
-            Try again
-          </a>
-        </div>
+        <a
+          href="/auth/signin"
+          className="inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
+          style={{ backgroundImage: 'linear-gradient(135deg,#8b7cf6,#c4b5fd)' }}
+        >
+          Попробовать снова
+        </a>
       </div>
     </div>
   );

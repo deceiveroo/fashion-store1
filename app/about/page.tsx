@@ -36,7 +36,7 @@ const storyStats = [
 
 const floatingBadges = [
   { value: '100+', label: 'Проектов', cls: '-top-10 left-1/2 -translate-x-1/2' },
-  { value: '8+', label: 'Лет опыта', cls: '-bottom-8 -left-6' },
+  { value: '2+', label: 'Лет опыта', cls: '-bottom-8 -left-6' },
   { value: '50+', label: 'Сотрудников', cls: '-top-8 -right-6' },
 ];
 

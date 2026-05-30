@@ -14,8 +14,8 @@ import {
 } from '@/components/company/PageKit';
 
 const contactInfo = [
-  { icon: MapPin, title: 'Адрес', lines: ['Москва, ул. Модная, 123'] },
-  { icon: Phone, title: 'Телефон', lines: ['+7 (495) 123-45-67', '+7 (495) 987-65-43'] },
+  { icon: MapPin, title: 'Адрес', lines: ['Москва, Россия'] },
+  { icon: Phone, title: 'Телефон', lines: ['+7 (495) 123-45-67'] },
   { icon: Mail, title: 'Email', lines: ['ELEVATE111@yandex.com'] },
   { icon: Clock, title: 'Режим работы', lines: ['Пн-Пт: 9:00 - 21:00', 'Сб-Вс: 10:00 - 20:00'] },
 ];

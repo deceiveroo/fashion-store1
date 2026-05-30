@@ -19,7 +19,7 @@ const pressStats = [
   { value: '200+', label: 'Пресс-релизов', icon: Newspaper },
   { value: '50+', label: 'Публикаций', icon: FileText },
   { value: '25+', label: 'Наград', icon: Award },
-  { value: '10+', label: 'Лет на рынке', icon: Calendar },
+  { value: '2+', label: 'Лет на рынке', icon: Calendar },
 ];
 
 const pressReleases = [
