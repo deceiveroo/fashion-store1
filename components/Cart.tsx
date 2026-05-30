@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Minus, ShoppingBag, Sparkles, Rocket, Gift, ShieldCheck, ArrowRight, Trash2 } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, Rocket, Gift, ShieldCheck, ArrowRight, Trash2 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
@@ -132,14 +132,14 @@ export default function Cart({ isOpen, onClose }: CartProps) {
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 220 }}
             data-cart-panel
-            className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-[var(--fc-surface)] backdrop-blur-2xl z-50 shadow-[0_0_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_60px_rgba(0,0,0,0.6)] border-l border-[var(--fc-glass-border)] flex flex-col"
+            className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-[#faf9f6] dark:bg-[#22223a] backdrop-blur-2xl z-50 shadow-[0_0_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_60px_rgba(0,0,0,0.5)] border-l border-gray-200/80 dark:border-white/[0.06] flex flex-col"
           >
             {/* Header */}
-            <div className="relative p-6 border-b border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)]">
+            <div className="relative p-6 border-b border-gray-200/80 dark:border-white/[0.06] bg-white dark:bg-[#262640]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl text-white shadow-md shadow-purple-500/20" style={{ background: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}>
-                    <ShoppingBag size={20} className="animate-pulse" />
+                  <div className="pdp-accent-gradient p-2.5 rounded-xl text-white shadow-sm">
+                    <ShoppingBag size={20} />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-[var(--foreground)]">Корзина</h2>
@@ -153,20 +153,10 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                   whileHover={{ scale: 1.08, rotate: 90 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={onClose}
-                  className="p-2 text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--fc-surface)] rounded-xl transition-all"
+                  className="p-2 text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-xl transition-all"
                 >
                   <X size={20} />
                 </motion.button>
-              </div>
-
-              {/* Sparkle micro-animation */}
-              <div className="absolute top-4 right-16 pointer-events-none opacity-60">
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1], rotate: [0, 15, -15, 0] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                >
-                  <Sparkles size={14} className="text-[#8b7cf6]" />
-                </motion.div>
               </div>
             </div>
 
@@ -191,7 +181,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={onClose}
-                    className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-purple-500/20 hover:shadow-xl transition-all"
+                    className="pdp-accent-gradient w-full sm:w-auto text-white px-8 py-3.5 rounded-xl font-bold text-sm shadow-[0_10px_28px_-8px_rgba(124,58,237,0.45)] hover:brightness-105 transition-all"
                   >
                     Перейти в каталог
                   </motion.button>
@@ -206,10 +196,10 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
                       transition={{ duration: 0.25, delay: index * 0.05 }}
-                      className="group relative bg-[var(--fc-surface-elevated)] backdrop-blur-md rounded-2xl p-4 shadow-sm border border-[var(--fc-glass-border)] hover:border-[#8b7cf6]/40 transition-all duration-300 overflow-hidden"
+                      className="group relative bg-white dark:bg-white/[0.03] backdrop-blur-md rounded-2xl p-4 shadow-sm border border-gray-200/80 dark:border-white/[0.06] hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 overflow-hidden"
                     >
                       {/* Subtly colored decorative corner */}
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-bl-full pointer-events-none" />
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-violet-500/[0.06] to-indigo-500/[0.04] rounded-bl-full pointer-events-none" />
 
                       <div className="flex gap-4">
                         {/* Image */}
@@ -232,7 +222,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                         {/* Info & Variants */}
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
                           <div>
-                            <h4 className="font-bold text-gray-900 dark:text-white text-sm leading-snug line-clamp-2 pr-4 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                            <h4 className="font-bold text-gray-900 dark:text-white text-sm leading-snug line-clamp-2 pr-4 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
                               {group.name}
                             </h4>
                           </div>
@@ -242,12 +232,12 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                               <div key={vIdx} className="flex items-center justify-between bg-gray-50/70 dark:bg-gray-900/60 px-3 py-1.5 rounded-xl border border-gray-100/50 dark:border-gray-800/40">
                                 <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
                                   {v.size && (
-                                    <span className="text-[10px] text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-full font-bold border border-purple-100 dark:border-purple-900/30">
+                                    <span className="text-[10px] text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 px-2 py-0.5 rounded-full font-bold border border-violet-100 dark:border-violet-900/30">
                                       {v.size}
                                     </span>
                                   )}
                                   {v.color && (
-                                    <span className="text-[10px] text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40 px-2 py-0.5 rounded-full font-bold border border-pink-100 dark:border-pink-900/30">
+                                    <span className="text-[10px] text-gray-600 dark:text-neutral-300 bg-gray-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full font-bold border border-gray-200 dark:border-white/[0.08]">
                                       {v.color}
                                     </span>
                                   )}
@@ -257,7 +247,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => handleUpdateQuantity(group.id, v.size, v.color, v.quantity - 1)}
-                                    className="w-5.5 h-5.5 flex items-center justify-center bg-white dark:bg-gray-800 text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm hover:shadow transition-all"
+                                    className="w-5.5 h-5.5 flex items-center justify-center bg-white dark:bg-white/[0.06] text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 border border-gray-100 dark:border-white/[0.08] rounded-lg shadow-sm hover:shadow transition-all"
                                   >
                                     <Minus size={10} />
                                   </button>
@@ -266,7 +256,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                                   </span>
                                   <button
                                     onClick={() => handleUpdateQuantity(group.id, v.size, v.color, v.quantity + 1)}
-                                    className="w-5.5 h-5.5 flex items-center justify-center bg-white dark:bg-gray-800 text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm hover:shadow transition-all"
+                                    className="w-5.5 h-5.5 flex items-center justify-center bg-white dark:bg-white/[0.06] text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 border border-gray-100 dark:border-white/[0.08] rounded-lg shadow-sm hover:shadow transition-all"
                                   >
                                     <Plus size={10} />
                                   </button>
@@ -284,7 +274,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                           </div>
 
                           <div className="flex items-center justify-between mt-2.5">
-                            <span className="font-extrabold text-base bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            <span className="font-extrabold text-base text-gray-900 dark:text-white">
                               {Math.round(group.price).toLocaleString('ru-RU')} ₽
                             </span>
                           </div>
@@ -301,23 +291,23 @@ export default function Cart({ isOpen, onClose }: CartProps) {
               <div className="border-t border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-gray-950/40">
                 {/* Free Shipping Progress */}
                 {remainingForFreeShipping > 0 ? (
-                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800/60 bg-gradient-to-r from-purple-500/5 to-pink-500/5">
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800/60 bg-violet-500/[0.04]">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                        <Rocket size={14} className="text-purple-500" />
+                        <Rocket size={14} className="text-violet-500" />
                         До бесплатной доставки:
                       </span>
-                      <span className="text-xs font-extrabold text-purple-600 dark:text-purple-400">
+                      <span className="text-xs font-extrabold text-violet-600 dark:text-violet-400">
                         {remainingForFreeShipping.toLocaleString('ru-RU')} ₽
                       </span>
                     </div>
-                    
+
                     <div className="h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${freeShippingProgress}%` }}
                         transition={{ duration: 0.6, ease: 'easeOut' }}
-                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+                        className="pdp-accent-gradient h-full rounded-full"
                       />
                     </div>
                     <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
@@ -363,7 +353,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                 )}
 
                 {/* Pricing Footer */}
-                <div className="p-6 bg-[var(--fc-surface-elevated)] border-t border-[var(--fc-glass-border)] space-y-4">
+                <div className="p-6 bg-white dark:bg-[#262640] border-t border-gray-200/80 dark:border-white/[0.06] space-y-4">
                   {/* Discount Badge */}
                   {getDiscount() > 0 && (
                     <motion.div
@@ -401,14 +391,14 @@ export default function Cart({ isOpen, onClose }: CartProps) {
                       )}
                     </div>
 
-                    <div className="border-t border-[var(--fc-glass-border)] pt-3 mt-3 flex justify-between items-center text-sm">
+                    <div className="border-t border-gray-200/80 dark:border-white/[0.06] pt-3 mt-3 flex justify-between items-center text-sm">
                       <span className="font-bold text-[var(--foreground)]">Итого к оплате:</span>
                       <motion.span
                         key={finalTotal}
-                        animate={{ scale: [1, 1.05, 1] }}
+                        initial={{ opacity: 0.6 }}
+                        animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
-                        className="text-lg font-black bg-clip-text text-transparent"
-                        style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
+                        className="text-lg font-black text-gray-900 dark:text-white"
                       >
                         {Math.round(finalTotal).toLocaleString('ru-RU')} ₽
                       </motion.span>
@@ -417,18 +407,11 @@ export default function Cart({ isOpen, onClose }: CartProps) {
 
                   {/* Checkout Button */}
                   <motion.button
-                    whileHover={{
-                      scale: 1.02,
-                      boxShadow: "0 10px 25px -5px rgba(139, 124, 246, 0.45)"
-                    }}
+                    whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCheckout}
-                    className="w-full text-white py-3.5 px-6 rounded-xl font-bold text-sm relative overflow-hidden group shadow-md transition-all flex items-center justify-center gap-2"
-                    style={{ backgroundImage: 'linear-gradient(135deg, #8b7cf6, #c4b5fd)' }}
+                    className="pdp-accent-gradient w-full text-white py-3.5 px-6 rounded-xl font-bold text-sm group shadow-[0_10px_28px_-8px_rgba(124,58,237,0.45)] hover:brightness-105 transition-all flex items-center justify-center gap-2"
                   >
-                    {/* Shiny hover effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    
                     <span>Оформить заказ</span>
                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </motion.button>

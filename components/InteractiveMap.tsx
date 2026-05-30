@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type { Map as LeafletMap, Marker, LayerGroup } from 'leaflet';
-import { StoreItem } from '@/app/company/stores/page'; // Импортируем тип магазина
+import type { StoreItem } from '@/lib/stores/types';
 
 interface InteractiveMapProps {
   stores: StoreItem[];

@@ -5,6 +5,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { MapPin, Clock, Phone, Star, Globe, Store, Navigation, Building, Users, Award, Search, Crosshair, ArrowUpRight } from 'lucide-react';
 import InteractiveMap from '@/components/InteractiveMap';
+import type { Coordinates, StoreItem } from '@/lib/stores/types';
+import { calculateDistance, geocodeCity } from '@/lib/stores/geo';
 import {
   PageShell,
   PageHeader,
@@ -15,24 +17,8 @@ import {
   EASE,
 } from '@/components/company/PageKit';
 
-// Тип для координат
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
-
-// Тип для магазина
-export interface StoreItem {
-  id: string;
-  name: string;
-  address: string;
-  coordinates: Coordinates;
-  hours: string;
-  phone: string;
-  rating: number;
-  services: string[];
-  distance?: number; // Опционально, для отображения расстояния
-}
+// Re-export so existing imports of these types from this module keep working.
+export type { Coordinates, StoreItem };
 
 const ACCENT = '#8b7cf6';
 const ACCENT_TO = '#c4b5fd';
@@ -93,20 +79,7 @@ export default function StoresPage() {
     return stores.filter((s) => !FLAGSHIP.includes(s.name));
   }, [stores, activeTab, nearbyStores]);
 
-  // ─── Геометрия и поиск ───────────────────────────────────────
-  const deg2rad = (deg: number): number => deg * (Math.PI / 180);
-
-  const calculateDistance = (coord1: Coordinates, coord2: Coordinates): number => {
-    const R = 6371;
-    const dLat = deg2rad(coord2.lat - coord1.lat);
-    const dLon = deg2rad(coord2.lng - coord1.lng);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(coord1.lat)) * Math.cos(deg2rad(coord2.lat)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
+  // ─── Поиск ───────────────────────────────────────────────────
   const findNearbyStores = async () => {
     if (!userCity.trim()) {
       setSearchError('Пожалуйста, укажите город');
@@ -116,7 +89,7 @@ export default function StoresPage() {
     setSearchError(null);
     try {
       await new Promise((resolve) => setTimeout(resolve, 800));
-      const cityCoords = await geocodeCity(userCity);
+      const cityCoords = geocodeCity(userCity);
       if (!cityCoords) throw new Error(`Не удалось найти координаты для города: ${userCity}`);
 
       const storesWithDistance = stores.map((store) => ({
@@ -140,89 +113,6 @@ export default function StoresPage() {
     } finally {
       setIsSearching(false);
     }
-  };
-
-  const geocodeCity = async (city: string): Promise<Coordinates | null> => {
-    const cityCoordinates: Record<string, Coordinates> = {
-      'Москва': { lat: 55.7558, lng: 37.6176 },
-      'Санкт-Петербург': { lat: 59.9343, lng: 30.3351 },
-      'Новосибирск': { lat: 55.0084, lng: 82.9357 },
-      'Екатеринбург': { lat: 56.8389, lng: 60.6057 },
-      'Казань': { lat: 55.7964, lng: 49.1082 },
-      'Нижний Новгород': { lat: 56.2965, lng: 43.9361 },
-      'Челябинск': { lat: 55.1644, lng: 61.4368 },
-      'Самара': { lat: 53.2418, lng: 50.2212 },
-      'Омск': { lat: 54.9886, lng: 73.3249 },
-      'Ростов-на-Дону': { lat: 47.2357, lng: 39.7015 },
-      'Уфа': { lat: 54.7348, lng: 55.9578 },
-      'Красноярск': { lat: 56.0184, lng: 92.8672 },
-      'Воронеж': { lat: 51.6720, lng: 39.1843 },
-      'Пермь': { lat: 58.0105, lng: 56.2502 },
-      'Волгоград': { lat: 48.7080, lng: 44.5133 },
-      'Краснодар': { lat: 45.0448, lng: 38.9760 },
-      'Саратов': { lat: 51.5405, lng: 46.0086 },
-      'Тюмень': { lat: 57.1522, lng: 65.5565 },
-      'Тольятти': { lat: 53.5087, lng: 49.4195 },
-      'Ижевск': { lat: 56.8439, lng: 53.2011 },
-      'Барнаул': { lat: 53.3606, lng: 83.7636 },
-      'Ульяновск': { lat: 54.3182, lng: 48.3820 },
-      'Иркутск': { lat: 52.2869, lng: 104.2857 },
-      'Хабаровск': { lat: 48.4809, lng: 135.0935 },
-      'Махачкала': { lat: 42.9763, lng: 47.5022 },
-      'Ярославль': { lat: 57.6266, lng: 39.8938 },
-      'Владивосток': { lat: 43.1056, lng: 131.8735 },
-      'Сочи': { lat: 43.6028, lng: 39.7342 },
-      'Оренбург': { lat: 51.7727, lng: 55.0987 },
-      'Новокузнецк': { lat: 53.7595, lng: 87.1351 },
-      'Кемерово': { lat: 55.3374, lng: 86.0359 },
-      'Рязань': { lat: 54.6269, lng: 39.7342 },
-      'Астрахань': { lat: 46.3582, lng: 48.0537 },
-      'Набережные Челны': { lat: 55.7278, lng: 52.3303 },
-      'Пенза': { lat: 53.1955, lng: 45.0186 },
-      'Липецк': { lat: 52.6031, lng: 39.5706 },
-      'Киров': { lat: 58.6037, lng: 49.6653 },
-      'Чебоксары': { lat: 56.1366, lng: 47.2494 },
-      'Калининград': { lat: 54.7065, lng: 20.5110 },
-      'Тула': { lat: 54.1962, lng: 37.6184 },
-      'Курск': { lat: 51.7373, lng: 36.1875 },
-      'Улан-Удэ': { lat: 51.8239, lng: 107.5856 },
-      'Ставрополь': { lat: 45.0448, lng: 41.9686 },
-      'Магнитогорск': { lat: 53.3983, lng: 58.7875 },
-      'Иваново': { lat: 57.0004, lng: 40.9731 },
-      'Брянск': { lat: 53.2521, lng: 34.3713 },
-      'Сургут': { lat: 61.2557, lng: 73.3533 },
-      'Белгород': { lat: 50.5959, lng: 36.5853 },
-      'Владикавказ': { lat: 43.0468, lng: 44.6816 },
-      'Чита': { lat: 52.0315, lng: 113.5011 },
-      'Архангельск': { lat: 64.5466, lng: 40.5390 },
-      'Смоленск': { lat: 54.7828, lng: 32.0451 },
-      'Калуга': { lat: 54.5290, lng: 36.2757 },
-      'Волжский': { lat: 48.8225, lng: 44.7750 },
-      'Вологда': { lat: 59.2211, lng: 39.8945 },
-      'Саранск': { lat: 54.1836, lng: 45.1739 },
-      'Якутск': { lat: 62.0281, lng: 129.7326 },
-      'Орёл': { lat: 52.9656, lng: 36.0655 },
-      'Череповец': { lat: 59.1336, lng: 37.9059 },
-      'Владимир': { lat: 56.1291, lng: 40.4068 },
-      'Мурманск': { lat: 68.9605, lng: 33.0844 },
-      'Курган': { lat: 55.4478, lng: 65.3393 },
-      'Симферополь': { lat: 44.9521, lng: 34.1024 },
-      'Грозный': { lat: 43.3122, lng: 45.6877 },
-      'Кострома': { lat: 57.7677, lng: 40.9252 },
-      'Петрозаводск': { lat: 61.7849, lng: 34.3473 },
-      'Тамбов': { lat: 52.7236, lng: 41.4422 },
-      'Нижневартовск': { lat: 60.9346, lng: 76.5596 },
-      'Нальчик': { lat: 43.4856, lng: 43.6077 },
-      'Тверь': { lat: 56.8587, lng: 35.9176 },
-      'Новочеркасск': { lat: 47.4067, lng: 40.0945 },
-      'Йошкар-Ола': { lat: 56.6342, lng: 47.8982 },
-    };
-
-    const lowerCaseCity = city.toLowerCase();
-    for (const [cityName, coords] of Object.entries(cityCoordinates)) {
-      if (lowerCaseCity.includes(cityName.toLowerCase())) return coords;
-    }
-    return null;
   };
 
   const resetSearch = () => {
@@ -511,6 +401,3 @@ export default function StoresPage() {
     </PageShell>
   );
 }
-
-// StoreItem is already exported via `export interface StoreItem`. Coordinates is internal.
-export type { Coordinates };

@@ -99,8 +99,8 @@ export default function ColorSelector({ colors, activeColorId, onSelect }: Color
                 <div
                   className={`relative aspect-[3/4] w-[76px] overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900 transition-all duration-300 ease-out ${
                     isActive
-                      ? 'ring-[1.5px] ring-gray-900 dark:ring-white ring-offset-[3px] ring-offset-white dark:ring-offset-neutral-950 shadow-lg'
-                      : 'ring-1 ring-gray-200 dark:ring-neutral-800 group-hover/color:-translate-y-1 group-hover/color:shadow-xl group-hover/color:ring-gray-300 dark:group-hover/color:ring-neutral-600'
+                      ? 'ring-2 ring-gray-900 dark:ring-white shadow-lg'
+                      : 'ring-1 ring-gray-200/50 dark:ring-neutral-800/50 group-hover/color:-translate-y-1 group-hover/color:shadow-md group-hover/color:ring-gray-300 dark:group-hover/color:ring-neutral-700'
                   }`}
                 >
                   <Image
@@ -134,10 +134,10 @@ export default function ColorSelector({ colors, activeColorId, onSelect }: Color
                 </div>
 
                 <p
-                  className={`mt-2 text-[11px] leading-tight line-clamp-2 transition-colors ${
+                  className={`mt-2.5 text-xs leading-snug line-clamp-2 transition-colors ${
                     isActive
-                      ? 'text-gray-900 dark:text-white font-medium'
-                      : 'text-gray-400 dark:text-neutral-500 group-hover/color:text-gray-700 dark:group-hover/color:text-neutral-300'
+                      ? 'text-gray-900 dark:text-white font-semibold'
+                      : 'text-gray-500 dark:text-neutral-400 font-medium group-hover/color:text-gray-700 dark:group-hover/color:text-neutral-300'
                   }`}
                 >
                   {color.name}

@@ -88,14 +88,14 @@ export default function ProductGallery({
         onMouseLeave={() => setZoomed(false)}
         onMouseMove={enableLens ? onMove : undefined}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false}>
           <motion.div
             key={current?.id ?? selectedIndex}
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.02 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
           >
             {isVideo ? (
               <video
@@ -144,7 +144,7 @@ export default function ProductGallery({
           <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 pointer-events-none">
             {isNew && (
               <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-900 shadow-sm ring-1 ring-black/[0.04] backdrop-blur-md dark:bg-black/40 dark:text-white dark:ring-white/10">
-                <Sparkles className="h-2.5 w-2.5 text-purple-500" />
+                <Sparkles className="h-2.5 w-2.5 text-violet-500" />
                 New
               </span>
             )}
@@ -175,7 +175,7 @@ export default function ProductGallery({
               type="button"
               onClick={goPrev}
               aria-label="Предыдущее фото"
-              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 bg-white/90 text-gray-900 opacity-0 group-hover/gallery:opacity-100 transition-all hover:bg-white focus-visible:opacity-100 shadow-sm ring-1 ring-black/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500"
+              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 bg-white/90 text-gray-900 opacity-0 group-hover/gallery:opacity-100 transition-all hover:bg-white focus-visible:opacity-100 shadow-sm ring-1 ring-black/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -183,7 +183,7 @@ export default function ProductGallery({
               type="button"
               onClick={goNext}
               aria-label="Следующее фото"
-              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 bg-white/90 text-gray-900 opacity-0 group-hover/gallery:opacity-100 transition-all hover:bg-white focus-visible:opacity-100 shadow-sm ring-1 ring-black/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500"
+              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 bg-white/90 text-gray-900 opacity-0 group-hover/gallery:opacity-100 transition-all hover:bg-white focus-visible:opacity-100 shadow-sm ring-1 ring-black/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
@@ -208,7 +208,7 @@ export default function ProductGallery({
               aria-current={selectedIndex === index}
               className={`relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900 transition-all ${
                 selectedIndex === index
-                  ? 'ring-2 ring-purple-600 ring-offset-2 dark:ring-offset-neutral-950'
+                  ? 'ring-2 ring-violet-600 ring-offset-2 dark:ring-offset-neutral-950'
                   : 'opacity-60 hover:opacity-100 ring-1 ring-gray-200 dark:ring-neutral-800'
               }`}
             >

@@ -45,10 +45,14 @@ export default function AddToCartButton({ product, size, color, disabled }: AddT
       type="button"
       onClick={handleAddToCart}
       disabled={disabled}
-      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3.5 px-6 text-sm font-medium tracking-wide hover:from-purple-700 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 flex items-center justify-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500"
+      className={`w-full py-3.5 px-6 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed ${
+        disabled
+          ? 'bg-gray-200 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600'
+          : 'pdp-accent-gradient text-white shadow-[0_10px_28px_-8px_rgba(124,58,237,0.45)] hover:brightness-105'
+      }`}
     >
       <ShoppingBag size={18} aria-hidden />
-      {disabled ? 'Нет в наличии' : 'В корзину'}
+      <span>{disabled ? 'Нет в наличии' : 'В корзину'}</span>
     </button>
   );
 }
