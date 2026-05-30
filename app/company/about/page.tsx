@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
-import { Users, Zap, Globe, Star, TrendingUp, Building2, ArrowRight, Shield, Heart, MapPin } from 'lucide-react';
+import { Users, Zap, Globe, Star, TrendingUp, Building2, ArrowRight, Shield, Heart, MapPin, Rocket, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import TeamSection from '@/components/TeamSection';
 import { GlassCard, SectionTitle, IconBadge, CTABand, MagneticButton, EASE } from '@/components/company/PageKit';
@@ -42,13 +42,86 @@ const values = [
 ];
 
 const timeline = [
-  { year: '2015', title: 'Основание', desc: 'Начало пути с миссией создавать устойчивую моду' },
-  { year: '2017', title: 'Первая коллекция', desc: 'Выпуск коллекции из переработанных материалов' },
-  { year: '2020', title: 'Признание', desc: 'Международные награды за инновации' },
-  { year: '2022', title: 'AI-прорыв', desc: 'Внедрение искусственного интеллекта в производство' },
-  { year: '2023', title: 'Экспансия', desc: '25 магазинов в 10 странах мира' },
-  { year: '2024', title: 'Будущее', desc: 'Новая эра устойчивой роскоши' },
+  { year: '2024', q: 'Q1', title: 'Запуск ELEVATE', desc: 'Смелая идея устойчивой роскоши превращается в бренд.', icon: Rocket },
+  { year: '2024', q: 'Q3', title: 'Первый дроп', desc: 'Дебютная коллекция из переработанных материалов — раскуплена за 48 часов.', icon: Sparkles },
+  { year: '2025', q: 'Q2', title: 'AI-ателье', desc: 'Внедряем ИИ в подбор размеров и дизайн — мода становится умной.', icon: Zap },
+  { year: '2025', q: 'Q4', title: 'Выходим в мир', desc: 'Первые шоурумы и доставка по всему СНГ.', icon: Globe },
+  { year: '2026', q: 'Сейчас', title: 'Новая эра', desc: 'Сообщество, которое формирует будущее моды. И это только начало.', icon: Heart },
 ];
+
+// Вертикальная «дорожка истории»: светящийся спайн, заполняющийся по мере скролла,
+// пульсирующие ноды и чередующиеся стеклянные карточки (слева/справа на десктопе).
+function Timeline() {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 75%', 'end 55%'] });
+  const fillHeight = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+
+  return (
+    <div ref={ref} className="relative mt-16">
+      {/* Спайн: тусклая направляющая + яркая заливка по прогрессу скролла */}
+      <div className="absolute left-[19px] top-2 bottom-2 w-px bg-[var(--fc-glass-border)] md:left-1/2 md:-translate-x-1/2">
+        <motion.div
+          style={{ height: fillHeight }}
+          className="w-full bg-gradient-to-b from-[#8b7cf6] via-[#a78bfa] to-[#c4b5fd] shadow-[0_0_16px_rgba(139,124,246,0.7)]"
+        />
+      </div>
+
+      <div className="space-y-8 md:space-y-0">
+        {timeline.map((item, i) => {
+          const Icon = item.icon;
+          const flip = i % 2 === 1;
+          return (
+            <motion.div
+              key={item.year + item.title}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.6, ease: EASE }}
+              className={`relative flex items-center pl-12 md:pl-0 ${flip ? 'md:flex-row-reverse' : 'md:flex-row'}`}
+            >
+              {/* Нода на спайне */}
+              <span className="absolute left-3 top-7 z-10 md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2">
+                <span className="relative grid h-4 w-4 place-items-center">
+                  <span className="absolute h-full w-full animate-ping rounded-full bg-[#8b7cf6]/30" />
+                  <span className="relative h-4 w-4 rounded-full border-2 border-[var(--background)] bg-[#8b7cf6] shadow-[0_0_12px_rgba(139,124,246,0.9)]" />
+                </span>
+              </span>
+
+              {/* Карточка (половина строки на десктопе) */}
+              <div className="w-full py-2 md:w-1/2 md:px-10 md:py-8">
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                  className="fc-glass-card p-6"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[#8b7cf6]"
+                      style={{ background: 'rgba(139,124,246,0.14)' }}
+                    >
+                      <Icon size={20} />
+                    </span>
+                    <div className="leading-none">
+                      <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-secondary)]">{item.q}</span>
+                      <span className="bg-gradient-to-r from-[#8b7cf6] to-[#c4b5fd] bg-clip-text text-3xl font-black tracking-tight text-transparent">
+                        {item.year}
+                      </span>
+                    </div>
+                  </div>
+                  <h3 className="mt-4 text-lg font-bold uppercase tracking-tight text-[var(--foreground)]">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{item.desc}</p>
+                </motion.div>
+              </div>
+
+              {/* Пустая половина для чередования на десктопе */}
+              <div className="hidden md:block md:w-1/2" />
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function AboutPage() {
   const heroRef = useRef(null);
@@ -189,28 +262,14 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* TIMELINE — горизонтальный скролл */}
-      <section className="overflow-hidden py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      {/* TIMELINE — вертикальная светящаяся дорожка истории */}
+      <section className="relative overflow-hidden py-24">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <SectionTitle className="text-center">Наша история</SectionTitle>
-        </div>
-        <div className="scrollbar-hide flex snap-x snap-mandatory gap-6 overflow-x-auto px-8 pb-8">
-          {timeline.map((item, i) => (
-            <motion.div
-              key={item.year}
-              initial={{ opacity: 0, x: 60 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08, ease: EASE }}
-              className="w-72 flex-shrink-0 snap-start"
-            >
-              <div className="fc-glass-card h-full p-8">
-                <div className="mb-4 text-6xl font-black leading-none text-[#8b7cf6]/25">{item.year}</div>
-                <h3 className="mb-3 text-xl font-bold uppercase tracking-tight text-[var(--foreground)]">{item.title}</h3>
-                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{item.desc}</p>
-              </div>
-            </motion.div>
-          ))}
+          <p className="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-[var(--text-secondary)]">
+            От смелой идеи 2024-го — к новой эре устойчивой роскоши 2026-го. Молодой бренд, который растёт быстро.
+          </p>
+          <Timeline />
         </div>
       </section>
 
