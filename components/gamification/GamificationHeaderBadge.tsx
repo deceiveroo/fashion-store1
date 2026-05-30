@@ -15,8 +15,14 @@ interface UserLevel {
 export default function GamificationHeaderBadge() {
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
   const [loading, setLoading] = useState(true);
+  const [enabled, setEnabled] = useState(true);
 
   useEffect(() => {
+    // Уважаем фич-флаг: если геймификация выключена в /admin/settings — бейдж скрыт.
+    fetch('/api/feature-flags')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((f) => { if (f && f.gamification === false) setEnabled(false); })
+      .catch(() => {});
     fetchUserLevel();
   }, []);
 
@@ -34,9 +40,10 @@ export default function GamificationHeaderBadge() {
     }
   };
 
-  if (loading || !userLevel) return null;
+  if (!enabled || loading || !userLevel) return null;
 
-  const xpProgress = (userLevel.xp / userLevel.xp_to_next_level) * 100;
+  // Клампим, чтобы прогресс не вылезал за 100% (xp может на миг превышать порог до level-up).
+  const xpProgress = Math.min(100, Math.max(0, (userLevel.xp / userLevel.xp_to_next_level) * 100));
 
   return (
     <Link href="/gamification">
