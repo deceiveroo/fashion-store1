@@ -1,428 +1,316 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Home, ShoppingBag, Play, Pause, RotateCcw } from 'lucide-react';
+import { Home, ShoppingBag, Play, RotateCcw, Pause, Heart } from 'lucide-react';
 
+/**
+ * 404 с мини-игрой «Лови моду». Стиль сайта (glassy/purple). Геймплей улучшен:
+ * 3 жизни (а не game-over с первого промаха), уровни, рост сложности, бомбы 💣
+ * (их ловить нельзя). Всё игровое состояние — в ref'ах (без stale-closure).
+ */
 export default function NotFoundPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [level, setLevel] = useState(1);
   const [highScore, setHighScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  
-  const gameState = useRef({
+
+  const g = useRef({
     basketX: 0,
-    items: [] as Array<{ x: number; y: number; emoji: string; speed: number; rotation: number }>,
+    items: [] as Array<{ x: number; y: number; emoji: string; speed: number; rotation: number; bad: boolean }>,
     lastSpawn: 0,
     animationId: 0,
     isDark: true,
+    running: false,
+    score: 0,
+    lives: 3,
   });
 
-  // Load high score and detect theme
+  // Рекорд + тема
   useEffect(() => {
     const saved = localStorage.getItem('elevate-404-highscore');
-    if (saved) setHighScore(parseInt(saved));
-
-    // Detect initial theme
-    const isDark = document.documentElement.classList.contains('dark');
-    setTheme(isDark ? 'dark' : 'light');
-    gameState.current.isDark = isDark;
-
-    // Observe theme changes
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          const isDark = document.documentElement.classList.contains('dark');
-          setTheme(isDark ? 'dark' : 'light');
-          gameState.current.isDark = isDark;
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, { attributes: true });
-    return () => observer.disconnect();
+    if (saved) setHighScore(parseInt(saved) || 0);
+    const detect = () => { g.current.isDark = document.documentElement.classList.contains('dark'); };
+    detect();
+    const obs = new MutationObserver(detect);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
   }, []);
 
-  // Game loop
+  const endGame = useCallback(() => {
+    g.current.running = false;
+    setIsPlaying(false);
+    setIsGameOver(true);
+  }, []);
+
+  // Игровой цикл
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const emojis = ['👕', '👗', '👟', '👜', '🧢', '👠', '🎒', '👔', '🩳', '🧥', '💎', '⌚'];
-    const BASKET_WIDTH = 80;
-    const BASKET_HEIGHT = 60;
-    const ITEM_SIZE = 35;
+    const GOOD = ['👕', '👗', '👟', '👜', '🧢', '👠', '🎒', '👔', '🩳', '🧥', '💎', '⌚'];
+    const BAD = ['💣', '🧨'];
+    const BASKET_W = 86, BASKET_H = 60, ITEM = 36;
 
-    // Resize canvas
     const resize = () => {
-      const rect = container.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      gameState.current.basketX = rect.width / 2;
+      const r = container.getBoundingClientRect();
+      canvas.width = r.width;
+      canvas.height = r.height;
+      if (!g.current.basketX) g.current.basketX = r.width / 2;
     };
-
     resize();
     window.addEventListener('resize', resize);
 
-    // Pointer move handler
-    const handlePointerMove = (e: PointerEvent) => {
-      if (!isPlaying) return;
-      const rect = canvas.getBoundingClientRect();
-      gameState.current.basketX = e.clientX - rect.left;
+    const onPointer = (e: PointerEvent) => {
+      if (!g.current.running) return;
+      const r = canvas.getBoundingClientRect();
+      g.current.basketX = Math.max(BASKET_W / 2, Math.min(r.width - BASKET_W / 2, e.clientX - r.left));
+    };
+    canvas.addEventListener('pointermove', onPointer);
+
+    const spawn = () => {
+      const bad = Math.random() < 0.14;
+      const speed = 2 + g.current.score / 220 + Math.random() * 1.8;
+      const emoji = bad ? BAD[Math.floor(Math.random() * BAD.length)] : GOOD[Math.floor(Math.random() * GOOD.length)];
+      g.current.items.push({ x: Math.random() * (canvas.width - ITEM), y: -ITEM, emoji, speed, rotation: 0, bad });
     };
 
-    canvas.addEventListener('pointermove', handlePointerMove);
-
-    // Spawn item
-    const spawnItem = () => {
-      const x = Math.random() * (canvas.width - ITEM_SIZE);
-      const speed = 2 + Math.random() * 2;
-      const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-      gameState.current.items.push({
-        x,
-        y: -ITEM_SIZE,
-        emoji,
-        speed,
-        rotation: 0,
-      });
+    const loseLife = () => {
+      g.current.lives -= 1;
+      setLives(g.current.lives);
+      if (g.current.lives <= 0) endGame();
     };
 
-    // Check collision
-    const checkCollision = (item: typeof gameState.current.items[0]) => {
-      const basketY = canvas.height - BASKET_HEIGHT - 10;
-      return (
-        item.x < gameState.current.basketX + BASKET_WIDTH / 2 &&
-        item.x + ITEM_SIZE > gameState.current.basketX - BASKET_WIDTH / 2 &&
-        item.y + ITEM_SIZE > basketY &&
-        item.y < basketY + BASKET_HEIGHT
-      );
-    };
+    const draw = (ts: number) => {
+      if (!g.current.running) return;
+      const W = canvas.width, H = canvas.height, dark = g.current.isDark;
+      ctx.clearRect(0, 0, W, H);
 
-    // Draw functions
-    const drawBackground = () => {
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      if (gameState.current.isDark) {
-        gradient.addColorStop(0, '#1a0b2e');
-        gradient.addColorStop(0.5, '#2d1b4e');
-        gradient.addColorStop(1, '#1a0b2e');
-      } else {
-        gradient.addColorStop(0, '#f0e6ff');
-        gradient.addColorStop(0.5, '#e6d9ff');
-        gradient.addColorStop(1, '#f0e6ff');
-      }
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      if (dark) { bg.addColorStop(0, '#0f0b1e'); bg.addColorStop(1, '#141029'); }
+      else { bg.addColorStop(0, '#f4efff'); bg.addColorStop(1, '#ece4ff'); }
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
 
-      // Glow effect
-      const glowGradient = ctx.createRadialGradient(
-        canvas.width / 2,
-        canvas.height / 2,
-        0,
-        canvas.width / 2,
-        canvas.height / 2,
-        canvas.width / 2
-      );
-      if (gameState.current.isDark) {
-        glowGradient.addColorStop(0, 'rgba(139, 92, 246, 0.1)');
-        glowGradient.addColorStop(1, 'transparent');
-      } else {
-        glowGradient.addColorStop(0, 'rgba(139, 92, 246, 0.05)');
-        glowGradient.addColorStop(1, 'transparent');
-      }
-      ctx.fillStyle = glowGradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    };
+      const interval = Math.max(420, 950 - g.current.score * 3);
+      if (ts - g.current.lastSpawn > interval) { spawn(); g.current.lastSpawn = ts; }
 
-    const drawBasket = () => {
-      const x = gameState.current.basketX - BASKET_WIDTH / 2;
-      const y = canvas.height - BASKET_HEIGHT - 10;
-
-      // Basket glow
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = gameState.current.isDark ? 'rgba(139, 92, 246, 0.5)' : 'rgba(139, 92, 246, 0.3)';
-
-      // Basket body
-      ctx.font = `${BASKET_HEIGHT}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('🛒', gameState.current.basketX, y + BASKET_HEIGHT / 2);
-
-      ctx.shadowBlur = 0;
-    };
-
-    const drawItems = () => {
-      gameState.current.items.forEach((item) => {
-        ctx.save();
-        ctx.translate(item.x + ITEM_SIZE / 2, item.y + ITEM_SIZE / 2);
-        ctx.rotate(item.rotation);
-        ctx.font = `${ITEM_SIZE}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        // Item glow
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = gameState.current.isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)';
-        
-        ctx.fillText(item.emoji, 0, 0);
-        ctx.restore();
-      });
-    };
-
-    // Game loop
-    const gameLoop = (timestamp: number) => {
-      if (!isPlaying) return;
-
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw background
-      drawBackground();
-
-      // Spawn items
-      if (timestamp - gameState.current.lastSpawn > 1000) {
-        spawnItem();
-        gameState.current.lastSpawn = timestamp;
-      }
-
-      // Update and draw items
-      const basketY = canvas.height - BASKET_HEIGHT - 10;
-      gameState.current.items = gameState.current.items.filter((item) => {
-        item.y += item.speed;
-        item.rotation += 0.02;
-
-        // Check collision with basket
-        if (checkCollision(item)) {
-          setScore((prev) => {
-            const newScore = prev + 10;
-            if (newScore > highScore) {
-              setHighScore(newScore);
-              localStorage.setItem('elevate-404-highscore', newScore.toString());
+      const basketY = H - BASKET_H - 10;
+      g.current.items = g.current.items.filter((it) => {
+        it.y += it.speed;
+        it.rotation += 0.02;
+        const hit =
+          it.x < g.current.basketX + BASKET_W / 2 &&
+          it.x + ITEM > g.current.basketX - BASKET_W / 2 &&
+          it.y + ITEM > basketY &&
+          it.y < basketY + BASKET_H;
+        if (hit) {
+          if (it.bad) {
+            loseLife();
+          } else {
+            g.current.score += 10;
+            setScore(g.current.score);
+            setLevel(Math.floor(g.current.score / 100) + 1);
+            const hs = parseInt(localStorage.getItem('elevate-404-highscore') || '0') || 0;
+            if (g.current.score > hs) {
+              localStorage.setItem('elevate-404-highscore', String(g.current.score));
+              setHighScore(g.current.score);
             }
-            return newScore;
-          });
+          }
           return false;
         }
-
-        // Remove if off screen
-        if (item.y > canvas.height) {
-          setIsGameOver(true);
-          setIsPlaying(false);
+        if (it.y > H) {
+          if (!it.bad) loseLife(); // промах по хорошему предмету — минус жизнь
           return false;
         }
-
         return true;
       });
 
-      // Draw items and basket
-      drawItems();
-      drawBasket();
+      g.current.items.forEach((it) => {
+        ctx.save();
+        ctx.translate(it.x + ITEM / 2, it.y + ITEM / 2);
+        ctx.rotate(it.rotation);
+        ctx.font = `${ITEM}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = it.bad ? 'rgba(244,63,94,0.6)' : 'rgba(139,124,246,0.5)';
+        ctx.fillText(it.emoji, 0, 0);
+        ctx.restore();
+      });
+      ctx.shadowBlur = 0;
 
-      gameState.current.animationId = requestAnimationFrame(gameLoop);
+      ctx.font = `${BASKET_H}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = 'rgba(139,124,246,0.6)';
+      ctx.fillText('🛒', g.current.basketX, basketY + BASKET_H / 2);
+      ctx.shadowBlur = 0;
+
+      g.current.animationId = requestAnimationFrame(draw);
     };
 
-    if (isPlaying && !isGameOver) {
-      gameState.current.animationId = requestAnimationFrame(gameLoop);
+    if (isPlaying) {
+      g.current.running = true;
+      g.current.animationId = requestAnimationFrame(draw);
     }
 
     return () => {
-      cancelAnimationFrame(gameState.current.animationId);
+      cancelAnimationFrame(g.current.animationId);
       window.removeEventListener('resize', resize);
-      canvas.removeEventListener('pointermove', handlePointerMove);
+      canvas.removeEventListener('pointermove', onPointer);
     };
-  }, [isPlaying, isGameOver, highScore]);
+  }, [isPlaying, endGame]);
 
-  const startGame = () => {
+  const start = () => {
+    g.current.items = [];
+    g.current.score = 0;
+    g.current.lives = 3;
+    g.current.lastSpawn = performance.now();
     setScore(0);
+    setLives(3);
+    setLevel(1);
     setIsGameOver(false);
     setIsPlaying(true);
-    gameState.current.items = [];
-    gameState.current.lastSpawn = performance.now();
   };
-
-  const stopGame = () => {
+  const pause = () => {
+    g.current.running = false;
     setIsPlaying(false);
-    cancelAnimationFrame(gameState.current.animationId);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-950 via-purple-900 to-indigo-950 dark:from-black dark:via-purple-950 dark:to-indigo-950 transition-colors duration-500" />
-      
-      {/* Animated particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className={`absolute w-2 h-2 rounded-full ${
-              theme === 'dark' ? 'bg-violet-400/20' : 'bg-violet-600/10'
-            }`}
-            animate={{
-              y: [0, -100, 0],
-              x: [0, Math.random() * 50 - 25, 0],
-              opacity: [0, 1, 0],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-          />
-        ))}
+    <div className="fc-ambient-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12">
+      {/* Акцентные орбы */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-[12%] top-[14%] h-72 w-72 rounded-full bg-[#8b7cf6]/15 blur-3xl" />
+        <div className="absolute bottom-[10%] right-[8%] h-80 w-80 rounded-full bg-[#c4b5fd]/15 blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-4xl w-full">
-        {/* 404 Text */}
+      <div className="relative z-10 w-full max-w-2xl">
         <motion.div
-          initial={{ opacity: 0, y: -50 }}
+          initial={{ opacity: 0, y: -40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="text-center mb-8"
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-8 text-center"
         >
-          <h1 className="text-9xl font-black mb-4 bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(139,92,246,0.5)]">
+          <h1 className="bg-gradient-to-r from-[#8b7cf6] via-[#a78bfa] to-[#c4b5fd] bg-clip-text text-[7rem] font-black leading-none tracking-tighter text-transparent drop-shadow-[0_0_40px_rgba(139,124,246,0.4)] md:text-[9rem]">
             404
           </h1>
-          <p className={`text-xl font-medium ${
-            theme === 'dark' ? 'text-white/70' : 'text-gray-700'
-          }`}>
-            Упс! Вы потерялись в мире моды...
-          </p>
-          <p className={`text-sm mt-2 ${
-            theme === 'dark' ? 'text-white/40' : 'text-gray-500'
-          }`}>
-            Но не беда! Пока вы здесь, можете поиграть 👇
-          </p>
+          <p className="text-xl font-medium text-[var(--foreground)]">Упс! Вы потерялись в мире моды…</p>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">Пока вы здесь — поймайте моду в корзину 👇 (но не бомбы 💣)</p>
         </motion.div>
 
-        {/* Game Container */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
           ref={containerRef}
-          className="relative mx-auto max-w-2xl h-[500px] rounded-3xl overflow-hidden backdrop-blur-xl border border-white/10 shadow-2xl"
-          style={{
-            background: theme === 'dark' 
-              ? 'rgba(26, 11, 46, 0.6)' 
-              : 'rgba(240, 230, 255, 0.6)',
-          }}
+          className="fc-glass-card relative mx-auto h-[460px] overflow-hidden !rounded-3xl"
         >
-          {/* Canvas */}
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0 w-full h-full cursor-none"
-          />
+          <canvas ref={canvasRef} className="absolute inset-0 h-full w-full cursor-none touch-none" />
 
-          {/* Score Display */}
-          <div className="absolute top-6 left-6 right-6 flex justify-between items-start pointer-events-none">
-            <div className={`px-4 py-2 rounded-xl backdrop-blur-md border ${
-              theme === 'dark' 
-                ? 'bg-white/5 border-white/10 text-white' 
-                : 'bg-white/50 border-white/30 text-gray-900'
-            }`}>
-              <p className="text-xs font-medium opacity-60">Счёт</p>
-              <p className="text-2xl font-bold">{score}</p>
+          {/* HUD */}
+          <div className="pointer-events-none absolute inset-x-4 top-4 flex items-start justify-between">
+            <div className="rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] px-3.5 py-2 backdrop-blur-md">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-secondary)]">Счёт</p>
+              <p className="text-xl font-bold tabular-nums text-[var(--foreground)]">{score}</p>
             </div>
-            <div className={`px-4 py-2 rounded-xl backdrop-blur-md border ${
-              theme === 'dark' 
-                ? 'bg-white/5 border-white/10 text-white' 
-                : 'bg-white/50 border-white/30 text-gray-900'
-            }`}>
-              <p className="text-xs font-medium opacity-60">Рекорд</p>
-              <p className="text-2xl font-bold">{highScore}</p>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="flex gap-1">
+                {[0, 1, 2].map((i) => (
+                  <Heart key={i} size={18} className={i < lives ? 'fill-rose-500 text-rose-500' : 'text-[var(--fc-glass-border)]'} />
+                ))}
+              </div>
+              <span className="rounded-full border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#8b7cf6] backdrop-blur-md">
+                Уровень {level}
+              </span>
+            </div>
+            <div className="rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] px-3.5 py-2 text-right backdrop-blur-md">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-secondary)]">Рекорд</p>
+              <p className="text-xl font-bold tabular-nums text-[var(--foreground)]">{highScore}</p>
             </div>
           </div>
 
-          {/* Start/Game Over Overlay */}
+          {/* Старт / Game Over */}
           {(!isPlaying || isGameOver) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+              className="absolute inset-0 flex items-center justify-center bg-black/45 backdrop-blur-sm"
             >
               <div className="text-center">
                 {isGameOver ? (
                   <>
-                    <p className="text-4xl font-bold text-white mb-2">Игра окончена!</p>
-                    <p className="text-xl text-white/70 mb-6">Ваш счёт: {score}</p>
+                    <p className="mb-1 text-3xl font-bold text-white">Игра окончена!</p>
+                    <p className="mb-6 text-lg text-white/70">Ваш счёт: {score}</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-3xl font-bold text-white mb-2">Лови моду!</p>
-                    <p className="text-sm text-white/60 mb-6">Двигай мышкой или пальцем чтобы ловить предметы</p>
+                    <p className="mb-1 text-3xl font-bold text-white">Лови моду!</p>
+                    <p className="mb-6 max-w-xs text-sm text-white/70">Двигайте мышкой/пальцем. Ловите вещи, избегайте 💣. У вас 3 жизни.</p>
                   </>
                 )}
                 <button
-                  onClick={startGame}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-2xl font-semibold shadow-lg shadow-violet-500/30 transition-all hover:scale-105 active:scale-95"
+                  onClick={start}
+                  className="inline-flex items-center gap-2 rounded-2xl px-8 py-4 text-sm font-semibold text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+                  style={{ backgroundImage: 'linear-gradient(135deg,#8b7cf6,#c4b5fd)', boxShadow: '0 16px 36px -10px rgba(139,124,246,0.7)' }}
                 >
-                  {isGameOver ? <RotateCcw className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  {isGameOver ? <RotateCcw className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                   {isGameOver ? 'Играть снова' : 'Начать игру'}
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* Controls */}
+          {/* Пауза */}
           {isPlaying && (
-            <div className="absolute bottom-6 right-6">
-              <button
-                onClick={stopGame}
-                className={`p-3 rounded-xl backdrop-blur-md border transition-all hover:scale-110 active:scale-95 ${
-                  theme === 'dark'
-                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20'
-                    : 'bg-white/50 border-white/30 text-gray-900 hover:bg-white/70'
-                }`}
-              >
-                <Pause className="w-5 h-5" />
-              </button>
-            </div>
+            <button
+              onClick={pause}
+              className="absolute bottom-4 right-4 grid h-11 w-11 place-items-center rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] text-[var(--foreground)] backdrop-blur-md transition-transform hover:scale-110 active:scale-95"
+              aria-label="Пауза"
+            >
+              <Pause className="h-5 w-5" />
+            </button>
           )}
         </motion.div>
 
-        {/* Navigation Buttons */}
+        {/* Навигация */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center mt-8"
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"
         >
-          <Link href="/">
-            <button className="group inline-flex items-center gap-3 px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95">
-              <Home className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              На главную
-            </button>
+          <Link href="/" className="group inline-flex items-center justify-center gap-2.5 rounded-2xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-7 py-3.5 text-sm font-semibold text-[var(--foreground)] backdrop-blur-md transition-all hover:shadow-md">
+            <Home className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
+            На главную
           </Link>
-          <Link href="/collections">
-            <button className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-2xl font-semibold shadow-lg shadow-violet-500/30 transition-all hover:scale-105 active:scale-95">
-              <ShoppingBag className="w-5 h-5 group-hover:bounce transition-transform" />
-              К товарам
-            </button>
+          <Link
+            href="/collections"
+            className="group inline-flex items-center justify-center gap-2.5 rounded-2xl px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02] active:scale-95"
+            style={{ backgroundImage: 'linear-gradient(135deg,#8b7cf6,#c4b5fd)', boxShadow: '0 14px 32px -10px rgba(139,124,246,0.7)' }}
+          >
+            <ShoppingBag className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
+            К товарам
           </Link>
         </motion.div>
 
-        {/* Fun Fact */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className={`text-center text-sm mt-8 ${
-            theme === 'dark' ? 'text-white/30' : 'text-gray-500'
-          }`}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="mt-8 text-center text-sm text-[var(--text-secondary)]"
         >
-          💡 Знаете ли вы? Первая онлайн-покупка была совершена в 1994 году — это был CD Стинга!
+          💡 А знаете ли вы? Первая онлайн-покупка (1994) — это был CD Стинга.
         </motion.p>
       </div>
     </div>
