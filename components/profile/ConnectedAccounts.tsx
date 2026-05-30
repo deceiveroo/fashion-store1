@@ -43,6 +43,7 @@ function GoogleGlyph() {
 export default function ConnectedAccounts() {
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [tg, setTg] = useState<{ enabled: boolean; botId: string | null } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -52,6 +53,15 @@ export default function ConnectedAccounts() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Telegram-конфиг + предзагрузка виджета на монтировании, чтобы попап открывался
+  // прямо по клику (без сетевого await, который ломает user-gesture и блокирует попап).
+  useEffect(() => {
+    fetch('/api/auth/telegram-config')
+      .then((r) => (r.ok ? r.json() : { enabled: false, botId: null }))
+      .then((c) => { setTg(c); if (c?.botId) loadTgWidget().catch(() => {}); })
+      .catch(() => setTg({ enabled: false, botId: null }));
+  }, []);
 
   // Результат привязки Google приходит редиректом ?link=...
   useEffect(() => {
@@ -75,16 +85,14 @@ export default function ConnectedAccounts() {
   };
 
   const connectTelegram = async () => {
+    const botId = tg?.botId || undefined;
+    if (!tg?.enabled || !botId) { toast.error('Telegram ещё не настроен'); return; }
     setBusy('telegram');
     try {
-      // bot_id берём из рантайм-конфига (как в TelegramLoginButton) — не зависит от build-time env.
-      const cfg = await fetch('/api/auth/telegram-config').then((r) => (r.ok ? r.json() : null)).catch(() => null);
-      const botId: string | undefined = cfg?.botId || undefined;
-      if (!cfg?.enabled || !botId) { toast.error('Telegram ещё не настроен'); setBusy(null); return; }
       await loadTgWidget();
-      const tg = getTelegramLogin();
-      if (!tg) { toast.error('Telegram-виджет недоступен'); setBusy(null); return; }
-      tg.auth({ bot_id: botId, request_access: 'write' }, async (u) => {
+      const tgLogin = getTelegramLogin();
+      if (!tgLogin) { toast.error('Telegram-виджет недоступен'); setBusy(null); return; }
+      tgLogin.auth({ bot_id: botId, request_access: 'write' }, async (u) => {
         if (!u) { setBusy(null); return; }
         const r = await fetch('/api/profile/connections/telegram', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(u),

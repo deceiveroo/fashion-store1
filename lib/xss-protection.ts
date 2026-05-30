@@ -88,16 +88,19 @@ export function sanitizeAdminNote(html: string): string {
 export function generateCSPHeader(): string {
   const isDev = process.env.NODE_ENV === 'development';
   
+  // Telegram Login Widget грузит скрипт с telegram.org и открывает авторизацию на
+  // oauth.telegram.org — без этих источников браузер режет виджет (вход/привязка ТГ молча не работают).
   return [
     "default-src 'self'",
     // Allow unsafe-eval in development for React debugging features
-    isDev 
-      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net"
-      : "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://telegram.org https://oauth.telegram.org"
+      : "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://telegram.org https://oauth.telegram.org",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' https: data:",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel.app",
+    "frame-src 'self' https://oauth.telegram.org https://telegram.org",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
