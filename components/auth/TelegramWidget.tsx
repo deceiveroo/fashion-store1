@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Send } from 'lucide-react';
 
 /**
  * Кнопка входа через НОВЫЙ Telegram Login (telegram-login.js / OIDC).
@@ -10,10 +9,9 @@ import { Send } from 'lucide-react';
  * username + HMAC) и popup по bot_id — legacy/deprecated.
  *
  * Требования на стороне Telegram:
- *  - @BotFather → Bot Settings → Web Login → добавить Allowed URL текущего origin
+ *  - @BotFather → Bot Settings → Web Login → Trusted Origins → текущий origin
  *    (напр. https://e1evate.vercel.app). client_id = bot id.
- *  - Заголовок COOP не строже 'same-origin-allow-popups' (задан в middleware.ts),
- *    иначе попап не сможет обменяться данными с окном.
+ *  - Заголовок COOP не строже 'same-origin-allow-popups' (задан в middleware.ts).
  */
 type TgAuthData = { id_token?: string; user?: Record<string, unknown>; error?: string };
 
@@ -30,6 +28,25 @@ declare global {
       };
     };
   }
+}
+
+/** Фирменный логотип Telegram — кружок с градиентом + белый самолётик. */
+export function TelegramGlyph({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden focusable="false">
+      <defs>
+        <linearGradient id="tg-glyph-grad" x1="50%" y1="0%" x2="50%" y2="100%">
+          <stop offset="0%" stopColor="#37BBFE" />
+          <stop offset="100%" stopColor="#007DBB" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="12" fill="url(#tg-glyph-grad)" />
+      <path
+        fill="#fff"
+        d="M5.491 11.74c3.5-1.525 5.834-2.53 7.001-3.016 3.333-1.386 4.026-1.627 4.477-1.635.099-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.094.036.307.02.474-.182 1.914-.97 6.557-1.37 8.7-.17.906-.504 1.21-.826 1.24-.701.064-1.233-.463-1.911-.908-1.062-.696-1.662-1.129-2.693-1.808-1.191-.785-.419-1.216.26-1.92.177-.184 3.262-2.99 3.322-3.244.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.8 1.144-5.084 3.36-.481.33-.917.491-1.308.483-.43-.01-1.259-.244-1.875-.444-.756-.245-1.356-.375-1.304-.792.027-.217.326-.439.897-.665Z"
+      />
+    </svg>
+  );
 }
 
 let loginScript: Promise<void> | null = null;
@@ -98,10 +115,9 @@ export default function TelegramWidget({
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold text-white shadow transition-all hover:shadow-md disabled:opacity-60"
-        style={{ backgroundColor: '#229ED9' }}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] px-3.5 py-2 text-xs font-semibold text-[var(--foreground)] backdrop-blur-md transition-all hover:shadow disabled:opacity-60"
       >
-        <Send size={14} />
+        <TelegramGlyph size={15} />
         {loading ? '…' : 'Привязать'}
       </button>
     );
@@ -112,10 +128,9 @@ export default function TelegramWidget({
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className="tg-auth-button flex w-full items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
-      style={{ backgroundColor: '#229ED9' }}
+      className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)] py-3 text-sm font-semibold text-[var(--foreground)] backdrop-blur-md transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <Send size={17} />
+      <TelegramGlyph size={18} />
       {loading ? 'Открываем Telegram…' : label}
     </button>
   );

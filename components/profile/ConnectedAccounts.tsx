@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Check, Send } from 'lucide-react';
+import { Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import TelegramWidget from '@/components/auth/TelegramWidget';
+import TelegramWidget, { TelegramGlyph } from '@/components/auth/TelegramWidget';
 
 type ConnState = { connected: boolean; label?: string };
 type Status = { google: ConnState; telegram: ConnState };
@@ -168,7 +168,7 @@ export default function ConnectedAccounts() {
 
         <Row
           name="Telegram"
-          glyph={<Send size={20} className="text-[#229ED9]" />}
+          glyph={<TelegramGlyph size={20} />}
           conn={status?.telegram}
           action={
             telegramConnected ? (

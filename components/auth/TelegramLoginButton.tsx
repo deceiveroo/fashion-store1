@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Send } from 'lucide-react';
-import TelegramWidget from './TelegramWidget';
+import TelegramWidget, { TelegramGlyph } from './TelegramWidget';
 
 /**
  * Вход через новый Telegram Login (telegram-login.js / OIDC). Виджет возвращает
@@ -51,7 +50,7 @@ export default function TelegramLoginButton({ onSuccess }: { onSuccess?: () => v
         title={config === null ? 'Загрузка…' : 'Telegram-вход активируется после настройки бота'}
         className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] py-3 text-sm font-medium text-[var(--text-secondary)] opacity-70"
       >
-        <Send size={16} className="text-[#229ED9]" />
+        <TelegramGlyph size={16} />
         Войти через Telegram
         {config !== null && <span className="text-[11px] opacity-70">— после настройки</span>}
       </button>
