@@ -25,11 +25,7 @@ export default function ActivityFeed() {
   const loadActivities = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin/activity', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('auth-token')}`,
-        },
-      });
+      const res = await fetch('/api/admin/activity', { credentials: 'include' });
 
       if (!res.ok) {
         throw new Error('Failed to load activity');

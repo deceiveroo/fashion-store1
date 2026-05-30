@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders, users, reviews, products } from '@/lib/schema';
 import { eq, desc } from 'drizzle-orm';
-import { verifyAuth } from '@/lib/auth';
+import { isStaff } from '@/lib/server-auth';
 import { jsonWithNoCache } from '@/lib/no-cache';
 
 // Force dynamic rendering - never cache
@@ -24,16 +24,15 @@ interface Activity {
  * GET /api/admin/activity - Лента активности из реальных данных БД.
  * Объединяет последние заказы, регистрации пользователей и новые отзывы.
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // verifyAuth сам проверяет и NextAuth-сессию (куки), и Bearer-токен.
-    const currentUser = await verifyAuth(request);
-    if (!currentUser) {
+    // Та же авторизация, что и у остальных admin-роутов (analytics/content/…):
+    // cookie-сессия через isStaff(). Раньше тут был verifyAuth(request), который в
+    // проде дополнительно гонял проверку отзыва сессии и Bearer-путь — из-за чего
+    // лента отдавала 401 при валидной куке (клиент слал Authorization: Bearer null).
+    const staff = await isStaff();
+    if (!staff) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (currentUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
     }
 
     // Тянем три источника параллельно. Каждый защищён — сбой одного не роняет ленту.
