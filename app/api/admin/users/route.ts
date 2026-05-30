@@ -165,11 +165,13 @@ export async function PUT(request: NextRequest) {
     if (updates.role !== undefined) userUpdates.role = updates.role;
     if (updates.status !== undefined) userUpdates.status = updates.status;
 
-    // users.name держим в синхроне с именем/фамилией из профиля — иначе отображаемое
-    // имя (шапка, сессия, чат) расходится с тем, что меняет админ.
-    const fullName = `${updates.firstName || ''} ${updates.lastName || ''}`.trim();
-    if (fullName) userUpdates.name = fullName;
-    else if (updates.name) userUpdates.name = updates.name;
+    // users.name синхронизируем с именем/фамилией из профиля (включая полную очистку
+    // админом — тогда name тоже становится пустым). Отображаемое имя не расходится.
+    if (updates.firstName !== undefined || updates.lastName !== undefined) {
+      userUpdates.name = `${updates.firstName || ''} ${updates.lastName || ''}`.trim();
+    } else if (updates.name) {
+      userUpdates.name = updates.name;
+    }
 
     // Hash password if provided
     if (updates.password) {
@@ -206,8 +208,9 @@ export async function PUT(request: NextRequest) {
     // Обновляем пользователя
     await db.update(users).set(userUpdates).where(eq(users.id, userId));
 
-    // Если есть обновления профиля, обновляем его тоже
-    if (updates.firstName || updates.lastName || updates.phone || updates.avatar || updates.image) {
+    // Если есть обновления профиля, обновляем его тоже. Условие по `!== undefined`,
+    // чтобы пустые значения (полная очистка админом) тоже сохранялись.
+    if (updates.firstName !== undefined || updates.lastName !== undefined || updates.phone !== undefined || updates.avatar !== undefined || updates.image !== undefined) {
       const existingProfile = await queryWithRetry(() =>
         db
           .select({ id: userProfiles.id })

@@ -90,8 +90,10 @@ export async function GET(request: NextRequest) {
       id: user.id,
       email: user.email,
       name: user.name,
-      firstName: user.firstName || nameParts[0],
-      lastName: user.lastName || nameParts[1] || '',
+      // ?? (а не ||): пустое значение, выставленное админом, уважаем и НЕ подменяем
+      // на части users.name. null (профиль не заполнен) — фолбэк на имя из users.
+      firstName: user.firstName ?? nameParts[0] ?? '',
+      lastName: user.lastName ?? nameParts[1] ?? '',
       phone: user.phone || '',
       address: user.address || '',
       avatar: avatarUrl,
@@ -148,6 +150,14 @@ export async function POST(request: NextRequest) {
     } else {
       // Обновление профиля
       const { firstName, lastName, phone, address, avatar } = body;
+
+      // Пользователь НЕ может оставить имя/фамилию пустыми (очистить может только админ).
+      if (firstName !== undefined && !String(firstName).trim()) {
+        return NextResponse.json({ message: 'Имя не может быть пустым' }, { status: 400 });
+      }
+      if (lastName !== undefined && !String(lastName).trim()) {
+        return NextResponse.json({ message: 'Фамилия не может быть пустой' }, { status: 400 });
+      }
 
       const existingProfile = await db
         .select()
@@ -206,6 +216,14 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { firstName, lastName, phone, address, avatar } = body;
+
+    // Пользователь НЕ может оставить имя/фамилию пустыми (очистить может только админ).
+    if (firstName !== undefined && !String(firstName).trim()) {
+      return NextResponse.json({ message: 'Имя не может быть пустым' }, { status: 400 });
+    }
+    if (lastName !== undefined && !String(lastName).trim()) {
+      return NextResponse.json({ message: 'Фамилия не может быть пустой' }, { status: 400 });
+    }
 
     // Проверяем, заполнен ли профиль полностью
     const isProfileComplete = firstName && lastName && phone && address;

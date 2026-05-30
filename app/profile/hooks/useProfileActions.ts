@@ -58,11 +58,14 @@ export function useProfileActions({
 
   // Handle save profile
   const handleSave = async () => {
+    // Пользователь не может оставить имя/фамилию пустыми (очистить может только админ).
+    if (!formData.firstName?.trim()) { toast.error('Имя не может быть пустым'); return; }
+    if (!formData.lastName?.trim()) { toast.error('Фамилия не может быть пустой'); return; }
     setIsSaving(true);
     try {
       await saveProfile({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         phone: formData.phone,
         address: formData.address,
       });
