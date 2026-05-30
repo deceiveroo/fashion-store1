@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, User, Trash2, Edit3, Camera, X, Save, RefreshCw,
-  Users, Mail, Phone, ShieldCheck, BadgeCheck, ChevronRight, ChevronDown, Calendar,
+  Users, Mail, Phone, ShieldCheck, BadgeCheck, ChevronRight, ChevronDown, Calendar, Link2, Unlink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -34,6 +34,8 @@ export default function CustomersPage() {
   const [uploading, setUploading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [connections, setConnections] = useState<Record<string, { provider: string; label: string }[]>>({});
+  const [connLoading, setConnLoading] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -48,6 +50,41 @@ export default function CustomersPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Привязки пользователя подгружаем при раскрытии его карточки.
+  useEffect(() => {
+    if (expandedId && !connections[expandedId]) loadConnections(expandedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedId]);
+
+  const loadConnections = async (userId: string) => {
+    setConnLoading(userId);
+    try {
+      const res = await fetch(`/api/admin/customers/${userId}/connections`, { credentials: 'include' });
+      const data = res.ok ? await res.json() : { connections: [] };
+      setConnections(prev => ({ ...prev, [userId]: data.connections || [] }));
+    } catch {
+      setConnections(prev => ({ ...prev, [userId]: [] }));
+    } finally {
+      setConnLoading(null);
+    }
+  };
+
+  const unlinkConnection = async (userId: string, provider: string) => {
+    const confirmed = await showConfirm({
+      title: 'Отвязать аккаунт',
+      message: `Отвязать ${provider === 'google' ? 'Google' : 'Telegram'} от пользователя? Он больше не сможет входить этим способом.`,
+      confirmText: 'Отвязать',
+      cancelText: 'Отмена',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`/api/admin/customers/${userId}/connections?provider=${provider}`, { method: 'DELETE', credentials: 'include' });
+      if (res.ok) { toast.success('Аккаунт отвязан'); loadConnections(userId); }
+      else { const d = await res.json().catch(() => ({})); toast.error(d.error || 'Не удалось отвязать'); }
+    } catch { toast.error('Ошибка'); }
+  };
 
   const deleteCustomer = async (id: string) => {
     const confirmed = await showConfirm({
@@ -339,6 +376,41 @@ export default function CustomersPage() {
                                   Зарегистрирован: {new Date(c.createdAt).toLocaleDateString('ru-RU')}
                                 </p>
                               </div>
+                            </div>
+                          </div>
+
+                          {/* Привязанные аккаунты */}
+                          <div className="px-6 pb-2">
+                            <div className="rounded-xl border border-[var(--admin-border)] p-4 bg-[var(--admin-bg-muted)]">
+                              <p className="text-[10px] font-semibold text-[var(--admin-text-muted)] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                <Link2 className="h-3.5 w-3.5" /> Привязанные аккаунты
+                              </p>
+                              {connLoading === c.id && !connections[c.id] ? (
+                                <div className="flex items-center gap-2 text-xs text-[var(--admin-text-faint)]">
+                                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--admin-accent)] border-t-transparent" />
+                                  Загрузка...
+                                </div>
+                              ) : (connections[c.id]?.length ?? 0) > 0 ? (
+                                <div className="space-y-2">
+                                  {connections[c.id].map((conn) => (
+                                    <div key={conn.provider} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-card)] p-2.5">
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-semibold text-[var(--admin-text)]">{conn.provider === 'google' ? 'Google' : 'Telegram'}</p>
+                                        <p className="text-xs text-[var(--admin-text-faint)] truncate">{conn.label}</p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => unlinkConnection(c.id, conn.provider)}
+                                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
+                                      >
+                                        <Unlink className="h-3.5 w-3.5" /> Отвязать
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-[var(--admin-text-faint)]">Нет привязанных аккаунтов (Google / Telegram)</p>
+                              )}
                             </div>
                           </div>
 
