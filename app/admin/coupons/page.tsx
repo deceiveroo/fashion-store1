@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Ticket,
@@ -321,9 +322,14 @@ export default function AdminCouponsPage() {
                   className="w-full px-6 py-4 flex items-center gap-4 hover:bg-[var(--admin-card-hover)] transition-colors"
                 >
                   {/* Avatar */}
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
+                  <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg overflow-hidden">
                     {user.avatar ? (
-                      <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                      <Image
+                        src={user.avatar}
+                        alt={user.firstName || user.email}
+                        fill
+                        className="object-cover"
+                      />
                     ) : (
                       (user.firstName?.[0] || user.email[0]).toUpperCase()
                     )}

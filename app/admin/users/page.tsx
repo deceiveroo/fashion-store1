@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Search, Shield, Trash2, Edit3, Camera, X, Save, RefreshCw } from 'lucide-react';

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Save, AlertTriangle, Calendar, Image as ImageIcon, Mail, Upload } from 'lucide-react';
 import { toast } from 'sonner';
@@ -301,11 +302,12 @@ export default function MaintenanceSettings() {
           
           {/* Preview */}
           {config.backgroundImage && config.backgroundImage.trim() !== '' && (
-            <div className="mt-3 relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
-              <img
+            <div className="mt-3 relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 h-32">
+              <Image
                 src={config.backgroundImage}
-                alt="Preview"
-                className="w-full h-32 object-cover"
+                alt="Background preview"
+                fill
+                className="object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                   toast.error('Ошибка загрузки изображения');
@@ -365,11 +367,12 @@ export default function MaintenanceSettings() {
 
           {/* Preview */}
           {config.memeImage && config.memeImage.trim() !== '' && (
-            <div className="mt-3 relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
-              <img
+            <div className="mt-3 relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 h-64">
+              <Image
                 src={config.memeImage}
                 alt="Meme preview"
-                className="w-full h-auto max-h-64 object-contain"
+                fill
+                className="object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                   toast.error('Ошибка загрузки изображения');

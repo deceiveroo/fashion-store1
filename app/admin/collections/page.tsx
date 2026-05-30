@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { 
   Plus, Edit3, Trash2, Save, X, Eye, Package, 
@@ -454,15 +455,18 @@ export default function CuratedCollectionsPage() {
                       <CheckCircle className="w-4 h-4 text-white" />
                     </div>
                   )}
-                  
+
                   {product.mainImage && (
-                    <img
-                      src={product.mainImage}
-                      alt={product.name}
-                      className="w-full aspect-square object-cover rounded-lg mb-2"
-                    />
+                    <div className="relative w-full aspect-square rounded-lg mb-2 overflow-hidden">
+                      <Image
+                        src={product.mainImage}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                   )}
-                  
+
                   <h4 className="text-sm font-medium text-[var(--admin-text)] line-clamp-2">
                     {product.name}
                   </h4>

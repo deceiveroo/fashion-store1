@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, User, Trash2, Edit3, Camera, X, Save, RefreshCw,
@@ -281,11 +282,14 @@ export default function CustomersPage() {
                       className="w-full px-6 py-4 flex items-center gap-4 hover:bg-[var(--admin-card-hover)] transition-colors"
                     >
                       {avatar(c) ? (
-                        <img
-                          src={avatar(c)}
-                          alt=""
-                          className="h-12 w-12 rounded-xl object-cover ring-2 ring-[var(--admin-accent)]/30"
-                        />
+                        <div className="relative h-12 w-12 rounded-xl ring-2 ring-[var(--admin-accent)]/30 overflow-hidden">
+                          <Image
+                            src={avatar(c)}
+                            alt={displayName(c)}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
                       ) : (
                         <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
                           {(c.firstName || c.email)[0].toUpperCase()}
@@ -456,7 +460,14 @@ export default function CustomersPage() {
               <div className="flex items-center gap-4">
                 <div className="relative">
                   {avatar(editing) ? (
-                    <img src={avatar(editing)} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-[var(--admin-accent)]/30" />
+                    <div className="relative h-14 w-14 rounded-full ring-2 ring-[var(--admin-accent)]/30 overflow-hidden">
+                      <Image
+                        src={avatar(editing)}
+                        alt={displayName(editing)}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--admin-accent)]/10 text-lg font-bold text-[var(--admin-accent)]">
                       {(editing.firstName||editing.email||'?')[0].toUpperCase()}

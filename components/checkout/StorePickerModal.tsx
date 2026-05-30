@@ -101,7 +101,7 @@ export default function StorePickerModal({
       setNearby(found);
       setDraft(found[0]);
       setMobilePane('map');
-    } catch (e: any) {
+    } catch (e: unknown) {
       setSearchError(e.message || 'Ошибка поиска');
       setNearby([]);
     } finally {

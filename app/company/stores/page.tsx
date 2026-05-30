@@ -107,7 +107,7 @@ export default function StoresPage() {
 
       setNearbyStores(nearby);
       setSelectedStore(nearby[0]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSearchError(error.message || 'Произошла ошибка при поиске магазинов');
       setNearbyStores([]);
     } finally {

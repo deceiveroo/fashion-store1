@@ -180,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
       // Для других ошибок (500 и т.д.) просто не устанавливаем пользователя
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Auth check failed:', error);
       // Не удаляем токен при сетевых ошибках - возможно сервер временно недоступен
       if (error.name === 'AbortError') {
@@ -217,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         throw new Error('Failed to refresh user data');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to refresh user data:', error);
       throw error;
     }
@@ -241,7 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // После успешного входа сессия обновится автоматически через useSession
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
       throw new Error(error.message || 'Ошибка подключения к серверу');
     }
@@ -281,7 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setToken(token);
       setUser(newUser);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.name === 'AbortError') {
         throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
       }
@@ -328,7 +328,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         throw new Error(errorMessage);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.name === 'AbortError') {
         throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
       }
@@ -409,7 +409,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } : null);
 
       return newOrder;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.name === 'AbortError') {
         throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
       }
@@ -466,7 +466,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           order.id === orderId ? updatedOrder : order
         )
       } : null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.name === 'AbortError') {
         throw new Error('Время ожидания запроса истекло. Проверьте подключение к интернету.');
       }

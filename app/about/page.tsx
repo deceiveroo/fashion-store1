@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { motion } from 'framer-motion';
 import { Target, Globe, Users, Award } from 'lucide-react';
 import TeamSection from '@/components/TeamSection';
@@ -133,11 +135,7 @@ export default function AboutPage() {
             className="relative"
           >
             <div className="relative overflow-hidden rounded-[var(--fc-radius-card)] shadow-2xl">
-              <img
-                src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
-                alt="Наше производство"
-                className="h-auto w-full object-cover"
-              />
+              <Image src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Наше производство" fill className="h-auto w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#8b7cf6]/40 to-transparent" />
             </div>
 

@@ -2,6 +2,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { Package, Calendar, CreditCard, MapPin, Clock, CheckCircle, Truck, XCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -178,14 +179,17 @@ export default function OrdersPage() {
                       transition={{ delay: (index * 0.1) + (itemIndex * 0.05) }}
                       className="flex items-center gap-4 p-3 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl border border-gray-200/50"
                     >
-                      <img
-                        src={item.image || '/placeholder-image.jpg'}
-                        alt={item.name}
-                        className="w-[60px] h-[60px] rounded-lg object-cover border border-white shadow-sm"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
-                        }}
-                      />
+                      <div className="relative w-[60px] h-[60px] rounded-lg border border-white shadow-sm overflow-hidden">
+                        <Image
+                          src={item.image || '/placeholder-image.jpg'}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
+                          }}
+                        />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                         <div className="text-xs text-gray-600 mt-1">

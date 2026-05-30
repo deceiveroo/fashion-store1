@@ -18,7 +18,7 @@ interface Order {
   trackingStatus?: string;
   currentLocation?: string;
   estimatedDelivery?: string;
-  trackingHistory?: any[];
+  trackingHistory?: unknown[];
 }
 
 const STATUS = {
