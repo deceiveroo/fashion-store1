@@ -239,13 +239,6 @@ export default function SearchNew() {
                         <X size={20} />
                       </motion.button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => setIsOpen(false)}
-                      className="p-2 text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors rounded-lg hover:bg-[var(--fc-surface-elevated)]"
-                    >
-                      <kbd className="px-2 py-1 text-xs font-semibold bg-[var(--fc-surface-elevated)] rounded border border-[var(--fc-glass-border)]">ESC</kbd>
-                    </button>
                   </div>
                 </form>
 
@@ -266,28 +259,24 @@ export default function SearchNew() {
                   {/* Suggestions */}
                   {!isLoading && suggestions.length > 0 && (
                     <div className="p-4">
-                      <div className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[var(--text-secondary)]">
-                        <Sparkles size={16} className="text-[var(--fc-accent)]" />
-                        Найдено {suggestions.length} {suggestions.length === 1 ? 'товар' : 'товаров'}
-                      </div>
                       <div className="space-y-2">
                         {suggestions.map((item, index) => (
                           <motion.button
                             key={item.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.03 }}
                             onClick={() => {
                               router.push(`/products/${item.id}`);
                               setIsOpen(false);
                             }}
-                            className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all group ${
+                            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all group ${
                               selectedIndex === index
-                                ? 'bg-[rgba(var(--fc-accent-rgb)/0.14)] ring-2 ring-[var(--fc-accent)]'
+                                ? 'bg-gradient-to-r from-violet-500/10 to-purple-500/10 ring-2 ring-[var(--fc-accent)] shadow-lg'
                                 : 'hover:bg-[var(--fc-surface-elevated)]'
                             }`}
                           >
-                            <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-[var(--fc-surface)] flex-shrink-0 ring-1 ring-[var(--fc-glass-border)]">
+                            <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-[var(--fc-surface)] flex-shrink-0 ring-1 ring-[var(--fc-glass-border)] shadow-sm">
                               {item.image ? (
                                 <Image
                                   src={item.image}
@@ -297,24 +286,22 @@ export default function SearchNew() {
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
-                                  <SearchIcon size={24} />
+                                  <SearchIcon size={28} />
                                 </div>
                               )}
                             </div>
-                            <div className="flex-1 text-left">
-                              <p className="font-semibold text-[var(--foreground)] group-hover:text-[var(--fc-accent)] transition-colors line-clamp-1">
+                            <div className="flex-1 text-left min-w-0">
+                              <p className="font-semibold text-[var(--foreground)] group-hover:text-[var(--fc-accent)] transition-colors line-clamp-2 mb-1">
                                 {item.name}
                               </p>
                               {item.category && (
-                                <p className="text-sm text-[var(--text-secondary)] mt-0.5">{item.category}</p>
+                                <p className="text-sm text-[var(--text-secondary)] mb-2">{item.category}</p>
                               )}
-                            </div>
-                            <div className="flex items-center gap-2">
                               <div className="text-lg font-bold text-[var(--fc-accent)]">
                                 {item.price.toLocaleString('ru-RU')} ₽
                               </div>
-                              <ArrowRight size={18} className="text-[var(--text-secondary)] group-hover:text-[var(--fc-accent)] transition-colors" />
                             </div>
+                            <ArrowRight size={20} className="text-[var(--text-secondary)] group-hover:text-[var(--fc-accent)] group-hover:translate-x-1 transition-all flex-shrink-0" />
                           </motion.button>
                         ))}
                       </div>
@@ -339,16 +326,12 @@ export default function SearchNew() {
                   {/* Search History */}
                   {!query && searchHistory.length > 0 && (
                     <div className="p-4 border-t border-[var(--fc-glass-border)]">
-                      <div className="flex items-center justify-between px-4 py-2 mb-2">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]">
-                          <Clock size={16} className="text-[var(--fc-accent)]" />
-                          История поиска
-                        </div>
+                      <div className="flex items-center justify-end px-4 pb-2">
                         <button
                           onClick={clearHistory}
                           className="text-xs text-[var(--text-secondary)] hover:text-[var(--fc-accent)] transition-colors font-medium"
                         >
-                          Очистить
+                          Очистить историю
                         </button>
                       </div>
                       <div className="space-y-1">
@@ -375,10 +358,6 @@ export default function SearchNew() {
                   {/* Popular Searches */}
                   {!query && (
                     <div className="p-4 border-t border-[var(--fc-glass-border)]">
-                      <div className="flex items-center gap-2 px-4 py-2 mb-3 text-sm font-semibold text-[var(--text-secondary)]">
-                        <TrendingUp size={16} className="text-[var(--fc-accent)]" />
-                        Популярные запросы
-                      </div>
                       <div className="flex flex-wrap gap-2 px-4">
                         {popularSearches.map((item, index) => (
                           <motion.button
@@ -397,30 +376,6 @@ export default function SearchNew() {
                       </div>
                     </div>
                   )}
-                </div>
-
-                {/* Footer */}
-                <div className="p-4 border-t border-[var(--fc-glass-border)] bg-[var(--fc-surface-elevated)]">
-                  <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1.5">
-                        <kbd className="px-2 py-1 bg-[var(--fc-surface)] rounded border border-[var(--fc-glass-border)] font-mono">↵</kbd>
-                        Поиск
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <kbd className="px-2 py-1 bg-[var(--fc-surface)] rounded border border-[var(--fc-glass-border)] font-mono">↑↓</kbd>
-                        Навигация
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <kbd className="px-2 py-1 bg-[var(--fc-surface)] rounded border border-[var(--fc-glass-border)] font-mono">ESC</kbd>
-                        Закрыть
-                      </span>
-                    </div>
-                    <span className="hidden sm:block">
-                      <kbd className="px-2 py-1 bg-[var(--fc-surface)] rounded border border-[var(--fc-glass-border)] font-mono">⌘K</kbd>
-                      {' '}быстрый поиск
-                    </span>
-                  </div>
                 </div>
               </div>
             </motion.div>
