@@ -157,11 +157,19 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Prepare user updates - sync image field with avatar
-    const userUpdates: Record<string, unknown> = {
-      ...updates,
-      updatedAt: new Date(),
-    };
+    // ВАЖНО: таблица users содержит только name/email/image/role/password/status.
+    // НЕ спредим updates целиком — там есть firstName/lastName/phone/avatar (это колонки
+    // userProfiles). Их попадание в users.set ломало запрос → профиль не сохранялся.
+    const userUpdates: Record<string, unknown> = { updatedAt: new Date() };
+
+    if (updates.role !== undefined) userUpdates.role = updates.role;
+    if (updates.status !== undefined) userUpdates.status = updates.status;
+
+    // users.name держим в синхроне с именем/фамилией из профиля — иначе отображаемое
+    // имя (шапка, сессия, чат) расходится с тем, что меняет админ.
+    const fullName = `${updates.firstName || ''} ${updates.lastName || ''}`.trim();
+    if (fullName) userUpdates.name = fullName;
+    else if (updates.name) userUpdates.name = updates.name;
 
     // Hash password if provided
     if (updates.password) {
@@ -170,9 +178,9 @@ export async function PUT(request: NextRequest) {
       console.log('[ADMIN USERS] Password hashed for user:', userId);
     }
 
-    // If avatar is being updated, also update the image field for consistency
-    if (updates.avatar) {
-      userUpdates.image = updates.avatar;
+    // Аватар (admin override) — синхронизируем users.image
+    if (updates.avatar || updates.image) {
+      userUpdates.image = updates.avatar || updates.image;
     }
 
     // Allow email updates (admin only)
@@ -194,7 +202,7 @@ export async function PUT(request: NextRequest) {
       userUpdates.email = updates.email;
       console.log('[ADMIN USERS] Email updated for user:', userId);
     }
-    
+
     // Обновляем пользователя
     await db.update(users).set(userUpdates).where(eq(users.id, userId));
 
