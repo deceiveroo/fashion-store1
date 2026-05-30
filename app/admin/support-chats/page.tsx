@@ -1,7 +1,8 @@
 ﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3, Star, Check, CheckCheck, ArrowLeft } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3, Star, Check, CheckCheck, ArrowLeft, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
@@ -41,11 +42,14 @@ interface Session {
   adminName?: string | null;
   adminAvatar?: string | null;
   adminEmail?: string | null;
-  createdAt: string; 
+  takenOverBy?: string | null;
+  createdAt: string;
 }
 
 function SupportChatsPage() {
   const { showConfirm } = useConfirm();
+  const { data: authSession } = useSession();
+  const currentAdminId = authSession?.user?.id ?? null;
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sel, setSel] = useState<Session|null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -61,6 +65,10 @@ function SupportChatsPage() {
   const realtimeChannelRef = useRef<any>(null);
   const sessionsChannelRef = useRef<any>(null);
   const taken = sel?.aiDisabled === true;
+  // Чат ведёт ИМЕННО текущий админ (можно писать/открепляться/завершать).
+  const mine = taken && !!currentAdminId && sel?.takenOverBy === currentAdminId;
+  // Чат перехвачен ДРУГИМ оператором — текущий не может вмешиваться.
+  const lockedByOther = taken && !!sel?.takenOverBy && sel.takenOverBy !== currentAdminId;
 
   useEffect(() => { selRef.current = sel; }, [sel]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -265,20 +273,30 @@ function SupportChatsPage() {
     const r = await fetch('/api/admin/support-chats/takeover', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }),
     });
-    if (r.ok) { toast.success('Чат перехвачен!'); setSel(p => p ? { ...p, aiDisabled: true } : p); }
-    else toast.error('Ошибка');
+    if (r.ok) {
+      toast.success('Чат перехвачен!');
+      setSel(p => p ? { ...p, aiDisabled: true, takenOverBy: currentAdminId, adminName: p.adminName ?? authSession?.user?.name ?? null } : p);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      toast.error(d.error || 'Не удалось перехватить чат');
+    }
   };
 
   const release = async (sid: string) => {
     const r = await fetch('/api/admin/support-chats/release', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sid }),
     });
-    if (r.ok) { toast.success('Вы открепились от чата'); setSel(p => p ? { ...p, aiDisabled: false } : p); }
-    else toast.error('Ошибка');
+    if (r.ok) {
+      toast.success('Вы открепились от чата');
+      setSel(p => p ? { ...p, aiDisabled: false, takenOverBy: null, adminName: null, adminAvatar: null } : p);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      toast.error(d.error || 'Не удалось открепиться');
+    }
   };
 
   const sendMsg = async () => {
-    if (!input.trim() || !sel || sending || !taken) return;
+    if (!input.trim() || !sel || sending || !mine) return;
     const msg = input.trim();
     setInput('');
     setSending(true);
@@ -289,6 +307,13 @@ function SupportChatsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg }),
       });
+      if (r.status === 409) {
+        const d = await r.json().catch(() => ({}));
+        setInput(msg);
+        toast.error(d.error || 'Чат ведёт другой оператор');
+        setSending(false);
+        return;
+      }
       if (!r.ok) throw new Error('Send failed');
       // Не вызываем loadMessages - Realtime обновит автоматически
       toast.success('Сообщение отправлено');
@@ -586,20 +611,23 @@ function SupportChatsPage() {
                           </span>
                           <div className="flex items-center gap-2">
                             {/* Информация об админе */}
-                            {s.adminName && s.aiDisabled && (
-                              <div className="flex items-center gap-1">
-                                {s.adminAvatar ? (
-                                  <img src={s.adminAvatar} alt={s.adminName} className="w-5 h-5 rounded-full object-cover border border-emerald-500/30" />
-                                ) : (
-                                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                                    <Shield className="h-3 w-3 text-white" />
-                                  </div>
-                                )}
-                                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium truncate max-w-[80px]">
-                                  {s.adminName.split(' ')[0]}
-                                </span>
-                              </div>
-                            )}
+                            {s.adminName && s.aiDisabled && (() => {
+                              const byOther = !!s.takenOverBy && s.takenOverBy !== currentAdminId;
+                              return (
+                                <div className="flex items-center gap-1">
+                                  {s.adminAvatar ? (
+                                    <img src={s.adminAvatar} alt={s.adminName} className={`w-5 h-5 rounded-full object-cover border ${byOther ? 'border-amber-500/40' : 'border-emerald-500/30'}`} />
+                                  ) : (
+                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center bg-gradient-to-br ${byOther ? 'from-amber-500 to-orange-600' : 'from-emerald-500 to-emerald-600'}`}>
+                                      {byOther ? <Lock className="h-3 w-3 text-white" /> : <Shield className="h-3 w-3 text-white" />}
+                                    </div>
+                                  )}
+                                  <span className={`text-xs font-medium truncate max-w-[80px] ${byOther ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                    {s.adminName.split(' ')[0]}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                             {/* Рейтинг оператора */}
                             {s.operatorRating && (
                               <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1 font-medium">
@@ -634,10 +662,15 @@ function SupportChatsPage() {
                     <div>
                       <p className="font-semibold text-base text-gray-900 dark:text-white">{sel.userName||sel.userEmail||'Гость'}</p>
                       <p className="text-xs text-gray-500 dark:text-white/40 mt-0.5 flex items-center gap-2">
-                        {taken ? (
+                        {mine ? (
                           <>
                             <Shield className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                            <span className="text-emerald-600 dark:text-emerald-400">Вы в чате</span>
+                            <span className="text-emerald-600 dark:text-emerald-400">Вы ведёте чат</span>
+                          </>
+                        ) : lockedByOther ? (
+                          <>
+                            <Lock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                            <span className="text-amber-600 dark:text-amber-400">Ведёт {sel.adminName || 'другой оператор'}</span>
                           </>
                         ) : (
                           <>
@@ -657,10 +690,16 @@ function SupportChatsPage() {
                   
                   {/* Action Buttons */}
                   <div className="flex gap-2 flex-wrap">
-                    {!taken
+                    {lockedByOther ? (
+                        <span className="px-4 py-2 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-medium border border-amber-300 dark:border-amber-500/30 flex items-center gap-2">
+                          <Lock className="h-4 w-4" />
+                          Чат ведёт {sel.adminName || 'другой оператор'}
+                        </span>
+                      )
+                      : !mine
                       ? (
-                        <button 
-                          onClick={()=>takeover(sel.sessionId)} 
+                        <button
+                          onClick={()=>takeover(sel.sessionId)}
                           className="px-4 py-2 bg-gradient-to-r from-violet-600 to-violet-500 text-white rounded-xl text-xs font-medium hover:from-violet-500 hover:to-violet-400 transition-all shadow-lg shadow-violet-500/20"
                         >
                           Перехватить чат
@@ -682,7 +721,7 @@ function SupportChatsPage() {
                         </>
                       )
                     }
-                    {sel.status==='active' && taken && (
+                    {sel.status==='active' && mine && (
                       <button 
                         onClick={completeChat} 
                         className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl text-xs font-medium hover:from-emerald-500 hover:to-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
@@ -724,8 +763,8 @@ function SupportChatsPage() {
                     : messages.map(m => {
                       const isAdmin = m.sender === 'admin';
                       const isUser = m.sender === 'user';
-                      const adminAvatarUrl = sel ? getAdminAvatar(sel.adminAvatar, sel.adminName) : null;
-                      const adminDisplayName = sel ? getAdminName(sel) : 'Администратор';
+                      const adminDisplayName = m.senderName || (sel ? getAdminName(sel) : 'Оператор');
+                      const adminAvatarUrl = getAdminAvatar(m.senderAvatar || sel?.adminAvatar, adminDisplayName);
                       const userAvatar = sel ? getUserAvatar(sel.userEmail, sel.userName, sel.userAvatar, sel.userImage) : null;
                       const userDisplayName = sel ? getUserName(sel) : 'Пользователь';
                       
@@ -800,12 +839,17 @@ function SupportChatsPage() {
 
                 {/* Input Area */}
                 <div className="p-4 border-t border-gray-200 dark:border-white/10 flex-shrink-0">
-                  {!taken && (
+                  {lockedByOther ? (
+                    <p className="text-xs text-center text-amber-600 dark:text-amber-400 mb-3 flex items-center justify-center gap-2">
+                      <Lock className="h-3 w-3" />
+                      Чат перехватил {sel.adminName || 'другой оператор'} — вы не можете отвечать
+                    </p>
+                  ) : !mine ? (
                     <p className="text-xs text-center text-gray-500 dark:text-white/30 mb-3 flex items-center justify-center gap-2">
                       <Shield className="h-3 w-3" />
                       Перехватите чат чтобы писать
                     </p>
-                  )}
+                  ) : null}
                   
                   {/* Typing Indicator */}
                   {userTyping && taken && (
@@ -831,13 +875,13 @@ function SupportChatsPage() {
                         }
                       }}
                       onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}}
-                      placeholder={taken?"Напишите сообщение...":"Сначала перехватите чат..."}
-                      disabled={!taken||sending}
+                      placeholder={mine?"Напишите сообщение...":lockedByOther?"Чат ведёт другой оператор":"Сначала перехватите чат..."}
+                      disabled={!mine||sending}
                       className="flex-1 px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 disabled:opacity-40 transition-all"
                     />
-                    <button 
-                      onClick={sendMsg} 
-                      disabled={!input.trim()||sending||!taken}
+                    <button
+                      onClick={sendMsg}
+                      disabled={!input.trim()||sending||!mine}
                       className="px-4 py-3 bg-gradient-to-r from-violet-600 to-violet-500 text-white rounded-xl disabled:opacity-40 hover:from-violet-500 hover:to-violet-400 transition-all shadow-lg shadow-violet-500/20"
                     >
                       <Send className="w-5 h-5"/>

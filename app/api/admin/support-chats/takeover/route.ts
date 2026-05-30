@@ -18,6 +18,17 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
+    // Нельзя перехватить чат, который уже ведёт ДРУГОЙ оператор
+    // (пока он не открепится/завершит). Защита от «двойного» ведения.
+    const [current] = await db
+      .select({ aiDisabled: supportChatSessions.aiDisabled, takenOverBy: supportChatSessions.takenOverBy, adminName: supportChatSessions.adminName })
+      .from(supportChatSessions)
+      .where(eq(supportChatSessions.sessionId, sessionId))
+      .limit(1);
+    if (current?.aiDisabled && current.takenOverBy && current.takenOverBy !== admin.id) {
+      return Response.json({ error: `Чат уже ведёт ${current.adminName || 'другой оператор'}`, claimedByOther: true }, { status: 409 });
+    }
+
     // Имя/аватар оператора — чтобы пользователь видел, КТО именно ведёт чат
     // (раньше takeover не писал adminName → виджет показывал «Оператор поддержки»).
     let adminName: string | null = admin.name || null;

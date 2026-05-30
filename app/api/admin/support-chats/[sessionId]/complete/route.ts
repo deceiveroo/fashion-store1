@@ -38,6 +38,11 @@ export async function POST(
       return NextResponse.json({ error: 'Session already completed' }, { status: 400 });
     }
 
+    // Завершить чат может только перехвативший его оператор.
+    if (session.aiDisabled && session.takenOverBy && session.takenOverBy !== admin.id) {
+      return NextResponse.json({ error: 'Чат ведёт другой оператор' }, { status: 403 });
+    }
+
     // Подготавливаем данные для обновления
     const updateData: any = {
       status: 'resolved',

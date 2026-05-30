@@ -22,6 +22,16 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
+    // Открепить чат может только перехвативший его оператор.
+    const [current] = await db
+      .select({ takenOverBy: supportChatSessions.takenOverBy })
+      .from(supportChatSessions)
+      .where(eq(supportChatSessions.sessionId, sessionId))
+      .limit(1);
+    if (current?.takenOverBy && current.takenOverBy !== admin.id) {
+      return Response.json({ error: 'Чат ведёт другой оператор — открепить может только он' }, { status: 403 });
+    }
+
     await db.update(supportChatSessions)
       .set({
         aiDisabled: false,

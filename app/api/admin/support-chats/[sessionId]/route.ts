@@ -72,6 +72,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
+    // Нельзя писать в чат, перехваченный ДРУГИМ оператором.
+    if (session.aiDisabled && session.takenOverBy && session.takenOverBy !== admin.id) {
+      return NextResponse.json({ error: `Чат ведёт ${session.adminName || 'другой оператор'}`, claimedByOther: true }, { status: 409 });
+    }
+
     // Получаем информацию об админе
     let adminName: string | null = null;
     let adminAvatar: string | null = null;
