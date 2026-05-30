@@ -170,7 +170,7 @@ export default function PrivacyPage() {
             'Вы можете запросить копию всех ваших данных',
             'Мы предоставим данные в структурированном, машиночитаемом формате',
             'Срок предоставления: до 30 дней',
-            'Запрос можно отправить на privacy@elevate.com',
+            'Запрос можно отправить на ELEVATE111@yandex.com',
           ]
         },
         {
@@ -386,14 +386,14 @@ export default function PrivacyPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
               <Mail size={20} className="text-[#8b7cf6]" />
-              <a href="mailto:privacy@elevate.com" className="hover:underline hover:text-[var(--foreground)]">
-                privacy@elevate.com
+              <a href="mailto:ELEVATE111@yandex.com" className="hover:underline hover:text-[var(--foreground)]">
+                ELEVATE111@yandex.com
               </a>
             </div>
             <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
               <Phone size={20} className="text-[#8b7cf6]" />
-              <a href="tel:+78001234567" className="hover:underline hover:text-[var(--foreground)]">
-                +7 (800) 123-45-67
+              <a href="tel:+74951234567" className="hover:underline hover:text-[var(--foreground)]">
+                +7 (495) 123-45-67
               </a>
             </div>
           </div>

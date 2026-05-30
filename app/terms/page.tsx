@@ -108,7 +108,7 @@ export default function TermsPage() {
             Если у вас есть вопросы об условиях использования, свяжитесь с нами:
           </p>
           <a
-            href="mailto:support@elevate.com"
+            href="mailto:ELEVATE111@yandex.com"
             className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
             style={{
               backgroundImage: 'linear-gradient(135deg,#8b7cf6,#c4b5fd)',
