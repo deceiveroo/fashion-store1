@@ -99,7 +99,7 @@ export function generateCSPHeader(): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' https: data:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel.app",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel.app https://oauth.telegram.org",
     "frame-src 'self' https://oauth.telegram.org https://telegram.org",
     "frame-ancestors 'none'",
     "base-uri 'self'",

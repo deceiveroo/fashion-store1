@@ -75,6 +75,10 @@ const SECURITY_HEADERS = {
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  // Новый Telegram Login (telegram-login.js) общается с попапом через postMessage —
+  // COOP 'same-origin' заблокировал бы это. 'same-origin-allow-popups' сохраняет
+  // изоляцию документа, но разрешает обмен с открытым попапом авторизации.
+  'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
   'Content-Security-Policy': generateCSPHeader(),
 };
 

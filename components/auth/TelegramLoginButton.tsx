@@ -7,32 +7,31 @@ import { Send } from 'lucide-react';
 import TelegramWidget from './TelegramWidget';
 
 /**
- * Вход через Telegram официальным встраиваемым виджетом (data-telegram-login).
- * Старый Telegram.Login.auth({bot_id}) popup (oauth.telegram.org/auth) Telegram
- * пометил как DEPRECATED — поэтому используем виджет по username бота.
+ * Вход через новый Telegram Login (telegram-login.js / OIDC). Виджет возвращает
+ * id_token, который мы передаём в NextAuth-провайдер 'telegram' (там он проверяется
+ * по JWKS Telegram). Доступность определяется в рантайме через /api/auth/telegram-config.
  *
- * Доступность определяется в РАНТАЙМЕ через /api/auth/telegram-config (читает
- * серверные env), поэтому не зависит от build-time NEXT_PUBLIC_*.
- * ВАЖНО: домен страницы входа должен быть привязан к боту в @BotFather (/setdomain),
- * иначе виджет покажет «Bot domain invalid».
+ * ВАЖНО: в @BotFather → Bot Settings → Web Login должен быть добавлен Allowed URL
+ * текущего домена, иначе Telegram не выполнит вход.
  */
 export default function TelegramLoginButton({ onSuccess }: { onSuccess?: () => void; disabled?: boolean }) {
-  const [config, setConfig] = useState<{ enabled: boolean; botUsername: string | null } | null>(null);
+  const [config, setConfig] = useState<{ enabled: boolean; clientId: string | null } | null>(null);
 
   useEffect(() => {
     let active = true;
     fetch('/api/auth/telegram-config')
-      .then((r) => (r.ok ? r.json() : { enabled: false, botUsername: null }))
+      .then((r) => (r.ok ? r.json() : { enabled: false, clientId: null }))
       .then((c) => active && setConfig(c))
-      .catch(() => active && setConfig({ enabled: false, botUsername: null }));
+      .catch(() => active && setConfig({ enabled: false, clientId: null }));
     return () => {
       active = false;
     };
   }, []);
 
   const handleAuth = useCallback(
-    async (user: Record<string, unknown>) => {
-      const res = await signIn('telegram', { ...user, redirect: false });
+    async (data: { id_token?: string }) => {
+      if (!data.id_token) return;
+      const res = await signIn('telegram', { id_token: data.id_token, redirect: false });
       if (res?.error) {
         toast.error('Не удалось войти через Telegram');
       } else {
@@ -44,7 +43,7 @@ export default function TelegramLoginButton({ onSuccess }: { onSuccess?: () => v
   );
 
   // Загрузка / бот не сконфигурирован — мягкий фолбэк.
-  if (config === null || !config.enabled || !config.botUsername) {
+  if (config === null || !config.enabled || !config.clientId) {
     return (
       <button
         type="button"
@@ -59,9 +58,5 @@ export default function TelegramLoginButton({ onSuccess }: { onSuccess?: () => v
     );
   }
 
-  return (
-    <div className="flex w-full justify-center">
-      <TelegramWidget botUsername={config.botUsername} onAuth={handleAuth} />
-    </div>
-  );
+  return <TelegramWidget clientId={config.clientId} onAuth={handleAuth} onError={(m) => toast.error(m)} />;
 }

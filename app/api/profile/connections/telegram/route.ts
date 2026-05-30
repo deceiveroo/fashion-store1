@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { accounts, users } from '@/lib/schema';
 import { and, eq, ne } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
-import { verifyTelegramAuth, isTelegramAuthFresh, pickTelegramFields } from '@/lib/telegram-auth';
+import { verifyTelegramAuth, isTelegramAuthFresh, pickTelegramFields, verifyTelegramIdToken, telegramIdFromClaims, telegramLabelFromClaims } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,16 +24,32 @@ export async function POST(req: NextRequest) {
   }
 
   const raw = await req.json();
-  const data = pickTelegramFields(raw);
-  if (!data.id || !data.hash || !verifyTelegramAuth(data)) {
+
+  let telegramId = '';
+  let label = '';
+  // Новый флоу: id_token (telegram-login.js / OIDC), проверка подписи по JWKS.
+  if (typeof raw?.id_token === 'string' && raw.id_token) {
+    const claims = await verifyTelegramIdToken(raw.id_token);
+    if (!claims) {
+      return NextResponse.json({ error: 'Неверные данные Telegram' }, { status: 401 });
+    }
+    telegramId = telegramIdFromClaims(claims);
+    label = telegramLabelFromClaims(claims);
+  } else {
+    // Legacy widget (HMAC) — обратная совместимость.
+    const data = pickTelegramFields(raw);
+    if (!data.id || !data.hash || !verifyTelegramAuth(data)) {
+      return NextResponse.json({ error: 'Неверные данные Telegram' }, { status: 401 });
+    }
+    if (!isTelegramAuthFresh(data.auth_date)) {
+      return NextResponse.json({ error: 'Данные Telegram устарели, попробуйте ещё раз' }, { status: 401 });
+    }
+    telegramId = data.id;
+    label = data.username ? `@${data.username}` : [data.first_name, data.last_name].filter(Boolean).join(' ') || `id ${telegramId}`;
+  }
+  if (!telegramId) {
     return NextResponse.json({ error: 'Неверные данные Telegram' }, { status: 401 });
   }
-  if (!isTelegramAuthFresh(data.auth_date)) {
-    return NextResponse.json({ error: 'Данные Telegram устарели, попробуйте ещё раз' }, { status: 401 });
-  }
-
-  const telegramId = data.id;
-  const label = data.username ? `@${data.username}` : [data.first_name, data.last_name].filter(Boolean).join(' ') || `id ${telegramId}`;
 
   // Этот Telegram уже привязан к ДРУГОМУ пользователю?
   const existing = await db

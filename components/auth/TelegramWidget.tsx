@@ -1,69 +1,122 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { Send } from 'lucide-react';
 
 /**
- * Официальный встраиваемый виджет входа Telegram (telegram.org/js/telegram-widget.js).
- * Рендерит фирменную кнопку Telegram (в iframe) и вызывает onAuth с подписанным
- * payload пользователя при успехе.
+ * Кнопка входа через НОВЫЙ Telegram Login (telegram-login.js / OIDC).
+ * Открывает попап Telegram и возвращает в callback подписанный id_token (JWT),
+ * который сервер проверяет по JWKS Telegram. Старый telegram-widget.js (по
+ * username + HMAC) и popup по bot_id — legacy/deprecated.
  *
- * Почему виджет, а не Telegram.Login.auth({bot_id}): старый JS-popup
- * (oauth.telegram.org/auth?bot_id=…) Telegram пометил как DEPRECATED. Встраиваемый
- * виджет по username бота — актуальный поддерживаемый способ.
- *
- * Требования: домен должен быть привязан к боту в @BotFather через /setdomain,
- * а CSP должен разрешать script-src/frame-src telegram.org + oauth.telegram.org.
+ * Требования на стороне Telegram:
+ *  - @BotFather → Bot Settings → Web Login → добавить Allowed URL текущего origin
+ *    (напр. https://e1evate.vercel.app). client_id = bot id.
+ *  - Заголовок COOP не строже 'same-origin-allow-popups' (задан в middleware.ts),
+ *    иначе попап не сможет обменяться данными с окном.
  */
-let widgetSeq = 0;
+type TgAuthData = { id_token?: string; user?: Record<string, unknown>; error?: string };
+
+declare global {
+  interface Window {
+    Telegram?: {
+      Login?: {
+        auth: (
+          opts: { client_id: number; request_access?: string[]; lang?: string; nonce?: string },
+          cb: (data: TgAuthData) => void,
+        ) => void;
+        init?: (opts: unknown, cb: (data: TgAuthData) => void) => void;
+        open?: (cb?: (data: TgAuthData) => void) => void;
+      };
+    };
+  }
+}
+
+let loginScript: Promise<void> | null = null;
+function loadTelegramLogin(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.Telegram?.Login) return Promise.resolve();
+  if (loginScript) return loginScript;
+  loginScript = new Promise<void>((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://oauth.telegram.org/js/telegram-login.js?5';
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('telegram-login.js failed'));
+    document.head.appendChild(s);
+  });
+  return loginScript;
+}
 
 export default function TelegramWidget({
-  botUsername,
+  clientId,
   onAuth,
-  size = 'large',
-  radius = 12,
+  onError,
+  label = 'Войти через Telegram',
+  compact = false,
 }: {
-  botUsername: string;
-  onAuth: (user: Record<string, unknown>) => void;
-  size?: 'large' | 'medium' | 'small';
-  radius?: number;
+  clientId: string | number;
+  onAuth: (data: TgAuthData) => void;
+  onError?: (msg: string) => void;
+  label?: string;
+  compact?: boolean;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  // Стабильное имя глобального колбэка на жизнь компонента.
-  const cbName = useRef<string>('');
-  if (!cbName.current) cbName.current = `onTelegramAuth_${++widgetSeq}`;
-  // Держим актуальный onAuth в ref, чтобы его смена не пересоздавала виджет.
-  const onAuthRef = useRef(onAuth);
-  onAuthRef.current = onAuth;
+  const [loading, setLoading] = useState(false);
 
+  // Предзагрузка библиотеки — чтобы попап открывался по клику без потери user-gesture.
   useEffect(() => {
-    const name = cbName.current;
-    (window as unknown as Record<string, unknown>)[name] = (user: Record<string, unknown>) => {
-      onAuthRef.current(user);
-    };
+    loadTelegramLogin().catch(() => {});
+  }, []);
 
-    const el = ref.current;
-    if (!el || !botUsername) return;
-
-    el.innerHTML = '';
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.async = true;
-    script.setAttribute('data-telegram-login', botUsername);
-    script.setAttribute('data-size', size);
-    script.setAttribute('data-radius', String(radius));
-    script.setAttribute('data-request-access', 'write');
-    script.setAttribute('data-onauth', `${name}(user)`);
-    el.appendChild(script);
-
-    return () => {
-      try {
-        delete (window as unknown as Record<string, unknown>)[name];
-      } catch {
-        /* ignore */
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      await loadTelegramLogin();
+      const login = window.Telegram?.Login;
+      if (!login?.auth) {
+        onError?.('Виджет Telegram недоступен');
+        setLoading(false);
+        return;
       }
-      if (el) el.innerHTML = '';
-    };
-  }, [botUsername, size, radius]);
+      login.auth({ client_id: Number(clientId), request_access: ['write'] }, (data) => {
+        setLoading(false);
+        if (data?.error) {
+          onError?.(data.error);
+          return;
+        }
+        if (data?.id_token) onAuth(data);
+      });
+    } catch {
+      onError?.('Ошибка загрузки Telegram');
+      setLoading(false);
+    }
+  };
 
-  return <div ref={ref} className="tg-login-widget flex min-h-[40px] items-center justify-center" />;
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={loading}
+        className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold text-white shadow transition-all hover:shadow-md disabled:opacity-60"
+        style={{ backgroundColor: '#229ED9' }}
+      >
+        <Send size={14} />
+        {loading ? '…' : 'Привязать'}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      className="tg-auth-button flex w-full items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+      style={{ backgroundColor: '#229ED9' }}
+    >
+      <Send size={17} />
+      {loading ? 'Открываем Telegram…' : label}
+    </button>
+  );
 }

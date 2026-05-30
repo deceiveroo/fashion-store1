@@ -23,7 +23,7 @@ function GoogleGlyph() {
 export default function ConnectedAccounts() {
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [tg, setTg] = useState<{ enabled: boolean; botUsername: string | null } | null>(null);
+  const [tg, setTg] = useState<{ enabled: boolean; clientId: string | null } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -41,9 +41,9 @@ export default function ConnectedAccounts() {
   // Telegram-конфиг (username бота для официального виджета).
   useEffect(() => {
     fetch('/api/auth/telegram-config')
-      .then((r) => (r.ok ? r.json() : { enabled: false, botUsername: null }))
+      .then((r) => (r.ok ? r.json() : { enabled: false, clientId: null }))
       .then((c) => setTg(c))
-      .catch(() => setTg({ enabled: false, botUsername: null }));
+      .catch(() => setTg({ enabled: false, clientId: null }));
   }, []);
 
   // Результат привязки Google приходит редиректом ?link=...
@@ -69,14 +69,15 @@ export default function ConnectedAccounts() {
 
   // Привязка Telegram: payload приходит из официального виджета (data-onauth).
   const linkTelegram = useCallback(
-    async (user: Record<string, unknown>) => {
+    async (data: { id_token?: string }) => {
+      if (!data.id_token) return;
       setBusy('telegram');
       try {
         const r = await fetch('/api/profile/connections/telegram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify(user),
+          body: JSON.stringify({ id_token: data.id_token }),
         });
         const d = await r.json().catch(() => ({}));
         if (r.ok) {
@@ -174,8 +175,8 @@ export default function ConnectedAccounts() {
               <Button variant="outline" size="sm" loading={busy === 'telegram'} onClick={() => disconnect('telegram')}>
                 Отвязать
               </Button>
-            ) : tg?.enabled && tg.botUsername ? (
-              <TelegramWidget botUsername={tg.botUsername} onAuth={linkTelegram} size="medium" />
+            ) : tg?.enabled && tg.clientId ? (
+              <TelegramWidget clientId={tg.clientId} onAuth={linkTelegram} onError={(m) => toast.error(m)} compact />
             ) : (
               <Button variant="primary" size="sm" disabled>
                 {tg === null ? '…' : 'Скоро'}

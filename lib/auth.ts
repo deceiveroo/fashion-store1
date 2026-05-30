@@ -15,6 +15,8 @@ import {
   isTelegramAuthFresh,
   upsertTelegramUser,
   pickTelegramFields,
+  verifyTelegramIdToken,
+  upsertTelegramUserFromClaims,
 } from './telegram-auth';
 
 // NextAuth v5 конфигурация
@@ -111,10 +113,19 @@ export const authConfig: NextAuthConfig = {
       id: 'telegram',
       name: 'Telegram',
       credentials: {
-        id: {}, first_name: {}, last_name: {}, username: {}, photo_url: {}, auth_date: {}, hash: {},
+        id: {}, first_name: {}, last_name: {}, username: {}, photo_url: {}, auth_date: {}, hash: {}, id_token: {},
       },
       async authorize(credentials) {
         try {
+          // Новый Telegram Login (telegram-login.js → OIDC id_token, проверка по JWKS).
+          const idToken = (credentials as Record<string, unknown>)?.id_token;
+          if (typeof idToken === 'string' && idToken) {
+            const claims = await verifyTelegramIdToken(idToken);
+            if (!claims) return null;
+            const u = await upsertTelegramUserFromClaims(claims);
+            return { id: u.id, email: u.email, name: u.name, role: u.role, image: u.image };
+          }
+          // Legacy widget (HMAC) — обратная совместимость.
           if (!process.env.TELEGRAM_BOT_TOKEN) return null;
           const data = pickTelegramFields((credentials ?? {}) as Record<string, unknown>);
           if (!data.id || !data.hash) return null;
