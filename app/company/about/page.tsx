@@ -49,82 +49,72 @@ const timeline = [
   { year: '2026', q: 'Сейчас', title: 'Новая эра', desc: 'Сообщество, которое формирует будущее моды. И это только начало.', icon: Heart },
 ];
 
-// Одна «глава» истории: гигантский год-watermark с параллаксом + стеклянная карточка,
-// попеременно слева/справа. Год уезжает медленнее контента — эффект глубины.
+// Одна «глава» истории: компактная стеклянная карточка с крупным годом-watermark
+// позади — наполнено, без пустых колонок и длинного скролла.
 function Chapter({
   item,
   index,
   total,
-  flip,
 }: {
   item: (typeof timeline)[number];
   index: number;
   total: number;
-  flip: boolean;
 }) {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const yYear = useTransform(scrollYProgress, [0, 1], [90, -90]);
-  const opacity = useTransform(scrollYProgress, [0, 0.22, 0.78, 1], [0.25, 1, 1, 0.25]);
   const Icon = item.icon;
-  const num = String(index + 1).padStart(2, '0');
-
   return (
     <motion.div
-      ref={ref}
-      style={{ opacity }}
-      className="relative grid items-center gap-2 py-10 md:min-h-[62vh] md:grid-cols-2 md:gap-14 md:py-0"
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.5, delay: index * 0.05, ease: EASE }}
+      whileHover={{ y: -3 }}
+      className="fc-glass-card relative overflow-hidden p-6 md:p-7"
     >
-      {/* Гигантский год + индекс главы */}
-      <motion.div style={{ y: yYear }} className={`relative select-none ${flip ? 'md:order-2' : 'md:order-1'}`}>
-        <span className="pointer-events-none block bg-gradient-to-br from-[#8b7cf6] via-[#a78bfa] to-[#c4b5fd] bg-clip-text text-[26vw] font-black leading-[0.78] tracking-tighter text-transparent md:text-[12.5rem]">
-          {item.year}
-        </span>
-        <span className="absolute right-1 top-0 text-xs font-bold tracking-[0.4em] text-[var(--text-secondary)] md:text-sm">
-          {num} / {String(total).padStart(2, '0')}
-        </span>
-      </motion.div>
-
-      {/* Контент-карточка */}
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
-        transition={{ duration: 0.6, ease: EASE }}
-        className={`relative ${flip ? 'md:order-1' : 'md:order-2'}`}
+      {/* Крупный год-watermark — наполняет карточку */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-3 -top-9 select-none bg-gradient-to-br from-[#8b7cf6]/[0.12] to-[#c4b5fd]/[0.03] bg-clip-text text-[7rem] font-black leading-none tracking-tighter text-transparent md:text-[9rem]"
       >
-        <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8b7cf6] backdrop-blur-md">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#8b7cf6]" />
-          {item.q} · {item.year}
+        {item.year}
+      </span>
+
+      <div className="relative flex items-start gap-5">
+        <span
+          className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-white"
+          style={{ backgroundImage: 'linear-gradient(135deg,#8b7cf6,#c4b5fd)', boxShadow: '0 12px 28px -10px rgba(139,124,246,0.7)' }}
+        >
+          <Icon size={26} />
         </span>
-        <motion.div whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }} className="fc-glass-card p-7 md:p-9">
-          <span
-            className="mb-5 grid h-14 w-14 place-items-center rounded-2xl text-white"
-            style={{ backgroundImage: 'linear-gradient(135deg,#8b7cf6,#c4b5fd)', boxShadow: '0 14px 32px -10px rgba(139,124,246,0.7)' }}
-          >
-            <Icon size={26} />
-          </span>
-          <h3 className="text-2xl font-bold uppercase tracking-tight text-[var(--foreground)] md:text-3xl">{item.title}</h3>
-          <p className="mt-3 text-base leading-relaxed text-[var(--text-secondary)]">{item.desc}</p>
-        </motion.div>
-      </motion.div>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-[var(--fc-glass-border)] bg-[var(--fc-surface)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8b7cf6]">
+              {item.q} · {item.year}
+            </span>
+            <span className="text-[10px] font-bold tracking-[0.3em] text-[var(--text-secondary)]">
+              {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+            </span>
+          </div>
+          <h3 className="mt-2.5 text-xl font-bold uppercase tracking-tight text-[var(--foreground)] md:text-2xl">{item.title}</h3>
+          <p className="mt-1.5 text-sm leading-relaxed text-[var(--text-secondary)] md:text-base">{item.desc}</p>
+        </div>
+      </div>
     </motion.div>
   );
 }
 
-// «Наша история» — редакционная лента глав с гигантскими годами и параллаксом.
+// «Наша история» — компактная лента глав с годами-watermark.
 function Timeline() {
   return (
-    <div className="relative mt-16">
+    <div className="relative mx-auto mt-12 max-w-3xl">
       {/* Амбиентные акцентные орбы */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute left-[8%] top-[6%] h-72 w-72 rounded-full bg-[#8b7cf6]/10 blur-3xl" />
-        <div className="absolute bottom-[12%] right-[4%] h-80 w-80 rounded-full bg-[#c4b5fd]/10 blur-3xl" />
+        <div className="absolute left-[6%] top-[4%] h-64 w-64 rounded-full bg-[#8b7cf6]/10 blur-3xl" />
+        <div className="absolute bottom-[8%] right-[2%] h-72 w-72 rounded-full bg-[#c4b5fd]/10 blur-3xl" />
       </div>
 
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-4">
         {timeline.map((item, i) => (
-          <Chapter key={item.year + item.title} item={item} index={i} total={timeline.length} flip={i % 2 === 1} />
+          <Chapter key={item.year + item.title} item={item} index={i} total={timeline.length} />
         ))}
       </div>
     </div>
