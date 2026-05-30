@@ -236,12 +236,13 @@ export const authConfig: NextAuthConfig = {
       const uid = (token.id as string) || token.sub;
       if (uid && trigger === 'update') {
         const [u] = await db
-          .select({ role: users.role, image: users.image })
+          .select({ role: users.role, image: users.image, name: users.name })
           .from(users)
           .where(eq(users.id, uid))
           .limit(1);
         if (u?.role) token.role = u.role as string;
         if (u?.image) token.image = u.image;
+        if (u) token.name = u.name ?? token.name;
       }
       return token;
     },
@@ -250,6 +251,7 @@ export const authConfig: NextAuthConfig = {
         session.user.id = (token.id as string) || token.sub || '';
         session.user.role = (token.role as string) ?? 'customer';
         session.user.image = (token.image as string) ?? undefined;
+        if (token.name !== undefined) session.user.name = (token.name as string) ?? '';
       }
       return session;
     },

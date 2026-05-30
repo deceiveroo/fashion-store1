@@ -189,6 +189,15 @@ export async function POST(request: NextRequest) {
         }));
       }
 
+      // Синхронизируем отображаемое имя (users.name): шапка/сессия/админка должны
+      // показывать отредактированное имя, а не подставленное из users.name (Google/TG).
+      const effFirst = firstName || existingProfile[0]?.firstName || '';
+      const effLast = lastName || existingProfile[0]?.lastName || '';
+      const fullNameSync = `${effFirst} ${effLast}`.trim();
+      if (fullNameSync) {
+        await safeQuery(() => db.update(users).set({ name: fullNameSync, updatedAt: new Date() }).where(eq(users.id, userId)));
+      }
+
       const avatarUrl = avatar !== undefined ? avatar : existingProfile[0]?.avatar;
       if (avatarUrl) {
         await safeQuery(() => db
@@ -256,6 +265,14 @@ export async function PUT(request: NextRequest) {
         address,
         avatar,
       }));
+    }
+
+    // Синхронизируем отображаемое имя (users.name) — см. POST.
+    const effFirst = firstName || existingProfile[0]?.firstName || '';
+    const effLast = lastName || existingProfile[0]?.lastName || '';
+    const fullNameSync = `${effFirst} ${effLast}`.trim();
+    if (fullNameSync) {
+      await safeQuery(() => db.update(users).set({ name: fullNameSync, updatedAt: new Date() }).where(eq(users.id, userId)));
     }
 
     const avatarUrl = avatar !== undefined ? avatar : existingProfile[0]?.avatar;
