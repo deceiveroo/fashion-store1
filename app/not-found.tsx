@@ -24,6 +24,8 @@ export default function NotFoundPage() {
     basketX: 0,
     items: [] as Array<{ x: number; y: number; emoji: string; speed: number; rotation: number; bad: boolean }>,
     lastSpawn: 0,
+    startedAt: 0,
+    diff: 0, // 0..1 — плавно растёт по времени и счёту, управляет всей сложностью
     animationId: 0,
     isDark: true,
     running: false,
@@ -77,8 +79,13 @@ export default function NotFoundPage() {
     canvas.addEventListener('pointermove', onPointer);
 
     const spawn = () => {
-      const bad = Math.random() < 0.14;
-      const speed = 2 + g.current.score / 220 + Math.random() * 1.8;
+      const d = g.current.diff; // 0..1
+      // Бомбы появляются не сразу: 0% первые ~6с, затем плавно до 18%
+      const badChance = Math.max(0, Math.min(0.18, (d - 0.08) * 0.26));
+      const bad = Math.random() < badChance;
+      // Скорость: спокойный старт (~1.5), плавный разгон до ~6
+      const base = 1.5 + d * 4.2;
+      const speed = base + Math.random() * (0.4 + d * 1.4);
       const emoji = bad ? BAD[Math.floor(Math.random() * BAD.length)] : GOOD[Math.floor(Math.random() * GOOD.length)];
       g.current.items.push({ x: Math.random() * (canvas.width - ITEM), y: -ITEM, emoji, speed, rotation: 0, bad });
     };
@@ -100,7 +107,15 @@ export default function NotFoundPage() {
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
-      const interval = Math.max(420, 950 - g.current.score * 3);
+      // Плавный рост сложности: по времени (полный разгон ~75с) и по счёту,
+      // берём максимум из двух — но всегда стартуем со спокойного темпа.
+      const elapsed = (ts - g.current.startedAt) / 1000;
+      const byTime = Math.min(1, elapsed / 75);
+      const byScore = Math.min(1, g.current.score / 600);
+      g.current.diff = Math.max(byTime, byScore);
+
+      // Интервал спавна: редко в начале (~1300мс), плавно до ~480мс
+      const interval = 1300 - g.current.diff * 820;
       if (ts - g.current.lastSpawn > interval) { spawn(); g.current.lastSpawn = ts; }
 
       const basketY = H - BASKET_H - 10;
@@ -175,6 +190,8 @@ export default function NotFoundPage() {
     g.current.items = [];
     g.current.score = 0;
     g.current.lives = 3;
+    g.current.diff = 0;
+    g.current.startedAt = performance.now();
     g.current.lastSpawn = performance.now();
     setScore(0);
     setLives(3);

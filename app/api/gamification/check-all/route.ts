@@ -26,7 +26,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(cached.data);
     }
 
-    const checks = ['profile_complete', 'login', 'achievement_unlocked'];
+    // Все проверки читают агрегаты из БД и идемпотентны (unlockAchievement
+    // пропускает уже открытые), поэтому безопасно прогонять полный набор —
+    // это «подбирает» ачивки, заработанные до того, как открыли дашборд.
+    const checks = ['profile_complete', 'login', 'achievement_unlocked', 'level_up', 'purchase', 'favorite', 'coupon_used'];
 
     // ПАРАЛЛЕЛЬНО — раньше for-loop ждал каждый. На 3 проверки экономим ~2/3 времени.
     const results = await Promise.allSettled(

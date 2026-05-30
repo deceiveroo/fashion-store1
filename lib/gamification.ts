@@ -29,20 +29,37 @@ export async function awardXP(userId: string, amount: number, reason: string, me
     `);
 
     let levelUpData = null;
+    const levelUps: any[] = [];
 
     if (result.rows && result.rows.length > 0) {
-      const userLevel = result.rows[0] as any;
-      
-      // Check if level up
-      if (userLevel.xp >= userLevel.xp_to_next_level) {
-        levelUpData = await levelUp(userId, userLevel.level);
+      let userLevel = result.rows[0] as any;
+
+      // Поддерживаем несколько повышений за один вызов и переносим остаток XP
+      // (раньше xp жёстко сбрасывался в 0 — терялся излишек, и поднимался только 1 уровень).
+      while (userLevel.xp >= userLevel.xp_to_next_level) {
+        const up = await levelUp(
+          userId,
+          Number(userLevel.level),
+          Number(userLevel.xp),
+          Number(userLevel.xp_to_next_level)
+        );
+        levelUps.push(up);
+        userLevel = {
+          level: up.newLevel,
+          xp: up.xp,
+          xp_to_next_level: up.xp_to_next_level,
+          coins: userLevel.coins,
+        };
       }
+      // Возвращаем последнее повышение для обратной совместимости + полный список
+      levelUpData = levelUps.length > 0 ? levelUps[levelUps.length - 1] : null;
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       amount,
-      levelUp: levelUpData // Return level up info if it happened
+      levelUp: levelUpData, // Return level up info if it happened
+      levelUps, // Все повышения за этот вызов (может быть несколько)
     };
   } catch (error) {
     console.error('Error awarding XP:', error);
@@ -50,11 +67,14 @@ export async function awardXP(userId: string, amount: number, reason: string, me
   }
 }
 
-// Level up user
-async function levelUp(userId: string, currentLevel: number) {
+// Level up user. Принимает текущие xp/threshold, чтобы перенести остаток опыта
+// и корректно посчитать следующий порог.
+async function levelUp(userId: string, currentLevel: number, currentXp: number, currentThreshold: number) {
   const newLevel = currentLevel + 1;
   const newXpRequired = Math.floor(100 * Math.pow(newLevel, 1.5));
   const coinsAwarded = newLevel * 10;
+  // Переносим излишек опыта на новый уровень вместо сброса в 0.
+  const carriedXp = Math.max(0, currentXp - currentThreshold);
   
   // Get new title
   const titleResult = await db.execute(sql`
@@ -63,11 +83,11 @@ async function levelUp(userId: string, currentLevel: number) {
   
   const newTitle = titleResult.rows?.[0]?.title || 'Новичок';
   
-  // Update level and award coins
+  // Update level and award coins (переносим остаток XP, а не сбрасываем в 0)
   await db.execute(sql`
     UPDATE user_levels
     SET level = ${newLevel},
-        xp = 0,
+        xp = ${carriedXp},
         xp_to_next_level = ${newXpRequired},
         title = ${newTitle},
         coins = coins + ${coinsAwarded},
@@ -135,9 +155,12 @@ async function levelUp(userId: string, currentLevel: number) {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (reward.expires_days || 30));
       
+      // Create the coupon in the coupons table.
+      // coupons.id не имеет DEFAULT в БД — генерируем явно, иначе INSERT падает.
       await db.execute(sql`
-        INSERT INTO coupons (code, discount, type, min_order, max_uses, used_count, active, expires_at, created_by)
+        INSERT INTO coupons (id, code, discount, type, min_order, max_uses, used_count, active, expires_at, created_by)
         VALUES (
+          gen_random_uuid()::text,
           ${uniqueCode},
           ${reward.discount},
           ${reward.discount_type},
@@ -184,11 +207,13 @@ async function levelUp(userId: string, currentLevel: number) {
   // Check level achievements
   await checkAchievements(userId, 'level_up', newLevel);
   
-  return { 
-    newLevel, 
-    newTitle, 
+  return {
+    newLevel,
+    newTitle,
     coinsAwarded,
-    couponReward // Return coupon info if awarded
+    couponReward, // Return coupon info if awarded
+    xp: carriedXp, // Остаток опыта на новом уровне
+    xp_to_next_level: newXpRequired, // Порог нового уровня (для цикла мульти-левелапа)
   };
 }
 
@@ -279,18 +304,24 @@ export async function checkAchievements(userId: string, action: string, value?: 
   try {
     switch (action) {
       case 'purchase':
-        // Check purchase count achievements
+        // Check purchase count achievements.
+        // Считаем агрегаты по БД (а не по переданному value), чтобы клиент
+        // не мог накрутить big_spender произвольным значением через /check.
         const purchaseResult = await db.execute(sql`
-          SELECT COUNT(*) as count, SUM(total) as total_spent
+          SELECT
+            COUNT(*) as count,
+            COALESCE(SUM(total), 0) as total_spent,
+            COALESCE(MAX(total), 0) as max_single
           FROM orders
           WHERE user_id = ${userId} AND status != 'cancelled'
         `);
-        
+
         if (purchaseResult.rows && purchaseResult.rows.length > 0) {
-          const { count, total_spent } = purchaseResult.rows[0] as any;
-          const purchaseCount = parseInt(count || 0);
-          const totalSpent = parseFloat(total_spent || 0);
-          
+          const row = purchaseResult.rows[0] as any;
+          const purchaseCount = parseInt(row.count || 0);
+          const totalSpent = parseFloat(row.total_spent || 0);
+          const maxSingle = parseFloat(row.max_single || 0);
+
           if (purchaseCount >= 1) achievements.push('first_purchase');
           if (purchaseCount >= 2) achievements.push('second_chance');
           if (purchaseCount >= 5) achievements.push('regular_customer');
@@ -299,17 +330,17 @@ export async function checkAchievements(userId: string, action: string, value?: 
           if (purchaseCount >= 50) achievements.push('shopaholic');
           if (totalSpent >= 100000) achievements.push('vip_member');
           if (totalSpent >= 500000) achievements.push('whale');
-          
-          // Check single purchase amount if value provided
-          if (value && value >= 10000) achievements.push('big_spender');
+
+          // Крупная единичная покупка — берём максимум из БД, не из value
+          if (maxSingle >= 10000) achievements.push('big_spender');
         }
         break;
 
       case 'favorite':
-        // Check favorites count
+        // Check favorites count (таблица называется user_wishlist_items, не wishlist)
         const favResult = await db.execute(sql`
           SELECT COUNT(*) as count
-          FROM wishlist
+          FROM user_wishlist_items
           WHERE user_id = ${userId}
         `);
         
@@ -412,11 +443,16 @@ export async function checkAchievements(userId: string, action: string, value?: 
         break;
 
       case 'level_up':
-        // Check level milestones
-        if (value) {
-          if (value >= 5) achievements.push('level_5');
-          if (value >= 10) achievements.push('level_10');
-          if (value >= 25) achievements.push('level_25');
+        // Check level milestones. Берём реальный уровень из user_levels,
+        // а не из переданного value (иначе /check можно накрутить).
+        const levelRow = await db.execute(sql`
+          SELECT level FROM user_levels WHERE user_id = ${userId}
+        `);
+        if (levelRow.rows && levelRow.rows.length > 0) {
+          const lvl = parseInt((levelRow.rows[0] as any).level || 0);
+          if (lvl >= 5) achievements.push('level_5');
+          if (lvl >= 10) achievements.push('level_10');
+          if (lvl >= 25) achievements.push('level_25');
         }
         break;
 

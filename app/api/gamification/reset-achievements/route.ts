@@ -23,18 +23,46 @@ export async function POST(request: NextRequest) {
 
     const userId = session.user.id;
 
+    // Сколько XP/монет начислили текущие достижения — нужно вычесть обратно,
+    // иначе после сброса и повторного открытия баланс инфлирует (монеты = реальные купоны).
+    const grantedResult = await db.execute(sql`
+      SELECT
+        COALESCE(SUM(a.xp_reward), 0) AS xp,
+        COALESCE(SUM(a.coins_reward), 0) AS coins
+      FROM user_achievements ua
+      JOIN achievements a ON ua.achievement_id = a.id
+      WHERE ua.user_id = ${userId}
+    `);
+    const granted = (grantedResult.rows?.[0] as any) || { xp: 0, coins: 0 };
+    const grantedXp = parseInt(granted.xp || 0);
+    const grantedCoins = parseInt(granted.coins || 0);
+
+    // Возвращаем XP/монеты к до-ачивочному состоянию (с защитой от ухода в минус).
+    await db.execute(sql`
+      UPDATE user_levels
+      SET xp = GREATEST(0, xp - ${grantedXp}),
+          coins = GREATEST(0, coins - ${grantedCoins}),
+          updated_at = NOW()
+      WHERE user_id = ${userId}
+    `);
+
+    // Чистим связанные записи истории XP, чтобы debug/totalXPEarned не врал.
+    await db.execute(sql`
+      DELETE FROM xp_history
+      WHERE user_id = ${userId}
+        AND metadata ? 'achievement'
+    `);
+
     // Delete all user achievements
     await db.execute(sql`
       DELETE FROM user_achievements
       WHERE user_id = ${userId}
     `);
 
-    // Reset achievement progress in user_levels if needed
-    // (achievements are tracked separately, so this should be enough)
-
     return NextResponse.json({
       success: true,
       message: 'Все достижения сброшены. Вы можете начать зарабатывать их заново!',
+      refunded: { xp: grantedXp, coins: grantedCoins },
     });
   } catch (error) {
     console.error('Error resetting achievements:', error);

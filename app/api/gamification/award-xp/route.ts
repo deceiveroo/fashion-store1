@@ -15,17 +15,30 @@ export async function POST(request: NextRequest) {
 
     const userId = session.user.id;
 
-    const body = await request.json();
-    const { amount, reason, metadata } = body;
-
-    if (!amount || !reason) {
+    // XP начисляется только серверной логикой (заказы, отзывы, профиль и т.п.)
+    // через lib/gamification → awardXP(). Открытый HTTP-эндпоинт с произвольным
+    // amount = дыра в экономике (XP → монеты → реальные купоны), поэтому
+    // ручное начисление доступно только администратору.
+    const userRole = (session.user as any).role;
+    if (userRole !== 'admin') {
       return NextResponse.json(
-        { error: 'Amount and reason are required' },
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { amount, reason, metadata, targetUserId } = body;
+
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0 || !reason) {
+      return NextResponse.json(
+        { error: 'A positive numeric amount and a reason are required' },
         { status: 400 }
       );
     }
 
-    const result = await awardXP(userId, amount, reason, metadata);
+    // Админ может начислять себе или указанному пользователю
+    const result = await awardXP(targetUserId || userId, amount, reason, metadata);
 
     if (result.success) {
       return NextResponse.json({ 

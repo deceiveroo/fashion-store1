@@ -50,17 +50,23 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
       // Fetch user level
       const levelRes = await fetch('/api/gamification/profile');
       const levelData = await levelRes.json();
-      setUserLevel(levelData);
+      // Профиль может вернуть {error} при 401 — берём только валидный объект уровня,
+      // иначе userLevel.coins/xp undefined и .toLocaleString() роняет рендер.
+      if (levelRes.ok && levelData && typeof levelData.level === 'number') {
+        setUserLevel(levelData);
+      } else {
+        setUserLevel(null);
+      }
 
       // Fetch achievements
       const achievementsRes = await fetch('/api/gamification/achievements');
-      const achievementsData = await achievementsRes.json();
+      const achievementsData = achievementsRes.ok ? await achievementsRes.json() : [];
       setAchievements(Array.isArray(achievementsData) ? achievementsData : []);
 
       // Fetch shop coupons
       const shopRes = await fetch('/api/gamification/shop');
-      const shopData = await shopRes.json();
-      setShopCoupons(shopData.coupons || []);
+      const shopData = shopRes.ok ? await shopRes.json() : {};
+      setShopCoupons(Array.isArray(shopData?.coupons) ? shopData.coupons : []);
     } catch (error) {
       console.error('Error fetching gamification data:', error);
       setAchievements([]);
@@ -96,8 +102,11 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
     }
   };
 
-  const getAchievementIcon = (category: string, unlocked: boolean) => {
-    // Different icons based on achievement category
+  const getAchievementIcon = (achievement: Achievement) => {
+    // Каждое достижение имеет свой кураторский emoji в БД — используем его.
+    if (achievement.icon && achievement.icon.trim()) return achievement.icon;
+
+    // Фолбэк по категории, если icon почему-то пустой.
     const icons: Record<string, string> = {
       shopping: '🛍️',
       orders: '📦',
@@ -109,8 +118,8 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
       special: '🎯',
       milestone: '🚀',
     };
-    
-    return icons[category] || (unlocked ? '✨' : '🔒');
+
+    return icons[achievement.category] || (achievement.unlocked ? '✨' : '🔒');
   };
 
   // Don't show loading - render content immediately with skeleton states
@@ -492,7 +501,7 @@ export default function GamificationDashboard({ isAdmin = false }: { isAdmin?: b
                     <div className={`absolute inset-0 flex items-center justify-center pointer-events-none`}>
                       <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-6xl shadow-xl ring-4 ring-white/40 bg-gradient-to-br ${rarityGradient} group-hover:scale-110 transition-transform duration-300`}>
                         <span className="drop-shadow-lg">
-                          {getAchievementIcon(achievement.category, achievement.unlocked)}
+                          {getAchievementIcon(achievement)}
                         </span>
                       </div>
                     </div>
