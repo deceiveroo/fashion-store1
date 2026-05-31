@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders, orderItems, coupons, userCouponUsage } from '@/lib/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
 import { getSession } from '@/lib/server-auth';
@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     console.log('[ORDERS POST] Request body received:', JSON.stringify(body, null, 2).substring(0, 500));
-    
+
     const { items, total, discount, deliveryPrice, deliveryMethod, paymentMethod, recipient, comment, couponId } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -258,11 +258,90 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Recipient information is incomplete' }, { status: 400 });
     }
 
+    // Validate coupon if provided
+    let validatedDiscount = discount || 0;
+    if (couponId) {
+      try {
+        // Fetch the coupon
+        const [coupon] = await queryWithRetry(() =>
+          db.select().from(coupons).where(eq(coupons.id, couponId)).limit(1)
+        );
+
+        if (!coupon) {
+          return NextResponse.json({ error: 'Invalid coupon' }, { status: 400 });
+        }
+
+        // Check if active
+        if (!coupon.active) {
+          return NextResponse.json({ error: 'Coupon is not active' }, { status: 400 });
+        }
+
+        // Check expiration
+        if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+          return NextResponse.json({ error: 'Coupon has expired' }, { status: 400 });
+        }
+
+        // Check usage limit
+        if (coupon.maxUses && (coupon.usedCount || 0) >= coupon.maxUses) {
+          return NextResponse.json({ error: 'Coupon usage limit reached' }, { status: 400 });
+        }
+
+        // Check if user already used this coupon
+        const [existingUsage] = await queryWithRetry(() =>
+          db.select()
+            .from(userCouponUsage)
+            .where(
+              and(
+                eq(userCouponUsage.userId, currentUser.id),
+                eq(userCouponUsage.couponId, couponId)
+              )
+            )
+            .limit(1)
+        );
+
+        if (existingUsage) {
+          return NextResponse.json({ error: 'You have already used this coupon' }, { status: 400 });
+        }
+
+        // Calculate items subtotal
+        const itemsSubtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        // Check minimum order
+        if (coupon.minOrder && itemsSubtotal < parseFloat(coupon.minOrder)) {
+          return NextResponse.json({
+            error: `Minimum order amount is ${parseInt(coupon.minOrder).toLocaleString('ru-RU')} ₽`
+          }, { status: 400 });
+        }
+
+        // Calculate expected discount
+        let expectedDiscount = 0;
+        if (coupon.type === 'percent') {
+          expectedDiscount = Math.round((itemsSubtotal * coupon.discount) / 100);
+        } else {
+          expectedDiscount = coupon.discount;
+        }
+        expectedDiscount = Math.min(expectedDiscount, itemsSubtotal);
+
+        // Verify the discount matches (allow 1 ruble tolerance for rounding)
+        if (Math.abs(discount - expectedDiscount) > 1) {
+          console.error(`[ORDERS POST] Discount mismatch: expected ${expectedDiscount}, got ${discount}`);
+          return NextResponse.json({
+            error: 'Invalid discount amount. Please refresh and try again.'
+          }, { status: 400 });
+        }
+
+        validatedDiscount = expectedDiscount;
+      } catch (error) {
+        console.error('[ORDERS POST] Coupon validation error:', error);
+        return NextResponse.json({ error: 'Failed to validate coupon' }, { status: 500 });
+      }
+    }
+
     // Create order transaction with retry logic
     const newOrder = await queryWithRetry(async () => {
       return await db.transaction(async (trx) => {
         // Calculate subtotal (total before discount and delivery)
-        const subtotalValue = total - (discount || 0);
+        const subtotalValue = total - (validatedDiscount || 0);
         
         // Create the order
         const [order] = await trx.insert(orders).values({
@@ -270,7 +349,7 @@ export async function POST(request: NextRequest) {
           orderNumber: generateOrderNumber(), // Человекочитаемый номер заказа
           subtotal: subtotalValue.toString(), // Subtotal before discount and delivery
           total: total.toString(), // Convert to string to match decimal field
-          discount: discount ? discount.toString() : '0',
+          discount: validatedDiscount ? validatedDiscount.toString() : '0',
           deliveryPrice: deliveryPrice ? deliveryPrice.toString() : '0',
           deliveryMethod,
           paymentMethod,
@@ -313,13 +392,13 @@ export async function POST(request: NextRequest) {
     });
 
     // Record coupon usage
-    if (couponId && discount > 0) {
+    if (couponId && validatedDiscount > 0) {
       try {
         await db.insert(userCouponUsage).values({
           userId: currentUser.id,
           couponId: couponId,
           orderId: newOrder.id,
-          discountAmount: String(discount),
+          discountAmount: String(validatedDiscount),
         });
         
         // Check coupon achievements

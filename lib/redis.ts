@@ -49,8 +49,8 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   if (!redis) return null;
 
   try {
-    const data = await redis.get(key);
-    return data ? (JSON.parse(data as string) as T) : null;
+    const data = await redis.get<T>(key);
+    return data ?? null;
   } catch (error) {
     console.error('[Redis Cache] Get error:', error);
     return null;
@@ -65,7 +65,7 @@ export async function cacheSet<T>(
   if (!redis) return false;
 
   try {
-    await redis.setex(key, ttlSeconds, JSON.stringify(value));
+    await redis.setex(key, ttlSeconds, value);
     return true;
   } catch (error) {
     console.error('[Redis Cache] Set error:', error);

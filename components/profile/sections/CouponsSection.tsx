@@ -59,19 +59,27 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
     });
   };
 
-  const deleteCoupon = async (couponId: string, couponCode: string) => {
-    if (!confirm(`Удалить запись о использовании промокода ${couponCode}?\n\nЭто действие нельзя отменить.`)) {
+  const deleteCoupon = async (couponId: string, couponCode: string, isPurchased: boolean) => {
+    const message = isPurchased
+      ? `Удалить купленный промокод ${couponCode}?\n\nЭто действие нельзя отменить.`
+      : `Удалить запись о использовании промокода ${couponCode}?\n\nЭто действие нельзя отменить.`;
+
+    if (!confirm(message)) {
       return;
     }
 
     try {
-      const res = await fetch(`/api/profile/coupons/${couponId}`, {
+      const endpoint = isPurchased
+        ? `/api/profile/my-coupons/${couponId}`
+        : `/api/profile/coupons/${couponId}`;
+
+      const res = await fetch(endpoint, {
         method: 'DELETE',
         credentials: 'include',
       });
 
       if (res.ok) {
-        toast.success('Запись удалена', { icon: '🗑️' });
+        toast.success('Промокод удален', { icon: '🗑️' });
         // Reload coupons data
         if (loadCoupons) {
           await loadCoupons();
@@ -83,7 +91,7 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
         toast.error(data.error || 'Ошибка удаления');
       }
     } catch (error) {
-      console.error('Error deleting coupon usage:', error);
+      console.error('Error deleting coupon:', error);
       toast.error('Ошибка сети');
     }
   };
@@ -386,14 +394,18 @@ export default function CouponsSection({ coupons, isLoadingData, loadCoupons }: 
                         К заказу
                       </Button>
                     )}
-                    {/* Delete button - only for used coupons */}
-                    {isUsed && (
+                    {/* Delete button - for used coupons and active purchased coupons */}
+                    {(isUsed || (isActive && fromShop)) && (
                       <Button
                         variant="danger"
                         size="sm"
                         icon={<Trash2 size={18} />}
-                        onClick={() => deleteCoupon(coupon.id, coupon.code || coupon.couponCode || '')}
-                        title="Удалить запись об использовании"
+                        onClick={() => deleteCoupon(
+                          coupon.id,
+                          coupon.code || coupon.couponCode || '',
+                          fromShop
+                        )}
+                        title={fromShop ? 'Удалить купленный промокод' : 'Удалить запись об использовании'}
                       />
                     )}
                   </div>

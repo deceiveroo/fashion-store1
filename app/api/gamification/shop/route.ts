@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       .from(shopCoupons)
       .where(eq(shopCoupons.isActive, true));
 
-    // Check which coupons user already purchased (not redeemed yet)
+    // Get user's purchased coupons count (active, not redeemed)
     const purchasedCoupons = await db
       .select()
       .from(userPurchasedCoupons)
@@ -41,7 +41,11 @@ export async function GET(request: NextRequest) {
         )
       );
 
-    const purchasedCodes = new Set(purchasedCoupons.map(pc => pc.shopCouponId));
+    // Count how many of each coupon the user has
+    const purchasedCountMap = new Map<number, number>();
+    purchasedCoupons.forEach(pc => {
+      purchasedCountMap.set(pc.shopCouponId, (purchasedCountMap.get(pc.shopCouponId) || 0) + 1);
+    });
 
     // Format response
     const coupons = availableCoupons.map(coupon => ({
@@ -58,7 +62,7 @@ export async function GET(request: NextRequest) {
       stock: coupon.stock,
       purchasedCount: coupon.purchasedCount,
       canAfford: userCoins >= coupon.priceCoins,
-      alreadyPurchased: purchasedCodes.has(coupon.id),
+      userOwnedCount: purchasedCountMap.get(coupon.id) || 0,
       inStock: !coupon.stock || (coupon.purchasedCount || 0) < coupon.stock,
     }));
 
@@ -144,27 +148,6 @@ export async function POST(request: NextRequest) {
     if (userCoins < shopCoupon.priceCoins) {
       return NextResponse.json(
         { error: 'Not enough coins' },
-        { status: 400 }
-      );
-    }
-
-    // Check if user already has this coupon (not redeemed)
-    const existingPurchase = await db
-      .select()
-      .from(userPurchasedCoupons)
-      .where(
-        and(
-          eq(userPurchasedCoupons.userId, session.user.id),
-          eq(userPurchasedCoupons.shopCouponId, shopCouponId),
-          eq(userPurchasedCoupons.redeemed, false),
-          gt(userPurchasedCoupons.expiresAt, new Date())
-        )
-      )
-      .limit(1);
-
-    if (existingPurchase.length > 0) {
-      return NextResponse.json(
-        { error: 'You already have this coupon' },
         { status: 400 }
       );
     }

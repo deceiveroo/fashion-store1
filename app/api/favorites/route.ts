@@ -70,10 +70,30 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserId(request);
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) {
+      console.error('[Favorites API] POST: Unauthorized - no userId');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const { productId } = await request.json();
-    if (!productId) return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('[Favorites API] POST: Invalid JSON body', parseError);
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+
+    const { productId } = body;
+    if (!productId) {
+      console.error('[Favorites API] POST: Missing productId in request body', { body });
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    }
+
+    // Validate productId format
+    if (typeof productId !== 'string' || productId.trim() === '') {
+      console.error('[Favorites API] POST: Invalid productId format', { productId });
+      return NextResponse.json({ error: 'Invalid Product ID format' }, { status: 400 });
+    }
 
     const existing = await safeQuery(() =>
       db.select().from(userWishlistItems)
@@ -82,42 +102,67 @@ export async function POST(request: NextRequest) {
     );
 
     if (existing && existing.length > 0) {
-      return NextResponse.json({ message: 'Already in favorites' }, { status: 400 });
+      console.log('[Favorites API] POST: Product already in favorites', { userId, productId });
+      return NextResponse.json({ message: 'Product already in favorites' }, { status: 400 });
     }
 
     const [result] = await db.insert(userWishlistItems).values({ userId, productId }).returning();
+    console.log('[Favorites API] POST: Successfully added to favorites', { userId, productId });
 
     // Gamification: Award XP for adding to favorites and check achievements
     try {
       await awardXP(userId, 5, 'Added to wishlist', { productId });
       await checkAchievements(userId, 'favorite');
     } catch (gamificationError) {
-      console.error('Gamification error:', gamificationError);
+      console.error('[Favorites API] POST: Gamification error', gamificationError);
     }
 
     return NextResponse.json(result, { status: 201 });
   } catch (error: unknown) {
-    console.error('Error adding favorite:', error);
-    return NextResponse.json({ error: 'Failed to add favorite' }, { status: 500 });
+    console.error('[Favorites API] POST: Unexpected error', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({
+      error: 'Failed to add favorite',
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
     const userId = await getUserId(request);
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) {
+      console.error('[Favorites API] DELETE: Unauthorized - no userId');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const { productId } = await request.json();
-    if (!productId) return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('[Favorites API] DELETE: Invalid JSON body', parseError);
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+
+    const { productId } = body;
+    if (!productId) {
+      console.error('[Favorites API] DELETE: Missing productId in request body', { body });
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    }
 
     await safeQuery(() =>
       db.delete(userWishlistItems)
         .where(and(eq(userWishlistItems.userId, userId), eq(userWishlistItems.productId, productId)))
     );
 
+    console.log('[Favorites API] DELETE: Successfully removed from favorites', { userId, productId });
     return NextResponse.json({ message: 'Removed from favorites' });
   } catch (error: unknown) {
-    console.error('Error removing favorite:', error);
-    return NextResponse.json({ error: 'Failed to remove favorite' }, { status: 500 });
+    console.error('[Favorites API] DELETE: Unexpected error', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({
+      error: 'Failed to remove favorite',
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    }, { status: 500 });
   }
 }
