@@ -242,16 +242,42 @@ export default function AiAssistantPage() {
         )}
 
         {/* Master switch */}
-        <div className="admin-card p-6">
+        <div
+          className={`admin-card p-6 transition-all duration-300 ${
+            enabled
+              ? 'ring-1 ring-[var(--admin-accent)]/40 shadow-[0_0_0_1px_var(--admin-accent-soft)]'
+              : ''
+          }`}
+        >
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--admin-accent-soft)] text-[var(--admin-accent)]">
-                <Zap className="h-4 w-4" />
+            <div className="flex items-start gap-3.5">
+              <span
+                className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl transition-colors ${
+                  enabled
+                    ? 'text-white'
+                    : 'bg-[var(--admin-bg-muted)] text-[var(--admin-text-faint)]'
+                }`}
+                style={enabled ? { backgroundImage: 'var(--admin-accent-gradient)' } : undefined}
+              >
+                <Zap className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-sm font-semibold text-[var(--admin-text)]">ИИ отвечает в чате</p>
-                <p className="text-xs text-[var(--admin-text-muted)]">
-                  Когда выключено — работает старый автоответчик по ключевым словам. Оператор-человек всегда перебивает ИИ.
+                <div className="flex items-center gap-2">
+                  <p className="text-base font-semibold text-[var(--admin-text)]">ИИ отвечает в чате</p>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                      enabled
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+                        : 'bg-[var(--admin-bg-muted)] text-[var(--admin-text-faint)]'
+                    }`}
+                  >
+                    {enabled ? 'Активен' : 'Выключен'}
+                  </span>
+                </div>
+                <p className="mt-1 max-w-md text-xs leading-relaxed text-[var(--admin-text-muted)]">
+                  {enabled
+                    ? 'Нейросеть отвечает клиентам автоматически. Оператор-человек в любой момент перехватывает диалог.'
+                    : 'Сейчас работает простой автоответчик по ключевым словам. Включите, чтобы отвечала нейросеть.'}
                 </p>
               </div>
             </div>
@@ -260,10 +286,20 @@ export default function AiAssistantPage() {
               role="switch"
               aria-checked={enabled}
               onClick={() => setEnabled((v) => !v)}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${enabled ? '' : 'bg-[var(--admin-border)]'}`}
+              className={`relative h-7 w-[52px] shrink-0 rounded-full transition-colors duration-300 ${enabled ? '' : 'bg-[var(--admin-border)]'}`}
               style={enabled ? { backgroundImage: 'var(--admin-accent-gradient)' } : undefined}
             >
-              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+              <span
+                className={`absolute top-1 grid h-5 w-5 place-items-center rounded-full bg-white shadow-md transition-transform duration-300 ${
+                  enabled ? 'translate-x-[26px]' : 'translate-x-1'
+                }`}
+              >
+                {enabled ? (
+                  <CheckCircle2 className="h-3 w-3 text-[var(--admin-accent)]" />
+                ) : (
+                  <XCircle className="h-3 w-3 text-[var(--admin-text-faint)]" />
+                )}
+              </span>
             </button>
           </div>
         </div>

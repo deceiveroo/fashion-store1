@@ -230,10 +230,15 @@ export default function SupportChatMinimalist() {
           const exists = prev.some(m => m.id === newMsg.id);
           if (exists) return prev;
 
-          const isUserMessage = newMsg.sender === 'user';
+          // Drop the optimistic placeholder we added locally before the row came
+          // back over realtime, so the same message isn't shown twice:
+          //   - user messages use a `temp-` id
+          //   - AI replies use an `ai-` id (added from the POST response)
           let filtered = prev;
-          if (isUserMessage) {
+          if (newMsg.sender === 'user') {
             filtered = prev.filter(m => !(m.sender === 'user' && m.id.startsWith('temp-')));
+          } else if (newMsg.sender === 'ai') {
+            filtered = prev.filter(m => !(m.sender === 'ai' && m.id.startsWith('ai-')));
           }
 
           return [...filtered, {
