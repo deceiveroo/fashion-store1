@@ -15,10 +15,12 @@ import {
   setAiEnabled,
   setActiveProvider,
   setSystemPrompt,
+  setKnowledgeBase,
   sealSecret,
   previewSecret,
   isKnownProviderType,
 } from '@/lib/ai/registry';
+import { builtinKnowledgeBase } from '@/lib/ai/chat-ai';
 import type { AiProviderConfig } from '@/lib/ai/types';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +49,10 @@ export async function GET() {
     enabled: cfg.enabled,
     activeProviderId: cfg.activeProviderId,
     systemPrompt: cfg.systemPrompt ?? '',
+    knowledgeBase: cfg.knowledgeBase ?? '',
+    // The built-in FAQ used when no custom KB is set — shown in the UI as a
+    // starting point / placeholder so admins edit real content, not a blank box.
+    defaultKnowledgeBase: builtinKnowledgeBase(),
     encryptionConfigured: isEncryptionConfigured(),
     providers: cfg.providers.map((p) => ({
       id: p.id,
@@ -80,7 +86,7 @@ function resolvePlainSecret(input: ProviderInput, existing?: AiProviderConfig): 
 export async function PUT(req: NextRequest) {
   if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
-  let body: { enabled?: boolean; activeProviderId?: string | null; systemPrompt?: string; providers?: ProviderInput[] };
+  let body: { enabled?: boolean; activeProviderId?: string | null; systemPrompt?: string; knowledgeBase?: string; providers?: ProviderInput[] };
   try {
     body = await req.json();
   } catch {
@@ -139,6 +145,7 @@ export async function PUT(req: NextRequest) {
   if (activeId) await setActiveProvider(activeId);
   if (typeof body.enabled === 'boolean') await setAiEnabled(body.enabled);
   if (typeof body.systemPrompt === 'string') await setSystemPrompt(body.systemPrompt);
+  if (typeof body.knowledgeBase === 'string') await setKnowledgeBase(body.knowledgeBase);
 
   return NextResponse.json({ success: true, activeProviderId: activeId });
 }

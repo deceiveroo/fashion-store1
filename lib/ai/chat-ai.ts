@@ -16,7 +16,7 @@ import { db } from '@/lib/db';
 import { orders, orderItems, products, supportChatMessages } from '@/lib/schema';
 import { eq, desc, and, isNotNull, or, ilike } from 'drizzle-orm';
 import { AUTO_RESPONSES } from '@/lib/chat-auto-responses';
-import { getActiveProvider, getSystemPromptOverride } from './registry';
+import { getActiveAiContext } from './registry';
 import type { AiMessage } from './types';
 
 const MAX_HISTORY_MESSAGES = 12; // cap context size / cost
@@ -37,10 +37,15 @@ function looksLikeHumanRequest(message: string): boolean {
   return /(оператор|менеджер|живой человек|реальн[ыо][йм] человек|позов(и|ите)|жалоб|верните (мне )?деньги|обман|мошенн)/.test(m);
 }
 
-function buildBaseSystemPrompt(): string {
-  // Distill the curated FAQ into a compact policy block so the model repeats our
-  // real terms instead of inventing them.
-  const faqBlock = AUTO_RESPONSES.map((r) => `• [${r.category}] ${r.response.replace(/\n+/g, ' ')}`).join('\n');
+/** Built-in FAQ distilled into a compact policy block (fallback knowledge base). */
+export function builtinKnowledgeBase(): string {
+  return AUTO_RESPONSES.map((r) => `• [${r.category}] ${r.response.replace(/\n+/g, ' ')}`).join('\n');
+}
+
+function buildBaseSystemPrompt(knowledgeBase?: string | null): string {
+  // Prefer the admin-edited knowledge base; fall back to the curated FAQ so the
+  // model repeats our real terms instead of inventing them.
+  const kb = knowledgeBase && knowledgeBase.trim() ? knowledgeBase.trim() : builtinKnowledgeBase();
 
   return [
     'Ты — вежливый ассистент службы поддержки интернет-магазина одежды ELEVATE.',
@@ -52,7 +57,7 @@ function buildBaseSystemPrompt(): string {
     'Форматируй ответ в Markdown, можно с эмодзи, но без избыточности.',
     '',
     '=== БАЗА ЗНАНИЙ (правила магазина) ===',
-    faqBlock,
+    kb,
   ].join('\n');
 }
 
@@ -179,17 +184,17 @@ export interface AiReplyResult {
  */
 export async function generateAiReply({ sessionId, userId, message }: GenerateAiReplyArgs): Promise<AiReplyResult | null> {
   try {
-    const provider = await getActiveProvider();
-    if (!provider) return null;
+    const ctx = await getActiveAiContext();
+    if (!ctx) return null;
+    const { provider, systemPrompt: override, knowledgeBase } = ctx;
 
-    const [override, history, ordersCtx, productsCtx] = await Promise.all([
-      getSystemPromptOverride(),
+    const [history, ordersCtx, productsCtx] = await Promise.all([
       buildHistory(sessionId),
       userId ? buildOrdersContext(userId).catch(() => null) : Promise.resolve(null),
       buildProductsContext(message).catch(() => null),
     ]);
 
-    let systemContent = buildBaseSystemPrompt();
+    let systemContent = buildBaseSystemPrompt(knowledgeBase);
     if (override && override.trim()) systemContent += `\n\n=== ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ ===\n${override.trim()}`;
     if (ordersCtx) systemContent += `\n\n${ordersCtx}`;
     if (productsCtx) systemContent += `\n\n${productsCtx}`;

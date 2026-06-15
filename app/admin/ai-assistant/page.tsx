@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   Bot, Plus, Trash2, Save, Loader2, CheckCircle2, XCircle, Zap, Lock, KeyRound,
-  Activity, AlertTriangle,
+  Activity, AlertTriangle, BookOpen, RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
@@ -66,6 +66,8 @@ export default function AiAssistantPage() {
   const [enabled, setEnabled] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState('');
+  const [knowledgeBase, setKnowledgeBase] = useState('');
+  const [defaultKb, setDefaultKb] = useState('');
   const [encryptionOk, setEncryptionOk] = useState(true);
   const [providers, setProviders] = useState<ProviderForm[]>([]);
   const [diag, setDiag] = useState<DiagResult | null>(null);
@@ -93,6 +95,8 @@ export default function AiAssistantPage() {
         setEnabled(Boolean(d.enabled));
         setActiveId(d.activeProviderId ?? null);
         setSystemPrompt(d.systemPrompt ?? '');
+        setKnowledgeBase(d.knowledgeBase ?? '');
+        setDefaultKb(d.defaultKnowledgeBase ?? '');
         setEncryptionOk(Boolean(d.encryptionConfigured));
         setProviders(
           (d.providers ?? []).map((p: Partial<ProviderForm>) => ({
@@ -175,6 +179,7 @@ export default function AiAssistantPage() {
         enabled,
         activeProviderId: activeId,
         systemPrompt,
+        knowledgeBase,
         providers: providers.map((p) => ({
           id: p.id,
           type: p.type,
@@ -524,12 +529,54 @@ export default function AiAssistantPage() {
           )}
         </div>
 
+        {/* Knowledge base */}
+        <div className="admin-card p-6 space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--admin-accent-soft)] text-[var(--admin-accent)]">
+                <BookOpen className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold text-[var(--admin-text)]">База знаний магазина</h2>
+                <p className="text-sm text-[var(--admin-text-muted)]">
+                  Правила магазина, которые ИИ считает истиной: доставка, возвраты, оплата, размеры. Меняйте без передеплоя — ИИ будет отвечать по этим условиям.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (knowledgeBase.trim() && knowledgeBase.trim() !== defaultKb.trim()) {
+                  if (!window.confirm('Заменить текущий текст стандартной базой из FAQ?')) return;
+                }
+                setKnowledgeBase(defaultKb);
+              }}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--admin-border)] px-3 py-1.5 text-xs font-medium text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)] transition-colors"
+              title="Подставить стандартную базу из встроенного FAQ"
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Из FAQ
+            </button>
+          </div>
+          <textarea
+            value={knowledgeBase}
+            onChange={(e) => setKnowledgeBase(e.target.value)}
+            rows={10}
+            className={`${inputCls} font-mono text-xs leading-relaxed`}
+            placeholder={defaultKb || 'Опишите правила магазина: сроки и стоимость доставки, условия возврата, способы оплаты, таблица размеров…'}
+          />
+          <p className="text-xs text-[var(--admin-text-faint)]">
+            {knowledgeBase.trim()
+              ? 'Используется ваш текст. Чтобы вернуть встроенный FAQ — очистите поле или нажмите «Из FAQ».'
+              : 'Поле пустое — ИИ использует встроенный FAQ (показан как подсказка). Заполните, чтобы задать свои условия.'}
+          </p>
+        </div>
+
         {/* System prompt */}
         <div className="admin-card p-6 space-y-3">
           <div>
             <h2 className="text-lg font-semibold text-[var(--admin-text)]">Дополнительные инструкции</h2>
             <p className="text-sm text-[var(--admin-text-muted)]">
-              Необязательно. Добавляется к системному промпту (тон общения, акценты, особые правила). База знаний из FAQ подключается автоматически.
+              Необязательно. Добавляется к системному промпту (тон общения, акценты, особые правила). База знаний подключается отдельно (выше).
             </p>
           </div>
           <textarea

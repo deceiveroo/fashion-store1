@@ -24,6 +24,7 @@ export const AI_KEYS = {
   activeProvider: 'ai_active_provider',
   providers: 'ai_providers',
   systemPrompt: 'ai_system_prompt',
+  knowledgeBase: 'ai_knowledge_base', // admin-editable store policy (overrides built-in FAQ)
 } as const;
 
 const PLAINTEXT_PREFIX = 'plain:'; // marks an unencrypted secret (no ENCRYPTION_KEY)
@@ -33,6 +34,7 @@ export interface AiConfigState {
   activeProviderId: string | null;
   providers: AiProviderConfig[];
   systemPrompt: string | null;
+  knowledgeBase: string | null;
 }
 
 // ---- secret helpers ---------------------------------------------------------
@@ -90,6 +92,7 @@ export async function getAiConfig(): Promise<AiConfigState> {
     activeProviderId: m[AI_KEYS.activeProvider] || null,
     providers: Array.isArray(providers) ? providers : [],
     systemPrompt: m[AI_KEYS.systemPrompt] || null,
+    knowledgeBase: m[AI_KEYS.knowledgeBase] || null,
   };
 }
 
@@ -103,6 +106,10 @@ export async function setActiveProvider(id: string): Promise<void> {
 
 export async function setSystemPrompt(prompt: string): Promise<void> {
   await writeSetting(AI_KEYS.systemPrompt, prompt || '');
+}
+
+export async function setKnowledgeBase(kb: string): Promise<void> {
+  await writeSetting(AI_KEYS.knowledgeBase, kb || '');
 }
 
 export async function saveProviders(providers: AiProviderConfig[]): Promise<void> {
@@ -149,6 +156,35 @@ export async function getActiveProvider(): Promise<AiProvider | null> {
 export async function getSystemPromptOverride(): Promise<string | null> {
   const cfg = await getAiConfig();
   return cfg.systemPrompt;
+}
+
+export interface ActiveAiContext {
+  provider: AiProvider;
+  systemPrompt: string | null;
+  knowledgeBase: string | null;
+}
+
+/**
+ * Single-read variant of getActiveProvider(): resolves the active provider AND
+ * the prompt override + knowledge base from ONE settings read, so the chat path
+ * doesn't hit the DB twice per message. Returns null when AI is off / unconfigured.
+ */
+export async function getActiveAiContext(): Promise<ActiveAiContext | null> {
+  const cfg = await getAiConfig();
+  if (!cfg.enabled) return null;
+
+  const active = cfg.providers.find((p) => p.id === cfg.activeProviderId && p.enabled);
+  if (!active) return null;
+
+  try {
+    return {
+      provider: buildProvider(active),
+      systemPrompt: cfg.systemPrompt,
+      knowledgeBase: cfg.knowledgeBase,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function isKnownProviderType(t: string): t is AiProviderType {
