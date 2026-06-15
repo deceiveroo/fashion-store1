@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, MessageCircle,
   Shield, Tag, LineChart, Settings, LogOut, Menu, X, Home,
   Bell, ChevronRight, Zap, Search, Command, BadgeCheck,
-  Plus, TrendingUp, AlertCircle, CheckCircle2, Sparkles, Star,
+  Plus, TrendingUp, AlertCircle, CheckCircle2, Sparkles, Star, Bot,
 } from 'lucide-react';
 import CommandPalette from './CommandPalette';
 import AnimatedGradient from './AnimatedGradient';
@@ -77,6 +77,7 @@ const NAV = [
       { label: 'Категории', href: '/admin/categories',      icon: Tag,             roles: ['admin','manager'] },
       { label: 'Промокоды', href: '/admin/coupons',         icon: Sparkles,        roles: ['admin','manager'] },
       { label: 'Уведомления', href: '/admin/notifications', icon: Bell,            roles: ['admin','manager'] },
+      { label: 'ИИ-ассистент', href: '/admin/ai-assistant', icon: Bot,             roles: ['admin'] },
       { label: 'Настройки', href: '/admin/settings',        icon: Settings,        roles: ['admin'] },
     ],
   },

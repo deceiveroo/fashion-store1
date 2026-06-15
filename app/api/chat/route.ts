@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { supportChatMessages, supportChatSessions } from '@/lib/schema';
 import { eq, asc, desc } from 'drizzle-orm';
 import { findAutoResponse } from '@/lib/chat-auto-responses';
+import { generateAiReply } from '@/lib/ai/chat-ai';
 import { validateMessage } from '@/lib/chat-utils';
 import { validateCSRF } from '@/lib/csrf-protection';
 import { chatRateLimiter, memoryRateLimitCheck, isRedisAvailable, redis } from '@/lib/redis';
@@ -140,10 +141,30 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
-    const autoReply = findAutoResponse(message || '');
-    if (autoReply) {
-      await saveMsg(sessionId, userId, autoReply, 'ai');
-      const res = NextResponse.json({ success: true, sessionId, autoReply });
+    // 1) Try the AI assistant (active provider configured in admin → settings).
+    //    Returns null when AI is disabled, no provider is set, or generation failed.
+    let reply = await generateAiReply({ sessionId, userId, message: message || '' });
+
+    // 2) Fallback to the curated keyword auto-responder if AI produced nothing.
+    if (!reply) {
+      reply = findAutoResponse(message || '');
+    }
+
+    if (reply) {
+      // Re-check the takeover flag: an operator may have grabbed the session while
+      // the model was generating. If so, don't post an AI message over them.
+      const [fresh] = await db.select({ aiDisabled: supportChatSessions.aiDisabled })
+        .from(supportChatSessions)
+        .where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
+
+      if (fresh?.aiDisabled) {
+        const res = NextResponse.json({ takenOver: true, sessionId, message: '👨‍💼 Оператор подключён. Ожидайте ответа...' });
+        applyChatCookie(res, resolved.guestCookieToSet);
+        return res;
+      }
+
+      await saveMsg(sessionId, userId, reply, 'ai');
+      const res = NextResponse.json({ success: true, sessionId, autoReply: reply });
       applyChatCookie(res, resolved.guestCookieToSet);
       return res;
     }

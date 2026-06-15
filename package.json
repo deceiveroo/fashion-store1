@@ -12,8 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx ./lib/seed.ts",
-    "seed:staff": "dotenv -e .env.local -e .env -- tsx ./lib/seed-staff.ts",
-    "test-fk-wallet": "tsx test-fk-wallet.ts"
+    "seed:staff": "dotenv -e .env.local -e .env -- tsx ./lib/seed-staff.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.50",
