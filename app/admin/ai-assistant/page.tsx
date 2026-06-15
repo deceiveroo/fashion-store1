@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import {
   Bot, Plus, Trash2, Save, Loader2, CheckCircle2, XCircle, Zap, Lock, KeyRound,
-  Activity, AlertTriangle, BookOpen, RotateCcw,
+  Activity, AlertTriangle, BookOpen, RotateCcw, BarChart3, MessageSquare,
+  CornerUpRight, Gauge,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
@@ -36,6 +37,20 @@ const DEFAULT_MODELS: Record<ProviderType, string> = { gigachat: 'GigaChat', ope
 type CheckStatus = 'ok' | 'fail' | 'warn';
 interface DiagCheck { id: string; label: string; status: CheckStatus; detail: string }
 interface DiagResult { overall: CheckStatus; summary: string; checks: DiagCheck[] }
+
+interface DayStat { date: string; answered: number; fallback: number; escalated: number; error: number; latencyMs: number; latencyN: number }
+interface AiStats {
+  days: number;
+  answered: number;
+  fallback: number;
+  escalated: number;
+  error: number;
+  total: number;
+  fallbackRate: number;
+  escalationRate: number;
+  avgLatencyMs: number;
+  daily: DayStat[];
+}
 
 function blankProvider(type: ProviderType = 'gigachat'): ProviderForm {
   return {
@@ -72,6 +87,15 @@ export default function AiAssistantPage() {
   const [providers, setProviders] = useState<ProviderForm[]>([]);
   const [diag, setDiag] = useState<DiagResult | null>(null);
   const [diagLoading, setDiagLoading] = useState(false);
+  const [stats, setStats] = useState<AiStats | null>(null);
+  const [statsDays, setStatsDays] = useState(7);
+
+  const loadStats = (days: number) => {
+    fetch(`/api/admin/ai-providers/stats?days=${days}`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setStats(d))
+      .catch(() => {});
+  };
 
   const runDiagnostics = async () => {
     setDiagLoading(true);
@@ -115,6 +139,8 @@ export default function AiAssistantPage() {
       .catch(() => toast.error('Не удалось загрузить настройки'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { loadStats(statsDays); }, [statsDays]);
 
   const update = (i: number, patch: Partial<ProviderForm>) =>
     setProviders((prev) => prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
@@ -307,6 +333,113 @@ export default function AiAssistantPage() {
               </span>
             </button>
           </div>
+        </div>
+
+        {/* Usage statistics */}
+        <div className="admin-card p-6 space-y-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--admin-accent-soft)] text-[var(--admin-accent)]">
+                <BarChart3 className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-[var(--admin-text)]">Статистика ИИ</p>
+                <p className="text-xs text-[var(--admin-text-muted)]">
+                  Сколько диалогов обработал ИИ, как часто откатывался на автоответчик и передавал оператору.
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1 rounded-lg border border-[var(--admin-border)] p-0.5">
+              {[7, 14, 30].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setStatsDays(d)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    statsDays === d
+                      ? 'bg-[var(--admin-accent-soft)] text-[var(--admin-accent)]'
+                      : 'text-[var(--admin-text-muted)] hover:bg-[var(--admin-card-hover)]'
+                  }`}
+                >
+                  {d}д
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!stats || stats.total === 0 ? (
+            <div className="rounded-xl bg-[var(--admin-bg-muted)]/50 p-6 text-center text-sm text-[var(--admin-text-muted)]">
+              {stats ? 'Пока нет данных за выбранный период. Статистика появится, как только ИИ начнёт отвечать.' : 'Загрузка…'}
+            </div>
+          ) : (
+            <>
+              {/* Headline metrics */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)]/40 p-3.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--admin-text-faint)]">
+                    <MessageSquare className="h-3.5 w-3.5" /> Ответил ИИ
+                  </div>
+                  <p className="mt-1 text-2xl font-bold text-[var(--admin-text)]">{stats.answered}</p>
+                </div>
+                <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)]/40 p-3.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--admin-text-faint)]">
+                    <CornerUpRight className="h-3.5 w-3.5" /> Передал оператору
+                  </div>
+                  <p className="mt-1 text-2xl font-bold text-violet-600 dark:text-violet-400">{stats.escalated}</p>
+                  <p className="text-[10px] text-[var(--admin-text-faint)]">{Math.round(stats.escalationRate * 100)}% диалогов</p>
+                </div>
+                <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)]/40 p-3.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--admin-text-faint)]">
+                    <AlertTriangle className="h-3.5 w-3.5" /> Автоответчик
+                  </div>
+                  <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.fallback}</p>
+                  <p className="text-[10px] text-[var(--admin-text-faint)]">{Math.round(stats.fallbackRate * 100)}% (ИИ не справился)</p>
+                </div>
+                <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg-muted)]/40 p-3.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--admin-text-faint)]">
+                    <Gauge className="h-3.5 w-3.5" /> Скорость
+                  </div>
+                  <p className="mt-1 text-2xl font-bold text-[var(--admin-text)]">
+                    {stats.avgLatencyMs >= 1000 ? `${(stats.avgLatencyMs / 1000).toFixed(1)}с` : `${stats.avgLatencyMs}мс`}
+                  </p>
+                  <p className="text-[10px] text-[var(--admin-text-faint)]">среднее время ответа</p>
+                </div>
+              </div>
+
+              {/* Daily mini-bars: answered vs escalated vs fallback vs error */}
+              {stats.daily.length > 0 && (() => {
+                const peak = Math.max(1, ...stats.daily.map((d) => d.answered + d.escalated + d.fallback + d.error));
+                return (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[var(--admin-text-muted)]">
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500" /> Ответ ИИ</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-violet-500" /> Оператору</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500" /> Автоответчик</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-red-500" /> Ошибки</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {stats.daily.map((d) => {
+                        const dayTotal = d.answered + d.escalated + d.fallback + d.error;
+                        const pct = (n: number) => `${(n / peak) * 100}%`;
+                        const label = new Date(d.date + 'T00:00:00').toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                        return (
+                          <div key={d.date} className="flex items-center gap-2.5">
+                            <span className="w-10 shrink-0 text-[10px] tabular-nums text-[var(--admin-text-faint)]">{label}</span>
+                            <div className="flex h-4 flex-1 overflow-hidden rounded bg-[var(--admin-bg-muted)]/60">
+                              <div className="bg-emerald-500" style={{ width: pct(d.answered) }} title={`Ответ ИИ: ${d.answered}`} />
+                              <div className="bg-violet-500" style={{ width: pct(d.escalated) }} title={`Оператору: ${d.escalated}`} />
+                              <div className="bg-amber-500" style={{ width: pct(d.fallback) }} title={`Автоответчик: ${d.fallback}`} />
+                              <div className="bg-red-500" style={{ width: pct(d.error) }} title={`Ошибки: ${d.error}`} />
+                            </div>
+                            <span className="w-6 shrink-0 text-right text-[10px] tabular-nums text-[var(--admin-text-faint)]">{dayTotal}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
+          )}
         </div>
 
         {/* System diagnostics */}
