@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   Bot, Plus, Trash2, Save, Loader2, CheckCircle2, XCircle, Zap, Lock, KeyRound,
+  Activity, AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminShell from '@/components/admin/AdminShell';
@@ -31,6 +32,10 @@ interface ProviderForm {
 }
 
 const DEFAULT_MODELS: Record<ProviderType, string> = { gigachat: 'GigaChat', openai: 'gpt-4o-mini' };
+
+type CheckStatus = 'ok' | 'fail' | 'warn';
+interface DiagCheck { id: string; label: string; status: CheckStatus; detail: string }
+interface DiagResult { overall: CheckStatus; summary: string; checks: DiagCheck[] }
 
 function blankProvider(type: ProviderType = 'gigachat'): ProviderForm {
   return {
@@ -63,6 +68,22 @@ export default function AiAssistantPage() {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [encryptionOk, setEncryptionOk] = useState(true);
   const [providers, setProviders] = useState<ProviderForm[]>([]);
+  const [diag, setDiag] = useState<DiagResult | null>(null);
+  const [diagLoading, setDiagLoading] = useState(false);
+
+  const runDiagnostics = async () => {
+    setDiagLoading(true);
+    setDiag(null);
+    try {
+      const r = await fetch('/api/admin/ai-providers/diagnostics', { credentials: 'include' });
+      const d = await r.json();
+      if (r.ok) setDiag(d);
+      else toast.error(d.error || 'Не удалось выполнить проверку');
+    } catch {
+      toast.error('Ошибка сети при проверке');
+    }
+    setDiagLoading(false);
+  };
 
   useEffect(() => {
     fetch('/api/admin/ai-providers', { credentials: 'include' })
@@ -245,6 +266,78 @@ export default function AiAssistantPage() {
               <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
             </button>
           </div>
+        </div>
+
+        {/* System diagnostics */}
+        <div className="admin-card p-6 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--admin-accent-soft)] text-[var(--admin-accent)]">
+                <Activity className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-[var(--admin-text)]">Проверка системы</p>
+                <p className="text-xs text-[var(--admin-text-muted)]">
+                  Полный тест: от настроек до живого ответа модели. Покажет, что именно не так.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={runDiagnostics}
+              disabled={diagLoading}
+              className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundImage: 'var(--admin-accent-gradient)' }}
+            >
+              {diagLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+              {diagLoading ? 'Проверяю…' : 'Проверить систему'}
+            </button>
+          </div>
+
+          {diag && (
+            <div className="space-y-3">
+              {/* Overall banner */}
+              <div
+                className={`flex items-center gap-2.5 rounded-xl border p-3.5 text-sm font-semibold ${
+                  diag.overall === 'ok'
+                    ? 'border-emerald-300/50 bg-emerald-50/60 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400'
+                    : diag.overall === 'warn'
+                      ? 'border-amber-300/60 bg-amber-50/60 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400'
+                      : 'border-red-300/50 bg-red-50/60 text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400'
+                }`}
+              >
+                {diag.overall === 'ok' ? (
+                  <CheckCircle2 className="h-5 w-5 shrink-0" />
+                ) : diag.overall === 'warn' ? (
+                  <AlertTriangle className="h-5 w-5 shrink-0" />
+                ) : (
+                  <XCircle className="h-5 w-5 shrink-0" />
+                )}
+                {diag.summary}
+              </div>
+
+              {/* Per-check rows */}
+              <ul className="space-y-2">
+                {diag.checks.map((c) => (
+                  <li key={c.id} className="flex items-start gap-2.5 rounded-lg bg-[var(--admin-bg-muted)]/50 p-3">
+                    {c.status === 'ok' ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                    ) : c.status === 'warn' ? (
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                    ) : (
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[var(--admin-text)]">{c.label}</p>
+                      <p className="text-xs text-[var(--admin-text-muted)] break-words">{c.detail}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-[var(--admin-text-faint)]">
+                Совет: если меняли настройки — сначала нажмите «Сохранить», потом «Проверить систему».
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Providers */}
