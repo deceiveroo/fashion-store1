@@ -612,6 +612,13 @@ function SupportChatsPage() {
                             {s.messageCount||0}
                           </span>
                           <div className="flex items-center gap-2">
+                            {/* Кто отвечает: ИИ или оператор перехватил */}
+                            {!s.aiDisabled && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 dark:bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:text-violet-400">
+                                <Bot className="h-3 w-3" />
+                                ИИ
+                              </span>
+                            )}
                             {/* Информация об админе */}
                             {s.adminName && s.aiDisabled && (() => {
                               const byOther = !!s.takenOverBy && s.takenOverBy !== currentAdminId;
@@ -663,24 +670,28 @@ function SupportChatsPage() {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="font-semibold text-base text-gray-900 dark:text-white">{sel.userName||sel.userEmail||'Гость'}</p>
-                      <p className="text-xs text-gray-500 dark:text-white/40 mt-0.5 flex items-center gap-2">
+                      <div className="mt-1.5">
                         {mine ? (
-                          <>
-                            <Shield className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                            <span className="text-emerald-600 dark:text-emerald-400">Вы ведёте чат</span>
-                          </>
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/30 bg-emerald-100 dark:bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                            <Shield className="h-3.5 w-3.5" />
+                            Вы ведёте чат
+                          </span>
                         ) : lockedByOther ? (
-                          <>
-                            <Lock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                            <span className="text-amber-600 dark:text-amber-400">Ведёт {sel.adminName || 'другой оператор'}</span>
-                          </>
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                            <Lock className="h-3.5 w-3.5" />
+                            Ведёт {sel.adminName || 'другой оператор'}
+                          </span>
                         ) : (
-                          <>
-                            <Bot className="h-3 w-3 text-violet-600 dark:text-violet-400" />
-                            <span className="text-violet-600 dark:text-violet-400">AI отвечает</span>
-                          </>
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 dark:border-violet-500/30 bg-violet-100 dark:bg-violet-500/15 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-400">
+                            <span className="relative flex h-2 w-2">
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-500 opacity-75" />
+                              <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-500" />
+                            </span>
+                            <Bot className="h-3.5 w-3.5" />
+                            Сейчас отвечает ИИ
+                          </span>
                         )}
-                      </p>
+                      </div>
                     </div>
                     <button 
                       onClick={(e)=>del(sel.sessionId,e)} 
@@ -787,23 +798,30 @@ function SupportChatsPage() {
                         
                         {/* Message Bubble */}
                         <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                          isUser ? 'bg-white/5 text-white border border-white/10 rounded-tl-none' :
-                          isAdmin ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-500/30 rounded-tr-none' :
-                          'bg-violet-500/20 text-violet-100 border border-violet-500/30 rounded-tr-none'
+                          isUser ? 'bg-gray-100 text-gray-900 border border-gray-200 dark:bg-white/5 dark:text-white dark:border-white/10 rounded-tl-none' :
+                          isAdmin ? 'bg-emerald-50 text-emerald-900 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-100 dark:border-emerald-500/30 rounded-tr-none' :
+                          'bg-violet-50 text-violet-900 border border-violet-200 dark:bg-violet-500/20 dark:text-violet-100 dark:border-violet-500/30 rounded-tr-none'
                         }`}>
                           {/* Sender name for admin messages */}
                           {isAdmin && (
-                            <p className="text-xs font-medium text-emerald-400 mb-1">{adminDisplayName}</p>
+                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-1">
+                              <Shield className="h-3 w-3" />
+                              {adminDisplayName}
+                            </p>
                           )}
-                          {/* Sender name for AI messages */}
+                          {/* Sender badge for AI messages — makes it unmistakable the bot answered */}
                           {!isAdmin && !isUser && (
-                            <p className="text-xs font-medium text-violet-400 mb-1">AI Ассистент</p>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 dark:bg-violet-500/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700 dark:text-violet-300 mb-1.5">
+                              <Bot className="h-3 w-3" />
+                              Ответил ИИ
+                            </span>
                           )}
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.message}</p>
                           <div className="flex items-center gap-2 mt-2">
-                            <span className="text-xs opacity-50">
+                            <span className="text-xs opacity-60">
                               {new Date(m.createdAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
                               {isAdmin && ' • Вы'}
+                              {!isAdmin && !isUser && ' • Нейросеть'}
                             </span>
                             {/* Галочки прочтения для сообщений админа */}
                             {isAdmin && (
