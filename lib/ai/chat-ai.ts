@@ -23,6 +23,20 @@ const MAX_HISTORY_MESSAGES = 12; // cap context size / cost
 const MAX_ORDERS = 5;
 const MAX_PRODUCTS = 5;
 
+// Sentinel the model appends when it wants to hand the chat to a human.
+// Stripped from the visible reply before saving (the customer never sees it).
+const ESCALATE_MARKER = /\[\[\s*ESCALATE\s*\]\]/gi;
+
+// Default hand-off shown to the customer when escalation happens but the model
+// produced no visible text of its own.
+const DEFAULT_HANDOFF = 'Передаю ваш вопрос оператору — он скоро подключится. 👨‍💼';
+
+/** Conservative detector for an explicit "I want a human" request. */
+function looksLikeHumanRequest(message: string): boolean {
+  const m = message.toLowerCase();
+  return /(оператор|менеджер|живой человек|реальн[ыо][йм] человек|позов(и|ите)|жалоб|верните (мне )?деньги|обман|мошенн)/.test(m);
+}
+
 function buildBaseSystemPrompt(): string {
   // Distill the curated FAQ into a compact policy block so the model repeats our
   // real terms instead of inventing them.
@@ -33,7 +47,7 @@ function buildBaseSystemPrompt(): string {
     'Отвечай кратко, дружелюбно и по делу, на языке клиента (обычно русский).',
     'Используй факты из базы знаний ниже как ИСТИНУ о правилах магазина (доставка, возвраты, оплата, размеры).',
     'Не выдумывай сроки, цены и условия, которых нет в базе знаний или в данных заказа.',
-    'Если вопрос требует действий оператора-человека (сложный возврат, спор, индивидуальный случай) — скажи, что подключишь оператора.',
+    'Если вопрос требует живого оператора (сложный/спорный возврат, жалоба, конфликт, индивидуальный случай) ИЛИ клиент прямо просит человека, ИЛИ ты не можешь помочь — вежливо сообщи клиенту, что подключаешь оператора, и в САМОМ КОНЦЕ ответа добавь ОТДЕЛЬНОЙ СТРОКОЙ ровно: [[ESCALATE]]. Этот маркер служебный — клиент его не увидит, по нему система позовёт оператора. Не добавляй маркер, если справляешься сам.',
     'Не запрашивай и не раскрывай платёжные данные карт. Не обещай того, чего нет в правилах.',
     'Форматируй ответ в Markdown, можно с эмодзи, но без избыточности.',
     '',
@@ -152,11 +166,18 @@ export interface GenerateAiReplyArgs {
   message: string;
 }
 
+export interface AiReplyResult {
+  /** Visible reply text (escalation marker already stripped). */
+  text: string;
+  /** True when the chat should be handed off to a human operator. */
+  escalate: boolean;
+}
+
 /**
  * Produce an AI reply, or null if no provider is active / generation failed.
  * Never throws — the caller falls back to findAutoResponse on null.
  */
-export async function generateAiReply({ sessionId, userId, message }: GenerateAiReplyArgs): Promise<string | null> {
+export async function generateAiReply({ sessionId, userId, message }: GenerateAiReplyArgs): Promise<AiReplyResult | null> {
   try {
     const provider = await getActiveProvider();
     if (!provider) return null;
@@ -185,7 +206,18 @@ export async function generateAiReply({ sessionId, userId, message }: GenerateAi
     }
 
     const result = await provider.generate(messages);
-    return result.text || null;
+    let text = (result.text || '').trim();
+
+    // Escalation is requested either by the model's sentinel or by an explicit
+    // "I want a human" message from the customer (safety net).
+    const escalate = ESCALATE_MARKER.test(text) || looksLikeHumanRequest(message);
+    text = text.replace(ESCALATE_MARKER, '').trim();
+
+    if (!text) {
+      if (escalate) return { text: DEFAULT_HANDOFF, escalate: true };
+      return null; // empty model output → caller falls back to findAutoResponse
+    }
+    return { text, escalate };
   } catch (e) {
     console.error('[AI REPLY] generation failed:', e instanceof Error ? e.message : e);
     return null;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3, Star, Check, CheckCheck, ArrowLeft, Lock } from 'lucide-react';
+import { MessageCircle, Send, CheckCircle, Archive, User, Bot, Shield, Trash2, RefreshCw, Zap, Clock, Users, BarChart3, Star, Check, CheckCheck, ArrowLeft, Lock, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import AdminShell from '@/components/admin/AdminShell';
@@ -69,6 +69,8 @@ function SupportChatsPage() {
   const mine = taken && !!currentAdminId && sel?.takenOverBy === currentAdminId;
   // Чат перехвачен ДРУГИМ оператором — текущий не может вмешиваться.
   const lockedByOther = taken && !!sel?.takenOverBy && sel.takenOverBy !== currentAdminId;
+  // ИИ передал диалог человеку, но никто ещё не перехватил — ждёт оператора.
+  const needsOperator = taken && !sel?.takenOverBy;
 
   useEffect(() => { selRef.current = sel; }, [sel]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -612,13 +614,18 @@ function SupportChatsPage() {
                             {s.messageCount||0}
                           </span>
                           <div className="flex items-center gap-2">
-                            {/* Кто отвечает: ИИ или оператор перехватил */}
-                            {!s.aiDisabled && (
+                            {/* Кто отвечает: ИИ / нужен оператор / оператор перехватил */}
+                            {!s.aiDisabled ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 dark:bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:text-violet-400">
                                 <Bot className="h-3 w-3" />
                                 ИИ
                               </span>
-                            )}
+                            ) : !s.takenOverBy ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-400 animate-pulse">
+                                <Bell className="h-3 w-3" />
+                                Нужен оператор
+                              </span>
+                            ) : null}
                             {/* Информация об админе */}
                             {s.adminName && s.aiDisabled && (() => {
                               const byOther = !!s.takenOverBy && s.takenOverBy !== currentAdminId;
@@ -680,6 +687,15 @@ function SupportChatsPage() {
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
                             <Lock className="h-3.5 w-3.5" />
                             Ведёт {sel.adminName || 'другой оператор'}
+                          </span>
+                        ) : needsOperator ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 dark:border-red-500/30 bg-red-100 dark:bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-700 dark:text-red-400">
+                            <span className="relative flex h-2 w-2">
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                            </span>
+                            <Bell className="h-3.5 w-3.5" />
+                            ИИ передал оператору — нужен ответ
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 dark:border-violet-500/30 bg-violet-100 dark:bg-violet-500/15 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-400">

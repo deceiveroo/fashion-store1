@@ -4,6 +4,8 @@ import { supportChatMessages, supportChatSessions } from '@/lib/schema';
 import { eq, asc, desc } from 'drizzle-orm';
 import { findAutoResponse } from '@/lib/chat-auto-responses';
 import { generateAiReply } from '@/lib/ai/chat-ai';
+import { sendOperatorAlert } from '@/lib/telegram';
+import { bumpAiStat } from '@/lib/ai/stats';
 import { validateMessage } from '@/lib/chat-utils';
 import { validateCSRF } from '@/lib/csrf-protection';
 import { chatRateLimiter, memoryRateLimitCheck, isRedisAvailable, redis } from '@/lib/redis';
@@ -143,11 +145,17 @@ export async function POST(req: NextRequest) {
 
     // 1) Try the AI assistant (active provider configured in admin → settings).
     //    Returns null when AI is disabled, no provider is set, or generation failed.
-    let reply = await generateAiReply({ sessionId, userId, message: message || '' });
+    const aiStart = Date.now();
+    const ai = await generateAiReply({ sessionId, userId, message: message || '' });
+
+    let reply: string | null = ai?.text ?? null;
+    const escalate = ai?.escalate ?? false;
+    let usedFallback = false;
 
     // 2) Fallback to the curated keyword auto-responder if AI produced nothing.
     if (!reply) {
       reply = findAutoResponse(message || '');
+      if (reply) usedFallback = true;
     }
 
     if (reply) {
@@ -164,7 +172,32 @@ export async function POST(req: NextRequest) {
       }
 
       await saveMsg(sessionId, userId, reply, 'ai');
-      const res = NextResponse.json({ success: true, sessionId, autoReply: reply });
+
+      // Record analytics (never blocks the reply).
+      bumpAiStat(escalate ? 'escalated' : usedFallback ? 'fallback' : 'answered', Date.now() - aiStart)
+        .catch(() => {});
+
+      // Hand the chat off to a human: flip aiDisabled so the AI stops replying,
+      // leave takenOverBy null so the admin UI shows "needs operator", and alert
+      // operators via Telegram (best-effort).
+      if (escalate) {
+        await db.update(supportChatSessions)
+          .set({ aiDisabled: true, updatedAt: new Date() })
+          .where(eq(supportChatSessions.sessionId, sessionId));
+
+        const [sess] = await db.select({ userName: supportChatSessions.userName, userEmail: supportChatSessions.userEmail })
+          .from(supportChatSessions)
+          .where(eq(supportChatSessions.sessionId, sessionId)).limit(1);
+        sendOperatorAlert({
+          sessionId,
+          userName: sess?.userName,
+          userEmail: sess?.userEmail,
+          lastMessage: message || '',
+          reason: 'ИИ передал диалог оператору',
+        }).catch(() => {});
+      }
+
+      const res = NextResponse.json({ success: true, sessionId, autoReply: reply, escalated: escalate });
       applyChatCookie(res, resolved.guestCookieToSet);
       return res;
     }

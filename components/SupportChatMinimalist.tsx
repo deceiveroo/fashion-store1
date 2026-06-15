@@ -370,6 +370,12 @@ export default function SupportChatMinimalist() {
             timestamp: new Date(),
           },
         ]);
+        // AI handed the chat to a human — surface it so the user knows to wait
+        // for a real operator instead of expecting another AI reply.
+        if (data.escalated) {
+          setTakenOver(true);
+          toast.success('Подключаем оператора — он скоро ответит');
+        }
       } else if (!operatorActive) {
         setTyping(true);
         await new Promise((r) => setTimeout(r, 600));
