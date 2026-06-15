@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Delete",
+      "Bash",
+      "Execute",
+      "Create",
+      "Rename",
+      "Move",
+      "Copy",
+      "List",
+      "Search",
+      "Admin"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "allow"
+  },
+  "worktree": {
+    "baseRef": "head"
+  },
+  "effortLevel": "high",
+  "skipDangerousModePermissionPrompt": true,
+  "editorMode": "normal",
+  "verbose": false,
+  "autoCompactEnabled": true,
+  "hasCompletedOnboarding": true
+}
