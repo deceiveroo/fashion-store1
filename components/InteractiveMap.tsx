@@ -69,7 +69,7 @@ export default function InteractiveMap({
           center: [55.7558, 37.6176],
           zoom: 4,
           scrollWheelZoom: true,
-          attributionControl: true,
+          attributionControl: false,
         });
 
         // CARTO Voyager — нейтральные премиальные тайлы, без ключа.
