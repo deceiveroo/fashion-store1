@@ -31,7 +31,7 @@ const socialLinks = [
       <div className="w-6 h-6 bg-contain bg-no-repeat bg-center rounded-full" 
            style={{ backgroundImage: "url('/icon/1.jpg')" }} />
     ), 
-    href: 'https://t.me/+newnREU3Nuc0OThi', 
+    href: 'https://max.ru/', 
     label: 'Telegram',
     color: 'hover:bg-blue-500'
   },
