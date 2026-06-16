@@ -6,8 +6,11 @@ import { productInStock, productFeatured } from '@/lib/product-query';
 import { eq, and, inArray, avg, count } from 'drizzle-orm';
 import ProductClient from '@/components/ProductClient';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: страница товара кэшируется и перегенерируется не чаще раза в 5 минут.
+// Данные товара меняются редко; инвалидация при редактировании идёт через
+// revalidatePath('/products/[id]') в lib/actions. Это снимает поход в БД с
+// каждого просмотра — самый частый dynamic-маршрут.
+export const revalidate = 300;
 export const runtime = 'nodejs';
 
 // Базовый URL — для абсолютных ссылок в JSON-LD (Google требует абсолютные URL).
@@ -72,30 +75,29 @@ const getProduct = cache(async function getProduct(id: string) {
 
     const firstProduct = productRows[0];
 
-    // Загружаем изображения
-    const imageRows = await db
-      .select()
-      .from(productImages)
-      .where(eq(productImages.productId, id))
-      .orderBy(productImages.order);
-
-    // Загружаем категории
-    const categoryRows = await db
-      .select({
-        id: categories.id,
-        name: categories.name,
-        slug: categories.slug,
-      })
-      .from(productCategory)
-      .leftJoin(categories, eq(categories.id, productCategory.categoryId))
-      .where(eq(productCategory.productId, id));
-
-    // Загружаем размеры
-    const sizeRows = await db
-      .select()
-      .from(productSizes)
-      .where(eq(productSizes.productId, id))
-      .orderBy(productSizes.sortOrder);
+    // Изображения, категории и размеры зависят только от id и независимы друг от
+    // друга — грузим их параллельно (3 последовательных round-trip'а → 1).
+    const [imageRows, categoryRows, sizeRows] = await Promise.all([
+      db
+        .select()
+        .from(productImages)
+        .where(eq(productImages.productId, id))
+        .orderBy(productImages.order),
+      db
+        .select({
+          id: categories.id,
+          name: categories.name,
+          slug: categories.slug,
+        })
+        .from(productCategory)
+        .leftJoin(categories, eq(categories.id, productCategory.categoryId))
+        .where(eq(productCategory.productId, id)),
+      db
+        .select()
+        .from(productSizes)
+        .where(eq(productSizes.productId, id))
+        .orderBy(productSizes.sortOrder),
+    ]);
 
     // Собираем уникальные категории с названиями
     const categoryNames = Array.from(
@@ -167,14 +169,14 @@ export default async function ProductPage({ params }: PageProps) {
     notFound();
   }
 
-  const product = await getProduct(id);
+  // Рейтинг зависит только от id и не нужен внутри getProduct — считаем его
+  // параллельно с загрузкой товара, а не после неё.
+  const [product, rating] = await Promise.all([getProduct(id), getProductRating(id)]);
 
   if (!product) {
     console.error('Product not found for ID:', id);
     notFound();
   }
-
-  const rating = await getProductRating(id);
 
   // JSON-LD Product — структурированные данные для Google (rich snippets: цена,
   // наличие, рейтинг). Абсолютные URL обязательны.

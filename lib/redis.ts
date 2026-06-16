@@ -73,6 +73,20 @@ export async function cacheSet<T>(
   }
 }
 
+// Get from cache or compute+store. TTL in seconds. Если Redis недоступен —
+// просто выполняет fetchFn без кэширования (fail-open), как и cacheGet/cacheSet.
+export async function cacheGetOrSet<T>(
+  key: string,
+  fetchFn: () => Promise<T>,
+  ttlSeconds: number = 300
+): Promise<T> {
+  const cached = await cacheGet<T>(key);
+  if (cached !== null) return cached;
+  const data = await fetchFn();
+  await cacheSet(key, data, ttlSeconds);
+  return data;
+}
+
 export async function cacheDelete(key: string): Promise<boolean> {
   if (!redis) return false;
 

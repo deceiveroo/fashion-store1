@@ -21,6 +21,7 @@ import ReviewForm from '@/components/reviews/ReviewForm';
 import SizeAdvisorModal from '@/components/SizeAdvisorModal';
 import ColorSelector, { type ColorOption } from '@/components/product/ColorSelector';
 import ProductGallery from '@/components/product/ProductGallery';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 // Единая кривая входной анимации (общая с ProductGallery). На уровне модуля —
 // чтобы не пересоздавать массив на каждый рендер.
@@ -87,6 +88,7 @@ function toNumberPrice(price: number | string): number {
 }
 
 export default function ProductClient({ product }: ProductClientProps) {
+  const { reviews: reviewsEnabled } = useFeatureFlags();
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [related, setRelated] = useState<ProductCardProduct[]>([]);
@@ -467,7 +469,8 @@ export default function ProductClient({ product }: ProductClientProps) {
           </div>
         </div>
 
-        {/* Reviews Section */}
+        {/* Reviews Section — модуль «Отзывы» из /admin/settings */}
+        {reviewsEnabled && (
         <motion.section
           className="mt-20 md:mt-28"
           initial={{ opacity: 0, y: 24 }}
@@ -516,6 +519,7 @@ export default function ProductClient({ product }: ProductClientProps) {
 
           <ReviewList productId={product.id} />
         </motion.section>
+        )}
 
         {/* Complete the look */}
         {related.length > 0 && (

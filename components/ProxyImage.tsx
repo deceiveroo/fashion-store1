@@ -15,6 +15,10 @@ import { useState, useEffect, ImgHTMLAttributes } from 'react';
 
 const PROXY_DOMAINS = ['supabase.co', 'supabase.com'];
 
+// Должно совпадать с imageSizes ∪ deviceSizes в next.config.js. Оптимизатор
+// next/image (v16) отдаёт 400, если w не равен в точности одному из этих значений.
+const ALLOWED_WIDTHS = [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920];
+
 function shouldProxy(src?: string): boolean {
   if (!src) return false;
   return PROXY_DOMAINS.some(domain => src.includes(domain));
@@ -24,7 +28,9 @@ function getProxiedUrl(src: string, width: number = 256): string {
   if (!shouldProxy(src)) return src;
   // Удваиваем ширину под retina/2x-экраны (иначе картинка мылит) и поднимаем
   // качество до 90. Next-оптимизатор сам ужмёт в AVIF/WebP, так что вес растёт умеренно.
-  const retinaWidth = Math.min(width * 2, 1920);
+  // Округляем вверх до ближайшего разрешённого размера — иначе /_next/image вернёт 400.
+  const desired = Math.min(width * 2, 1920);
+  const retinaWidth = ALLOWED_WIDTHS.find(w => w >= desired) ?? 1920;
   return `/_next/image?url=${encodeURIComponent(src)}&w=${retinaWidth}&q=90`;
 }
 

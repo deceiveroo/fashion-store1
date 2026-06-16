@@ -1,6 +1,8 @@
 import CatalogPage from '@/components/catalog/CatalogPage';
 
-export const dynamic = 'force-dynamic';
+// ISR: данные каталога уже кэшируются в Redis на 120с (lib/catalog-products).
+// Совмещаем TTL — Next отдаёт готовый HTML с CDN между перегенерациями.
+export const revalidate = 120;
 export const runtime = 'nodejs';
 
 export const metadata = {

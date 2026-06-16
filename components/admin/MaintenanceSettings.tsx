@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Save, AlertTriangle, Calendar, Image as ImageIcon, Mail, Upload } from 'lucide-react';
 import { toast } from 'sonner';
@@ -303,11 +302,12 @@ export default function MaintenanceSettings() {
           {/* Preview */}
           {config.backgroundImage && config.backgroundImage.trim() !== '' && (
             <div className="mt-3 relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 h-32">
-              <Image
+              {/* Админ вставляет произвольный URL — next/image на нём падает
+                  (хост не в remotePatterns). Для превью используем обычный <img>. */}
+              <img
                 src={config.backgroundImage}
                 alt="Background preview"
-                fill
-                className="object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                   toast.error('Ошибка загрузки изображения');
@@ -368,11 +368,10 @@ export default function MaintenanceSettings() {
           {/* Preview */}
           {config.memeImage && config.memeImage.trim() !== '' && (
             <div className="mt-3 relative rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 h-64">
-              <Image
+              <img
                 src={config.memeImage}
                 alt="Meme preview"
-                fill
-                className="object-contain"
+                className="absolute inset-0 h-full w-full object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                   toast.error('Ошибка загрузки изображения');

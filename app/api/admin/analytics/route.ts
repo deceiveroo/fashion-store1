@@ -4,7 +4,7 @@ import { users, orders, orderItems } from '@/lib/schema';
 import { count, sql, gte, desc } from 'drizzle-orm';
 import { isStaff } from '@/lib/server-auth';
 import { subMonths, format, startOfMonth } from 'date-fns';
-import { cache, CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { cacheGet, cacheSet } from '@/lib/redis';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,21 +15,35 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') || 'dashboard';
     const cacheKey = `analytics:${type}`;
 
-    const cached = cache.get(cacheKey);
+    const cached = await cacheGet(cacheKey);
     if (cached) return NextResponse.json(cached);
 
     let data: unknown;
 
     switch (type) {
       case 'dashboard': {
-        const revenue = await fetchRevenueByMonth();
-        const ordersByStatus = await fetchOrdersByStatus();
-        const topProducts = await fetchTopProducts();
-        const customerGrowth = await fetchCustomerGrowth();
-        const transactions = await fetchRecentTransactions();
-        const cohortData = await fetchCohortData();
-        const salesByDayOfWeek = await fetchSalesByDayOfWeek();
-        const funnelData = await fetchFunnelData();
+        // Восемь независимых агрегатов — раньше выполнялись по очереди (latency =
+        // сумма всех восьми). Параллелим: latency падает до самого долгого из них
+        // (пул в проде max=3 просто ставит лишние в очередь, не ломаясь).
+        const [
+          revenue,
+          ordersByStatus,
+          topProducts,
+          customerGrowth,
+          transactions,
+          cohortData,
+          salesByDayOfWeek,
+          funnelData,
+        ] = await Promise.all([
+          fetchRevenueByMonth(),
+          fetchOrdersByStatus(),
+          fetchTopProducts(),
+          fetchCustomerGrowth(),
+          fetchRecentTransactions(),
+          fetchCohortData(),
+          fetchSalesByDayOfWeek(),
+          fetchFunnelData(),
+        ]);
         data = {
           revenueByMonth: revenue,
           ordersByStatus,
@@ -61,7 +75,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
     }
 
-    cache.set(cacheKey, data, CACHE_TTL.LONG);
+    await cacheSet(cacheKey, data, 300); // 5 минут, общий Redis-кэш
     return NextResponse.json(data);
   } catch (error) {
     console.error('Analytics API error:', error);

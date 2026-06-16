@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { settings } from '@/lib/schema';
 import { inArray } from 'drizzle-orm';
-import { cache } from '@/lib/cache';
+import { cacheDelete } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,8 +69,9 @@ export async function PUT(request: Request) {
       .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: new Date() } });
   }
 
-  // Сбрасываем публичный кэш фич-флагов, чтобы изменения применились сразу.
-  cache.delete('feature-flags');
+  // Сбрасываем публичный кэш фич-флагов в Redis, чтобы изменения применились сразу
+  // во всех инстансах (ключ совпадает с FEATURE_FLAGS_CACHE_KEY в /api/feature-flags).
+  await cacheDelete('feature-flags');
 
   return NextResponse.json({ success: true });
 }

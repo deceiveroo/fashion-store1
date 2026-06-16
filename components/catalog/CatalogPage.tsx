@@ -7,8 +7,8 @@ import CatalogBrowser from '@/components/catalog/CatalogBrowser';
 import ProductGridSkeleton from '@/components/ProductGridSkeleton';
 import type { ProductCardVariant } from '@/components/product-card/types';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Конфиг ISR задаётся в самих маршрутах (app/products|men|women|new|collections/page.tsx).
+// В этом НЕ-page модуле route-segment экспорты игнорируются Next, поэтому их тут нет.
 
 async function loadProducts(tabId: CatalogTabId): Promise<CatalogProduct[]> {
   const config = getCatalogConfig(tabId);

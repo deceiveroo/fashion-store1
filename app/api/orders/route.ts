@@ -1,8 +1,8 @@
 // app/api/orders/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { db } from '@/lib/db';
 import { orders, orderItems, coupons, userCouponUsage } from '@/lib/schema';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, sql, and, inArray } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { randomUUID } from 'crypto';
 import { getSession } from '@/lib/server-auth';
@@ -149,31 +149,29 @@ export async function GET(request: NextRequest) {
     let allItems: any[] = [];
     
     if (orderIds.length > 0) {
-      // Загружаем items батчами по 10 заказов
-      const batchSize = 10;
-      for (let i = 0; i < Math.min(orderIds.length, batchSize); i++) {
-        try {
-          const batchItems = await queryWithRetry(() =>
-            db
-              .select({
-                id: orderItems.id,
-                orderId: orderItems.orderId,
-                productId: orderItems.productId,
-                variantId: orderItems.variantId,
-                name: orderItems.name,
-                price: orderItems.price,
-                quantity: orderItems.quantity,
-                image: orderItems.image,
-                size: orderItems.size,
-                color: orderItems.color,
-              })
-              .from(orderItems)
-              .where(eq(orderItems.orderId, orderIds[i]))
-          );
-          allItems = allItems.concat(batchItems);
-        } catch (err) {
-          console.warn(`Failed to fetch items for order ${orderIds[i]}`);
-        }
+      // Один батч-запрос на все заказы вместо цикла по одному запросу на заказ.
+      // Раньше цикл был ограничен 10 заказами — у пользователя с >10 заказами
+      // товары для остальных молча терялись. inArray грузит всё и без лимита.
+      try {
+        allItems = await queryWithRetry(() =>
+          db
+            .select({
+              id: orderItems.id,
+              orderId: orderItems.orderId,
+              productId: orderItems.productId,
+              variantId: orderItems.variantId,
+              name: orderItems.name,
+              price: orderItems.price,
+              quantity: orderItems.quantity,
+              image: orderItems.image,
+              size: orderItems.size,
+              color: orderItems.color,
+            })
+            .from(orderItems)
+            .where(inArray(orderItems.orderId, orderIds))
+        );
+      } catch (err) {
+        console.warn('Failed to fetch order items batch:', err);
       }
     }
     
@@ -409,15 +407,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Gamification: Award XP for purchase and check achievements
-    try {
-      await awardXP(currentUser.id, 50, 'Purchase completed', { orderId: newOrder.id });
-      // Pass order total to check for big_spender achievement
-      await checkAchievements(currentUser.id, 'purchase', parseFloat(newOrder.total));
-    } catch (gamificationError) {
-      console.error('Gamification error:', gamificationError);
-      // Don't fail the order if gamification fails
-    }
+    // Геймификация (XP + достижения) — это десятки последовательных запросов к БД.
+    // Раньше POST /api/orders ДОЖИДАЛСЯ их, и пользователь ждал оформление лишние
+    // сотни мс — секунды. Через after() работа выполняется ПОСЛЕ отправки ответа
+    // (заказ уже создан и зафиксирован в транзакции выше — клиенту ждать нечего).
+    after(async () => {
+      try {
+        await awardXP(currentUser.id, 50, 'Purchase completed', { orderId: newOrder.id });
+        // Pass order total to check for big_spender achievement
+        await checkAchievements(currentUser.id, 'purchase', parseFloat(newOrder.total));
+      } catch (gamificationError) {
+        console.error('Gamification error (deferred):', gamificationError);
+      }
+    });
 
     // Письмо-подтверждение (best-effort: не валим заказ, если почта недоступна)
     try {

@@ -3,7 +3,8 @@ import { db } from '@/lib/db';
 import { users, products, orders } from '@/lib/schema';
 import { count, sum, sql, gte, lte, and } from 'drizzle-orm';
 import { isStaff } from '@/lib/server-auth';
-import { cache, CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { CACHE_KEYS } from '@/lib/cache';
+import { cacheGet, cacheSet } from '@/lib/redis';
 import { subMonths } from 'date-fns';
 
 export async function GET() {
@@ -19,7 +20,7 @@ export async function GET() {
 
     // Aggressive caching - stats don't change often
     const cacheKey = CACHE_KEYS.SITE_CONFIG + ':stats';
-    const cached = cache.get(cacheKey);
+    const cached = await cacheGet(cacheKey);
     if (cached) {
       console.log('[STATS] Cache hit - returning cached data');
       return NextResponse.json(cached);
@@ -30,37 +31,44 @@ export async function GET() {
     const oneMonthAgo = subMonths(new Date(), 1);
     const twoMonthsAgo = subMonths(new Date(), 2);
 
-    // Sequential queries — Supabase pooler allows very few concurrent connections
-    const [{ totalUsers }] = await db.select({ totalUsers: count() }).from(users);
-    const [{ totalProducts }] = await db.select({ totalProducts: count() }).from(products);
-    const [{ totalOrders }] = await db.select({ totalOrders: count() }).from(orders);
-    const [{ totalRevenue }] = await db
-      .select({ totalRevenue: sum(sql`CAST(${orders.total} AS NUMERIC)`) })
-      .from(orders);
-    const [{ newUsersThisMonth }] = await db
-      .select({ newUsersThisMonth: count() })
-      .from(users)
-      .where(gte(users.createdAt, oneMonthAgo));
-    const [{ newOrdersThisMonth }] = await db
-      .select({ newOrdersThisMonth: count() })
-      .from(orders)
-      .where(gte(orders.createdAt, oneMonthAgo));
-    const [{ revenueThisMonth }] = await db
-      .select({ revenueThisMonth: sum(sql`CAST(${orders.total} AS NUMERIC)`) })
-      .from(orders)
-      .where(gte(orders.createdAt, oneMonthAgo));
-    const [{ usersLastMonth }] = await db
-      .select({ usersLastMonth: count() })
-      .from(users)
-      .where(and(gte(users.createdAt, twoMonthsAgo), lte(users.createdAt, oneMonthAgo)));
-    const [{ ordersLastMonth }] = await db
-      .select({ ordersLastMonth: count() })
-      .from(orders)
-      .where(and(gte(orders.createdAt, twoMonthsAgo), lte(orders.createdAt, oneMonthAgo)));
-    const [{ revenueLastMonth }] = await db
-      .select({ revenueLastMonth: sum(sql`CAST(${orders.total} AS NUMERIC)`) })
-      .from(orders)
-      .where(and(gte(orders.createdAt, twoMonthsAgo), lte(orders.createdAt, oneMonthAgo)));
+    // Запросы независимы — раньше шли строго по очереди (latency = сумма всех).
+    // Параллелим через Promise.all; пул (max=3 в проде) сам ставит лишние в
+    // очередь, поэтому пулер не перегружается, а latency = ~самый долгий запрос.
+    const [
+      [{ totalUsers }],
+      [{ totalProducts }],
+      [{ totalOrders }],
+      [{ totalRevenue }],
+      [{ newUsersThisMonth }],
+      [{ newOrdersThisMonth }],
+      [{ revenueThisMonth }],
+      [{ usersLastMonth }],
+      [{ ordersLastMonth }],
+      [{ revenueLastMonth }],
+    ] = await Promise.all([
+      db.select({ totalUsers: count() }).from(users),
+      db.select({ totalProducts: count() }).from(products),
+      db.select({ totalOrders: count() }).from(orders),
+      db.select({ totalRevenue: sum(sql`CAST(${orders.total} AS NUMERIC)`) }).from(orders),
+      db.select({ newUsersThisMonth: count() }).from(users).where(gte(users.createdAt, oneMonthAgo)),
+      db.select({ newOrdersThisMonth: count() }).from(orders).where(gte(orders.createdAt, oneMonthAgo)),
+      db
+        .select({ revenueThisMonth: sum(sql`CAST(${orders.total} AS NUMERIC)`) })
+        .from(orders)
+        .where(gte(orders.createdAt, oneMonthAgo)),
+      db
+        .select({ usersLastMonth: count() })
+        .from(users)
+        .where(and(gte(users.createdAt, twoMonthsAgo), lte(users.createdAt, oneMonthAgo))),
+      db
+        .select({ ordersLastMonth: count() })
+        .from(orders)
+        .where(and(gte(orders.createdAt, twoMonthsAgo), lte(orders.createdAt, oneMonthAgo))),
+      db
+        .select({ revenueLastMonth: sum(sql`CAST(${orders.total} AS NUMERIC)`) })
+        .from(orders)
+        .where(and(gte(orders.createdAt, twoMonthsAgo), lte(orders.createdAt, oneMonthAgo))),
+    ]);
 
     // Calculate trends
     const calculateTrend = (current: number, previous: number) => {
@@ -92,8 +100,8 @@ export async function GET() {
       },
     };
 
-    // Cache for 60 seconds (stats don't change often)
-    cache.set(cacheKey, result, CACHE_TTL.MEDIUM);
+    // Cache for 60 seconds (stats don't change often) — Redis, общий для инстансов
+    await cacheSet(cacheKey, result, 60);
     console.log('[STATS] Cached result for 60 seconds');
     return NextResponse.json(result);
   } catch (error) {
@@ -102,7 +110,7 @@ export async function GET() {
     
     // Return cached data if available, even if stale
     const cacheKey = CACHE_KEYS.SITE_CONFIG + ':stats';
-    const cached = cache.get(cacheKey);
+    const cached = await cacheGet(cacheKey);
     if (cached) {
       console.log('[STATS] Returning stale cached data due to error');
       return NextResponse.json(cached);

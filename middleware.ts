@@ -20,7 +20,7 @@ const redis = isProd && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTAS
 const apiRateLimiter = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(120, '60 s'),
+      limiter: Ratelimit.slidingWindow(600, '60 s'),
       analytics: true,
       prefix: 'ratelimit:api',
     })
@@ -215,7 +215,7 @@ export async function middleware(request: NextRequest) {
       } else if (isAdminApi) {
         allowed = memoryRateLimitCheck(`admin:${ip}`, 60, 60_000);
       } else {
-        allowed = memoryRateLimitCheck(`api:${ip}`, 120, 60_000);
+        allowed = memoryRateLimitCheck(`api:${ip}`, 600, 60_000);
       }
 
       if (!allowed) {

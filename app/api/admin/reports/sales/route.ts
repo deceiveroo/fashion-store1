@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { orders, orderItems } from '@/lib/db/schema';
-import { gte, sql } from 'drizzle-orm';
+import { gte, inArray } from 'drizzle-orm';
 import { getSession, isStaff } from '@/lib/server-auth';
 
 export async function GET(request: NextRequest) {
@@ -35,22 +35,29 @@ export async function GET(request: NextRequest) {
     // Группируем по дням
     const salesByDay: Record<string, { sales: number; orders: number; revenue: number }> = {};
 
+    // Кол-во товаров по всем заказам периода — ОДНИМ запросом. Раньше здесь был
+    // N+1: отдельный SELECT по orderItems на каждый заказ внутри цикла (для
+    // range=year — сотни последовательных round-trip'ов). Суммируем в памяти.
+    const orderIds = ordersList.map((o) => o.id);
+    const qtyByOrder: Record<string, number> = {};
+    if (orderIds.length > 0) {
+      const items = await db
+        .select({ orderId: orderItems.orderId, quantity: orderItems.quantity })
+        .from(orderItems)
+        .where(inArray(orderItems.orderId, orderIds));
+      for (const it of items) {
+        qtyByOrder[it.orderId] = (qtyByOrder[it.orderId] || 0) + it.quantity;
+      }
+    }
+
     for (const order of ordersList) {
       const date = order.createdAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0];
-      
+
       if (!salesByDay[date]) {
         salesByDay[date] = { sales: 0, orders: 0, revenue: 0 };
       }
 
-      // Получаем количество товаров в заказе
-      const items = await db
-        .select({ quantity: orderItems.quantity })
-        .from(orderItems)
-        .where(sql`${orderItems.orderId} = ${order.id}`);
-
-      const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-
-      salesByDay[date].sales += totalItems;
+      salesByDay[date].sales += qtyByOrder[order.id] || 0;
       salesByDay[date].orders += 1;
       salesByDay[date].revenue += Number(order.total);
     }

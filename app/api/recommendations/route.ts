@@ -3,7 +3,8 @@ import { db } from '@/lib/db';
 import { products, categories, orderItems, productViews, curatedCollections, collectionItems } from '@/lib/schema';
 import { eq, and, desc, lt, gt, sql, inArray } from 'drizzle-orm';
 import { safeQuery } from '@/lib/db';
-import { cache, CACHE_KEYS, CACHE_TTL } from '@/lib/cache';
+import { CACHE_KEYS } from '@/lib/cache';
+import { cacheGetOrSet } from '@/lib/redis';
 
 // GET /api/recommendations?type=similar&productId=xxx&limit=6
 export async function GET(request: NextRequest) {
@@ -24,10 +25,10 @@ export async function GET(request: NextRequest) {
         }
         // Use cache for similar products
         const cacheKey = CACHE_KEYS.SIMILAR_PRODUCTS(productId);
-        recommendations = await cache.getOrSet(
+        recommendations = await cacheGetOrSet(
           cacheKey,
           () => getSimilarProducts(productId, limit),
-          CACHE_TTL.MEDIUM
+          60 // 1 минута (Redis, общий для всех инстансов)
         );
         break;
 
@@ -47,10 +48,10 @@ export async function GET(request: NextRequest) {
 
       case 'trending':
         // Cache trending products for 2 minutes (changes frequently)
-        recommendations = await cache.getOrSet(
+        recommendations = await cacheGetOrSet(
           CACHE_KEYS.TRENDING_PRODUCTS,
           () => getTrendingProducts(limit),
-          CACHE_TTL.SHORT
+          30 // 30 секунд
         );
         break;
 

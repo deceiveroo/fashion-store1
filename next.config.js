@@ -24,6 +24,13 @@ const nextConfig = {
         hostname: 'avatars.githubusercontent.com',
       },
       {
+        // Аватары пользователей, вошедших через Telegram (photo_url вида
+        // https://t.me/i/userpic/320/<hash>.jpg). Используются в админ-списках.
+        protocol: 'https',
+        hostname: 't.me',
+        pathname: '/i/userpic/**',
+      },
+      {
         protocol: 'https',
         hostname: 'picsum.photos',
       },

@@ -43,10 +43,10 @@ function Toggle({ checked, onChange, label, desc, icon: Icon }: {
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? '' : 'bg-[var(--admin-border)]'}`}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${checked ? '' : 'bg-[var(--admin-border)]'}`}
         style={checked ? { backgroundImage: 'var(--admin-accent-gradient)' } : undefined}
       >
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+        <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
       </button>
     </div>
   );

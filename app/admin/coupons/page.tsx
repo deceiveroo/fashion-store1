@@ -316,10 +316,19 @@ export default function AdminCouponsPage() {
                 exit={{ opacity: 0, y: -20 }}
                 className="bg-[var(--admin-card)] rounded-2xl border border-[var(--admin-border)] overflow-hidden"
               >
-                {/* User Header */}
-                <button
+                {/* User Header — div, а не button: внутри есть вложенная кнопка «Выдать»,
+                    а <button> в <button> ломает гидрацию. role/tabIndex сохраняют доступность. */}
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setExpandedUserId(expandedUserId === user.id ? null : user.id)}
-                  className="w-full px-6 py-4 flex items-center gap-4 hover:bg-[var(--admin-card-hover)] transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setExpandedUserId(expandedUserId === user.id ? null : user.id);
+                    }
+                  }}
+                  className="w-full px-6 py-4 flex items-center gap-4 cursor-pointer hover:bg-[var(--admin-card-hover)] transition-colors"
                 >
                   {/* Avatar */}
                   <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg overflow-hidden">
@@ -383,7 +392,7 @@ export default function AdminCouponsPage() {
                   >
                     <ChevronDown className="w-5 h-5 text-[var(--admin-text-faint)]" />
                   </motion.div>
-                </button>
+                </div>
 
                 {/* Expanded Coupons List */}
                 <AnimatePresence>

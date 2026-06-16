@@ -6,7 +6,7 @@ import { AuthModalProvider } from '@/context/AuthModalContext';
 import AuthModal from '@/components/auth/AuthModal';
 import ClientLayoutWrapper from '@/components/ClientLayoutWrapper';
 import { Providers } from '@/components/providers/Providers';
-import SupportChatMinimalist from '@/components/SupportChatMinimalist';
+import SupportChatGate from '@/components/SupportChatGate';
 import QuickViewProvider from '@/components/QuickViewProvider';
 import MaintenanceCheck from '@/components/MaintenanceCheck';
 import AchievementNotification from '@/components/gamification/AchievementNotification';
@@ -77,7 +77,7 @@ export default function RootLayout({
                 <MaintenanceCheck>
                   <div className="flex min-h-screen flex-col bg-white dark:bg-[#191926] transition-colors duration-300">
                     <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
-                    <SupportChatMinimalist />
+                    <SupportChatGate />
                     <QuickViewProvider />
                     <AchievementNotification />
                   </div>
