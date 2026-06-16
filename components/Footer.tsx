@@ -29,7 +29,7 @@ const socialLinks = [
   { 
     icon: () => (
       <div className="w-6 h-6 bg-contain bg-no-repeat bg-center rounded-full" 
-           style={{ backgroundImage: "url('/icon/1.jpg')" }} />
+           style={{ backgroundImage: "url('/icon/1.png')" }} />
     ), 
     href: 'https://max.ru/', 
     label: 'Telegram',
