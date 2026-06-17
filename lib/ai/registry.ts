@@ -127,10 +127,32 @@ export function buildProvider(cfg: AiProviderConfig): AiProvider {
     case 'gigachat':
       return GigaChatProvider.fromAuthKey(secret, cfg.model, cfg.scope);
     case 'openai':
-      return new OpenAiProvider(secret, cfg.model);
+      return new OpenAiProvider(secret, cfg.model, cfg.baseUrl);
     default:
       throw new Error(`Unknown provider type: ${cfg.type as string}`);
   }
+}
+
+/**
+ * Build a provider straight from environment variables, bypassing the DB and
+ * encryption entirely. Used ONLY as a fallback when no DB provider can be built
+ * (e.g. ENCRYPTION_KEY missing in local dev, or a decryption failure) and as an
+ * easy way to switch providers without the admin panel. Returns null if no env
+ * keys are set, so it's a no-op in normal production where the DB provider works.
+ *
+ *   OpenAI-compatible:  AI_OPENAI_API_KEY  [+ AI_OPENAI_MODEL, AI_OPENAI_BASE_URL]
+ *   GigaChat:           AI_GIGACHAT_AUTH_KEY [+ AI_GIGACHAT_MODEL, AI_GIGACHAT_SCOPE]
+ */
+export function envProvider(): AiProvider | null {
+  const openaiKey = process.env.AI_OPENAI_API_KEY;
+  if (openaiKey) {
+    return new OpenAiProvider(openaiKey, process.env.AI_OPENAI_MODEL, process.env.AI_OPENAI_BASE_URL);
+  }
+  const gigaKey = process.env.AI_GIGACHAT_AUTH_KEY;
+  if (gigaKey) {
+    return GigaChatProvider.fromAuthKey(gigaKey, process.env.AI_GIGACHAT_MODEL, process.env.AI_GIGACHAT_SCOPE);
+  }
+  return null;
 }
 
 /**
@@ -174,17 +196,33 @@ export async function getActiveAiContext(): Promise<ActiveAiContext | null> {
   if (!cfg.enabled) return null;
 
   const active = cfg.providers.find((p) => p.id === cfg.activeProviderId && p.enabled);
-  if (!active) return null;
 
-  try {
-    return {
-      provider: buildProvider(active),
-      systemPrompt: cfg.systemPrompt,
-      knowledgeBase: cfg.knowledgeBase,
-    };
-  } catch {
-    return null;
+  // Primary: the provider configured in the admin panel. This is the production
+  // path and stays exactly as before when it succeeds.
+  if (active) {
+    try {
+      return {
+        provider: buildProvider(active),
+        systemPrompt: cfg.systemPrompt,
+        knowledgeBase: cfg.knowledgeBase,
+      };
+    } catch (e) {
+      // e.g. ENCRYPTION_KEY missing/mismatched so the secret can't be decrypted.
+      console.error(
+        '[AI REGISTRY] DB provider unavailable, trying env fallback:',
+        e instanceof Error ? e.message : e,
+      );
+    }
   }
+
+  // Fallback: a provider defined via environment variables (no encryption needed).
+  // No-op in normal production (returns null when no AI_* env vars are set).
+  const env = envProvider();
+  if (env) {
+    return { provider: env, systemPrompt: cfg.systemPrompt, knowledgeBase: cfg.knowledgeBase };
+  }
+
+  return null;
 }
 
 export function isKnownProviderType(t: string): t is AiProviderType {

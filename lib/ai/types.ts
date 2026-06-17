@@ -29,6 +29,12 @@ export interface AiProviderConfig {
   /** OAuth scope for GigaChat, e.g. "GIGACHAT_API_PERS". */
   scope?: string;
   /**
+   * Optional base URL for OpenAI-compatible providers. Lets you point the OpenAI
+   * provider at any compatible gateway (Vercel AI Gateway, OpenRouter, a self-host)
+   * without code changes. Ignored by GigaChat. Defaults to the official OpenAI API.
+   */
+  baseUrl?: string;
+  /**
    * Encrypted credential blob. For GigaChat this is the Authorization Key
    * (base64 of "ClientID:ClientSecret"). For OpenAI it is the API key.
    */
