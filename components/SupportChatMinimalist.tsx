@@ -522,7 +522,7 @@ export default function SupportChatMinimalist() {
                     </h3>
                     <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/80">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                      {takenOver ? 'Оператор на связи' : 'Онлайн · отвечаем сразу'}
+                      {takenOver ? 'Оператор на связи' : 'ИИ-ассистент · онлайн'}
                     </p>
                   </div>
                 </div>
@@ -546,7 +546,7 @@ export default function SupportChatMinimalist() {
                       Привет{user?.name ? `, ${user.name}` : ''} 👋
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-gray-600 dark:text-white/60">
-                      Чем можем помочь? Выберите тему или начните диалог с оператором.
+                      Чем помочь? Спросите ИИ-помощника или выберите тему — отвечаю сразу.
                     </p>
                   </div>
 
@@ -621,7 +621,7 @@ export default function SupportChatMinimalist() {
                                           className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#8b7cf6]/30 py-2 text-xs font-medium text-[#8b7cf6] transition-colors hover:bg-[#8b7cf6]/10 dark:text-violet-300"
                                         >
                                           <MessageCircle className="h-3.5 w-3.5" />
-                                          Задать оператору
+                                          Спросить ИИ
                                         </button>
                                       </div>
                                     </motion.div>
@@ -654,7 +654,7 @@ export default function SupportChatMinimalist() {
                             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#8b7cf6] to-[#c4b5fd] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#8b7cf6]/25 transition-all hover:shadow-xl"
                           >
                             <MessageCircle className="h-4 w-4" />
-                            Написать оператору
+                            Спросить ИИ-помощника
                           </button>
                         </div>
                       )}
@@ -732,7 +732,7 @@ export default function SupportChatMinimalist() {
                       className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#8b7cf6] to-[#c4b5fd] py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#8b7cf6]/25 transition-all hover:shadow-xl hover:shadow-[#8b7cf6]/35"
                     >
                       <MessageCircle className="h-4 w-4" />
-                      Начать чат с оператором
+                      Задать вопрос ассистенту
                     </motion.button>
                   )}
                 </div>
@@ -746,7 +746,7 @@ export default function SupportChatMinimalist() {
                       </div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">Начните диалог</p>
                       <p className="mx-auto mt-1 max-w-[220px] text-xs leading-relaxed text-gray-500 dark:text-white/50">
-                        Напишите вопрос — ответим в ближайшее время.
+                        Напишите вопрос — ИИ-помощник ответит сразу.
                       </p>
                     </div>
                   )}

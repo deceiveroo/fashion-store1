@@ -181,48 +181,60 @@ export async function getSystemPromptOverride(): Promise<string | null> {
 }
 
 export interface ActiveAiContext {
-  provider: AiProvider;
+  /**
+   * Providers to try in order: the active one first, then other enabled ones as
+   * failover, then an env-configured provider last. The chat path generates with
+   * the first that succeeds, so one backend outage doesn't kill AI replies.
+   */
+  providers: AiProvider[];
   systemPrompt: string | null;
   knowledgeBase: string | null;
 }
 
+const MAX_FAILOVER_PROVIDERS = 3; // bound worst-case latency when backends are down
+
 /**
- * Single-read variant of getActiveProvider(): resolves the active provider AND
- * the prompt override + knowledge base from ONE settings read, so the chat path
- * doesn't hit the DB twice per message. Returns null when AI is off / unconfigured.
+ * Single-read variant of getActiveProvider(): resolves the ordered provider list
+ * AND the prompt override + knowledge base from ONE settings read, so the chat
+ * path doesn't hit the DB twice per message. Returns null when AI is off /
+ * unconfigured / no provider could be built.
  */
 export async function getActiveAiContext(): Promise<ActiveAiContext | null> {
   const cfg = await getAiConfig();
   if (!cfg.enabled) return null;
 
-  const active = cfg.providers.find((p) => p.id === cfg.activeProviderId && p.enabled);
+  const providers: AiProvider[] = [];
+  const seen = new Set<string>();
 
-  // Primary: the provider configured in the admin panel. This is the production
-  // path and stays exactly as before when it succeeds.
-  if (active) {
+  const tryAdd = (item?: AiProviderConfig) => {
+    if (!item || !item.enabled || seen.has(item.id)) return;
     try {
-      return {
-        provider: buildProvider(active),
-        systemPrompt: cfg.systemPrompt,
-        knowledgeBase: cfg.knowledgeBase,
-      };
+      providers.push(buildProvider(item));
+      seen.add(item.id);
     } catch (e) {
       // e.g. ENCRYPTION_KEY missing/mismatched so the secret can't be decrypted.
-      console.error(
-        '[AI REGISTRY] DB provider unavailable, trying env fallback:',
-        e instanceof Error ? e.message : e,
-      );
+      console.error('[AI REGISTRY] provider build failed:', item.label, e instanceof Error ? e.message : e);
     }
+  };
+
+  // Active provider first (production path — used first, behaviour unchanged),
+  // then every other enabled provider as failover.
+  tryAdd(cfg.providers.find((p) => p.id === cfg.activeProviderId && p.enabled));
+  for (const p of cfg.providers) tryAdd(p);
+
+  // Env-configured provider as a last resort (no encryption dependency). No-op in
+  // normal production where no AI_* env vars are set.
+  if (providers.length < MAX_FAILOVER_PROVIDERS) {
+    const env = envProvider();
+    if (env) providers.push(env);
   }
 
-  // Fallback: a provider defined via environment variables (no encryption needed).
-  // No-op in normal production (returns null when no AI_* env vars are set).
-  const env = envProvider();
-  if (env) {
-    return { provider: env, systemPrompt: cfg.systemPrompt, knowledgeBase: cfg.knowledgeBase };
-  }
-
-  return null;
+  if (providers.length === 0) return null;
+  return {
+    providers: providers.slice(0, MAX_FAILOVER_PROVIDERS),
+    systemPrompt: cfg.systemPrompt,
+    knowledgeBase: cfg.knowledgeBase,
+  };
 }
 
 export function isKnownProviderType(t: string): t is AiProviderType {
